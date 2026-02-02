@@ -1,16 +1,28 @@
 import type { Movie, Series, SearchResult } from "@/types/movie";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
 
 export const getImageUrl = (url?: string) => url || fallbackPoster;
 
-// Helper to add timeout to fetch
-const fetchWithTimeout = async (url: string, timeout = 8000): Promise<Response> => {
+// Helper to fetch via the edge function proxy
+const fetchViaProxy = async (path: string, timeout = 8000): Promise<Response> => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
+  
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/api-proxy?path=${encodeURIComponent(path)}`,
+      {
+        signal: controller.signal,
+        headers: {
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "apikey": SUPABASE_KEY,
+        },
+      }
+    );
+    
     clearTimeout(id);
     return response;
   } catch (error) {
@@ -24,9 +36,7 @@ const normalizeList = (items: Movie[]) =>
 
 export async function fetchTrending(): Promise<Movie[]> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE}/recent?content_type=movie&limit=50&page=1`
-    );
+    const response = await fetchViaProxy("/recent?content_type=movie&limit=50&page=1");
     if (!response.ok) throw new Error("Failed to fetch trending");
     const data = await response.json();
     return normalizeList(data);
@@ -42,8 +52,8 @@ export async function fetchRecent(
   page: number = 1
 ): Promise<Movie[]> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE}/recent?content_type=${encodeURIComponent(contentType)}&limit=${limit}&page=${page}`
+    const response = await fetchViaProxy(
+      `/recent?content_type=${encodeURIComponent(contentType)}&limit=${limit}&page=${page}`
     );
     if (!response.ok) throw new Error("Failed to fetch recent");
     const data = await response.json();
@@ -57,7 +67,7 @@ export async function fetchRecent(
 export async function fetchSeries(limit: number = 20, page: number = 1, language?: string): Promise<Movie[]> {
   try {
     const langParam = language ? `&language=${encodeURIComponent(language)}` : "";
-    const response = await fetchWithTimeout(`${API_BASE}/series?limit=${limit}&page=${page}${langParam}`);
+    const response = await fetchViaProxy(`/series?limit=${limit}&page=${page}${langParam}`);
     if (!response.ok) throw new Error("Failed to fetch series");
     const data = await response.json();
     return normalizeList(data);
@@ -69,8 +79,8 @@ export async function fetchSeries(limit: number = 20, page: number = 1, language
 
 export async function searchMovies(query: string, page: number = 1, limit: number = 20): Promise<SearchResult> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE}/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}&title_only=true&content_type=all`
+    const response = await fetchViaProxy(
+      `/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}&title_only=true&content_type=all`
     );
     if (!response.ok) throw new Error("Failed to search");
     const data = await response.json();
@@ -87,8 +97,8 @@ export async function searchMovies(query: string, page: number = 1, limit: numbe
 
 export async function searchAll(query: string, page: number = 1, limit: number = 100): Promise<Movie[]> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE}/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}&title_only=false&content_type=all`
+    const response = await fetchViaProxy(
+      `/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}&title_only=false&content_type=all`
     );
     if (!response.ok) throw new Error("Failed to search all");
     const data = await response.json();
@@ -101,7 +111,7 @@ export async function searchAll(query: string, page: number = 1, limit: number =
 
 export async function fetchMovieDetails(id: string): Promise<Movie | null> {
   try {
-    const response = await fetchWithTimeout(`${API_BASE}/movie/${encodeURIComponent(id)}`);
+    const response = await fetchViaProxy(`/movie/${encodeURIComponent(id)}`);
     if (!response.ok) throw new Error("Failed to fetch movie");
     return await response.json();
   } catch (error) {
@@ -112,7 +122,7 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
 
 export async function fetchSeriesDetails(id: string): Promise<Series | null> {
   try {
-    const response = await fetchWithTimeout(`${API_BASE}/series/${id}?include_episodes=true`);
+    const response = await fetchViaProxy(`/series/${id}?include_episodes=true`);
     if (!response.ok) throw new Error("Failed to fetch series");
     return await response.json();
   } catch (error) {
@@ -123,8 +133,8 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
 
 export async function fetchSuggestions(query: string): Promise<Movie[]> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE}/search?q=${encodeURIComponent(query)}&limit=10&page=1&title_only=true&content_type=all`
+    const response = await fetchViaProxy(
+      `/search?q=${encodeURIComponent(query)}&limit=10&page=1&title_only=true&content_type=all`
     );
     if (!response.ok) throw new Error("Failed to fetch suggestions");
     const data = await response.json();
@@ -137,7 +147,7 @@ export async function fetchSuggestions(query: string): Promise<Movie[]> {
 
 export async function fetchStats(): Promise<{ popular_searches: string[] }> {
   try {
-    const response = await fetchWithTimeout(`${API_BASE}/stats`);
+    const response = await fetchViaProxy("/stats");
     if (!response.ok) throw new Error("Failed to fetch stats");
     return await response.json();
   } catch (error) {
@@ -148,9 +158,7 @@ export async function fetchStats(): Promise<{ popular_searches: string[] }> {
 
 export async function fetchOriginals(limit: number = 50, page: number = 1): Promise<Movie[]> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE}/originals?limit=${limit}&page=${page}`
-    );
+    const response = await fetchViaProxy(`/originals?limit=${limit}&page=${page}`);
     if (!response.ok) throw new Error("Failed to fetch originals");
     const data = await response.json();
     return normalizeList(data);
@@ -166,8 +174,8 @@ export async function fetchByGenre(
   limit: number = 40
 ): Promise<Movie[]> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE}/movies/by-genre/${encodeURIComponent(genre)}?limit=${limit}&content_type=${contentType}`
+    const response = await fetchViaProxy(
+      `/movies/by-genre/${encodeURIComponent(genre)}?limit=${limit}&content_type=${contentType}`
     );
     if (!response.ok) throw new Error("Failed to fetch by genre");
     const data = await response.json();
