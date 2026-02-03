@@ -349,7 +349,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
               </div>
 
               {/* Mobile Layout: Full screen immersive */}
-              <div className="md:hidden flex flex-col min-h-[100dvh]">
+              <div className="md:hidden flex flex-col min-h-[100dvh] overflow-hidden">
                 {/* Hero image section */}
                 <div className="relative h-[50vh] flex-shrink-0">
                   <img
