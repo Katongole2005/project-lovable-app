@@ -375,19 +375,19 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   </div>
                 </div>
 
-                {/* Content section */}
-                <div className="flex-1 w-full max-w-full px-4 -mt-20 relative z-10 space-y-5 overflow-x-hidden box-border">
+                {/* Content section - consistent px-5 gutter for safe area */}
+                <div className="flex-1 w-full max-w-full -mt-20 relative z-10 space-y-5 overflow-hidden">
                   {/* Poster + Title */}
-                  <div className="flex w-full max-w-full gap-3 items-start overflow-hidden">
-                    <div className="w-24 flex-shrink-0 rounded-xl overflow-hidden shadow-2xl border border-border/30 bg-card/30 backdrop-blur-sm">
+                  <div className="flex w-full gap-3 items-start px-5">
+                    <div className="w-24 flex-none rounded-xl overflow-hidden shadow-2xl border border-border/30 bg-card/30 backdrop-blur-sm">
                       <img
                         src={getImageUrl(movie.image_url)}
                         alt={`${movie.title} poster`}
                         className="w-full aspect-[2/3] object-cover"
                       />
                     </div>
-                    <div className="flex-1 min-w-0 max-w-full overflow-hidden space-y-2 pt-4">
-                      <h1 className="font-display text-xl font-bold text-foreground leading-tight tracking-tight break-words [overflow-wrap:anywhere] pr-1">
+                    <div className="flex-1 min-w-0 space-y-2 pt-4">
+                      <h1 className="font-display text-xl font-bold text-foreground leading-tight tracking-tight break-words [overflow-wrap:anywhere]">
                         {movie.title}
                         {isSeries && <span className="text-primary text-base ml-1 font-semibold">(Series)</span>}
                       </h1>
@@ -404,7 +404,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
                   {/* Genres */}
                   {movie.genres && movie.genres.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 px-5">
                       {movie.genres.map((genre) => (
                         <span
                           key={genre}
@@ -418,29 +418,27 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
                   {/* File size */}
                   {movie.file_size && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground px-5">
                       <Tag className="w-4 h-4" />
                       <span>{movie.file_size}</span>
                     </div>
                   )}
 
-                  {/* Description - 16px horizontal padding */}
+                  {/* Description */}
                   {movie.description && (
-                    <div className="px-4 overflow-hidden">
-                      <p className="text-muted-foreground text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
-                        {movie.description}
-                      </p>
-                    </div>
+                    <p className="text-muted-foreground text-sm leading-relaxed px-5 break-words [overflow-wrap:anywhere]">
+                      {movie.description}
+                    </p>
                   )}
 
-                  {/* Cast - Horizontal ScrollView, no static overflow */}
+                  {/* Cast - Horizontal scroll with aligned gutters */}
                   {cast.length > 0 && (
                     <div className="space-y-3 overflow-hidden">
-                      <h4 className="text-base font-semibold text-foreground px-4">Cast</h4>
-                      <ScrollArea className="w-full">
-                        <div className="flex gap-4 px-4 pb-2">
+                      <h4 className="text-base font-semibold text-foreground px-5">Cast</h4>
+                      <div className="overflow-x-auto scrollbar-none touch-pan-x">
+                        <div className="flex gap-4 px-5 pb-2 w-max">
                           {cast.map((member) => (
-                            <div key={member.name} className="flex flex-col items-center gap-2 flex-shrink-0">
+                            <div key={member.name} className="flex flex-col items-center gap-2 flex-none w-16">
                               <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-border/30 shadow-md">
                                 <img
                                   src={member.profile_url || fallbackCastAvatar}
@@ -448,14 +446,13 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                                   className="w-full h-full object-cover"
                                 />
                               </div>
-                              <span className="text-xs text-muted-foreground text-center max-w-[64px] truncate">
+                              <span className="text-xs text-muted-foreground text-center w-full truncate">
                                 {member.name}
                               </span>
                             </div>
                           ))}
                         </div>
-                        <ScrollBar orientation="horizontal" className="h-1.5" />
-                      </ScrollArea>
+                      </div>
                     </div>
                   )}
 
