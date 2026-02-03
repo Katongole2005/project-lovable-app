@@ -306,120 +306,140 @@ function MobileMovieLayout({
   onPlay,
 }: MobileMovieLayoutProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
-  const maxDescriptionLength = 150;
+  const [selectedSeason, setSelectedSeason] = React.useState(1);
+  const maxDescriptionLength = 200;
   const description = movie.description || "";
   const shouldTruncate = description.length > maxDescriptionLength;
   const displayDescription = isExpanded ? description : description.slice(0, maxDescriptionLength);
 
+  // Calculate number of stars to display (out of 5)
+  const numericRating = parseFloat(rating);
+  const fullStars = Math.floor(numericRating);
+  const hasHalfStar = numericRating % 1 >= 0.5;
+
   return (
-    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border bg-card">
-      {/* Hero section with backdrop and centered poster - fixed height */}
-      <div className="relative flex-shrink-0 h-[40vh]">
-        {/* Backdrop image */}
-        <div className="absolute inset-0 overflow-hidden">
+    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border bg-background">
+      {/* Scrollable container */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Hero section with backdrop */}
+        <div className="relative w-full aspect-video min-h-[200px]">
+          {/* Backdrop image */}
           <img
             src={getImageUrl(backgroundImage || movie.image_url)}
-            alt=""
+            alt={movie.title}
             className="w-full h-full object-cover"
           />
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-transparent" />
-        </div>
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent" />
 
-        {/* Top navigation bar */}
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 pt-safe">
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full bg-black/30 backdrop-blur-sm"
-          >
-            <ChevronLeft className="w-6 h-6 text-white" />
-          </button>
-          <button className="p-2 rounded-full bg-black/30 backdrop-blur-sm">
-            <Heart className="w-5 h-5 text-white" />
-          </button>
-        </div>
-
-        {/* Centered poster with play button */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center translate-y-1/3 z-10">
-          <div className="relative w-32 rounded-xl overflow-hidden shadow-2xl border border-white/10">
-            <img
-              src={getImageUrl(movie.image_url)}
-              alt={movie.title}
-              className="w-full aspect-[2/3] object-cover"
-            />
-            {/* Play button overlay */}
-            {((!isSeries && movie.download_url) || (isSeries && series.episodes && series.episodes.length > 0)) && (
-              <button
-                onClick={() => {
-                  if (isSeries && series.episodes?.[0]?.download_url) {
-                    onPlay(series.episodes[0].download_url, `${movie.title} - Episode 1`);
-                  } else if (movie.download_url) {
-                    onPlay(movie.download_url, movie.title);
-                  }
-                }}
-                className="absolute inset-0 flex items-center justify-center bg-black/20"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
-                  <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
-                </div>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Scrollable content section */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="px-5 pt-16 pb-32 space-y-4">
-          {/* Title */}
-          <h1 className="text-xl font-display font-bold text-foreground text-center line-clamp-2">
-            {movie.title}
-          </h1>
-
-          {/* Meta row: Genre • Duration */}
-          <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground flex-wrap">
-            {movie.genres && movie.genres.length > 0 && (
-              <span className="truncate max-w-[120px]">{movie.genres.slice(0, 2).join("/")}</span>
-            )}
-            {runtimeLabel && (
-              <>
-                <span className="text-muted-foreground/50">•</span>
-                <span>{runtimeLabel}</span>
-              </>
-            )}
+          {/* Top navigation */}
+          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-3 pt-safe">
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-white" />
+            </button>
+            <button className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors">
+              <Heart className="w-5 h-5 text-white" />
+            </button>
           </div>
 
+          {/* Title overlaid on backdrop */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 pb-6">
+            <h1 className="text-2xl font-display font-bold text-white drop-shadow-lg leading-tight">
+              {movie.title}
+            </h1>
+            {/* Year and type */}
+            <div className="flex items-center gap-2 mt-1.5 text-sm text-white/80">
+              {movie.year && <span>{movie.year}</span>}
+              {isSeries && (
+                <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-primary/80 text-primary-foreground">
+                  SERIES
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Content section */}
+        <div className="px-4 py-4 space-y-5 pb-32">
           {/* Star rating */}
-          <div className="flex items-center justify-center gap-1.5">
-            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-            <span className="text-sm font-medium text-foreground">{rating}</span>
+          <div className="flex items-center gap-1">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={cn(
+                  "w-5 h-5",
+                  i < fullStars
+                    ? "text-primary fill-primary"
+                    : i === fullStars && hasHalfStar
+                    ? "text-primary fill-primary/50"
+                    : "text-muted-foreground/40"
+                )}
+              />
+            ))}
           </div>
 
-          {/* Overview section */}
+          {/* Description */}
           {description && (
-            <div className="space-y-2">
-              <h3 className="text-base font-semibold text-foreground">Overview</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed break-words">
-                {displayDescription}
-                {shouldTruncate && !isExpanded && "... "}
-                {shouldTruncate && (
-                  <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="text-primary font-medium ml-1"
-                  >
-                    {isExpanded ? "Show Less" : "Read More"}
-                  </button>
-                )}
-              </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {displayDescription}
+              {shouldTruncate && !isExpanded && "... "}
+              {shouldTruncate && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-primary font-medium ml-1"
+                >
+                  {isExpanded ? "less" : "more"}
+                </button>
+              )}
+            </p>
+          )}
+
+          {/* Add to list button */}
+          <button className="flex items-center gap-2 text-sm text-foreground">
+            <div className="w-8 h-8 rounded-full border-2 border-foreground/60 flex items-center justify-center">
+              <Plus className="w-4 h-4" />
+            </div>
+            <span className="font-medium">Add to List</span>
+          </button>
+
+          {/* Episodes section for series */}
+          {isSeries && series.episodes && series.episodes.length > 0 && (
+            <div className="space-y-4">
+              {/* Season header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-foreground">Season {selectedSeason}</h3>
+                  <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-[270deg]" />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {series.episodes.length} Episodes
+                </span>
+              </div>
+
+              {/* Episode list */}
+              <div className="space-y-3">
+                {series.episodes.map((episode) => (
+                  <MobileEpisodeCard
+                    key={episode.mobifliks_id || episode.episode_number}
+                    episode={episode}
+                    seriesTitle={movie.title}
+                    seriesImage={movie.image_url}
+                    onPlay={onPlay}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Cast section */}
-          {cast.length > 0 && (
+          {/* For movies, show cast and additional info */}
+          {!isSeries && cast.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-base font-semibold text-foreground">Cast</h3>
-              <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
+              <div className="overflow-x-auto scrollbar-none -mx-4 px-4">
                 <div className="flex gap-4 w-max">
                   {cast.slice(0, 10).map((member) => (
                     <div key={member.name} className="flex flex-col items-center gap-2 w-16 flex-shrink-0">
@@ -440,30 +460,18 @@ function MobileMovieLayout({
             </div>
           )}
 
-          {/* Episodes for series */}
-          {isSeries && series.episodes && series.episodes.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-base font-semibold text-foreground">
-                Episodes <span className="text-muted-foreground font-normal">({series.episodes.length})</span>
-              </h3>
-              <div className="space-y-2">
-                {series.episodes.map((episode) => (
-                  <MobileEpisodeItem
-                    key={episode.mobifliks_id || episode.episode_number}
-                    episode={episode}
-                    seriesTitle={movie.title}
-                    onPlay={onPlay}
-                  />
-                ))}
-              </div>
-            </div>
+          {/* File size info for movies */}
+          {!isSeries && movie.file_size && (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Size:</span> {movie.file_size}
+            </p>
           )}
         </div>
       </div>
 
-      {/* Fixed bottom action buttons */}
+      {/* Fixed bottom action buttons for movies */}
       {!isSeries && movie.download_url && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-card via-card/95 to-transparent pt-8 z-30">
+        <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-background via-background/95 to-transparent pt-8 z-30">
           <div className="flex gap-3">
             <Button
               size="lg"
@@ -488,24 +496,76 @@ function MobileMovieLayout({
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Series mobile bottom actions */}
-      {isSeries && series.episodes && series.episodes.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-card via-card/95 to-transparent pt-8 z-30">
-          <Button
-            size="lg"
-            className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 text-base font-semibold shadow-lg shadow-primary/25"
-            onClick={() => {
-              const firstEp = series.episodes?.[0];
-              if (firstEp?.download_url) {
-                onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
-              }
-            }}
-          >
-            <Play className="w-5 h-5 fill-current" />
-            Start Watching
-          </Button>
-        </div>
+// Mobile episode card - matches reference design with thumbnail
+interface MobileEpisodeCardProps {
+  episode: Episode;
+  seriesTitle: string;
+  seriesImage?: string;
+  onPlay: (url: string, title: string) => void;
+}
+
+function MobileEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: MobileEpisodeCardProps) {
+  const hasVideo = episode.download_url && 
+    (episode.download_url.includes(".mp4") || 
+     episode.download_url.includes("downloadmp4.php") ||
+     episode.download_url.includes("downloadserie.php"));
+
+  const loremDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+
+  return (
+    <div 
+      className="flex gap-3 group"
+      onClick={() => {
+        if (hasVideo && episode.download_url) {
+          onPlay(episode.download_url, `${seriesTitle} - Episode ${episode.episode_number}`);
+        }
+      }}
+    >
+      {/* Episode thumbnail */}
+      <div className="relative w-28 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-muted">
+        <img
+          src={getImageUrl(seriesImage)}
+          alt={`Episode ${episode.episode_number}`}
+          className="w-full h-full object-cover"
+        />
+        {/* Play overlay on hover/tap */}
+        {hasVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-active:opacity-100 transition-opacity">
+            <Play className="w-6 h-6 text-white fill-white" />
+          </div>
+        )}
+      </div>
+
+      {/* Episode info */}
+      <div className="flex-1 min-w-0 py-0.5">
+        <h4 className="font-medium text-foreground text-sm leading-tight">
+          Episode {episode.episode_number}
+        </h4>
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+          {episode.description || loremDescription}
+        </p>
+        {episode.file_size && (
+          <span className="text-xs text-muted-foreground/70 mt-1 block">{episode.file_size}</span>
+        )}
+      </div>
+
+      {/* Download button */}
+      {hasVideo && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (episode.download_url) {
+              window.open(episode.download_url, "_blank");
+            }
+          }}
+          className="self-center p-2 rounded-full hover:bg-muted transition-colors flex-shrink-0"
+        >
+          <Download className="w-5 h-5 text-muted-foreground" />
+        </button>
       )}
     </div>
   );
