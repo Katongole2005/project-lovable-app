@@ -6,7 +6,7 @@ import { CategoryChips } from "@/components/CategoryChips";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { MovieModal } from "@/components/MovieModal";
-import { VideoPlayer } from "@/components/VideoPlayer";
+import { CinematicVideoPlayer } from "@/components/CinematicVideoPlayer";
 import { BottomNav } from "@/components/BottomNav";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
@@ -637,12 +637,13 @@ export default function Index() {
         onPlay={handlePlayVideo}
       />
 
-      {/* Video Player */}
-      <VideoPlayer
+      {/* Cinematic Video Player */}
+      <CinematicVideoPlayer
         isOpen={isVideoOpen}
         onClose={() => setIsVideoOpen(false)}
         videoUrl={videoUrl}
         title={videoTitle}
+        movie={selectedMovie}
         onTimeUpdate={handleVideoTimeUpdate}
       />
     </div>
