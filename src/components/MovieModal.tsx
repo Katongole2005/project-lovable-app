@@ -99,9 +99,30 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   <X className="w-5 h-5 text-white" />
                 </button>
 
-                {/* Content area with glass effect */}
-                <div className="relative px-10 py-10 space-y-6">
-                  {/* Poster + Title row like mobile */}
+                {/* Backdrop hero section */}
+                <div className="relative h-[280px] lg:h-[340px] overflow-hidden">
+                  {backdrop ? (
+                    <img
+                      src={getImageUrl(backdrop)}
+                      alt={`${movie.title} backdrop`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : movie.image_url ? (
+                    <img
+                      src={getImageUrl(movie.image_url)}
+                      alt={movie.title}
+                      className="w-full h-full object-cover scale-125 blur-sm"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/30 via-black to-black" />
+                  )}
+                  {/* Gradient fade to content */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                </div>
+
+                {/* Content area - overlapping backdrop */}
+                <div className="relative -mt-32 px-10 pb-10 space-y-6">
+                  {/* Poster + Title row */}
                   <div className="flex gap-6 items-start">
                     {/* Small poster image */}
                     <div className="w-32 lg:w-40 flex-none rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
