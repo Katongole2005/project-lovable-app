@@ -52,181 +52,174 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
         </DialogDescription>
         {/* Premium Glassmorphism Container */}
         <div className="relative h-full md:h-auto md:rounded-3xl overflow-hidden">
-          {/* Multi-layer blurred background for depth */}
+          {/* Multi-layer background for professional glass effect */}
           <div className="absolute inset-0">
-            {/* Base image layer */}
+            {/* Base image layer - visible through glass */}
             {backgroundImage && (
               <>
                 <img
                   src={getImageUrl(backgroundImage)}
                   alt=""
-                  className="w-full h-full object-cover opacity-60 scale-105"
+                  className="w-full h-full object-cover scale-110"
                 />
-                {/* Heavy blur layer for glass effect */}
+                {/* Soft blur layer underneath */}
                 <img
                   src={getImageUrl(backgroundImage)}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-70"
+                  className="absolute inset-0 w-full h-full object-cover scale-150 blur-3xl opacity-80"
                 />
               </>
             )}
-            {/* Glassmorphism overlay - multi-gradient for premium feel */}
-            <div className="absolute inset-0 backdrop-blur-2xl bg-gradient-to-br from-background/70 via-background/60 to-background/75" />
+            {/* Professional glass overlay - subtle blur lets color through */}
+            <div className="absolute inset-0 backdrop-blur-xl bg-black/40" />
+            {/* Subtle vignette for depth */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
             {/* Subtle noise texture for glass authenticity */}
             <div 
-              className="absolute inset-0 opacity-[0.015] pointer-events-none mix-blend-overlay"
+              className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
               }}
             />
-            {/* Inner glow/light refraction effect */}
-            <div className="absolute inset-0 bg-gradient-to-t from-transparent via-primary/[0.03] to-primary/[0.08]" />
-            {/* Bottom shadow gradient for depth */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
           </div>
           
           {/* Glass border effect - subtle inner highlight */}
-          <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-border/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_-1px_1px_rgba(0,0,0,0.05)]" />
+          <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
 
           <ScrollArea className="h-[100dvh] md:max-h-[90vh] w-full">
             <div className="relative min-h-[100dvh] md:min-h-0 w-full max-w-full">
-              {/* Desktop Layout: Netflix-style immersive glassmorphism */}
+              {/* Desktop/Tablet Layout: Professional Glassmorphism */}
               <div className="hidden md:block relative">
                 {/* Close button */}
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-background/40 backdrop-blur-md hover:bg-background/60 transition-all duration-200 hover:scale-105 border border-border/30"
+                  className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200 hover:scale-105 border border-white/20"
                 >
-                  <X className="w-5 h-5 text-foreground" />
+                  <X className="w-5 h-5 text-white" />
                 </button>
 
-                {/* Full bleed backdrop with heavy blur */}
-                <div className="relative h-[400px] overflow-hidden">
-                  {backdrop ? (
-                    <img
-                      src={getImageUrl(backdrop)}
-                      alt={`${movie.title} backdrop`}
-                      className="w-full h-full object-cover scale-105"
-                    />
-                  ) : movie.image_url ? (
-                    <img
-                      src={getImageUrl(movie.image_url)}
-                      alt={movie.title}
-                      className="w-full h-full object-cover scale-125 blur-md"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/30 via-background to-background" />
-                  )}
-                  {/* Heavy gradient fade to content */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/40" />
-                </div>
+                {/* Content area with glass effect */}
+                <div className="relative px-10 py-10 space-y-6">
+                  {/* Poster + Title row like mobile */}
+                  <div className="flex gap-6 items-start">
+                    {/* Small poster image */}
+                    <div className="w-32 lg:w-40 flex-none rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
+                      <img
+                        src={getImageUrl(movie.image_url)}
+                        alt={`${movie.title} poster`}
+                        className="w-full aspect-[2/3] object-cover"
+                      />
+                    </div>
 
-                {/* Content area - overlapping backdrop */}
-                <div className="relative -mt-56 px-10 pb-10 space-y-6">
-                  {/* Title */}
-                  <h1 className="font-display text-5xl font-bold text-foreground tracking-tight leading-tight drop-shadow-lg max-w-3xl">
-                    {movie.title}
-                  </h1>
+                    {/* Title and meta section */}
+                    <div className="flex-1 min-w-0 space-y-4 pt-2">
+                      {/* Title */}
+                      <h1 className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
+                        {movie.title}
+                        {isSeries && <span className="text-primary text-2xl ml-2 font-semibold">(Series)</span>}
+                      </h1>
 
-                  {/* Meta badges row - Netflix style */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    {movie.year && (
-                      <span className="text-lg font-medium text-foreground/90">
-                        {movie.year}
-                      </span>
-                    )}
-                    {certificationLabel && (
-                      <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-foreground/40 text-foreground/80">
-                        {certificationLabel}
-                      </span>
-                    )}
-                    {runtimeLabel && (
-                      <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-foreground/40 text-foreground/80">
-                        {runtimeLabel}
-                      </span>
-                    )}
-                    {movie.language && (
-                      <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-foreground/40 text-foreground/80">
-                        {movie.language}
-                      </span>
-                    )}
-                    {isSeries && (
-                      <span className="px-2.5 py-0.5 text-sm font-semibold rounded bg-primary/20 text-primary border border-primary/30">
-                        SERIES
-                      </span>
-                    )}
-                  </div>
+                      {/* Meta badges row */}
+                      <div className="flex flex-wrap items-center gap-3">
+                        {movie.year && (
+                          <span className="text-lg font-medium text-white/90">
+                            {movie.year}
+                          </span>
+                        )}
+                        {certificationLabel && (
+                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                            {certificationLabel}
+                          </span>
+                        )}
+                        {runtimeLabel && (
+                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                            {runtimeLabel}
+                          </span>
+                        )}
+                        {movie.language && (
+                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80 uppercase">
+                            {movie.language}
+                          </span>
+                        )}
+                        {isSeries && (
+                          <span className="px-2.5 py-0.5 text-sm font-semibold rounded bg-primary/30 text-primary border border-primary/40">
+                            SERIES
+                          </span>
+                        )}
+                      </div>
 
-                  {/* Action buttons row - Netflix style */}
-                  <div className="flex items-center gap-3">
-                    {/* Primary Play button - white/light */}
-                    {!isSeries && movie.download_url && (
-                      <Button
-                        size="lg"
-                        className="gap-2 bg-foreground hover:bg-foreground/90 text-background rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]"
-                        onClick={() => onPlay(movie.download_url!, movie.title)}
-                      >
-                        <Play className="w-5 h-5 fill-current" />
-                        Play
-                      </Button>
-                    )}
-                    {isSeries && series.episodes && series.episodes.length > 0 && (
-                      <Button
-                        size="lg"
-                        className="gap-2 bg-foreground hover:bg-foreground/90 text-background rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]"
-                        onClick={() => {
-                          const firstEp = series.episodes?.[0];
-                          if (firstEp?.download_url) {
-                            onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
-                          }
-                        }}
-                      >
-                        <Play className="w-5 h-5 fill-current" />
-                        Play
-                      </Button>
-                    )}
+                      {/* Action buttons row */}
+                      <div className="flex items-center gap-3 pt-2">
+                        {/* Primary Play button - white */}
+                        {!isSeries && movie.download_url && (
+                          <Button
+                            size="lg"
+                            className="gap-2 bg-white hover:bg-white/90 text-black rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]"
+                            onClick={() => onPlay(movie.download_url!, movie.title)}
+                          >
+                            <Play className="w-5 h-5 fill-current" />
+                            Play
+                          </Button>
+                        )}
+                        {isSeries && series.episodes && series.episodes.length > 0 && (
+                          <Button
+                            size="lg"
+                            className="gap-2 bg-white hover:bg-white/90 text-black rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]"
+                            onClick={() => {
+                              const firstEp = series.episodes?.[0];
+                              if (firstEp?.download_url) {
+                                onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
+                              }
+                            }}
+                          >
+                            <Play className="w-5 h-5 fill-current" />
+                            Play
+                          </Button>
+                        )}
 
-                    {/* Icon buttons - glassy circles */}
-                    <button className="w-11 h-11 rounded-full bg-background/20 backdrop-blur-sm border-2 border-foreground/50 flex items-center justify-center text-foreground hover:bg-background/40 hover:border-foreground transition-all duration-200">
-                      <Plus className="w-5 h-5" />
-                    </button>
-                    <button className="w-11 h-11 rounded-full bg-background/20 backdrop-blur-sm border-2 border-foreground/50 flex items-center justify-center text-foreground hover:bg-background/40 hover:border-foreground transition-all duration-200">
-                      <Maximize2 className="w-4 h-4" />
-                    </button>
-                    {!isSeries && movie.download_url && (
-                      <a
-                        href={movie.download_url}
-                        download
-                        className="w-11 h-11 rounded-full bg-background/20 backdrop-blur-sm border-2 border-foreground/50 flex items-center justify-center text-foreground hover:bg-background/40 hover:border-foreground transition-all duration-200"
-                      >
-                        <Download className="w-4 h-4" />
-                      </a>
-                    )}
+                        {/* Icon buttons - glassy circles */}
+                        <button className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200">
+                          <Plus className="w-5 h-5" />
+                        </button>
+                        <button className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200">
+                          <Maximize2 className="w-4 h-4" />
+                        </button>
+                        {!isSeries && movie.download_url && (
+                          <a
+                            href={movie.download_url}
+                            download
+                            className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Description */}
                   {movie.description && (
-                    <p className="text-foreground/90 leading-relaxed text-lg max-w-3xl">
+                    <p className="text-white/90 leading-relaxed text-lg max-w-4xl">
                       {movie.description}
                     </p>
                   )}
 
-                  {/* Starring - inline Netflix style */}
+                  {/* Starring - inline style */}
                   {cast.length > 0 && (
                     <p className="text-base">
-                      <span className="text-muted-foreground">Starring:</span>{" "}
-                      <span className="text-foreground/90">
+                      <span className="text-white/60 font-medium">Starring:</span>{" "}
+                      <span className="text-white/90">
                         {cast.slice(0, 5).map((member) => member.name).join(", ")}
                       </span>
                     </p>
                   )}
 
-                  {/* Genres - inline Netflix style */}
+                  {/* Genres - inline style */}
                   {movie.genres && movie.genres.length > 0 && (
                     <p className="text-base">
-                      <span className="text-muted-foreground">Genres:</span>{" "}
-                      <span className="text-foreground/90">
+                      <span className="text-white/60 font-medium">Genres:</span>{" "}
+                      <span className="text-white/90">
                         {movie.genres.join(", ")}
                       </span>
                     </p>
@@ -235,17 +228,17 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   {/* File info */}
                   {movie.file_size && (
                     <p className="text-base">
-                      <span className="text-muted-foreground">Size:</span>{" "}
-                      <span className="text-foreground/90">{movie.file_size}</span>
+                      <span className="text-white/60 font-medium">Size:</span>{" "}
+                      <span className="text-white/90">{movie.file_size}</span>
                     </p>
                   )}
 
                   {/* Episodes for series */}
                   {isSeries && series.episodes && series.episodes.length > 0 && (
                     <div className="pt-4 space-y-4">
-                      <h4 className="text-xl font-display font-semibold text-foreground flex items-center gap-3">
+                      <h4 className="text-xl font-display font-semibold text-white flex items-center gap-3">
                         Episodes
-                        <span className="text-sm text-muted-foreground font-normal px-2 py-0.5 rounded-full bg-muted/30">
+                        <span className="text-sm text-white/60 font-normal px-2 py-0.5 rounded-full bg-white/10">
                           {series.episodes.length}
                         </span>
                       </h4>
@@ -264,7 +257,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
                   {/* No episodes message */}
                   {isSeries && (!series.episodes || series.episodes.length === 0) && (
-                    <div className="pt-4 text-center py-8 text-muted-foreground bg-muted/10 rounded-xl border border-border/20 backdrop-blur-sm">
+                    <div className="pt-4 text-center py-8 text-white/60 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
                       No episodes available yet.
                     </div>
                   )}
