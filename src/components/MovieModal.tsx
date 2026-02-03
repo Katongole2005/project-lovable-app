@@ -45,7 +45,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-full max-w-[100vw] md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl animate-in fade-in-0 zoom-in-95 duration-300">
+      <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl animate-in fade-in-0 zoom-in-95 duration-300 [&>button]:hidden">
         <DialogTitle className="sr-only">{movie.title}</DialogTitle>
         <DialogDescription className="sr-only">
           {movie.description || (isSeries ? "Series details and episodes." : "Movie details and playback.")}
@@ -71,8 +71,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
             <div className="absolute inset-0 bg-gradient-to-b from-card/80 via-card/90 to-card" />
           </div>
 
-          <ScrollArea className="h-[100dvh] md:max-h-[90vh]">
-            <div className="relative min-h-[100dvh] md:min-h-0">
+          <ScrollArea className="h-[100dvh] md:max-h-[90vh] w-full">
+            <div className="relative min-h-[100dvh] md:min-h-0 w-full max-w-full">
               {/* Desktop backdrop banner */}
               {backdrop && (
                 <div className="hidden md:block px-8 pt-8 pb-0">
@@ -349,7 +349,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
               </div>
 
               {/* Mobile Layout: Full screen immersive */}
-              <div className="md:hidden flex flex-col min-h-[100dvh] overflow-x-hidden">
+              <div className="md:hidden flex flex-col min-h-[100dvh] w-full max-w-full overflow-x-hidden box-border">
                 {/* Hero image section */}
                 <div className="relative h-[50vh] flex-shrink-0">
                   <img
@@ -376,30 +376,28 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                 </div>
 
                 {/* Content section */}
-                <div className="flex-1 max-w-full px-5 -mt-20 relative z-10 space-y-5 overflow-x-hidden">
+                <div className="flex-1 w-full max-w-full px-4 -mt-20 relative z-10 space-y-5 overflow-x-hidden box-border">
                   {/* Poster + Title */}
-                  <div className="flex w-full max-w-full min-w-0 gap-4 items-start">
-                    <div className="w-28 flex-shrink-0 rounded-xl overflow-hidden shadow-2xl border border-border/30 bg-card/30 backdrop-blur-sm">
+                  <div className="flex w-full max-w-full gap-3 items-start overflow-hidden">
+                    <div className="w-24 flex-shrink-0 rounded-xl overflow-hidden shadow-2xl border border-border/30 bg-card/30 backdrop-blur-sm">
                       <img
                         src={getImageUrl(movie.image_url)}
                         alt={`${movie.title} poster`}
                         className="w-full aspect-[2/3] object-cover"
                       />
                     </div>
-                    <div className="flex-1 min-w-0 space-y-2 pt-6">
-                      <h1 className="font-display text-2xl font-bold text-foreground leading-tight tracking-tight break-words">
+                    <div className="flex-1 min-w-0 max-w-full overflow-hidden space-y-2 pt-4">
+                      <h1 className="font-display text-xl font-bold text-foreground leading-tight tracking-tight break-words [overflow-wrap:anywhere] pr-1">
                         {movie.title}
-                        {isSeries && <span className="text-primary text-lg ml-2 font-semibold">(Series)</span>}
+                        {isSeries && <span className="text-primary text-base ml-1 font-semibold">(Series)</span>}
                       </h1>
 
                       {/* Meta info */}
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                         {movie.year && <span>{movie.year}</span>}
                         {certificationLabel && <span>• {certificationLabel}</span>}
                         {runtimeLabel && <span>• {runtimeLabel}</span>}
-                        {releaseLabel && <span>• {releaseLabel}</span>}
                         {movie.language && <span>• {movie.language}</span>}
-                        {movie.views !== undefined && <span>• {movie.views.toLocaleString()} views</span>}
                       </div>
                     </div>
                   </div>
