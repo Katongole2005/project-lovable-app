@@ -28,23 +28,26 @@ export function HeroCarousel({
     const timer = setTimeout(() => setIsLoaded(true), 100);
     return () => clearTimeout(timer);
   }, []);
+  // FAST TRANSITIONS: ~450ms to match reference video speed
+  const TRANSITION_DURATION = 450;
+  
   const scrollTo = React.useCallback((index: number) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setSelectedIndex(index);
-    setTimeout(() => setIsTransitioning(false), 700);
+    setTimeout(() => setIsTransitioning(false), TRANSITION_DURATION);
   }, [isTransitioning]);
   const scrollPrev = React.useCallback(() => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setSelectedIndex(prev => (prev - 1 + totalSlides) % totalSlides);
-    setTimeout(() => setIsTransitioning(false), 700);
+    setTimeout(() => setIsTransitioning(false), TRANSITION_DURATION);
   }, [totalSlides, isTransitioning]);
   const scrollNext = React.useCallback(() => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setSelectedIndex(prev => (prev + 1) % totalSlides);
-    setTimeout(() => setIsTransitioning(false), 700);
+    setTimeout(() => setIsTransitioning(false), TRANSITION_DURATION);
   }, [totalSlides, isTransitioning]);
 
   // Auto-advance every 3 seconds
@@ -273,8 +276,8 @@ export function HeroCarousel({
             zIndex: styles.zIndex,
             transformStyle: "preserve-3d",
             filter: `brightness(${styles.brightness})`,
-            // CINEMATIC TIMING: 800ms ease-in-out for smooth, slow transitions
-            transition: `transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease-out, filter 0.8s ease-in-out`,
+            // FAST TIMING: ~450ms matching reference video speed with snappy easing
+            transition: `transform 0.45s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.35s ease-out, filter 0.45s ease-out`,
             bottom: '0'
           }} onClick={() => isCenter ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(originalIndex)}>
                 {/* Card */}
