@@ -350,7 +350,28 @@ function MobileMovieLayout({
     : null;
 
   return (
-    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border bg-background">
+    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative">
+      {/* Glassmorphism background with poster colors */}
+      <div className="absolute inset-0 z-0">
+        {/* Base blurred image layer for color extraction */}
+        <img
+          src={getImageUrl(backgroundImage || movie.image_url)}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-60"
+        />
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-background/85 backdrop-blur-xl" />
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/40" />
+        {/* Noise texture for glass effect */}
+        <div 
+          className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+          }}
+        />
+      </div>
+
       {/* Fixed top navigation - stays in place while scrolling */}
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pt-safe bg-gradient-to-b from-black/70 to-transparent">
         <button
@@ -365,7 +386,7 @@ function MobileMovieLayout({
       </div>
 
       {/* Scrollable container */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative z-10">
         {/* Hero section with backdrop */}
         <div className="relative w-full aspect-[16/10] min-h-[220px]">
           {/* Backdrop image */}
@@ -375,8 +396,8 @@ function MobileMovieLayout({
             className="w-full h-full object-cover"
           />
           {/* Gradient overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent" />
 
           {/* Poster + Title overlay at bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-4 items-end">
