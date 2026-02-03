@@ -384,13 +384,16 @@ function MobileMovieLayout({
               <h1 className="text-xl font-display font-bold text-white drop-shadow-lg leading-tight line-clamp-2">
                 {movie.title}
               </h1>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-primary fill-primary" />
-                  <span className="text-sm text-white/80">(0 voted)</span>
-                </div>
-                <span className="text-white/60">•</span>
-                {movie.year && <span className="text-sm text-white font-medium">{movie.year}</span>}
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap text-sm text-white/90">
+                {runtimeLabel && <span>{runtimeLabel}</span>}
+                {runtimeLabel && certificationLabel && <span className="text-white/60">•</span>}
+                {certificationLabel && (
+                  <span className="px-1.5 py-0.5 text-xs font-medium rounded border border-white/40">
+                    {certificationLabel}
+                  </span>
+                )}
+                {(runtimeLabel || certificationLabel) && movie.year && <span className="text-white/60">•</span>}
+                {movie.year && <span className="font-medium">{movie.year}</span>}
               </div>
             </div>
           </div>
