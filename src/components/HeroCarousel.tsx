@@ -166,7 +166,7 @@ export function HeroCarousel({
       };
     }
   };
-  return <div className="rounded-3xl bg-[hsl(265,70%,25%)] p-4 md:p-8 lg:p-10 overflow-hidden relative">
+  return <div className="rounded-3xl bg-[hsl(265,70%,25%)] p-4 md:p-5 lg:p-6 overflow-hidden relative">
       {/* ===== DESKTOP AMBIENT LIGHTING & ATMOSPHERE ===== */}
       {/* Primary spotlight glow behind center card */}
       <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[600px] bg-[radial-gradient(ellipse_at_center,hsl(270,60%,55%)/0.35_0%,transparent_65%)] pointer-events-none" />
@@ -188,7 +188,7 @@ export function HeroCarousel({
     }} />
       
       {/* Header */}
-      <div className="relative z-10 flex justify-between items-center mb-4 md:mb-8 lg:mb-10">
+      <div className="relative z-10 flex justify-between items-center mb-3 md:mb-4 lg:mb-5">
         <h2 className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-white tracking-tight">
           {title}
         </h2>
@@ -233,7 +233,7 @@ export function HeroCarousel({
       </div>
 
       {/* ===== DESKTOP/TABLET 3D STACKED HERO - CINEMATIC ANIMATIONS ===== */}
-      <div className="hidden md:block relative py-4 lg:py-6" style={{
+      <div className="hidden md:block relative py-2 lg:py-3" style={{
       perspective: "1200px",
       perspectiveOrigin: "50% 55%"
     }}>
@@ -257,7 +257,7 @@ export function HeroCarousel({
       }} />
         
         {/* 3D Stage */}
-        <div className="relative flex items-end justify-center min-h-[380px] lg:min-h-[480px] pb-2" style={{
+        <div className="relative flex items-end justify-center min-h-[280px] lg:min-h-[360px] pb-2" style={{
         transformStyle: 'preserve-3d'
       }}>
           {getDesktopCards().map(({
@@ -278,7 +278,7 @@ export function HeroCarousel({
             bottom: '0'
           }} onClick={() => isCenter ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(originalIndex)}>
                 {/* Card */}
-                <div className="relative w-[160px] lg:w-[220px] h-[240px] lg:h-[330px] rounded-xl lg:rounded-2xl overflow-hidden" style={{
+                <div className="relative w-[140px] lg:w-[180px] h-[210px] lg:h-[270px] rounded-xl lg:rounded-2xl overflow-hidden" style={{
               boxShadow: isCenter ? '0 35px 70px -20px rgba(0,0,0,0.7), 0 0 50px -10px rgba(139,92,246,0.4)' : `${position * 10}px 25px 50px -15px rgba(0,0,0,0.55)`,
               transition: 'box-shadow 0.7s ease'
             }}>
@@ -325,17 +325,17 @@ export function HeroCarousel({
       </div>
 
       {/* Movie Info - Enhanced for desktop */}
-      {currentMovie && <div className="relative z-10 mt-4 md:mt-6 text-center" key={currentMovie.mobifliks_id}>
+      {currentMovie && <div className="relative z-10 mt-3 md:mt-4 text-center" key={currentMovie.mobifliks_id}>
           {/* Title and rating with parallax effect */}
-          <div className="flex items-center justify-center gap-3 md:gap-4 mb-3 md:mb-4" style={{
+          <div className="flex items-center justify-center gap-2 md:gap-3 mb-2 md:mb-3" style={{
         transform: isLoaded ? 'translateY(0)' : 'translateY(20px)',
         opacity: isLoaded ? 1 : 0,
         transition: 'all 0.6s ease-out 0.2s'
       }}>
-            <h3 className="text-lg md:text-2xl lg:text-3xl font-display font-bold text-white tracking-tight drop-shadow-lg">
+            <h3 className="text-lg md:text-xl lg:text-2xl font-display font-bold text-white tracking-tight drop-shadow-lg">
               {currentMovie.title}
             </h3>
-            <span className="px-3 md:px-5 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-md text-black shadow-[0_0_30px_rgba(250,204,21,0.5),0_4px_15px_rgba(0,0,0,0.3)] bg-[hsl(50,100%,50%)]" style={{
+            <span className="px-2.5 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded-md text-black shadow-[0_0_30px_rgba(250,204,21,0.5),0_4px_15px_rgba(0,0,0,0.3)] bg-[hsl(50,100%,50%)]" style={{
           animation: 'float 3s ease-in-out infinite',
           transform: 'translateY(-2px)'
         }}>
@@ -349,12 +349,12 @@ export function HeroCarousel({
         </div>}
 
       {/* Dot Indicators - Enhanced */}
-      <div className="relative z-10 flex justify-center gap-2 md:gap-3 mt-4 md:mt-8" style={{
+      <div className="relative z-10 flex justify-center gap-2 md:gap-2.5 mt-3 md:mt-4" style={{
       transform: isLoaded ? 'translateY(0)' : 'translateY(10px)',
       opacity: isLoaded ? 1 : 0,
       transition: 'all 0.6s ease-out 0.4s'
     }}>
-        {movies.slice(0, 8).map((_, index) => <button key={index} onClick={() => scrollTo(index)} className={cn("transition-all duration-500 rounded-full", index === selectedIndex ? "w-6 md:w-10 h-2 md:h-2.5 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "w-2 md:w-2.5 h-2 md:h-2.5 bg-white/30 hover:bg-white/50")} aria-label={`Go to slide ${index + 1}`} />)}
+        {movies.slice(0, 8).map((_, index) => <button key={index} onClick={() => scrollTo(index)} className={cn("transition-all duration-500 rounded-full", index === selectedIndex ? "w-5 md:w-8 h-1.5 md:h-2 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "w-1.5 md:w-2 h-1.5 md:h-2 bg-white/30 hover:bg-white/50")} aria-label={`Go to slide ${index + 1}`} />)}
       </div>
       
       {/* CSS Keyframes for cinematic animations */}
