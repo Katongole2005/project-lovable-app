@@ -98,7 +98,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
           
           <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
 
-          <ScrollArea className="max-h-[90vh] w-full">
+          <ScrollArea className="h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
             <div className="relative w-full max-w-full">
               {/* Close button */}
               <button
