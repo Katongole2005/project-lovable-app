@@ -276,7 +276,7 @@ export function HeroCarousel({
             // CINEMATIC TIMING: 800ms ease-in-out for smooth, slow transitions
             transition: `transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease-out, filter 0.8s ease-in-out`,
             bottom: '0'
-          }} onClick={() => isCenter ? onPlay(movie) : scrollTo(originalIndex)}>
+          }} onClick={() => isCenter ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(originalIndex)}>
                 {/* Card */}
                 <div className="relative w-[160px] lg:w-[220px] h-[240px] lg:h-[330px] rounded-xl lg:rounded-2xl overflow-hidden" style={{
               boxShadow: isCenter ? '0 35px 70px -20px rgba(0,0,0,0.7), 0 0 50px -10px rgba(139,92,246,0.4)' : `${position * 10}px 25px 50px -15px rgba(0,0,0,0.55)`,
