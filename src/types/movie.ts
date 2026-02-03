@@ -29,6 +29,7 @@ export interface Movie {
 export interface Episode {
   mobifliks_id: string;
   episode_number: number;
+  season_number?: number;
   title?: string;
   download_url?: string;
   file_size?: string;

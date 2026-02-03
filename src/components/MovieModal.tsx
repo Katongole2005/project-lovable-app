@@ -307,6 +307,7 @@ function MobileMovieLayout({
 }: MobileMovieLayoutProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [selectedSeason, setSelectedSeason] = React.useState(1);
+  const [isSeasonSelectorOpen, setIsSeasonSelectorOpen] = React.useState(false);
   const maxDescriptionLength = 200;
   const description = movie.description || "";
   const shouldTruncate = description.length > maxDescriptionLength;
@@ -316,6 +317,27 @@ function MobileMovieLayout({
   const numericRating = parseFloat(rating);
   const fullStars = Math.floor(numericRating);
   const hasHalfStar = numericRating % 1 >= 0.5;
+
+  // Group episodes by season
+  const allEpisodes = series.episodes || [];
+  const seasons = React.useMemo(() => {
+    const seasonMap = new Map<number, typeof allEpisodes>();
+    allEpisodes.forEach((ep) => {
+      const seasonNum = ep.season_number || 1;
+      if (!seasonMap.has(seasonNum)) {
+        seasonMap.set(seasonNum, []);
+      }
+      seasonMap.get(seasonNum)!.push(ep);
+    });
+    // If no season info, assume all episodes are season 1
+    if (seasonMap.size === 0 && allEpisodes.length > 0) {
+      seasonMap.set(1, allEpisodes);
+    }
+    return seasonMap;
+  }, [allEpisodes]);
+
+  const availableSeasons = Array.from(seasons.keys()).sort((a, b) => a - b);
+  const currentSeasonEpisodes = seasons.get(selectedSeason) || allEpisodes;
 
   return (
     <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border bg-background">
@@ -407,26 +429,74 @@ function MobileMovieLayout({
           </button>
 
           {/* Episodes section for series */}
-          {isSeries && series.episodes && series.episodes.length > 0 && (
+          {isSeries && allEpisodes.length > 0 && (
             <div className="space-y-4">
-              {/* Season header - styled like reference */}
-              <div className="bg-card/80 rounded-xl p-4 border border-border/30">
+              {/* Season header - tappable dropdown */}
+              <button
+                onClick={() => setIsSeasonSelectorOpen(true)}
+                className="w-full bg-card/80 rounded-xl p-4 border border-border/30 text-left active:bg-card transition-colors"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-base font-semibold text-foreground">Season {selectedSeason}</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      {series.episodes.length} episodes / Released {series.episodes.length}
+                      {currentSeasonEpisodes.length} episodes / Released {currentSeasonEpisodes.length}
                     </p>
                   </div>
-                  <ChevronLeft className="w-5 h-5 text-muted-foreground rotate-[270deg]" />
+                  <ChevronLeft className={cn(
+                    "w-5 h-5 text-muted-foreground transition-transform duration-200",
+                    isSeasonSelectorOpen ? "rotate-90" : "rotate-[270deg]"
+                  )} />
                 </div>
-              </div>
+              </button>
+
+              {/* Season selector dropdown */}
+              {isSeasonSelectorOpen && (
+                <div className="bg-card rounded-xl border border-border/30 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                  {availableSeasons.map((seasonNum) => {
+                    const seasonEps = seasons.get(seasonNum) || [];
+                    const isSelected = seasonNum === selectedSeason;
+                    return (
+                      <button
+                        key={seasonNum}
+                        onClick={() => {
+                          setSelectedSeason(seasonNum);
+                          setIsSeasonSelectorOpen(false);
+                        }}
+                        className={cn(
+                          "w-full p-4 text-left flex items-center justify-between border-b border-border/20 last:border-0 transition-colors",
+                          isSelected ? "bg-primary/10" : "hover:bg-muted/50 active:bg-muted"
+                        )}
+                      >
+                        <div>
+                          <h4 className={cn(
+                            "font-medium",
+                            isSelected ? "text-primary" : "text-foreground"
+                          )}>
+                            Season {seasonNum}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {seasonEps.length} episodes
+                          </p>
+                        </div>
+                        {isSelected && (
+                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                            <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Episode list */}
               <div className="space-y-4">
-                {series.episodes.map((episode) => (
+                {currentSeasonEpisodes.map((episode) => (
                   <MobileEpisodeCard
-                    key={episode.mobifliks_id || episode.episode_number}
+                    key={episode.mobifliks_id || `${selectedSeason}-${episode.episode_number}`}
                     episode={episode}
                     seriesTitle={movie.title}
                     seriesImage={movie.image_url}
