@@ -409,25 +409,28 @@ function MobileMovieLayout({
           {/* Episodes section for series */}
           {isSeries && series.episodes && series.episodes.length > 0 && (
             <div className="space-y-4">
-              {/* Season header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-foreground">Season {selectedSeason}</h3>
-                  <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-[270deg]" />
+              {/* Season header - styled like reference */}
+              <div className="bg-card/80 rounded-xl p-4 border border-border/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">Season {selectedSeason}</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {series.episodes.length} episodes / Released {series.episodes.length}
+                    </p>
+                  </div>
+                  <ChevronLeft className="w-5 h-5 text-muted-foreground rotate-[270deg]" />
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {series.episodes.length} Episodes
-                </span>
               </div>
 
               {/* Episode list */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {series.episodes.map((episode) => (
                   <MobileEpisodeCard
                     key={episode.mobifliks_id || episode.episode_number}
                     episode={episode}
                     seriesTitle={movie.title}
                     seriesImage={movie.image_url}
+                    seasonNumber={selectedSeason}
                     onPlay={onPlay}
                   />
                 ))}
@@ -505,68 +508,78 @@ interface MobileEpisodeCardProps {
   episode: Episode;
   seriesTitle: string;
   seriesImage?: string;
+  seasonNumber?: number;
   onPlay: (url: string, title: string) => void;
 }
 
-function MobileEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: MobileEpisodeCardProps) {
+function MobileEpisodeCard({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay }: MobileEpisodeCardProps) {
   const hasVideo = episode.download_url && 
     (episode.download_url.includes(".mp4") || 
      episode.download_url.includes("downloadmp4.php") ||
      episode.download_url.includes("downloadserie.php"));
 
-  const loremDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+  // Format episode number with leading zero
+  const formattedEpisodeNum = episode.episode_number.toString().padStart(2, '0');
 
   return (
-    <div 
-      className="flex gap-3 group"
-      onClick={() => {
-        if (hasVideo && episode.download_url) {
-          onPlay(episode.download_url, `${seriesTitle} - Episode ${episode.episode_number}`);
-        }
-      }}
-    >
-      {/* Episode thumbnail */}
-      <div className="relative w-28 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-muted">
+    <div className="flex gap-4 items-start">
+      {/* Episode thumbnail with number overlay and centered play button */}
+      <div 
+        className="relative w-36 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-muted cursor-pointer group"
+        onClick={() => {
+          if (hasVideo && episode.download_url) {
+            onPlay(episode.download_url, `${seriesTitle} - Episode ${episode.episode_number}`);
+          }
+        }}
+      >
         <img
           src={getImageUrl(seriesImage)}
           alt={`Episode ${episode.episode_number}`}
           className="w-full h-full object-cover"
         />
-        {/* Play overlay on hover/tap */}
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/40" />
+        
+        {/* Episode number - bottom left */}
+        <span className="absolute bottom-2 left-2 text-2xl font-bold text-white">
+          {formattedEpisodeNum}
+        </span>
+
+        {/* Centered play button */}
         {hasVideo && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-active:opacity-100 transition-opacity">
-            <Play className="w-6 h-6 text-white fill-white" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-black/20 backdrop-blur-sm group-active:scale-95 transition-transform">
+              <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+            </div>
           </div>
         )}
       </div>
 
-      {/* Episode info */}
-      <div className="flex-1 min-w-0 py-0.5">
-        <h4 className="font-medium text-foreground text-sm leading-tight">
-          Episode {episode.episode_number}
+      {/* Episode info and download button */}
+      <div className="flex-1 min-w-0 py-1">
+        <h4 className="font-semibold text-foreground text-sm">
+          Episode #{seasonNumber}.{episode.episode_number}
         </h4>
-        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-          {episode.description || loremDescription}
+        <p className="text-xs text-muted-foreground mt-1">
+          Released N/A
         </p>
-        {episode.file_size && (
-          <span className="text-xs text-muted-foreground/70 mt-1 block">{episode.file_size}</span>
+        
+        {/* Download button */}
+        {hasVideo && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (episode.download_url) {
+                window.open(episode.download_url, "_blank");
+              }
+            }}
+            className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/60 transition-colors text-sm text-foreground"
+          >
+            <Download className="w-4 h-4" />
+            Download
+          </button>
         )}
       </div>
-
-      {/* Download button */}
-      {hasVideo && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (episode.download_url) {
-              window.open(episode.download_url, "_blank");
-            }
-          }}
-          className="self-center p-2 rounded-full hover:bg-muted transition-colors flex-shrink-0"
-        >
-          <Download className="w-5 h-5 text-muted-foreground" />
-        </button>
-      )}
     </div>
   );
 }
