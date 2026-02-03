@@ -376,9 +376,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                 </div>
 
                 {/* Content section */}
-                <div className="flex-1 px-5 -mt-20 relative z-10 space-y-5 overflow-x-hidden">
+                <div className="flex-1 max-w-full px-5 -mt-20 relative z-10 space-y-5 overflow-x-hidden">
                   {/* Poster + Title */}
-                  <div className="flex gap-4 items-start">
+                  <div className="flex w-full max-w-full min-w-0 gap-4 items-start">
                     <div className="w-28 flex-shrink-0 rounded-xl overflow-hidden shadow-2xl border border-border/30 bg-card/30 backdrop-blur-sm">
                       <img
                         src={getImageUrl(movie.image_url)}
@@ -428,16 +428,16 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
                   {/* Description */}
                   {movie.description && (
-                    <p className="text-muted-foreground text-sm leading-relaxed break-words overflow-hidden">
+                    <p className="text-muted-foreground text-sm leading-relaxed max-w-full overflow-hidden break-words [overflow-wrap:anywhere]">
                       {movie.description}
                     </p>
                   )}
 
                   {/* Cast */}
                   {cast.length > 0 && (
-                    <div className="space-y-3 -mx-5">
-                      <h4 className="text-base font-semibold text-foreground px-5">Cast</h4>
-                      <div className="flex gap-4 overflow-x-auto pb-2 px-5 scrollbar-none touch-pan-x">
+                    <div className="space-y-3">
+                      <h4 className="text-base font-semibold text-foreground">Cast</h4>
+                      <div className="flex w-full max-w-full gap-4 overflow-x-auto pb-2 scrollbar-none touch-pan-x">
                         {cast.map((member) => (
                           <div key={member.name} className="flex flex-col items-center gap-2 flex-shrink-0">
                             <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-border/30 shadow-md">
@@ -557,10 +557,10 @@ function EpisodeItem({ episode, seriesTitle, onPlay }: EpisodeItemProps) {
           <span className="text-sm font-bold text-primary">{episode.episode_number}</span>
         </div>
         <div className="min-w-0">
-          <h5 className="font-medium text-foreground text-sm break-words">
+          <h5 className="font-medium text-foreground text-sm break-words [overflow-wrap:anywhere]">
             {episode.title || `Episode ${episode.episode_number}`}
           </h5>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5 break-words">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5 break-words [overflow-wrap:anywhere]">
             {episode.file_size && <span>{episode.file_size}</span>}
             {episode.views && <span>• {episode.views.toLocaleString()} views</span>}
           </div>
