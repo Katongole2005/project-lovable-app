@@ -557,11 +557,18 @@ function MobileEpisodeCard({ episode, seriesTitle, seriesImage, seasonNumber = 1
 
       {/* Episode info and download button */}
       <div className="flex-1 min-w-0 py-1">
-        <h4 className="font-semibold text-foreground text-sm">
-          Episode #{seasonNumber}.{episode.episode_number}
-        </h4>
-        <p className="text-xs text-muted-foreground mt-1">
-          Released N/A
+        <div className="flex items-center gap-2">
+          <h4 className="font-semibold text-foreground text-sm">
+            Episode #{seasonNumber}.{episode.episode_number}
+          </h4>
+          {episode.file_size && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
+              {episode.file_size}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+          {episode.description || episode.title || `Watch episode ${episode.episode_number} of ${seriesTitle}`}
         </p>
         
         {/* Download button */}
