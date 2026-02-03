@@ -349,7 +349,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
               </div>
 
               {/* Mobile Layout: Full screen immersive */}
-              <div className="md:hidden flex flex-col min-h-[100dvh] overflow-hidden">
+              <div className="md:hidden flex flex-col min-h-[100dvh] overflow-x-hidden">
                 {/* Hero image section */}
                 <div className="relative h-[50vh] flex-shrink-0">
                   <img
@@ -428,17 +428,17 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
                   {/* Description */}
                   {movie.description && (
-                    <p className="text-muted-foreground text-sm leading-relaxed break-words">
+                    <p className="text-muted-foreground text-sm leading-relaxed break-words overflow-hidden">
                       {movie.description}
                     </p>
                   )}
 
                   {/* Cast */}
                   {cast.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-base font-semibold text-foreground">Cast</h4>
-                      <div className="flex gap-4 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-none">
-                        {cast.slice(0, 5).map((member) => (
+                    <div className="space-y-3 -mx-5">
+                      <h4 className="text-base font-semibold text-foreground px-5">Cast</h4>
+                      <div className="flex gap-4 overflow-x-auto pb-2 px-5 scrollbar-none touch-pan-x">
+                        {cast.map((member) => (
                           <div key={member.name} className="flex flex-col items-center gap-2 flex-shrink-0">
                             <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-border/30 shadow-md">
                               <img
