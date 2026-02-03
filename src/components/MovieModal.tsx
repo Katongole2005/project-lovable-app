@@ -343,11 +343,11 @@ function MobileMovieLayout({
   const displayDescription = isExpanded ? description : description.slice(0, maxDescriptionLength);
 
   return (
-    <div className="md:hidden flex flex-col min-h-[100dvh] w-full max-w-full overflow-x-hidden box-border bg-card">
-      {/* Hero section with backdrop and centered poster */}
-      <div className="relative flex-shrink-0">
+    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border bg-card">
+      {/* Hero section with backdrop and centered poster - fixed height */}
+      <div className="relative flex-shrink-0 h-[40vh]">
         {/* Backdrop image */}
-        <div className="relative h-[45vh] overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
           <img
             src={getImageUrl(backgroundImage || movie.image_url)}
             alt=""
@@ -372,8 +372,8 @@ function MobileMovieLayout({
         </div>
 
         {/* Centered poster with play button */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-4 z-10">
-          <div className="relative w-40 rounded-xl overflow-hidden shadow-2xl border border-white/10">
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center translate-y-1/3 z-10">
+          <div className="relative w-32 rounded-xl overflow-hidden shadow-2xl border border-white/10">
             <img
               src={getImageUrl(movie.image_url)}
               alt={movie.title}
@@ -391,8 +391,8 @@ function MobileMovieLayout({
                 }}
                 className="absolute inset-0 flex items-center justify-center bg-black/20"
               >
-                <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
-                  <Play className="w-6 h-6 text-primary-foreground fill-current ml-0.5" />
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
+                  <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
                 </div>
               </button>
             )}
@@ -400,104 +400,96 @@ function MobileMovieLayout({
         </div>
       </div>
 
-      {/* Content section */}
-      <div className="flex-1 px-5 pt-4 pb-32 space-y-4">
-        {/* Title */}
-        <h1 className="text-xl font-display font-bold text-foreground text-center">
-          {movie.title}
-        </h1>
+      {/* Scrollable content section */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="px-5 pt-16 pb-32 space-y-4">
+          {/* Title */}
+          <h1 className="text-xl font-display font-bold text-foreground text-center line-clamp-2">
+            {movie.title}
+          </h1>
 
-        {/* Meta row: Genre • Duration */}
-        <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
-          {movie.genres && movie.genres.length > 0 && (
-            <span>{movie.genres.slice(0, 2).join("/")}</span>
-          )}
-          {runtimeLabel && (
-            <>
-              <span className="text-muted-foreground/50">•</span>
-              <span>{runtimeLabel}</span>
-            </>
-          )}
-        </div>
-
-        {/* Star rating */}
-        <div className="flex items-center justify-center gap-1.5">
-          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-          <span className="text-sm font-medium text-foreground">{rating}</span>
-        </div>
-
-        {/* Overview section */}
-        {description && (
-          <div className="space-y-2">
-            <h3 className="text-base font-semibold text-foreground">Overview</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {displayDescription}
-              {shouldTruncate && !isExpanded && "... "}
-              {shouldTruncate && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-primary font-medium ml-1"
-                >
-                  {isExpanded ? "Show Less" : "Read More"}
-                </button>
-              )}
-            </p>
+          {/* Meta row: Genre • Duration */}
+          <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground flex-wrap">
+            {movie.genres && movie.genres.length > 0 && (
+              <span className="truncate max-w-[120px]">{movie.genres.slice(0, 2).join("/")}</span>
+            )}
+            {runtimeLabel && (
+              <>
+                <span className="text-muted-foreground/50">•</span>
+                <span>{runtimeLabel}</span>
+              </>
+            )}
           </div>
-        )}
 
-        {/* Cast section */}
-        {cast.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-base font-semibold text-foreground">Cast</h3>
-            <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
-              <div className="flex gap-4 w-max">
-                {cast.slice(0, 10).map((member) => (
-                  <div key={member.name} className="flex flex-col items-center gap-2 w-16">
-                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-border/30 shadow-md bg-muted">
-                      <img
-                        src={member.profile_url || `https://placehold.co/120x120/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
+          {/* Star rating */}
+          <div className="flex items-center justify-center gap-1.5">
+            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+            <span className="text-sm font-medium text-foreground">{rating}</span>
+          </div>
+
+          {/* Overview section */}
+          {description && (
+            <div className="space-y-2">
+              <h3 className="text-base font-semibold text-foreground">Overview</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed break-words">
+                {displayDescription}
+                {shouldTruncate && !isExpanded && "... "}
+                {shouldTruncate && (
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="text-primary font-medium ml-1"
+                  >
+                    {isExpanded ? "Show Less" : "Read More"}
+                  </button>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Cast section */}
+          {cast.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-foreground">Cast</h3>
+              <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
+                <div className="flex gap-4 w-max">
+                  {cast.slice(0, 10).map((member) => (
+                    <div key={member.name} className="flex flex-col items-center gap-2 w-16 flex-shrink-0">
+                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-border/30 shadow-md bg-muted">
+                        <img
+                          src={member.profile_url || `https://placehold.co/120x120/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground text-center truncate w-full">
+                        {member.name.split(" ")[0]}
+                      </span>
                     </div>
-                    <span className="text-xs text-muted-foreground text-center truncate w-full">
-                      {member.name.split(" ")[0]}
-                    </span>
-                  </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Episodes for series */}
+          {isSeries && series.episodes && series.episodes.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-foreground">
+                Episodes <span className="text-muted-foreground font-normal">({series.episodes.length})</span>
+              </h3>
+              <div className="space-y-2">
+                {series.episodes.map((episode) => (
+                  <MobileEpisodeItem
+                    key={episode.mobifliks_id || episode.episode_number}
+                    episode={episode}
+                    seriesTitle={movie.title}
+                    onPlay={onPlay}
+                  />
                 ))}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Episodes for series */}
-        {isSeries && series.episodes && series.episodes.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-base font-semibold text-foreground">
-              Episodes <span className="text-muted-foreground font-normal">({series.episodes.length})</span>
-            </h3>
-            <div className="space-y-2">
-              {series.episodes.map((episode) => (
-                <MobileEpisodeItem
-                  key={episode.mobifliks_id || episode.episode_number}
-                  episode={episode}
-                  seriesTitle={movie.title}
-                  onPlay={onPlay}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Recommended section placeholder */}
-        {!isSeries && (
-          <div className="space-y-3 pt-2">
-            <h3 className="text-base font-semibold text-foreground">Recommended</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {/* Placeholder for recommended movies - can be implemented later */}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Fixed bottom action buttons */}
