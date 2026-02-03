@@ -5,6 +5,7 @@ import { getImageUrl } from "@/lib/api";
 interface HeroCarouselProps {
   movies: Movie[];
   onPlay: (movie: Movie) => void;
+  onMovieClick?: (movie: Movie) => void;
   title?: string;
   showViewAll?: boolean;
   onViewAll?: () => void;
@@ -12,6 +13,7 @@ interface HeroCarouselProps {
 export function HeroCarousel({
   movies,
   onPlay,
+  onMovieClick,
   title = "Top Movies",
   showViewAll = true,
   onViewAll
@@ -220,7 +222,7 @@ export function HeroCarousel({
             opacity,
             zIndex,
             transformStyle: "preserve-3d"
-          }} onClick={() => isSelected ? onPlay(movie) : scrollTo(index)}>
+          }} onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}>
                 <div className={cn("w-full h-full rounded-xl overflow-hidden shadow-2xl transition-shadow duration-500", isSelected && "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]")}>
                   <img src={getImageUrl(movie.image_url)} alt={movie.title} className="w-full h-full object-cover" loading={index < 3 ? "eager" : "lazy"} />
                   <div className={cn("absolute inset-0 bg-gradient-to-t from-black/40 to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-50")} />

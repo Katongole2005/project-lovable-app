@@ -411,6 +411,7 @@ export default function Index() {
             <HeroCarousel
               movies={trending}
               onPlay={handleHeroPlay}
+              onMovieClick={handleMovieClick}
               title="Top Movies"
               onViewAll={() => handleTabChange("movies")}
             />
