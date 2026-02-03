@@ -17,29 +17,59 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const path = url.searchParams.get("path") || "";
-    const targetUrl = `${API_BASE}${path.startsWith("/") ? path : "/" + path}`;
+    
+    // Build target URL - ensure proper path handling
+    let targetUrl = API_BASE;
+    if (path) {
+      // Remove leading slash if API_BASE already ends with one
+      const cleanPath = path.startsWith("/") ? path : "/" + path;
+      targetUrl = API_BASE.endsWith("/") 
+        ? API_BASE.slice(0, -1) + cleanPath 
+        : API_BASE + cleanPath;
+    }
 
     console.log(`[api-proxy] Proxying request to: ${targetUrl}`);
 
-    const response = await fetch(targetUrl, {
-      method: req.method,
-      headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
-      },
-      body: req.method !== "GET" && req.method !== "HEAD" ? await req.text() : undefined,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-    const data = await response.text();
-    console.log(`[api-proxy] Response status: ${response.status}`);
+    try {
+      const response = await fetch(targetUrl, {
+        method: req.method,
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+          "Accept": "application/json",
+        },
+        body: req.method !== "GET" && req.method !== "HEAD" ? await req.text() : undefined,
+        signal: controller.signal,
+      });
 
-    return new Response(data, {
-      status: response.status,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": response.headers.get("Content-Type") || "application/json",
-      },
-    });
+      clearTimeout(timeoutId);
+
+      const data = await response.text();
+      console.log(`[api-proxy] Response status: ${response.status}, URL: ${targetUrl}`);
+      console.log(`[api-proxy] Response length: ${data.length} chars`);
+
+      return new Response(data, {
+        status: response.status,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": response.headers.get("Content-Type") || "application/json",
+        },
+      });
+    } catch (fetchError: unknown) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError instanceof Error && fetchError.name === "AbortError") {
+        console.error("[api-proxy] Request timed out for:", targetUrl);
+        return new Response(
+          JSON.stringify({ error: "Request timed out", url: targetUrl }),
+          { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw fetchError;
+    }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[api-proxy] Error:", errorMessage);
