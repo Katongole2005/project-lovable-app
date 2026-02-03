@@ -342,6 +342,19 @@ function MobileMovieLayout({
 
   return (
     <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border bg-background">
+      {/* Fixed top navigation - stays in place while scrolling */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pt-safe bg-gradient-to-b from-black/70 to-transparent">
+        <button
+          onClick={onClose}
+          className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-white" />
+        </button>
+        <button className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors">
+          <ExternalLink className="w-5 h-5 text-white" />
+        </button>
+      </div>
+
       {/* Scrollable container */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* Hero section with backdrop */}
@@ -355,19 +368,6 @@ function MobileMovieLayout({
           {/* Gradient overlays */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
-
-          {/* Top navigation */}
-          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-3 pt-safe">
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-white" />
-            </button>
-            <button className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors">
-              <ExternalLink className="w-5 h-5 text-white" />
-            </button>
-          </div>
 
           {/* Poster + Title overlay at bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-4 items-end">
