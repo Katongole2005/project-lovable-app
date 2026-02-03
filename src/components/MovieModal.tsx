@@ -468,19 +468,19 @@ function MobileMovieLayout({
               <List className="w-5 h-5" />
             </Button>
           ) : (
-            <Button
-              size="lg"
-              variant="outline"
-              className="flex-1 gap-2 rounded-lg h-12 text-base font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
+            <button
+              className="flex-1 flex items-center gap-3 rounded-full h-12 bg-black pl-1.5 pr-5 hover:bg-black/90 transition-colors"
               onClick={() => {
                 if (movie.download_url) {
                   window.open(movie.download_url, "_blank");
                 }
               }}
             >
-              Download
-              <Download className="w-5 h-5" />
-            </Button>
+              <div className="w-9 h-9 rounded-full bg-[#c8f547] flex items-center justify-center flex-shrink-0">
+                <Download className="w-5 h-5 text-black" />
+              </div>
+              <span className="text-white text-base font-medium">Download</span>
+            </button>
           )}
         </div>
 
