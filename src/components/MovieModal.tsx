@@ -1,7 +1,7 @@
 import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Movie, Series, Episode, CastMember } from "@/types/movie";
 import { getImageUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -424,33 +424,38 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                     </div>
                   )}
 
-                  {/* Description */}
+                  {/* Description - 16px horizontal padding */}
                   {movie.description && (
-                    <p className="text-muted-foreground text-sm leading-relaxed pr-2 break-words [overflow-wrap:anywhere]">
-                      {movie.description}
-                    </p>
+                    <div className="px-4 overflow-hidden">
+                      <p className="text-muted-foreground text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+                        {movie.description}
+                      </p>
+                    </div>
                   )}
 
-                  {/* Cast - Horizontal scrollable */}
+                  {/* Cast - Horizontal ScrollView, no static overflow */}
                   {cast.length > 0 && (
-                    <div className="space-y-3 -mx-4">
+                    <div className="space-y-3 overflow-hidden">
                       <h4 className="text-base font-semibold text-foreground px-4">Cast</h4>
-                      <div className="flex gap-4 overflow-x-auto pb-2 px-4 scrollbar-none touch-pan-x snap-x snap-mandatory">
-                        {cast.map((member) => (
-                          <div key={member.name} className="flex flex-col items-center gap-2 flex-shrink-0 snap-start">
-                            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-border/30 shadow-md">
-                              <img
-                                src={member.profile_url || fallbackCastAvatar}
-                                alt={member.name}
-                                className="w-full h-full object-cover"
-                              />
+                      <ScrollArea className="w-full">
+                        <div className="flex gap-4 px-4 pb-2">
+                          {cast.map((member) => (
+                            <div key={member.name} className="flex flex-col items-center gap-2 flex-shrink-0">
+                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-border/30 shadow-md">
+                                <img
+                                  src={member.profile_url || fallbackCastAvatar}
+                                  alt={member.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground text-center max-w-[64px] truncate">
+                                {member.name}
+                              </span>
                             </div>
-                            <span className="text-xs text-muted-foreground text-center max-w-[64px] truncate">
-                              {member.name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                        <ScrollBar orientation="horizontal" className="h-1.5" />
+                      </ScrollArea>
                     </div>
                   )}
 
