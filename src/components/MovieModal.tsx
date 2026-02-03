@@ -426,18 +426,18 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
                   {/* Description */}
                   {movie.description && (
-                    <p className="text-muted-foreground text-sm leading-relaxed max-w-full overflow-hidden break-words [overflow-wrap:anywhere]">
+                    <p className="text-muted-foreground text-sm leading-relaxed pr-2 break-words [overflow-wrap:anywhere]">
                       {movie.description}
                     </p>
                   )}
 
-                  {/* Cast */}
+                  {/* Cast - Horizontal scrollable */}
                   {cast.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-base font-semibold text-foreground">Cast</h4>
-                      <div className="flex w-full max-w-full gap-4 overflow-x-auto pb-2 scrollbar-none touch-pan-x">
+                    <div className="space-y-3 -mx-4">
+                      <h4 className="text-base font-semibold text-foreground px-4">Cast</h4>
+                      <div className="flex gap-4 overflow-x-auto pb-2 px-4 scrollbar-none touch-pan-x snap-x snap-mandatory">
                         {cast.map((member) => (
-                          <div key={member.name} className="flex flex-col items-center gap-2 flex-shrink-0">
+                          <div key={member.name} className="flex flex-col items-center gap-2 flex-shrink-0 snap-start">
                             <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-border/30 shadow-md">
                               <img
                                 src={member.profile_url || fallbackCastAvatar}
