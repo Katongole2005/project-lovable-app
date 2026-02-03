@@ -308,15 +308,12 @@ function MobileMovieLayout({
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [selectedSeason, setSelectedSeason] = React.useState(1);
   const [isSeasonSelectorOpen, setIsSeasonSelectorOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
+  
   const maxDescriptionLength = 200;
   const description = movie.description || "";
   const shouldTruncate = description.length > maxDescriptionLength;
   const displayDescription = isExpanded ? description : description.slice(0, maxDescriptionLength);
-
-  // Calculate number of stars to display (out of 5)
-  const numericRating = parseFloat(rating);
-  const fullStars = Math.floor(numericRating);
-  const hasHalfStar = numericRating % 1 >= 0.5;
 
   // Group episodes by season
   const allEpisodes = series.episodes || [];
@@ -329,7 +326,6 @@ function MobileMovieLayout({
       }
       seasonMap.get(seasonNum)!.push(ep);
     });
-    // If no season info, assume all episodes are season 1
     if (seasonMap.size === 0 && allEpisodes.length > 0) {
       seasonMap.set(1, allEpisodes);
     }
@@ -339,21 +335,26 @@ function MobileMovieLayout({
   const availableSeasons = Array.from(seasons.keys()).sort((a, b) => a - b);
   const currentSeasonEpisodes = seasons.get(selectedSeason) || allEpisodes;
 
+  // Format release date nicely
+  const formattedReleaseDate = movie.release_date 
+    ? new Date(movie.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    : null;
+
   return (
     <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border bg-background">
       {/* Scrollable container */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* Hero section with backdrop */}
-        <div className="relative w-full aspect-video min-h-[200px]">
+        <div className="relative w-full aspect-[16/10] min-h-[220px]">
           {/* Backdrop image */}
           <img
             src={getImageUrl(backgroundImage || movie.image_url)}
             alt={movie.title}
             className="w-full h-full object-cover"
           />
-          {/* Gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent" />
+          {/* Gradient overlays */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
 
           {/* Top navigation */}
           <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-3 pt-safe">
@@ -364,211 +365,290 @@ function MobileMovieLayout({
               <ChevronLeft className="w-5 h-5 text-white" />
             </button>
             <button className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors">
-              <Heart className="w-5 h-5 text-white" />
+              <ExternalLink className="w-5 h-5 text-white" />
             </button>
           </div>
 
-          {/* Title overlaid on backdrop */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 pb-6">
-            <h1 className="text-2xl font-display font-bold text-white drop-shadow-lg leading-tight">
-              {movie.title}
-            </h1>
-            {/* Year and type */}
-            <div className="flex items-center gap-2 mt-1.5 text-sm text-white/80">
-              {movie.year && <span>{movie.year}</span>}
-              {isSeries && (
-                <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-primary/80 text-primary-foreground">
-                  SERIES
-                </span>
-              )}
+          {/* Poster + Title overlay at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-4 items-end">
+            {/* Small poster */}
+            <div className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden border-2 border-background shadow-xl">
+              <img
+                src={getImageUrl(movie.image_url)}
+                alt={movie.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {/* Title and meta */}
+            <div className="flex-1 min-w-0 pb-1">
+              <h1 className="text-xl font-display font-bold text-white drop-shadow-lg leading-tight line-clamp-2">
+                {movie.title}
+              </h1>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-primary fill-primary" />
+                  <span className="text-sm text-white/80">(0 voted)</span>
+                </div>
+                <span className="text-white/60">•</span>
+                {movie.year && <span className="text-sm text-white font-medium">{movie.year}</span>}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Content section */}
-        <div className="px-4 py-4 space-y-5 pb-32">
-          {/* Star rating */}
-          <div className="flex items-center gap-1">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
+        {/* Action buttons */}
+        <div className="px-4 py-4 flex gap-3">
+          <Button
+            size="lg"
+            className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg h-12 text-base font-semibold"
+            onClick={() => {
+              if (isSeries && series.episodes && series.episodes.length > 0) {
+                const firstEp = series.episodes[0];
+                if (firstEp?.download_url) {
+                  onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
+                }
+              } else if (movie.download_url) {
+                onPlay(movie.download_url, movie.title);
+              }
+            }}
+          >
+            Watch
+            <Play className="w-5 h-5 fill-current" />
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="flex-1 gap-2 rounded-lg h-12 text-base font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
+            onClick={() => {
+              if (movie.download_url) {
+                window.open(movie.download_url, "_blank");
+              }
+            }}
+          >
+            Download
+            <Download className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Tabs */}
+        <div className="px-4 border-b border-border/30">
+          <div className="flex gap-6">
+            {(["overview", "casts", "related"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "w-5 h-5",
-                  i < fullStars
-                    ? "text-primary fill-primary"
-                    : i === fullStars && hasHalfStar
-                    ? "text-primary fill-primary/50"
-                    : "text-muted-foreground/40"
+                  "pb-3 text-base font-medium capitalize transition-colors relative",
+                  activeTab === tab 
+                    ? "text-foreground" 
+                    : "text-muted-foreground"
                 )}
-              />
+              >
+                {tab === "casts" ? "Casts" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {activeTab === tab && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
+                )}
+              </button>
             ))}
           </div>
+        </div>
 
-          {/* Description */}
-          {description && (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {displayDescription}
-              {shouldTruncate && !isExpanded && "... "}
-              {shouldTruncate && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-primary font-medium ml-1"
-                >
-                  {isExpanded ? "less" : "more"}
-                </button>
+        {/* Tab content */}
+        <div className="px-4 py-5 space-y-5 pb-8">
+          {/* Overview Tab */}
+          {activeTab === "overview" && (
+            <>
+              {/* Description */}
+              {description && (
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {displayDescription}
+                  {shouldTruncate && !isExpanded && "... "}
+                  {shouldTruncate && (
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="text-primary font-medium ml-1"
+                    >
+                      {isExpanded ? "less" : "more"}
+                    </button>
+                  )}
+                </p>
               )}
-            </p>
-          )}
 
-          {/* Add to list button */}
-          <button className="flex items-center gap-2 text-sm text-foreground">
-            <div className="w-8 h-8 rounded-full border-2 border-foreground/60 flex items-center justify-center">
-              <Plus className="w-4 h-4" />
-            </div>
-            <span className="font-medium">Add to List</span>
-          </button>
+              {/* Genre section */}
+              {movie.genres && movie.genres.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1.5">Genre</h4>
+                  <p className="text-sm text-muted-foreground">{movie.genres.join(", ")}</p>
+                </div>
+              )}
 
-          {/* Episodes section for series */}
-          {isSeries && allEpisodes.length > 0 && (
-            <div className="space-y-4">
-              {/* Season header - tappable dropdown */}
-              <button
-                onClick={() => setIsSeasonSelectorOpen(true)}
-                className="w-full bg-card/80 rounded-xl p-4 border border-border/30 text-left active:bg-card transition-colors"
-              >
-                <div className="flex items-center justify-between">
+              {/* Metadata row: Runtime, Certification, Release Date */}
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {runtimeLabel && (
                   <div>
-                    <h3 className="text-base font-semibold text-foreground">Season {selectedSeason}</h3>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {currentSeasonEpisodes.length} episodes / Released {currentSeasonEpisodes.length}
-                    </p>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">Duration</h4>
+                    <p className="text-sm text-muted-foreground">{runtimeLabel}</p>
                   </div>
-                  <ChevronLeft className={cn(
-                    "w-5 h-5 text-muted-foreground transition-transform duration-200",
-                    isSeasonSelectorOpen ? "rotate-90" : "rotate-[270deg]"
-                  )} />
-                </div>
-              </button>
+                )}
+                {certificationLabel && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">Rating</h4>
+                    <p className="text-sm text-muted-foreground">{certificationLabel}</p>
+                  </div>
+                )}
+                {formattedReleaseDate && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-0.5">Released</h4>
+                    <p className="text-sm text-muted-foreground">{formattedReleaseDate}</p>
+                  </div>
+                )}
+              </div>
 
-              {/* Season selector dropdown */}
-              {isSeasonSelectorOpen && (
-                <div className="bg-card rounded-xl border border-border/30 overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                  {availableSeasons.map((seasonNum) => {
-                    const seasonEps = seasons.get(seasonNum) || [];
-                    const isSelected = seasonNum === selectedSeason;
-                    return (
-                      <button
-                        key={seasonNum}
-                        onClick={() => {
-                          setSelectedSeason(seasonNum);
-                          setIsSeasonSelectorOpen(false);
-                        }}
-                        className={cn(
-                          "w-full p-4 text-left flex items-center justify-between border-b border-border/20 last:border-0 transition-colors",
-                          isSelected ? "bg-primary/10" : "hover:bg-muted/50 active:bg-muted"
-                        )}
-                      >
-                        <div>
-                          <h4 className={cn(
-                            "font-medium",
-                            isSelected ? "text-primary" : "text-foreground"
-                          )}>
-                            Season {seasonNum}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {seasonEps.length} episodes
-                          </p>
-                        </div>
-                        {isSelected && (
-                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                            <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+              {/* Casts preview */}
+              {cast.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1.5">Casts</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {cast.slice(0, 4).map((member) => member.name).join(", ")}
+                  </p>
                 </div>
               )}
 
-              {/* Episode list */}
-              <div className="space-y-4">
-                {currentSeasonEpisodes.map((episode) => (
-                  <MobileEpisodeCard
-                    key={episode.mobifliks_id || `${selectedSeason}-${episode.episode_number}`}
-                    episode={episode}
-                    seriesTitle={movie.title}
-                    seriesImage={movie.image_url}
-                    seasonNumber={selectedSeason}
-                    onPlay={onPlay}
-                  />
-                ))}
-              </div>
-            </div>
+              {/* Production / VJ info */}
+              {movie.vj_name && (
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1.5">Production</h4>
+                  <p className="text-sm text-muted-foreground">{movie.vj_name}</p>
+                </div>
+              )}
+
+              {/* File size */}
+              {movie.file_size && (
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1.5">Size</h4>
+                  <p className="text-sm text-muted-foreground">{movie.file_size}</p>
+                </div>
+              )}
+
+              {/* Episodes section for series */}
+              {isSeries && allEpisodes.length > 0 && (
+                <div className="space-y-4 pt-2">
+                  {/* Season header - tappable dropdown */}
+                  <button
+                    onClick={() => setIsSeasonSelectorOpen(true)}
+                    className="w-full bg-card/80 rounded-xl p-4 border border-border/30 text-left active:bg-card transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-semibold text-foreground">Season {selectedSeason}</h3>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {currentSeasonEpisodes.length} episodes
+                        </p>
+                      </div>
+                      <ChevronLeft className={cn(
+                        "w-5 h-5 text-muted-foreground transition-transform duration-200",
+                        isSeasonSelectorOpen ? "rotate-90" : "rotate-[270deg]"
+                      )} />
+                    </div>
+                  </button>
+
+                  {/* Season selector dropdown */}
+                  {isSeasonSelectorOpen && (
+                    <div className="bg-card rounded-xl border border-border/30 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                      {availableSeasons.map((seasonNum) => {
+                        const seasonEps = seasons.get(seasonNum) || [];
+                        const isSelected = seasonNum === selectedSeason;
+                        return (
+                          <button
+                            key={seasonNum}
+                            onClick={() => {
+                              setSelectedSeason(seasonNum);
+                              setIsSeasonSelectorOpen(false);
+                            }}
+                            className={cn(
+                              "w-full p-4 text-left flex items-center justify-between border-b border-border/20 last:border-0 transition-colors",
+                              isSelected ? "bg-primary/10" : "hover:bg-muted/50 active:bg-muted"
+                            )}
+                          >
+                            <div>
+                              <h4 className={cn(
+                                "font-medium",
+                                isSelected ? "text-primary" : "text-foreground"
+                              )}>
+                                Season {seasonNum}
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {seasonEps.length} episodes
+                              </p>
+                            </div>
+                            {isSelected && (
+                              <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Episode list */}
+                  <div className="space-y-4">
+                    {currentSeasonEpisodes.map((episode) => (
+                      <MobileEpisodeCard
+                        key={episode.mobifliks_id || `${selectedSeason}-${episode.episode_number}`}
+                        episode={episode}
+                        seriesTitle={movie.title}
+                        seriesImage={movie.image_url}
+                        seasonNumber={selectedSeason}
+                        onPlay={onPlay}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {/* For movies, show cast and additional info */}
-          {!isSeries && cast.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-base font-semibold text-foreground">Cast</h3>
-              <div className="overflow-x-auto scrollbar-none -mx-4 px-4">
-                <div className="flex gap-4 w-max">
-                  {cast.slice(0, 10).map((member) => (
-                    <div key={member.name} className="flex flex-col items-center gap-2 w-16 flex-shrink-0">
-                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-border/30 shadow-md bg-muted">
+          {/* Casts Tab */}
+          {activeTab === "casts" && (
+            <div className="space-y-4">
+              {cast.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {cast.map((member) => (
+                    <div key={member.name} className="flex items-center gap-3 p-3 rounded-xl bg-card/50 border border-border/20">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border border-border/30 bg-muted flex-shrink-0">
                         <img
-                          src={member.profile_url || `https://placehold.co/120x120/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
+                          src={member.profile_url || `https://placehold.co/96x96/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
                           alt={member.name}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <span className="text-xs text-muted-foreground text-center truncate w-full">
-                        {member.name.split(" ")[0]}
-                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{member.name}</p>
+                        {member.character && (
+                          <p className="text-xs text-muted-foreground truncate">{member.character}</p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No cast information available.</p>
+              )}
             </div>
           )}
 
-          {/* File size info for movies */}
-          {!isSeries && movie.file_size && (
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Size:</span> {movie.file_size}
-            </p>
+          {/* Related Tab */}
+          {activeTab === "related" && (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">No related content available.</p>
+            </div>
           )}
         </div>
       </div>
-
-      {/* Fixed bottom action buttons for movies */}
-      {!isSeries && movie.download_url && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-background via-background/95 to-transparent pt-8 z-30">
-          <div className="flex gap-3">
-            <Button
-              size="lg"
-              className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 text-base font-semibold shadow-lg shadow-primary/25"
-              onClick={() => onPlay(movie.download_url!, movie.title)}
-            >
-              <Play className="w-5 h-5 fill-current" />
-              Watch Now
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="gap-2 rounded-xl h-14 bg-muted/50 border-border/40 hover:bg-muted/70 px-5"
-              onClick={() => {
-                if (movie.download_url) {
-                  window.open(movie.download_url, "_blank");
-                }
-              }}
-            >
-              <Download className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
