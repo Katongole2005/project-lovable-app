@@ -1,4 +1,5 @@
-import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2 } from "lucide-react";
+import React from "react";
+import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -288,188 +289,19 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                 </div>
               </div>
 
-              {/* Mobile Layout: Full screen immersive */}
-              <div className="md:hidden flex flex-col min-h-[100dvh] w-full max-w-full overflow-x-hidden box-border">
-                {/* Hero image section */}
-                <div className="relative h-[50vh] flex-shrink-0">
-                  <img
-                    src={getImageUrl(backgroundImage || undefined)}
-                    alt={movie.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent pointer-events-none" />
-                  
-                  {/* Top buttons */}
-                  <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 pt-safe pointer-events-auto">
-                    <button
-                      onClick={onClose}
-                      className="p-2.5 rounded-full bg-card/60 backdrop-blur-sm hover:bg-card/80 transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5 text-foreground" />
-                    </button>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/60 backdrop-blur-sm">
-                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm font-semibold text-foreground">{rating}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content section - consistent px-5 gutter for safe area */}
-                <div className="flex-1 w-full max-w-full -mt-20 relative z-10 space-y-5 overflow-hidden">
-                  {/* Poster + Title */}
-                  <div className="flex w-full gap-3 items-start px-5">
-                    <div className="w-24 flex-none rounded-xl overflow-hidden shadow-2xl border border-border/30 bg-card/30 backdrop-blur-sm">
-                      <img
-                        src={getImageUrl(movie.image_url)}
-                        alt={`${movie.title} poster`}
-                        className="w-full aspect-[2/3] object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-2 pt-4">
-                      <h1 className="font-display text-xl font-bold text-foreground leading-tight tracking-tight break-words [overflow-wrap:anywhere]">
-                        {movie.title}
-                        {isSeries && <span className="text-primary text-base ml-1 font-semibold">(Series)</span>}
-                      </h1>
-
-                      {/* Meta info */}
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                        {movie.year && <span>{movie.year}</span>}
-                        {certificationLabel && <span>• {certificationLabel}</span>}
-                        {runtimeLabel && <span>• {runtimeLabel}</span>}
-                        {movie.language && <span>• {movie.language}</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Genres */}
-                  {movie.genres && movie.genres.length > 0 && (
-                    <div className="flex flex-wrap gap-2 px-5">
-                      {movie.genres.map((genre) => (
-                        <span
-                          key={genre}
-                          className="px-3 py-1.5 text-xs font-medium rounded-full bg-muted/40 text-foreground/80 border border-border/30"
-                        >
-                          {genre}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* File size */}
-                  {movie.file_size && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground px-5">
-                      <Tag className="w-4 h-4" />
-                      <span>{movie.file_size}</span>
-                    </div>
-                  )}
-
-                  {/* Description */}
-                  {movie.description && (
-                    <p className="text-muted-foreground text-sm leading-relaxed px-5 break-words [overflow-wrap:anywhere]">
-                      {movie.description}
-                    </p>
-                  )}
-
-                  {/* Cast - Horizontal scroll with aligned gutters */}
-                  {cast.length > 0 && (
-                    <div className="space-y-3 overflow-hidden">
-                      <h4 className="text-base font-semibold text-foreground px-5">Cast</h4>
-                      <div className="overflow-x-auto scrollbar-none touch-pan-x">
-                        <div className="flex gap-4 px-5 pb-2 w-max">
-                          {cast.map((member) => (
-                            <div key={member.name} className="flex flex-col items-center gap-2 flex-none w-16">
-                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-border/30 shadow-md">
-                                <img
-                                  src={member.profile_url || fallbackCastAvatar}
-                                  alt={member.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <span className="text-xs text-muted-foreground text-center w-full truncate">
-                                {member.name}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Episodes for series (mobile) */}
-                  {isSeries && series.episodes && series.episodes.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-base font-semibold text-foreground flex items-center gap-2">
-                        <span className="text-primary">Episodes</span>
-                        <span className="text-sm text-muted-foreground font-normal">({series.episodes.length})</span>
-                      </h4>
-                      <div className="space-y-2">
-                        {series.episodes.map((episode) => (
-                          <EpisodeItem
-                            key={episode.mobifliks_id || episode.episode_number}
-                            episode={episode}
-                            seriesTitle={movie.title}
-                            onPlay={onPlay}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Spacer for bottom buttons */}
-                  <div className="h-32" />
-                </div>
-
-                {/* Fixed bottom action buttons */}
-                {!isSeries && movie.download_url && (
-                  <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-card via-card/95 to-transparent pt-8 z-30">
-                    <div className="flex gap-3">
-                      <Button
-                        size="lg"
-                        className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 text-base font-semibold shadow-lg shadow-primary/25"
-                        onClick={() => handlePlay(movie.download_url!, movie.title)}
-                      >
-                        <Play className="w-5 h-5 fill-current" />
-                        Watch Now
-                      </Button>
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="gap-2 rounded-xl h-14 bg-muted/50 border-border/40 hover:bg-muted/70 px-5"
-                        onClick={() => {
-                          if (movie.download_url) {
-                            window.open(movie.download_url, "_blank");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center gap-2">
-                          <Download className="w-5 h-5" />
-                          Download
-                        </span>
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Series mobile bottom actions */}
-                {isSeries && series.episodes && series.episodes.length > 0 && (
-                  <div className="sticky bottom-0 left-0 right-0 p-4 pb-safe bg-gradient-to-t from-card via-card to-transparent pt-8 z-20">
-                    <Button
-                      size="lg"
-                      className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 text-base font-semibold shadow-lg shadow-primary/25"
-                      onClick={() => {
-                        const firstEp = series.episodes?.[0];
-                        if (firstEp?.download_url) {
-                          handlePlay(firstEp.download_url, `${movie.title} - Episode 1`);
-                        }
-                      }}
-                    >
-                      <Play className="w-5 h-5 fill-current" />
-                      Start Watching
-                    </Button>
-                  </div>
-                )}
-              </div>
+              {/* Mobile Layout: Clean poster-focused design matching reference */}
+              <MobileMovieLayout
+                movie={movie}
+                isSeries={isSeries}
+                series={series}
+                cast={cast}
+                rating={rating}
+                runtimeLabel={runtimeLabel}
+                certificationLabel={certificationLabel}
+                backgroundImage={backgroundImage}
+                onClose={onClose}
+                onPlay={handlePlay}
+              />
             </div>
           </ScrollArea>
         </div>
@@ -478,14 +310,254 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   );
 }
 
-interface EpisodeItemProps {
+// Mobile layout component matching reference design
+interface MobileMovieLayoutProps {
+  movie: Movie | Series;
+  isSeries: boolean;
+  series: Series;
+  cast: CastMember[];
+  rating: string;
+  runtimeLabel: string | null;
+  certificationLabel: string | null;
+  backgroundImage: string | null;
+  onClose: () => void;
+  onPlay: (url: string, title: string) => void;
+}
+
+function MobileMovieLayout({
+  movie,
+  isSeries,
+  series,
+  cast,
+  rating,
+  runtimeLabel,
+  certificationLabel,
+  backgroundImage,
+  onClose,
+  onPlay,
+}: MobileMovieLayoutProps) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const maxDescriptionLength = 150;
+  const description = movie.description || "";
+  const shouldTruncate = description.length > maxDescriptionLength;
+  const displayDescription = isExpanded ? description : description.slice(0, maxDescriptionLength);
+
+  return (
+    <div className="md:hidden flex flex-col min-h-[100dvh] w-full max-w-full overflow-x-hidden box-border bg-card">
+      {/* Hero section with backdrop and centered poster */}
+      <div className="relative flex-shrink-0">
+        {/* Backdrop image */}
+        <div className="relative h-[45vh] overflow-hidden">
+          <img
+            src={getImageUrl(backgroundImage || movie.image_url)}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-transparent" />
+        </div>
+
+        {/* Top navigation bar */}
+        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 pt-safe">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full bg-black/30 backdrop-blur-sm"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+          <button className="p-2 rounded-full bg-black/30 backdrop-blur-sm">
+            <Heart className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {/* Centered poster with play button */}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-4 z-10">
+          <div className="relative w-40 rounded-xl overflow-hidden shadow-2xl border border-white/10">
+            <img
+              src={getImageUrl(movie.image_url)}
+              alt={movie.title}
+              className="w-full aspect-[2/3] object-cover"
+            />
+            {/* Play button overlay */}
+            {((!isSeries && movie.download_url) || (isSeries && series.episodes && series.episodes.length > 0)) && (
+              <button
+                onClick={() => {
+                  if (isSeries && series.episodes?.[0]?.download_url) {
+                    onPlay(series.episodes[0].download_url, `${movie.title} - Episode 1`);
+                  } else if (movie.download_url) {
+                    onPlay(movie.download_url, movie.title);
+                  }
+                }}
+                className="absolute inset-0 flex items-center justify-center bg-black/20"
+              >
+                <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
+                  <Play className="w-6 h-6 text-primary-foreground fill-current ml-0.5" />
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Content section */}
+      <div className="flex-1 px-5 pt-4 pb-32 space-y-4">
+        {/* Title */}
+        <h1 className="text-xl font-display font-bold text-foreground text-center">
+          {movie.title}
+        </h1>
+
+        {/* Meta row: Genre • Duration */}
+        <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+          {movie.genres && movie.genres.length > 0 && (
+            <span>{movie.genres.slice(0, 2).join("/")}</span>
+          )}
+          {runtimeLabel && (
+            <>
+              <span className="text-muted-foreground/50">•</span>
+              <span>{runtimeLabel}</span>
+            </>
+          )}
+        </div>
+
+        {/* Star rating */}
+        <div className="flex items-center justify-center gap-1.5">
+          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+          <span className="text-sm font-medium text-foreground">{rating}</span>
+        </div>
+
+        {/* Overview section */}
+        {description && (
+          <div className="space-y-2">
+            <h3 className="text-base font-semibold text-foreground">Overview</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {displayDescription}
+              {shouldTruncate && !isExpanded && "... "}
+              {shouldTruncate && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-primary font-medium ml-1"
+                >
+                  {isExpanded ? "Show Less" : "Read More"}
+                </button>
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* Cast section */}
+        {cast.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-base font-semibold text-foreground">Cast</h3>
+            <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
+              <div className="flex gap-4 w-max">
+                {cast.slice(0, 10).map((member) => (
+                  <div key={member.name} className="flex flex-col items-center gap-2 w-16">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-border/30 shadow-md bg-muted">
+                      <img
+                        src={member.profile_url || `https://placehold.co/120x120/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground text-center truncate w-full">
+                      {member.name.split(" ")[0]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Episodes for series */}
+        {isSeries && series.episodes && series.episodes.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-base font-semibold text-foreground">
+              Episodes <span className="text-muted-foreground font-normal">({series.episodes.length})</span>
+            </h3>
+            <div className="space-y-2">
+              {series.episodes.map((episode) => (
+                <MobileEpisodeItem
+                  key={episode.mobifliks_id || episode.episode_number}
+                  episode={episode}
+                  seriesTitle={movie.title}
+                  onPlay={onPlay}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recommended section placeholder */}
+        {!isSeries && (
+          <div className="space-y-3 pt-2">
+            <h3 className="text-base font-semibold text-foreground">Recommended</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {/* Placeholder for recommended movies - can be implemented later */}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Fixed bottom action buttons */}
+      {!isSeries && movie.download_url && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-card via-card/95 to-transparent pt-8 z-30">
+          <div className="flex gap-3">
+            <Button
+              size="lg"
+              className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 text-base font-semibold shadow-lg shadow-primary/25"
+              onClick={() => onPlay(movie.download_url!, movie.title)}
+            >
+              <Play className="w-5 h-5 fill-current" />
+              Watch Now
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2 rounded-xl h-14 bg-muted/50 border-border/40 hover:bg-muted/70 px-5"
+              onClick={() => {
+                if (movie.download_url) {
+                  window.open(movie.download_url, "_blank");
+                }
+              }}
+            >
+              <Download className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Series mobile bottom actions */}
+      {isSeries && series.episodes && series.episodes.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-card via-card/95 to-transparent pt-8 z-30">
+          <Button
+            size="lg"
+            className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 text-base font-semibold shadow-lg shadow-primary/25"
+            onClick={() => {
+              const firstEp = series.episodes?.[0];
+              if (firstEp?.download_url) {
+                onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
+              }
+            }}
+          >
+            <Play className="w-5 h-5 fill-current" />
+            Start Watching
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface MobileEpisodeItemProps {
   episode: Episode;
   seriesTitle: string;
   onPlay: (url: string, title: string) => void;
 }
 
 // Mobile episode item - compact format
-function EpisodeItem({ episode, seriesTitle, onPlay }: EpisodeItemProps) {
+function MobileEpisodeItem({ episode, seriesTitle, onPlay }: MobileEpisodeItemProps) {
   const hasVideo = episode.download_url && 
     (episode.download_url.includes(".mp4") || 
      episode.download_url.includes("downloadmp4.php") ||
@@ -501,7 +573,7 @@ function EpisodeItem({ episode, seriesTitle, onPlay }: EpisodeItemProps) {
           <h5 className="font-medium text-foreground text-sm break-words [overflow-wrap:anywhere]">
             {episode.title || `Episode ${episode.episode_number}`}
           </h5>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5 break-words [overflow-wrap:anywhere]">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5">
             {episode.file_size && <span>{episode.file_size}</span>}
             {episode.views && <span>• {episode.views.toLocaleString()} views</span>}
           </div>
