@@ -50,26 +50,43 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
         <DialogDescription className="sr-only">
           {movie.description || (isSeries ? "Series details and episodes." : "Movie details and playback.")}
         </DialogDescription>
-        {/* Background blur with movie poster */}
+        {/* Premium Glassmorphism Container */}
         <div className="relative h-full md:h-auto md:rounded-3xl overflow-hidden">
-          {/* Blurred background */}
+          {/* Multi-layer blurred background for depth */}
           <div className="absolute inset-0">
+            {/* Base image layer */}
             {backgroundImage && (
               <>
                 <img
                   src={getImageUrl(backgroundImage)}
                   alt=""
-                  className="w-full h-full object-cover opacity-35"
+                  className="w-full h-full object-cover opacity-60 scale-105"
                 />
+                {/* Heavy blur layer for glass effect */}
                 <img
                   src={getImageUrl(backgroundImage)}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-35"
+                  className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-70"
                 />
               </>
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-card/80 via-card/90 to-card" />
+            {/* Glassmorphism overlay - multi-gradient for premium feel */}
+            <div className="absolute inset-0 backdrop-blur-2xl bg-gradient-to-br from-background/70 via-background/60 to-background/75" />
+            {/* Subtle noise texture for glass authenticity */}
+            <div 
+              className="absolute inset-0 opacity-[0.015] pointer-events-none mix-blend-overlay"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+              }}
+            />
+            {/* Inner glow/light refraction effect */}
+            <div className="absolute inset-0 bg-gradient-to-t from-transparent via-primary/[0.03] to-primary/[0.08]" />
+            {/* Bottom shadow gradient for depth */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
           </div>
+          
+          {/* Glass border effect - subtle inner highlight */}
+          <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-border/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_-1px_1px_rgba(0,0,0,0.05)]" />
 
           <ScrollArea className="h-[100dvh] md:max-h-[90vh] w-full">
             <div className="relative min-h-[100dvh] md:min-h-0 w-full max-w-full">
