@@ -257,18 +257,21 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   {/* Episodes for series */}
                   {isSeries && series.episodes && series.episodes.length > 0 && (
                     <div className="pt-4 space-y-4">
-                      <h4 className="text-xl font-display font-semibold text-white flex items-center gap-3">
-                        Episodes
-                        <span className="text-sm text-white/60 font-normal px-2 py-0.5 rounded-full bg-white/10">
-                          {series.episodes.length}
+                      <div className="flex items-center gap-4">
+                        <h4 className="text-xl font-display font-semibold text-white">
+                          Episodes
+                        </h4>
+                        <span className="px-3 py-1.5 text-sm font-medium rounded bg-white/10 text-white/80 border border-white/20">
+                          {movie.year ? `${series.episodes.length} Episodes (${movie.year})` : `${series.episodes.length} Episodes`}
                         </span>
-                      </h4>
-                      <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2 scrollbar-thin">
+                      </div>
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
                         {series.episodes.map((episode) => (
-                          <EpisodeItem
+                          <DesktopEpisodeCard
                             key={episode.mobifliks_id || episode.episode_number}
                             episode={episode}
                             seriesTitle={movie.title}
+                            seriesImage={movie.image_url}
                             onPlay={onPlay}
                           />
                         ))}
@@ -481,6 +484,7 @@ interface EpisodeItemProps {
   onPlay: (url: string, title: string) => void;
 }
 
+// Mobile episode item - compact format
 function EpisodeItem({ episode, seriesTitle, onPlay }: EpisodeItemProps) {
   const hasVideo = episode.download_url && 
     (episode.download_url.includes(".mp4") || 
@@ -543,6 +547,117 @@ function EpisodeItem({ episode, seriesTitle, onPlay }: EpisodeItemProps) {
             </a>
           </Button>
         )}
+      </div>
+    </div>
+  );
+}
+
+interface DesktopEpisodeCardProps {
+  episode: Episode;
+  seriesTitle: string;
+  seriesImage?: string;
+  onPlay: (url: string, title: string) => void;
+}
+
+// Desktop episode card - Netflix-style horizontal layout with thumbnail
+function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: DesktopEpisodeCardProps) {
+  const hasVideo = episode.download_url && 
+    (episode.download_url.includes(".mp4") || 
+     episode.download_url.includes("downloadmp4.php") ||
+     episode.download_url.includes("downloadserie.php"));
+
+  return (
+    <div 
+      className="flex gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200 group cursor-pointer"
+      onClick={() => {
+        if (hasVideo && episode.download_url) {
+          onPlay(episode.download_url, `${seriesTitle} - Episode ${episode.episode_number}`);
+        }
+      }}
+    >
+      {/* Thumbnail */}
+      <div className="relative w-44 flex-none rounded-lg overflow-hidden bg-white/10">
+        <img
+          src={getImageUrl(seriesImage)}
+          alt={`Episode ${episode.episode_number}`}
+          className="w-full aspect-video object-cover"
+        />
+        {/* Play overlay on hover */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+            <Play className="w-5 h-5 text-black fill-current ml-0.5" />
+          </div>
+        </div>
+        {/* Watch progress indicator */}
+        {episode.file_size && (
+          <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/70 text-xs text-white/90 backdrop-blur-sm">
+            {episode.file_size}
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0 py-1">
+        {/* Title row with duration and date */}
+        <div className="flex items-start justify-between gap-4">
+          <h5 className="text-lg font-semibold text-white">
+            {episode.episode_number}. {episode.title || `Episode ${episode.episode_number}`}
+          </h5>
+          <div className="flex items-center gap-3 text-sm text-white/60 flex-shrink-0">
+            {episode.file_size && <span>{episode.file_size}</span>}
+          </div>
+        </div>
+        
+        {/* Description */}
+        {episode.description && (
+          <p className="mt-2 text-sm text-white/70 leading-relaxed line-clamp-2">
+            {episode.description}
+          </p>
+        )}
+
+        {/* Action buttons on hover */}
+        <div className="mt-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {hasVideo && (
+            <>
+              <Button
+                size="sm"
+                className="gap-1.5 bg-white text-black hover:bg-white/90 h-8 px-4 rounded font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPlay(episode.download_url!, `${seriesTitle} - Episode ${episode.episode_number}`);
+                }}
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                Play
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-white/70 hover:text-white hover:bg-white/10 h-8 px-3 rounded"
+                asChild
+                onClick={(e) => e.stopPropagation()}
+              >
+                <a href={episode.download_url} download>
+                  <Download className="w-4 h-4" />
+                </a>
+              </Button>
+            </>
+          )}
+          {!hasVideo && episode.video_page_url && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-4 rounded border-white/30 text-white hover:bg-white/10"
+              asChild
+              onClick={(e) => e.stopPropagation()}
+            >
+              <a href={episode.video_page_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                Watch
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
