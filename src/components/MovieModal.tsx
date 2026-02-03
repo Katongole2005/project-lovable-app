@@ -376,17 +376,17 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                 </div>
 
                 {/* Content section */}
-                <div className="flex-1 px-5 pb-safe -mt-16 relative z-10 space-y-5 overflow-x-hidden">
+                <div className="flex-1 px-5 -mt-20 relative z-10 space-y-5 overflow-x-hidden">
                   {/* Poster + Title */}
-                  <div className="flex gap-4 items-end">
-                    <div className="w-24 flex-shrink-0 -mt-14 rounded-xl overflow-hidden shadow-2xl border border-border/30 bg-card/30 backdrop-blur-sm">
+                  <div className="flex gap-4 items-start">
+                    <div className="w-28 flex-shrink-0 rounded-xl overflow-hidden shadow-2xl border border-border/30 bg-card/30 backdrop-blur-sm">
                       <img
                         src={getImageUrl(movie.image_url)}
                         alt={`${movie.title} poster`}
-                        className="w-full aspect-[3/4] object-cover"
+                        className="w-full aspect-[2/3] object-cover"
                       />
                     </div>
-                    <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex-1 min-w-0 space-y-2 pt-6">
                       <h1 className="font-display text-2xl font-bold text-foreground leading-tight tracking-tight break-words">
                         {movie.title}
                         {isSeries && <span className="text-primary text-lg ml-2 font-semibold">(Series)</span>}
@@ -477,12 +477,12 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   )}
 
                   {/* Spacer for bottom buttons */}
-                  <div className="h-24" />
+                  <div className="h-32" />
                 </div>
 
                 {/* Fixed bottom action buttons */}
                 {!isSeries && movie.download_url && (
-                  <div className="sticky bottom-0 left-0 right-0 p-4 pb-safe bg-gradient-to-t from-card via-card to-transparent pt-8 z-20">
+                  <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-card via-card/95 to-transparent pt-8 z-30">
                     <div className="flex gap-3">
                       <Button
                         size="lg"
