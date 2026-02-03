@@ -351,19 +351,25 @@ function MobileMovieLayout({
 
   return (
     <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative">
-      {/* Glassmorphism background with poster colors */}
+      {/* Multi-layer background for professional glass effect - matching desktop */}
       <div className="absolute inset-0 z-0">
-        {/* Base blurred image layer for color extraction */}
-        <img
-          src={getImageUrl(backgroundImage || movie.image_url)}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-60"
-        />
-        {/* Dark overlay for readability */}
-        <div className="absolute inset-0 bg-background/85 backdrop-blur-xl" />
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/40" />
-        {/* Noise texture for glass effect */}
+        {(backgroundImage || movie.image_url) && (
+          <>
+            <img
+              src={getImageUrl(backgroundImage || movie.image_url)}
+              alt=""
+              className="w-full h-full object-cover scale-110"
+            />
+            <img
+              src={getImageUrl(backgroundImage || movie.image_url)}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover scale-150 blur-3xl opacity-80"
+            />
+          </>
+        )}
+        <div className="absolute inset-0 backdrop-blur-xl bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
         <div 
           className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
           style={{
@@ -371,6 +377,9 @@ function MobileMovieLayout({
           }}
         />
       </div>
+      
+      {/* Glass border overlay */}
+      <div className="absolute inset-0 z-0 pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
 
       {/* Fixed top navigation - stays in place while scrolling */}
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pt-safe bg-gradient-to-b from-black/70 to-transparent">
