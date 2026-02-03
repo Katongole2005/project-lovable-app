@@ -350,7 +350,7 @@ function MobileMovieLayout({
     : null;
 
   return (
-    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative">
+    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark">
       {/* Multi-layer background for professional glass effect - matching desktop */}
       <div className="absolute inset-0 z-0">
         {(backgroundImage || movie.image_url) && (
@@ -367,9 +367,9 @@ function MobileMovieLayout({
             />
           </>
         )}
-        <div className="absolute inset-0 backdrop-blur-xl bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+        <div className="absolute inset-0 backdrop-blur-xl bg-black/50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
         <div 
           className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
           style={{
@@ -404,8 +404,8 @@ function MobileMovieLayout({
             alt={movie.title}
             className="w-full h-full object-cover"
           />
-          {/* Gradient overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/50 to-transparent" />
+          {/* Gradient overlays - using black for consistency in both modes */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent" />
 
           {/* Poster + Title overlay at bottom */}
