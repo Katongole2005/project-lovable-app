@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart } from "lucide-react";
+import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -309,6 +309,15 @@ function MobileMovieLayout({
   const [selectedSeason, setSelectedSeason] = React.useState(1);
   const [isSeasonSelectorOpen, setIsSeasonSelectorOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const episodesSectionRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollToEpisodes = () => {
+    if (episodesSectionRef.current && scrollContainerRef.current) {
+      const offset = episodesSectionRef.current.offsetTop - 80; // Account for fixed header
+      scrollContainerRef.current.scrollTo({ top: offset, behavior: 'smooth' });
+    }
+  };
   
   const maxDescriptionLength = 200;
   const description = movie.description || "";
@@ -356,7 +365,7 @@ function MobileMovieLayout({
       </div>
 
       {/* Scrollable container */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* Hero section with backdrop */}
         <div className="relative w-full aspect-[16/10] min-h-[220px]">
           {/* Backdrop image */}
@@ -418,19 +427,31 @@ function MobileMovieLayout({
             Watch
             <Play className="w-5 h-5 fill-current" />
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="flex-1 gap-2 rounded-lg h-12 text-base font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
-            onClick={() => {
-              if (movie.download_url) {
-                window.open(movie.download_url, "_blank");
-              }
-            }}
-          >
-            Download
-            <Download className="w-5 h-5" />
-          </Button>
+          {isSeries && allEpisodes.length > 0 ? (
+            <Button
+              size="lg"
+              variant="outline"
+              className="flex-1 gap-2 rounded-lg h-12 text-base font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
+              onClick={scrollToEpisodes}
+            >
+              Episodes
+              <List className="w-5 h-5" />
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              variant="outline"
+              className="flex-1 gap-2 rounded-lg h-12 text-base font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
+              onClick={() => {
+                if (movie.download_url) {
+                  window.open(movie.download_url, "_blank");
+                }
+              }}
+            >
+              Download
+              <Download className="w-5 h-5" />
+            </Button>
+          )}
         </div>
 
         {/* Tabs */}
@@ -535,7 +556,7 @@ function MobileMovieLayout({
 
               {/* Episodes section for series */}
               {isSeries && allEpisodes.length > 0 && (
-                <div className="space-y-4 pt-2">
+                <div ref={episodesSectionRef} className="space-y-4 pt-2">
                   {/* Season header - tappable dropdown */}
                   <button
                     onClick={() => setIsSeasonSelectorOpen(true)}
