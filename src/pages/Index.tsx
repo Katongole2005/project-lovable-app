@@ -145,23 +145,25 @@ export default function Index() {
     }
   }, []);
 
-  // Handle movie click
+  // Handle movie click - show modal immediately, load details in background
   const handleMovieClick = useCallback(async (movie: Movie) => {
-    setIsLoading(true);
+    // Show modal immediately with existing data
+    setSelectedMovie(movie as Movie | Series);
+    setIsModalOpen(true);
+    addToRecent(movie);
+
+    // Fetch full details in background (for episodes, cast, etc.)
     try {
       const details = movie.type === "series"
         ? await fetchSeriesDetails(movie.mobifliks_id)
         : await fetchMovieDetails(movie.mobifliks_id);
       
       if (details) {
-        addToRecent(details);
         setSelectedMovie(details);
-        setIsModalOpen(true);
       }
     } catch (error) {
       console.error("Error fetching details:", error);
-    } finally {
-      setIsLoading(false);
+      // Modal stays open with partial data - user can still see basic info
     }
   }, []);
 
