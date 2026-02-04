@@ -1,7 +1,8 @@
 import { Play, Star } from "lucide-react";
 import type { Movie } from "@/types/movie";
-import { getImageUrl } from "@/lib/api";
+import { getImageUrl, preloadMovieBackdrop } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useCallback } from "react";
 
 interface MovieCardProps {
   movie: Movie;
@@ -17,6 +18,11 @@ export function MovieCard({ movie, onClick, showProgress, className, priority }:
     ? Math.min(8.5, Math.max(6.0, (movie.views / 10000) + 6)).toFixed(1)
     : (6.0 + Math.random() * 2.5).toFixed(1);
 
+  // Preload backdrop on hover for instant modal loading
+  const handleMouseEnter = useCallback(() => {
+    preloadMovieBackdrop(movie);
+  }, [movie]);
+
   return (
     <div
       className={cn(
@@ -24,6 +30,8 @@ export function MovieCard({ movie, onClick, showProgress, className, priority }:
         className
       )}
       onClick={() => onClick(movie)}
+      onMouseEnter={handleMouseEnter}
+      onTouchStart={handleMouseEnter}
     >
       {/* Image container */}
       <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card shadow-card card-hover">
