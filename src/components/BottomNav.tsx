@@ -52,15 +52,40 @@ export function BottomNav({
         }}
       >
         {tabs.map(tab => {
-        const Icon = tab.icon;
-        const isActive = activeTab === tab.id;
-        return <button key={tab.id} onClick={() => onTabChange(tab.id)} className={cn("flex-1 min-w-0 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-2xl transition-all duration-200 opacity-100", isActive ? "text-white" : "text-white/40 hover:text-white/60")}>
-              <Icon className={cn("w-4 h-4 transition-all duration-200", isActive ? "opacity-100 animate-[subtlePulse_2.5s_ease-in-out_infinite]" : "opacity-50")} style={isActive ? { animation: 'subtlePulse 2.5s ease-in-out infinite' } : undefined} />
-              <span className={cn("text-[9px] font-medium tracking-wide transition-all duration-200 opacity-100 truncate", isActive ? "opacity-90" : "opacity-40")}>
-                {tab.label}
-              </span>
-            </button>;
-      })}
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button 
+              key={tab.id} 
+              onClick={() => onTabChange(tab.id)} 
+              className={cn(
+                "flex items-center gap-2 py-2 px-2 rounded-full transition-all duration-300",
+                isActive 
+                  ? "bg-card/30 flex-[2]" 
+                  : "flex-1 justify-center"
+              )}
+            >
+              <div className={cn(
+                "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300",
+                isActive 
+                  ? "bg-primary" 
+                  : "bg-card/50"
+              )}>
+                <Icon className={cn(
+                  "w-5 h-5 transition-all duration-300",
+                  isActive 
+                    ? "text-primary-foreground" 
+                    : "text-muted-foreground"
+                )} />
+              </div>
+              {isActive && (
+                <span className="text-sm font-medium text-foreground pr-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                  {tab.label}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </nav>
   </>;
