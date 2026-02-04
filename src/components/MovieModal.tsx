@@ -160,9 +160,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                           {runtimeLabel}
                         </span>
                       )}
-                      {movie.language && (
-                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80 uppercase">
-                          {movie.language}
+                      {movie.vj_name && (
+                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          VJ {movie.vj_name}
                         </span>
                       )}
                       {movie.views !== undefined && movie.views > 0 && (
@@ -443,6 +443,12 @@ function MobileMovieLayout({
                 )}
                 {(runtimeLabel || certificationLabel) && movie.year && <span className="text-white/60">•</span>}
                 {movie.year && <span className="font-medium">{movie.year}</span>}
+                {movie.vj_name && (
+                  <>
+                    <span className="text-white/60">•</span>
+                    <span>VJ {movie.vj_name}</span>
+                  </>
+                )}
                 {movie.views !== undefined && movie.views > 0 && (
                   <>
                     <span className="text-white/60">•</span>
@@ -591,10 +597,10 @@ function MobileMovieLayout({
                 </div>
               )}
 
-              {/* Production / VJ info */}
+              {/* VJ info */}
               {movie.vj_name && (
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-1.5">Production</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-1.5">VJ</h4>
                   <p className="text-sm text-muted-foreground">{movie.vj_name}</p>
                 </div>
               )}
