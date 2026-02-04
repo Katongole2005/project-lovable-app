@@ -94,7 +94,6 @@ export default function Index() {
 
   // Dynamic VJ list extracted from movies
   const [allVJs, setAllVJs] = useState<{ id: string; label: string }[]>([
-    { id: "Junior", label: "VJ Junior" },
     { id: "Emmy", label: "VJ Emmy" },
     { id: "IceP", label: "VJ IceP" },
     { id: "Tom", label: "VJ Tom" },

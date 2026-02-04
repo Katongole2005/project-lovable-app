@@ -8,7 +8,6 @@ interface VJChipsProps {
 
 // Top 5 VJs with most movies based on the catalog
 const topVJs = [
-  { id: "Junior", label: "VJ Junior" },
   { id: "Emmy", label: "VJ Emmy" },
   { id: "IceP", label: "VJ IceP" },
   { id: "Tom", label: "VJ Tom" },
