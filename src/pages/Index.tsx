@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { CategoryChips } from "@/components/CategoryChips";
+import { VJChips } from "@/components/VJChips";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { MovieModal } from "@/components/MovieModal";
@@ -52,6 +53,7 @@ export default function Index() {
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [activeTab, setActiveTab] = useState("home");
   const [activeCategory, setActiveCategory] = useState("trending");
+  const [activeVJ, setActiveVJ] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMovie, setSelectedMovie] = useState<Movie | Series | null>(null);
@@ -331,6 +333,7 @@ export default function Index() {
   // Handle category change
   const handleCategoryChange = useCallback(async (category: string) => {
     setActiveCategory(category);
+    setActiveVJ(null); // Reset VJ filter when category changes
     setIsLoading(true);
     try {
       if (category === "trending") {
@@ -347,6 +350,27 @@ export default function Index() {
       setIsLoading(false);
     }
   }, []);
+
+  // Handle VJ change
+  const handleVJChange = useCallback(async (vj: string | null) => {
+    setActiveVJ(vj);
+    if (!vj) {
+      // If VJ deselected, reload current category
+      handleCategoryChange(activeCategory);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      // Fetch movies and filter by VJ
+      const data = await fetchRecent("movie", 100, 1);
+      const filtered = data.filter((m: Movie) => m.vj_name === vj);
+      setRecentMovies(sortByYearDesc(filtered));
+    } catch (error) {
+      console.error("Error loading VJ movies:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeCategory, handleCategoryChange, sortByYearDesc]);
 
   // Load more for categories
   const handleLoadMore = useCallback(async () => {
@@ -422,6 +446,12 @@ export default function Index() {
             <CategoryChips 
               activeCategory={activeCategory}
               onCategoryChange={handleCategoryChange}
+            />
+
+            {/* VJ Chips */}
+            <VJChips
+              activeVJ={activeVJ}
+              onVJChange={handleVJChange}
             />
 
             {/* Trending Section */}
