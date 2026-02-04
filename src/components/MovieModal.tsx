@@ -407,7 +407,7 @@ function MobileMovieLayout({
       {/* Scrollable container */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative z-10">
         {/* Hero section with backdrop */}
-        <div className="relative w-full aspect-[16/10] min-h-[220px]">
+        <div className="relative w-full aspect-[16/12] min-h-[280px]">
           {/* Backdrop image */}
           <img
             src={getImageUrl(backgroundImage || movie.image_url)}
