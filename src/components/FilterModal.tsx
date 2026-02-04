@@ -69,35 +69,70 @@ export function FilterModal({
 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
-      {/* Backdrop with blur */}
+      {/* Backdrop with blur - deep blur for liquid glass effect */}
       <div
         className={cn(
-          "absolute inset-0 bg-background/80 backdrop-blur-md transition-opacity duration-300",
+          "absolute inset-0 bg-black/60 backdrop-blur-xl transition-opacity duration-500",
           isAnimating ? "opacity-100" : "opacity-0"
         )}
         onClick={onClose}
       />
 
-      {/* Modal content */}
+      {/* Modal content - liquid glass container */}
       <div
         className={cn(
-          "absolute inset-0 bg-background overflow-hidden transition-all duration-500 ease-out",
+          "absolute inset-x-3 top-6 bottom-6 overflow-hidden transition-all duration-500 ease-out rounded-3xl",
+          "bg-gradient-to-br from-white/10 via-white/5 to-transparent",
+          "backdrop-blur-2xl",
+          "border border-white/20",
+          "shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)]",
           isAnimating
-            ? "translate-y-0 opacity-100"
-            : "translate-y-full opacity-0"
+            ? "translate-y-0 opacity-100 scale-100"
+            : "translate-y-8 opacity-0 scale-95"
         )}
       >
-        {/* Decorative gradient background */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-[#4ade80]/10 blur-3xl animate-pulse" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-primary/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        {/* Liquid glass shimmer overlay */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+          {/* Top highlight reflection */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          {/* Left edge reflection */}
+          <div className="absolute top-0 left-0 bottom-0 w-px bg-gradient-to-b from-white/20 via-white/5 to-transparent" />
+          
+          {/* Animated liquid blobs */}
+          <div 
+            className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-[#4ade80]/15 blur-3xl"
+            style={{
+              animation: "liquidFloat 8s ease-in-out infinite"
+            }}
+          />
+          <div 
+            className="absolute top-1/3 -left-20 w-40 h-40 rounded-full bg-primary/10 blur-3xl"
+            style={{
+              animation: "liquidFloat 10s ease-in-out infinite reverse"
+            }}
+          />
+          <div 
+            className="absolute -bottom-20 right-1/4 w-52 h-52 rounded-full bg-[#4ade80]/10 blur-3xl"
+            style={{
+              animation: "liquidFloat 12s ease-in-out infinite",
+              animationDelay: "2s"
+            }}
+          />
+          
+          {/* Glass noise texture overlay */}
+          <div 
+            className="absolute inset-0 opacity-[0.02]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+            }}
+          />
         </div>
 
-        {/* Header */}
-        <div className="relative flex items-center justify-between px-4 py-4 border-b border-border/30">
+        {/* Header - glass panel */}
+        <div className="relative flex items-center justify-between px-5 py-4 border-b border-white/10">
           <button
             onClick={onClose}
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
+            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
             <span className="text-lg font-semibold font-display">Filters</span>
@@ -108,7 +143,7 @@ export function FilterModal({
               "text-sm font-medium transition-all duration-300",
               hasActiveFilters
                 ? "text-[#4ade80] hover:text-[#4ade80]/80"
-                : "text-muted-foreground"
+                : "text-white/50"
             )}
           >
             Clear all
@@ -116,11 +151,11 @@ export function FilterModal({
         </div>
 
         {/* Scrollable content */}
-        <div className="relative h-[calc(100%-140px)] overflow-y-auto px-4 py-6 space-y-8">
+        <div className="relative h-[calc(100%-140px)] overflow-y-auto px-5 py-6 space-y-8">
           {/* Categories Section */}
           <section className="space-y-4">
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-semibold text-foreground">
+              <h3 className="text-base font-semibold text-white/90">
                 Categories
               </h3>
               <Sparkles className="w-4 h-4 text-[#4ade80] animate-pulse" />
@@ -135,11 +170,11 @@ export function FilterModal({
                       setSelectedCategory(isActive ? null : category.id)
                     }
                     className={cn(
-                      "px-4 py-2.5 rounded-full text-sm font-medium border transition-all duration-300 transform",
+                      "px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 transform",
                       "hover:scale-105 active:scale-95",
                       isActive
-                        ? "text-black border-transparent shadow-lg shadow-[#4ade80]/30"
-                        : "bg-card/60 border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
+                        ? "text-black border-transparent shadow-lg shadow-[#4ade80]/40"
+                        : "bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/15 hover:border-white/30"
                     )}
                     style={{
                       background: isActive ? "#4ade80" : undefined,
@@ -155,7 +190,7 @@ export function FilterModal({
 
           {/* VJs Section */}
           <section className="space-y-4">
-            <h3 className="text-base font-semibold text-foreground">
+            <h3 className="text-base font-semibold text-white/90">
               Video Jockeys (VJs)
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -166,11 +201,11 @@ export function FilterModal({
                     key={vj.id}
                     onClick={() => setSelectedVJ(isActive ? null : vj.id)}
                     className={cn(
-                      "px-4 py-2.5 rounded-full text-sm font-medium border transition-all duration-300 transform",
+                      "px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 transform",
                       "hover:scale-105 active:scale-95",
                       isActive
-                        ? "text-black border-transparent shadow-lg shadow-[#4ade80]/30"
-                        : "bg-card/60 border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
+                        ? "text-black border-transparent shadow-lg shadow-[#4ade80]/40"
+                        : "bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/15 hover:border-white/30"
                     )}
                     style={{
                       background: isActive ? "#4ade80" : undefined,
@@ -186,7 +221,7 @@ export function FilterModal({
 
           {/* Year Section */}
           <section className="space-y-4">
-            <h3 className="text-base font-semibold text-foreground">
+            <h3 className="text-base font-semibold text-white/90">
               Release Year
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -197,11 +232,11 @@ export function FilterModal({
                     key={year}
                     onClick={() => setSelectedYear(isActive ? null : year)}
                     className={cn(
-                      "px-4 py-2.5 rounded-full text-sm font-medium border transition-all duration-300 transform",
+                      "px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 transform",
                       "hover:scale-105 active:scale-95",
                       isActive
-                        ? "text-black border-transparent shadow-lg shadow-[#4ade80]/30"
-                        : "bg-card/60 border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
+                        ? "text-black border-transparent shadow-lg shadow-[#4ade80]/40"
+                        : "bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/15 hover:border-white/30"
                     )}
                     style={{
                       background: isActive ? "#4ade80" : undefined,
@@ -216,8 +251,8 @@ export function FilterModal({
           </section>
         </div>
 
-        {/* Fixed Apply Button */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
+        {/* Fixed Apply Button - glass effect */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/30 via-black/10 to-transparent backdrop-blur-sm">
           <button
             onClick={handleApply}
             className={cn(
@@ -225,7 +260,7 @@ export function FilterModal({
               "hover:scale-[1.02] active:scale-[0.98]",
               hasActiveFilters
                 ? "text-black shadow-xl shadow-[#4ade80]/40"
-                : "bg-muted text-muted-foreground"
+                : "bg-white/10 backdrop-blur-md border border-white/20 text-white/60"
             )}
             style={{
               background: hasActiveFilters
@@ -242,6 +277,24 @@ export function FilterModal({
           </button>
         </div>
       </div>
+
+      {/* Custom animation keyframes */}
+      <style>{`
+        @keyframes liquidFloat {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          25% {
+            transform: translate(10px, -15px) scale(1.05);
+          }
+          50% {
+            transform: translate(-5px, 10px) scale(0.95);
+          }
+          75% {
+            transform: translate(-15px, -5px) scale(1.02);
+          }
+        }
+      `}</style>
     </div>
   );
 }
