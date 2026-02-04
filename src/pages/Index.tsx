@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { HeroCarousel } from "@/components/HeroCarousel";
@@ -10,6 +10,7 @@ import { MovieModal } from "@/components/MovieModal";
 import { CinematicVideoPlayer } from "@/components/CinematicVideoPlayer";
 import { BottomNav } from "@/components/BottomNav";
 import { SearchBar } from "@/components/SearchBar";
+import { FilterModal, FilterState } from "@/components/FilterModal";
 import { Button } from "@/components/ui/button";
 import { 
   fetchTrending, 
@@ -73,6 +74,41 @@ export default function Index() {
   const lastBackPressRef = useRef(0);
   const exitToastTimerRef = useRef<number | null>(null);
   const [showExitToast, setShowExitToast] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Filter data constants
+  const filterCategories = useMemo(() => [
+    { id: "trending", label: "Trending" },
+    { id: "action", label: "Action" },
+    { id: "adventure", label: "Adventure" },
+    { id: "crime", label: "Crime" },
+    { id: "drama", label: "Drama" },
+    { id: "fantasy", label: "Fantasy" },
+    { id: "horror", label: "Horror" },
+    { id: "romance", label: "Romance" },
+    { id: "sci-fi", label: "Sci-Fi" },
+    { id: "thriller", label: "Thriller" },
+    { id: "animation", label: "Animation" },
+    { id: "special", label: "Special" },
+  ], []);
+
+  const filterVJs = useMemo(() => [
+    { id: "Junior", label: "VJ Junior" },
+    { id: "Emmy", label: "VJ Emmy" },
+    { id: "IceP", label: "VJ IceP" },
+    { id: "Tom", label: "VJ Tom" },
+    { id: "Fredy", label: "VJ Fredy" },
+  ], []);
+
+  // Generate years from current year down to oldest available
+  const filterYears = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+    for (let y = currentYear; y >= 2010; y--) {
+      years.push(y);
+    }
+    return years;
+  }, []);
 
   const sortByYearDesc = useCallback((items: Movie[]) => {
     return [...items].sort((a, b) => {
@@ -372,6 +408,43 @@ export default function Index() {
     }
   }, [activeCategory, handleCategoryChange, sortByYearDesc]);
 
+  // Handle filter apply from modal
+  const handleApplyFilters = useCallback(async (filters: FilterState) => {
+    setIsLoading(true);
+    try {
+      // Fetch base data
+      let data: Movie[] = [];
+      
+      if (filters.category && filters.category !== "trending") {
+        const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
+        data = await fetchByGenre(genre, "movie", 100);
+      } else {
+        data = await fetchRecent("movie", 100, 1);
+      }
+
+      // Apply VJ filter
+      if (filters.vj) {
+        data = data.filter((m: Movie) => m.vj_name === filters.vj);
+      }
+
+      // Apply year filter
+      if (filters.year) {
+        data = data.filter((m: Movie) => m.year === filters.year);
+      }
+
+      // Update states
+      if (filters.category) {
+        setActiveCategory(filters.category);
+      }
+      setActiveVJ(filters.vj);
+      setRecentMovies(sortByYearDesc(data));
+    } catch (error) {
+      console.error("Error applying filters:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sortByYearDesc]);
+
   // Load more for categories
   const handleLoadMore = useCallback(async () => {
     if (isLoadingMore) return;
@@ -462,6 +535,7 @@ export default function Index() {
               onViewAll={() => handleTabChange("movies")}
               isLoading={isLoading && recentMovies.length === 0}
               showFilters
+              onFilterClick={() => setIsFilterOpen(true)}
             />
 
             {/* Continue Watching */}
@@ -675,6 +749,21 @@ export default function Index() {
         title={videoTitle}
         movie={selectedMovie}
         onTimeUpdate={handleVideoTimeUpdate}
+      />
+
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        onApplyFilters={handleApplyFilters}
+        categories={filterCategories}
+        vjs={filterVJs}
+        years={filterYears}
+        initialFilters={{
+          category: activeCategory,
+          vj: activeVJ,
+          year: null,
+        }}
       />
     </div>
   );
