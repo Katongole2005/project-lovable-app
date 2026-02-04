@@ -54,9 +54,10 @@ export function MovieRow({
           {showFilters && onFilterClick && (
             <button
               onClick={onFilterClick}
-              className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-card/70 border border-border/40 text-muted-foreground hover:text-foreground hover:bg-card transition-all duration-200 active:scale-95"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 active:scale-95"
+              style={{ backgroundColor: '#4ade80' }}
             >
-              <SlidersHorizontal className="w-4 h-4" />
+              <SlidersHorizontal className="w-4 h-4 text-black" />
             </button>
           )}
 
