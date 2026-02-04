@@ -320,9 +320,21 @@ function MobileMovieLayout({
   const [isSeasonSelectorOpen, setIsSeasonSelectorOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
   const [scrollProgress, setScrollProgress] = React.useState(0);
+  const [backdropLoaded, setBackdropLoaded] = React.useState(false);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
   const heroRef = React.useRef<HTMLDivElement>(null);
+
+  // Preload backdrop image
+  React.useEffect(() => {
+    const backdropUrl = getImageUrl(backgroundImage || movie.image_url);
+    const img = new Image();
+    img.onload = () => setBackdropLoaded(true);
+    img.src = backdropUrl;
+    
+    // Reset loading state when movie changes
+    return () => setBackdropLoaded(false);
+  }, [backgroundImage, movie.image_url]);
 
   // Parallax scroll effect
   React.useEffect(() => {
@@ -434,11 +446,21 @@ function MobileMovieLayout({
         }}
       >
         <div className="relative w-full aspect-[16/14] min-h-[320px] overflow-hidden">
-          {/* Backdrop image with parallax movement */}
+          {/* Loading shimmer - shows while backdrop is loading */}
+          {!backdropLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+              <div className="absolute inset-0 shimmer" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+            </div>
+          )}
+          
+          {/* Backdrop image with parallax movement - fades in when loaded */}
           <img
             src={getImageUrl(backgroundImage || movie.image_url)}
             alt={movie.title}
-            className="w-full h-full object-cover transition-transform duration-100"
+            className={`w-full h-full object-cover transition-all duration-500 ${
+              backdropLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             style={{
               transform: `scale(${1.1 + scrollProgress * 0.15}) translateY(${scrollProgress * 20}px)`,
             }}
