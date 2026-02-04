@@ -319,8 +319,27 @@ function MobileMovieLayout({
   const [selectedSeason, setSelectedSeason] = React.useState(1);
   const [isSeasonSelectorOpen, setIsSeasonSelectorOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
+  const [scrollProgress, setScrollProgress] = React.useState(0);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
+  const heroRef = React.useRef<HTMLDivElement>(null);
+
+  // Parallax scroll effect
+  React.useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const scrollTop = scrollContainer.scrollTop;
+      const heroHeight = 320; // min-h of hero
+      // Calculate progress from 0 to 1 (0 = no scroll, 1 = fully scrolled past hero)
+      const progress = Math.min(Math.max(scrollTop / heroHeight, 0), 1);
+      setScrollProgress(progress);
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const scrollToEpisodes = () => {
     if (episodesSectionRef.current && scrollContainerRef.current) {
@@ -404,23 +423,51 @@ function MobileMovieLayout({
         </button>
       </div>
 
-      {/* Fixed Hero section with backdrop - stays in place */}
-      <div className="absolute top-0 left-0 right-0 z-10">
-        <div className="relative w-full aspect-[16/14] min-h-[320px]">
-          {/* Backdrop image */}
+      {/* Fixed Hero section with backdrop - parallax effect */}
+      <div 
+        ref={heroRef}
+        className="absolute top-0 left-0 right-0 z-10 transition-all duration-100 ease-out"
+        style={{
+          transform: `translateY(${scrollProgress * -60}px) scale(${1 + scrollProgress * 0.05})`,
+          filter: `blur(${scrollProgress * 8}px)`,
+          opacity: 1 - scrollProgress * 0.3,
+        }}
+      >
+        <div className="relative w-full aspect-[16/14] min-h-[320px] overflow-hidden">
+          {/* Backdrop image with parallax movement */}
           <img
             src={getImageUrl(backgroundImage || movie.image_url)}
             alt={movie.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-100"
+            style={{
+              transform: `scale(${1.1 + scrollProgress * 0.15}) translateY(${scrollProgress * 20}px)`,
+            }}
           />
           {/* Gradient overlays - using black for consistency in both modes */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent" />
+          
+          {/* Dynamic overlay that intensifies on scroll */}
+          <div 
+            className="absolute inset-0 bg-black transition-opacity duration-100"
+            style={{ opacity: scrollProgress * 0.4 }}
+          />
 
           {/* Poster + Title overlay at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-4 items-end">
+          <div 
+            className="absolute bottom-0 left-0 right-0 p-4 flex gap-4 items-end transition-all duration-100"
+            style={{
+              transform: `translateY(${scrollProgress * -30}px)`,
+              opacity: 1 - scrollProgress * 0.5,
+            }}
+          >
             {/* Small poster */}
-            <div className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden border-2 border-background shadow-xl">
+            <div 
+              className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden border-2 border-background shadow-xl transition-transform duration-100"
+              style={{
+                transform: `scale(${1 - scrollProgress * 0.1}) translateY(${scrollProgress * -10}px)`,
+              }}
+            >
               <img
                 src={getImageUrl(movie.image_url)}
                 alt={movie.title}
