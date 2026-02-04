@@ -36,7 +36,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
   }, []);
 
   const navItems = [
-    { id: "home", label: "Movie" },
+    { id: "movies", label: "Movie" },
     { id: "series", label: "Series" },
     { id: "originals", label: "Originals" },
   ];
@@ -95,10 +95,10 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
             {navItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => onTabChange?.(item.id === "home" ? "movies" : item.id)}
+                onClick={() => onTabChange?.(item.id)}
                 className={cn(
                   "pill-nav-item",
-                  (activeTab === item.id || (item.id === "home" && activeTab === "movies")) && "active"
+                  activeTab === item.id && "active"
                 )}
               >
                 {item.label}
@@ -153,10 +153,10 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
             {navItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => onTabChange?.(item.id === "home" ? "movies" : item.id)}
+                onClick={() => onTabChange?.(item.id)}
                 className={cn(
                   "pill-nav-item text-xs px-3 py-1.5",
-                  (activeTab === item.id || (item.id === "home" && activeTab === "movies")) && "active"
+                  activeTab === item.id && "active"
                 )}
               >
                 {item.label}
