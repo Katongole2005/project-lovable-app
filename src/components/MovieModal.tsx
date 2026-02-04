@@ -189,8 +189,20 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                     </h1>
 
                     <div className="flex flex-wrap items-center gap-3">
+                      {/* Rating */}
+                      <span className="flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30">
+                        <Star className="w-4 h-4 fill-[#4ade80]" />
+                        {rating}
+                      </span>
                       {movie.year && (
                         <span className="text-lg font-medium text-white/90">{movie.year}</span>
+                      )}
+                      {/* Release Date */}
+                      {releaseLabel && (
+                        <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          <CalendarDays className="w-4 h-4" />
+                          {releaseLabel}
+                        </span>
                       )}
                       {certificationLabel && (
                         <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
@@ -274,11 +286,31 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   <p className="text-white/90 leading-relaxed text-lg max-w-4xl">{movie.description}</p>
                 )}
 
+                {/* Cast with images */}
                 {cast.length > 0 && (
-                  <p className="text-base">
-                    <span className="text-white/60 font-medium">Starring:</span>{" "}
-                    <span className="text-white/90">{cast.slice(0, 5).map((member) => member.name).join(", ")}</span>
-                  </p>
+                  <div className="space-y-3">
+                    <h4 className="text-lg font-semibold text-white/90">Cast</h4>
+                    <div className="flex flex-wrap gap-4">
+                      {cast.slice(0, 8).map((member, index) => (
+                        <div key={index} className="flex flex-col items-center gap-2 w-20">
+                          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 bg-white/10">
+                            <img
+                              src={member.profile_url || fallbackCastAvatar}
+                              alt={member.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = fallbackCastAvatar;
+                              }}
+                            />
+                          </div>
+                          <span className="text-xs text-white/80 text-center line-clamp-2 leading-tight">{member.name}</span>
+                          {member.character && (
+                            <span className="text-[10px] text-white/50 text-center line-clamp-1">{member.character}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {movie.genres && movie.genres.length > 0 && (
