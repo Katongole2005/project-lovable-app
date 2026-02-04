@@ -404,9 +404,8 @@ function MobileMovieLayout({
         </button>
       </div>
 
-      {/* Scrollable container */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative z-10">
-        {/* Hero section with backdrop */}
+      {/* Fixed Hero section with backdrop - stays in place */}
+      <div className="absolute top-0 left-0 right-0 z-10">
         <div className="relative w-full aspect-[16/14] min-h-[320px]">
           {/* Backdrop image */}
           <img
@@ -466,78 +465,91 @@ function MobileMovieLayout({
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Action buttons */}
-        <div className="px-4 py-4 flex gap-3">
-          <Button
-            size="lg"
-            className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg h-12 text-base font-semibold"
-            onClick={() => {
-              if (isSeries && series.episodes && series.episodes.length > 0) {
-                const firstEp = series.episodes[0];
-                if (firstEp?.download_url) {
-                  onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
-                }
-              } else if (movie.download_url) {
-                onPlay(movie.download_url, movie.title);
-              }
-            }}
-          >
-            Watch
-            <Play className="w-5 h-5 fill-current" />
-          </Button>
-          {isSeries && allEpisodes.length > 0 ? (
+      {/* Scrollable container - scrolls over the fixed hero */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative z-20">
+        {/* Spacer to push content below the hero initially */}
+        <div className="w-full aspect-[16/14] min-h-[280px]" />
+        
+        {/* Content container with background that scrolls over hero */}
+        <div className="relative bg-background rounded-t-3xl -mt-10 min-h-[60vh]">
+          {/* Decorative handle */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+          </div>
+
+          {/* Action buttons */}
+          <div className="px-4 py-3 flex gap-3">
             <Button
               size="lg"
-              variant="outline"
-              className="flex-1 gap-2 rounded-lg h-12 text-base font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
-              onClick={scrollToEpisodes}
-            >
-              Episodes
-              <List className="w-5 h-5" />
-            </Button>
-          ) : (
-            <button
-              className="flex-1 flex items-center gap-3 rounded-full h-12 bg-black pl-1.5 pr-5 hover:bg-black/90 transition-colors"
+              className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg h-12 text-base font-semibold"
               onClick={() => {
-                if (movie.download_url) {
-                  window.open(movie.download_url, "_blank");
+                if (isSeries && series.episodes && series.episodes.length > 0) {
+                  const firstEp = series.episodes[0];
+                  if (firstEp?.download_url) {
+                    onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
+                  }
+                } else if (movie.download_url) {
+                  onPlay(movie.download_url, movie.title);
                 }
               }}
             >
-              <div className="w-9 h-9 rounded-full bg-[#c8f547] flex items-center justify-center flex-shrink-0">
-                <Download className="w-5 h-5 text-black" />
-              </div>
-              <span className="text-white text-base font-medium">Download</span>
-            </button>
-          )}
-        </div>
-
-        {/* Tabs */}
-        <div className="px-4 border-b border-border/30">
-          <div className="flex gap-6">
-            {(["overview", "casts", "related"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "pb-3 text-base font-medium capitalize transition-colors relative",
-                  activeTab === tab 
-                    ? "text-foreground" 
-                    : "text-muted-foreground"
-                )}
+              Watch
+              <Play className="w-5 h-5 fill-current" />
+            </Button>
+            {isSeries && allEpisodes.length > 0 ? (
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 gap-2 rounded-lg h-12 text-base font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
+                onClick={scrollToEpisodes}
               >
-                {tab === "casts" ? "Casts" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
-                )}
+                Episodes
+                <List className="w-5 h-5" />
+              </Button>
+            ) : (
+              <button
+                className="flex-1 flex items-center gap-3 rounded-full h-12 bg-black pl-1.5 pr-5 hover:bg-black/90 transition-colors"
+                onClick={() => {
+                  if (movie.download_url) {
+                    window.open(movie.download_url, "_blank");
+                  }
+                }}
+              >
+                <div className="w-9 h-9 rounded-full bg-[#c8f547] flex items-center justify-center flex-shrink-0">
+                  <Download className="w-5 h-5 text-black" />
+                </div>
+                <span className="text-white text-base font-medium">Download</span>
               </button>
-            ))}
+            )}
           </div>
-        </div>
 
-        {/* Tab content */}
-        <div className="px-4 py-5 space-y-5 pb-8">
+          {/* Tabs */}
+          <div className="px-4 border-b border-border/30">
+            <div className="flex gap-6">
+              {(["overview", "casts", "related"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "pb-3 text-base font-medium capitalize transition-colors relative",
+                    activeTab === tab 
+                      ? "text-foreground" 
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {tab === "casts" ? "Casts" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {activeTab === tab && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab content */}
+          <div className="px-4 py-5 space-y-5 pb-8">
           {/* Overview Tab */}
           {activeTab === "overview" && (
             <>
@@ -730,6 +742,7 @@ function MobileMovieLayout({
               <p className="text-sm text-muted-foreground">No related content available.</p>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
