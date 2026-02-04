@@ -165,6 +165,16 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                           {movie.language}
                         </span>
                       )}
+                      {movie.views !== undefined && movie.views > 0 && (
+                        <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          <Eye className="w-4 h-4" />
+                          {movie.views >= 1000000 
+                            ? `${(movie.views / 1000000).toFixed(1)}M` 
+                            : movie.views >= 1000 
+                              ? `${(movie.views / 1000).toFixed(1)}K` 
+                              : movie.views}
+                        </span>
+                      )}
                       {isSeries && (
                         <span className="px-2.5 py-0.5 text-sm font-semibold rounded bg-primary/30 text-primary border border-primary/40">
                           SERIES
