@@ -92,13 +92,16 @@ export default function Index() {
     { id: "special", label: "Special" },
   ], []);
 
-  const filterVJs = useMemo(() => [
+  // Dynamic VJ list extracted from movies
+  const [allVJs, setAllVJs] = useState<{ id: string; label: string }[]>([
     { id: "Junior", label: "VJ Junior" },
     { id: "Emmy", label: "VJ Emmy" },
     { id: "IceP", label: "VJ IceP" },
     { id: "Tom", label: "VJ Tom" },
     { id: "Fredy", label: "VJ Fredy" },
-  ], []);
+  ]);
+
+  const filterVJs = allVJs;
 
   // Generate years from current year down to oldest available
   const filterYears = useMemo(() => {
@@ -124,22 +127,41 @@ export default function Index() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [trendingRes, moviesRes, seriesRes, statsRes] = await Promise.allSettled([
+        const [trendingRes, moviesRes, seriesRes, statsRes, allMoviesRes] = await Promise.allSettled([
           fetchTrending(),
           fetchRecent("movie", 20, 1),
           fetchSeries(20),
           fetchStats(),
+          fetchRecent("movie", 200, 1), // Fetch more movies to extract VJs
         ]);
 
         const trendingData = trendingRes.status === "fulfilled" ? trendingRes.value : [];
         const moviesData = moviesRes.status === "fulfilled" ? moviesRes.value : [];
         const seriesData = seriesRes.status === "fulfilled" ? seriesRes.value : [];
+        const allMoviesData = allMoviesRes.status === "fulfilled" ? allMoviesRes.value : [];
 
         const baseForTrending = trendingData.length > 0 ? trendingData : moviesData;
         const sortedTrending = sortByYearDesc(baseForTrending);
         setTrending(sortedTrending.slice(0, 5));
         setRecentMovies(sortedTrending.length > 0 ? sortedTrending : moviesData);
         setRecentSeries(seriesData);
+
+        // Extract unique VJs from all movies
+        const vjSet = new Set<string>();
+        [...allMoviesData, ...seriesData].forEach((movie: Movie) => {
+          if (movie.vj_name && movie.vj_name.trim()) {
+            vjSet.add(movie.vj_name.trim());
+          }
+        });
+        
+        // Convert to array and sort alphabetically
+        const vjList = Array.from(vjSet)
+          .sort((a, b) => a.localeCompare(b))
+          .map(vj => ({ id: vj, label: `VJ ${vj}` }));
+        
+        if (vjList.length > 0) {
+          setAllVJs(vjList);
+        }
 
         if (statsRes.status === "fulfilled") {
           const statsData = statsRes.value;
