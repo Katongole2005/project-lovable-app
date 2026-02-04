@@ -469,14 +469,14 @@ function MobileMovieLayout({
 
       {/* Scrollable container - scrolls over the fixed hero */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative z-20">
-        {/* Spacer to push content below the hero initially */}
-        <div className="w-full aspect-[16/14] min-h-[280px]" />
+        {/* Spacer to push content below the hero initially - matches hero height exactly */}
+        <div className="w-full aspect-[16/14] min-h-[320px]" />
         
         {/* Content container with background that scrolls over hero */}
-        <div className="relative bg-background rounded-t-3xl -mt-10 min-h-[60vh]">
+        <div className="relative bg-background rounded-t-3xl min-h-[70vh] shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
           {/* Decorative handle */}
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-12 h-1.5 rounded-full bg-muted-foreground/40" />
           </div>
 
           {/* Action buttons */}
