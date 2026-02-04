@@ -160,9 +160,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                           {runtimeLabel}
                         </span>
                       )}
-                      {movie.language && (
-                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80 uppercase">
-                          {movie.language}
+                      {movie.vj_name && (
+                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          VJ: {movie.vj_name}
                         </span>
                       )}
                       {movie.views !== undefined && movie.views > 0 && (
@@ -246,10 +246,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   </p>
                 )}
 
-                {movie.vj_name && (
+                {movie.language && (
                   <p className="text-base">
-                    <span className="text-white/60 font-medium">VJ:</span>{" "}
-                    <span className="text-white/90">{movie.vj_name}</span>
+                    <span className="text-white/60 font-medium">Language:</span>{" "}
+                    <span className="text-white/90 uppercase">{movie.language}</span>
                   </p>
                 )}
 
