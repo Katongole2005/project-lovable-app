@@ -6,6 +6,53 @@ const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poste
 
 export const getImageUrl = (url?: string) => url || fallbackPoster;
 
+/**
+ * Optimize TMDB image URL by using a smaller size for faster loading.
+ * Converts w1280 -> w780 for backdrops (2x faster, still good quality on most screens).
+ * Also converts 'original' to appropriate sizes.
+ */
+export const getOptimizedBackdropUrl = (url?: string): string => {
+  if (!url) return fallbackPoster;
+  
+  // Convert large backdrop sizes to smaller ones for faster loading
+  // w1280 -> w780 (saves ~50% bandwidth, loads 2-3x faster)
+  // original -> w780 (even bigger savings)
+  return url
+    .replace('/w1280/', '/w780/')
+    .replace('/original/', '/w780/');
+};
+
+/**
+ * Preload an image in the background.
+ * Returns a promise that resolves when the image is loaded.
+ */
+export const preloadImage = (url: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!url) {
+      resolve();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error(`Failed to preload: ${url}`));
+    img.src = url;
+  });
+};
+
+/**
+ * Preload backdrop for a movie (used on hover for instant modal opening).
+ */
+export const preloadMovieBackdrop = (movie: { backdrop_url?: string | null; image_url?: string }): void => {
+  const backdropUrl = movie.backdrop_url;
+  if (backdropUrl) {
+    const optimizedUrl = getOptimizedBackdropUrl(backdropUrl);
+    // Fire and forget - we don't need to wait
+    preloadImage(optimizedUrl).catch(() => {
+      // Silently fail - the modal will show a shimmer instead
+    });
+  }
+};
+
 // Helper to fetch via the edge function proxy
 const fetchViaProxy = async (path: string, timeout = 8000): Promise<Response> => {
   const controller = new AbortController();

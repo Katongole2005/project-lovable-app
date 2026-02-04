@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Movie, Series, Episode, CastMember } from "@/types/movie";
-import { getImageUrl } from "@/lib/api";
+import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface MovieModalProps {
@@ -22,7 +22,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
   // IMPORTANT: do NOT fall back to poster for the backdrop/background.
   // This avoids the "image swap" where a poster loads first, then the backdrop replaces it.
-  const backgroundImage = backdrop;
+  // Use optimized (smaller) backdrop URL for faster loading.
+  const backgroundImage = backdrop ? getOptimizedBackdropUrl(backdrop) : null;
 
   const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
   React.useEffect(() => {
@@ -35,7 +36,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
     img.onload = () => {
       if (!cancelled) setDesktopBackdropLoaded(true);
     };
-    img.src = getImageUrl(backgroundImage);
+    // backgroundImage is already optimized, use directly
+    img.src = backgroundImage;
 
     return () => {
       cancelled = true;
@@ -102,7 +104,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
             {backgroundImage && (
               <>
                 <img
-                  src={getImageUrl(backgroundImage)}
+                  src={backgroundImage}
                   alt=""
                   className={cn(
                     "w-full h-full object-cover scale-110 transition-opacity duration-500",
@@ -110,7 +112,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   )}
                 />
                 <img
-                  src={getImageUrl(backgroundImage)}
+                  src={backgroundImage}
                   alt=""
                   className={cn(
                     "absolute inset-0 w-full h-full object-cover scale-150 blur-3xl transition-opacity duration-500",
@@ -144,7 +146,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
               {/* Backdrop hero section */}
               <div className="relative h-[280px] lg:h-[340px] overflow-hidden">
-                {backdrop ? (
+                {backgroundImage ? (
                   <>
                     {!desktopBackdropLoaded && (
                       <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
@@ -152,7 +154,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                       </div>
                     )}
                     <img
-                      src={getImageUrl(backdrop)}
+                      src={backgroundImage}
                       alt={`${movie.title} backdrop`}
                       className={cn(
                         "w-full h-full object-cover transition-opacity duration-500",
@@ -375,7 +377,8 @@ function MobileMovieLayout({
     img.onload = () => {
       if (!cancelled) setBackdropLoaded(true);
     };
-    img.src = getImageUrl(backgroundImage);
+    // backgroundImage is already optimized, use directly
+    img.src = backgroundImage;
 
     return () => {
       cancelled = true;
@@ -449,7 +452,7 @@ function MobileMovieLayout({
         {backgroundImage && (
           <>
             <img
-              src={getImageUrl(backgroundImage)}
+              src={backgroundImage}
               alt=""
               className={cn(
                 "w-full h-full object-cover scale-110 transition-opacity duration-500",
@@ -457,7 +460,7 @@ function MobileMovieLayout({
               )}
             />
             <img
-              src={getImageUrl(backgroundImage)}
+              src={backgroundImage}
               alt=""
               className={cn(
                 "absolute inset-0 w-full h-full object-cover scale-150 blur-3xl transition-opacity duration-500",
@@ -515,7 +518,7 @@ function MobileMovieLayout({
           {/* Backdrop image with parallax movement - fades in when loaded */}
           {backgroundImage && (
             <img
-              src={getImageUrl(backgroundImage)}
+              src={backgroundImage}
               alt={movie.title}
               className={cn(
                 "w-full h-full object-cover transition-all duration-500",
