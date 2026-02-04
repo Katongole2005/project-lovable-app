@@ -127,18 +127,26 @@ export default function Index() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [trendingRes, moviesRes, seriesRes, statsRes, allMoviesRes] = await Promise.allSettled([
+        // Fetch multiple pages to get more VJs (API max is 100 per request)
+        const [trendingRes, moviesRes, seriesRes, statsRes, moviesPage1, moviesPage2, seriesPage1] = await Promise.allSettled([
           fetchTrending(),
           fetchRecent("movie", 20, 1),
           fetchSeries(20),
           fetchStats(),
-          fetchRecent("movie", 200, 1), // Fetch more movies to extract VJs
+          fetchRecent("movie", 100, 1), // First 100 movies
+          fetchRecent("movie", 100, 2), // Next 100 movies
+          fetchSeries(100, 1), // First 100 series
         ]);
 
         const trendingData = trendingRes.status === "fulfilled" ? trendingRes.value : [];
         const moviesData = moviesRes.status === "fulfilled" ? moviesRes.value : [];
         const seriesData = seriesRes.status === "fulfilled" ? seriesRes.value : [];
-        const allMoviesData = allMoviesRes.status === "fulfilled" ? allMoviesRes.value : [];
+        
+        // Combine movies from multiple pages for VJ extraction
+        const allMoviesPage1 = moviesPage1.status === "fulfilled" ? moviesPage1.value : [];
+        const allMoviesPage2 = moviesPage2.status === "fulfilled" ? moviesPage2.value : [];
+        const allSeriesPage1 = seriesPage1.status === "fulfilled" ? seriesPage1.value : [];
+        const allMoviesData = [...allMoviesPage1, ...allMoviesPage2, ...allSeriesPage1];
 
         const baseForTrending = trendingData.length > 0 ? trendingData : moviesData;
         const sortedTrending = sortByYearDesc(baseForTrending);
@@ -146,9 +154,9 @@ export default function Index() {
         setRecentMovies(sortedTrending.length > 0 ? sortedTrending : moviesData);
         setRecentSeries(seriesData);
 
-        // Extract unique VJs from all movies
+        // Extract unique VJs from all movies and series
         const vjSet = new Set<string>();
-        [...allMoviesData, ...seriesData].forEach((movie: Movie) => {
+        allMoviesData.forEach((movie: Movie) => {
           if (movie.vj_name && movie.vj_name.trim()) {
             vjSet.add(movie.vj_name.trim());
           }
