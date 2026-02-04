@@ -11,6 +11,7 @@ interface MovieRowProps {
   onViewAll?: () => void;
   isLoading?: boolean;
   showFilters?: boolean;
+  onFilterClick?: () => void;
   className?: string;
 }
 
@@ -21,6 +22,7 @@ export function MovieRow({
   onViewAll, 
   isLoading, 
   showFilters = false,
+  onFilterClick,
   className 
 }: MovieRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -48,6 +50,17 @@ export function MovieRow({
         <h2 className="text-lg md:text-xl font-display font-semibold text-foreground tracking-tight">{title}</h2>
         
         <div className="flex items-center gap-2">
+          {/* Mobile filter button */}
+          {showFilters && onFilterClick && (
+            <button
+              onClick={onFilterClick}
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-card/70 border border-border/40 text-muted-foreground hover:text-foreground hover:bg-card transition-all duration-200 active:scale-95"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Desktop filter buttons */}
           {showFilters && (
             <div className="hidden md:flex items-center gap-1 p-1 rounded-full bg-foreground">
               <button className="p-2 rounded-full text-background hover:bg-background/10 transition-colors">
