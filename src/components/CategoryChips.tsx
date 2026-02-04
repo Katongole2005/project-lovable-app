@@ -41,10 +41,8 @@ export function CategoryChips({ activeCategory, onCategoryChange }: CategoryChip
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-full flex-shrink-0 whitespace-nowrap font-medium tracking-normal transition-all duration-300",
-                isActive 
-                  ? "text-black" 
-                  : "text-[#6b6b6b] hover:text-white bg-[#2c2c2e]"
+                "category-chip flex-shrink-0 whitespace-nowrap font-medium tracking-normal transition-all duration-300",
+                isActive ? "text-black" : "active"
               )}
               style={isActive ? { background: "#4ade80" } : undefined}
             >
