@@ -17,6 +17,31 @@ interface MovieModalProps {
 const fallbackCastAvatar = "https://placehold.co/160x160/1a1a2e/ffffff?text=Actor";
 
 export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) {
+  // NOTE: hooks must be called unconditionally; keep all hooks above the null-guard return.
+  const backdrop = movie?.backdrop_url || null;
+
+  // IMPORTANT: do NOT fall back to poster for the backdrop/background.
+  // This avoids the "image swap" where a poster loads first, then the backdrop replaces it.
+  const backgroundImage = backdrop;
+
+  const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
+  React.useEffect(() => {
+    // Reset whenever backdrop changes (optimistic modal data can hydrate later).
+    setDesktopBackdropLoaded(false);
+    if (!backgroundImage) return;
+
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled) setDesktopBackdropLoaded(true);
+    };
+    img.src = getImageUrl(backgroundImage);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [backgroundImage]);
+
   if (!movie) return null;
 
   const isSeries = movie.type === "series";
@@ -34,9 +59,6 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
       : null;
   const releaseLabel = movie.release_date ? movie.release_date : null;
   const certificationLabel = movie.certification ? movie.certification : null;
-  const backdrop = movie.backdrop_url || null;
-  // Backdrop should come from TMDB; fall back to poster only if no backdrop exists.
-  const backgroundImage = backdrop || movie.image_url || null;
   const handlePlay = (url: string, title: string) => {
     onClose();
     setTimeout(() => {
@@ -71,17 +93,29 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
         <div className="hidden md:block relative h-full md:rounded-3xl overflow-hidden">
           {/* Multi-layer background for professional glass effect */}
           <div className="absolute inset-0">
+            {(!backgroundImage || !desktopBackdropLoaded) && (
+              <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                <div className="absolute inset-0 shimmer" />
+              </div>
+            )}
+
             {backgroundImage && (
               <>
                 <img
                   src={getImageUrl(backgroundImage)}
                   alt=""
-                  className="w-full h-full object-cover scale-110"
+                  className={cn(
+                    "w-full h-full object-cover scale-110 transition-opacity duration-500",
+                    desktopBackdropLoaded ? "opacity-100" : "opacity-0"
+                  )}
                 />
                 <img
                   src={getImageUrl(backgroundImage)}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-cover scale-150 blur-3xl opacity-80"
+                  className={cn(
+                    "absolute inset-0 w-full h-full object-cover scale-150 blur-3xl transition-opacity duration-500",
+                    desktopBackdropLoaded ? "opacity-80" : "opacity-0"
+                  )}
                 />
               </>
             )}
@@ -111,19 +145,25 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
               {/* Backdrop hero section */}
               <div className="relative h-[280px] lg:h-[340px] overflow-hidden">
                 {backdrop ? (
-                  <img
-                    src={getImageUrl(backdrop)}
-                    alt={`${movie.title} backdrop`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : movie.image_url ? (
-                  <img
-                    src={getImageUrl(movie.image_url)}
-                    alt={movie.title}
-                    className="w-full h-full object-cover scale-125 blur-sm"
-                  />
+                  <>
+                    {!desktopBackdropLoaded && (
+                      <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                        <div className="absolute inset-0 shimmer" />
+                      </div>
+                    )}
+                    <img
+                      src={getImageUrl(backdrop)}
+                      alt={`${movie.title} backdrop`}
+                      className={cn(
+                        "w-full h-full object-cover transition-opacity duration-500",
+                        desktopBackdropLoaded ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </>
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-primary/30 via-black to-black" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                    <div className="absolute inset-0 shimmer" />
+                  </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
               </div>
@@ -325,16 +365,22 @@ function MobileMovieLayout({
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
   const heroRef = React.useRef<HTMLDivElement>(null);
 
-  // Preload backdrop image
+  // Preload backdrop image (ONLY the backdrop; never fall back to the poster)
   React.useEffect(() => {
-    const backdropUrl = getImageUrl(backgroundImage || movie.image_url);
+    setBackdropLoaded(false);
+    if (!backgroundImage) return;
+
+    let cancelled = false;
     const img = new Image();
-    img.onload = () => setBackdropLoaded(true);
-    img.src = backdropUrl;
-    
-    // Reset loading state when movie changes
-    return () => setBackdropLoaded(false);
-  }, [backgroundImage, movie.image_url]);
+    img.onload = () => {
+      if (!cancelled) setBackdropLoaded(true);
+    };
+    img.src = getImageUrl(backgroundImage);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [backgroundImage]);
 
   // Parallax scroll effect
   React.useEffect(() => {
@@ -394,17 +440,29 @@ function MobileMovieLayout({
     <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark">
       {/* Multi-layer background for professional glass effect - matching desktop */}
       <div className="absolute inset-0 z-0">
-        {(backgroundImage || movie.image_url) && (
+        {(!backgroundImage || !backdropLoaded) && (
+          <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+            <div className="absolute inset-0 shimmer" />
+          </div>
+        )}
+
+        {backgroundImage && (
           <>
             <img
-              src={getImageUrl(backgroundImage || movie.image_url)}
+              src={getImageUrl(backgroundImage)}
               alt=""
-              className="w-full h-full object-cover scale-110"
+              className={cn(
+                "w-full h-full object-cover scale-110 transition-opacity duration-500",
+                backdropLoaded ? "opacity-100" : "opacity-0"
+              )}
             />
             <img
-              src={getImageUrl(backgroundImage || movie.image_url)}
+              src={getImageUrl(backgroundImage)}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover scale-150 blur-3xl opacity-80"
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover scale-150 blur-3xl transition-opacity duration-500",
+                backdropLoaded ? "opacity-80" : "opacity-0"
+              )}
             />
           </>
         )}
@@ -455,16 +513,19 @@ function MobileMovieLayout({
           )}
           
           {/* Backdrop image with parallax movement - fades in when loaded */}
-          <img
-            src={getImageUrl(backgroundImage || movie.image_url)}
-            alt={movie.title}
-            className={`w-full h-full object-cover transition-all duration-500 ${
-              backdropLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{
-              transform: `scale(${1.1 + scrollProgress * 0.15}) translateY(${scrollProgress * 20}px)`,
-            }}
-          />
+          {backgroundImage && (
+            <img
+              src={getImageUrl(backgroundImage)}
+              alt={movie.title}
+              className={cn(
+                "w-full h-full object-cover transition-all duration-500",
+                backdropLoaded ? "opacity-100" : "opacity-0"
+              )}
+              style={{
+                transform: `scale(${1.1 + scrollProgress * 0.15}) translateY(${scrollProgress * 20}px)`,
+              }}
+            />
+          )}
           {/* Gradient overlays - using black for consistency in both modes */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent" />
