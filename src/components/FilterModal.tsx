@@ -151,7 +151,7 @@ export function FilterModal({
         </div>
 
         {/* Scrollable content */}
-        <div className="relative h-[calc(100%-140px)] overflow-y-auto px-5 py-6 space-y-8">
+        <div className="relative h-[calc(100%-140px)] overflow-y-auto px-5 py-6 space-y-8 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           {/* Categories Section */}
           <section className="space-y-4">
             <div className="flex items-center gap-2">
