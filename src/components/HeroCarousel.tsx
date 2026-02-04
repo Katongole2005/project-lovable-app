@@ -342,7 +342,7 @@ export function HeroCarousel({
           animation: 'float 3s ease-in-out infinite',
           transform: 'translateY(-2px)'
         }}>
-              VIEWS {getImdbRating(currentMovie)}
+              IMDB {getImdbRating(currentMovie)}
             </span>
           </div>
 
