@@ -91,27 +91,30 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
           </Link>
 
           {/* Center - Pill Navigation */}
-          <nav className="hidden md:flex pill-nav">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => onTabChange?.(item.id)}
-                className={cn(
-                  "pill-nav-item",
-                  activeTab === item.id && "active"
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
+          <nav className="hidden md:flex items-center gap-1 p-1.5 rounded-full" style={{ background: "#1c1c1e" }}>
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange?.(item.id)}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+                    isActive ? "text-black" : "text-[#6b6b6b] hover:text-white"
+                  )}
+                  style={isActive ? { background: "#4ade80" } : undefined}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
             <button
               onClick={() => onTabChange?.("search")}
               className={cn(
-                "p-2 rounded-full transition-colors",
-                activeTab === "search" 
-                  ? "bg-card text-foreground" 
-                  : "text-muted-foreground hover:text-foreground"
+                "p-2 rounded-full transition-all duration-300",
+                activeTab === "search" ? "text-black" : "text-[#6b6b6b] hover:text-white"
               )}
+              style={activeTab === "search" ? { background: "#4ade80" } : undefined}
             >
               <Search className="w-5 h-5" />
             </button>
@@ -123,13 +126,16 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
             {mounted && (
               <button
                 onClick={toggleTheme}
-                className="p-2.5 rounded-full bg-card/60 backdrop-blur border border-border/40 transition-all duration-300 hover:bg-card"
+                className="p-2.5 rounded-full transition-all duration-300"
+                style={{
+                  background: isDark ? "#4ade80" : "#2c2c2e",
+                }}
                 aria-label="Toggle theme"
               >
                 {isDark ? (
-                  <Sun className="w-5 h-5 text-foreground" />
+                  <Sun className="w-5 h-5 text-black" />
                 ) : (
-                  <Moon className="w-5 h-5 text-foreground" />
+                  <Moon className="w-5 h-5 text-[#6b6b6b]" />
                 )}
               </button>
             )}
@@ -149,27 +155,30 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
 
         {/* Mobile Navigation */}
         <div className="md:hidden mt-4 flex justify-center">
-          <nav className="pill-nav">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => onTabChange?.(item.id)}
-                className={cn(
-                  "pill-nav-item text-xs px-3 py-1.5",
-                  activeTab === item.id && "active"
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
+          <nav className="flex items-center gap-1 p-1.5 rounded-full" style={{ background: "#1c1c1e" }}>
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange?.(item.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300",
+                    isActive ? "text-black" : "text-[#6b6b6b] hover:text-white"
+                  )}
+                  style={isActive ? { background: "#4ade80" } : undefined}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
             <button
               onClick={() => onTabChange?.("search")}
               className={cn(
-                "p-1.5 rounded-full transition-colors",
-                activeTab === "search" 
-                  ? "bg-card text-foreground" 
-                  : "text-muted-foreground hover:text-foreground"
+                "p-1.5 rounded-full transition-all duration-300",
+                activeTab === "search" ? "text-black" : "text-[#6b6b6b] hover:text-white"
               )}
+              style={activeTab === "search" ? { background: "#4ade80" } : undefined}
             >
               <Search className="w-4 h-4" />
             </button>
