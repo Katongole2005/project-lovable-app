@@ -433,6 +433,19 @@ function MobileMovieLayout({
                 )}
                 {(runtimeLabel || certificationLabel) && movie.year && <span className="text-white/60">•</span>}
                 {movie.year && <span className="font-medium">{movie.year}</span>}
+                {movie.views !== undefined && movie.views > 0 && (
+                  <>
+                    <span className="text-white/60">•</span>
+                    <span className="flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5" />
+                      {movie.views >= 1000000 
+                        ? `${(movie.views / 1000000).toFixed(1)}M` 
+                        : movie.views >= 1000 
+                          ? `${(movie.views / 1000).toFixed(1)}K` 
+                          : movie.views}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
