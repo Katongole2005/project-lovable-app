@@ -441,32 +441,71 @@ export default function Index() {
   const handleApplyFilters = useCallback(async (filters: FilterState) => {
     setIsLoading(true);
     try {
-      // Fetch base data
-      let data: Movie[] = [];
-      
-      if (filters.category && filters.category !== "trending") {
-        const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
-        data = await fetchByGenre(genre, "movie", 100);
+      // If content type is selected, navigate to that view with filters
+      if (filters.contentType) {
+        const contentViewMode = filters.contentType === "movies" ? "movies" : "series";
+        setViewMode(contentViewMode);
+        setActiveTab(contentViewMode);
+        
+        // Fetch content based on type
+        let data: Movie[] = [];
+        if (filters.contentType === "movies") {
+          data = await fetchRecent("movie", 100, 1);
+        } else {
+          data = await fetchSeries(100, 1);
+        }
+
+        // Apply VJ filter
+        if (filters.vj) {
+          data = data.filter((m: Movie) => m.vj_name === filters.vj);
+        }
+
+        // Apply year filter
+        if (filters.year) {
+          data = data.filter((m: Movie) => m.year === filters.year);
+        }
+
+        // Apply category filter for movies only
+        if (filters.contentType === "movies" && filters.category && filters.category !== "trending") {
+          const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
+          data = data.filter((m: Movie) => 
+            m.genres?.some(g => g.toLowerCase().includes(genre.toLowerCase()))
+          );
+        }
+
+        setCategoryMovies(sortByYearDesc(data));
+        setActiveVJ(filters.vj);
+        
+        // Scroll to top of page
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        data = await fetchRecent("movie", 100, 1);
-      }
+        // Original behavior - filter on home page
+        let data: Movie[] = [];
+        
+        if (filters.category && filters.category !== "trending") {
+          const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
+          data = await fetchByGenre(genre, "movie", 100);
+        } else {
+          data = await fetchRecent("movie", 100, 1);
+        }
 
-      // Apply VJ filter
-      if (filters.vj) {
-        data = data.filter((m: Movie) => m.vj_name === filters.vj);
-      }
+        // Apply VJ filter
+        if (filters.vj) {
+          data = data.filter((m: Movie) => m.vj_name === filters.vj);
+        }
 
-      // Apply year filter
-      if (filters.year) {
-        data = data.filter((m: Movie) => m.year === filters.year);
-      }
+        // Apply year filter
+        if (filters.year) {
+          data = data.filter((m: Movie) => m.year === filters.year);
+        }
 
-      // Update states
-      if (filters.category) {
-        setActiveCategory(filters.category);
+        // Update states
+        if (filters.category) {
+          setActiveCategory(filters.category);
+        }
+        setActiveVJ(filters.vj);
+        setRecentMovies(sortByYearDesc(data));
       }
-      setActiveVJ(filters.vj);
-      setRecentMovies(sortByYearDesc(data));
     } catch (error) {
       console.error("Error applying filters:", error);
     } finally {
@@ -792,6 +831,7 @@ export default function Index() {
           category: activeCategory,
           vj: activeVJ,
           year: null,
+          contentType: null,
         }}
       />
     </div>
