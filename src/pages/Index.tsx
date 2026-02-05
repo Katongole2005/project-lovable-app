@@ -161,9 +161,9 @@ export default function Index() {
           }
         });
         
-        // Convert to array, filter out Junior, and sort alphabetically
+        // Convert to array, filter out Juniorv, and sort alphabetically
         const vjList = Array.from(vjSet)
-          .filter(vj => vj.toLowerCase() !== "junior" && vj.toLowerCase() !== "juniorv")
+          .filter(vj => vj.toLowerCase() !== "juniorv")
           .sort((a, b) => a.localeCompare(b))
           .map(vj => ({ id: vj, label: `VJ ${vj}` }));
         
