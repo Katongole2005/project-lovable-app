@@ -829,10 +829,10 @@ export default function Index() {
         vjs={filterVJs}
         years={filterYears}
         initialFilters={{
-          category: activeCategory,
+          category: null,
           vj: activeVJ,
           year: null,
-          contentType: null,
+          contentType: "movies",
         }}
       />
     </div>
