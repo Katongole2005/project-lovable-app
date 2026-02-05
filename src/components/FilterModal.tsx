@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, X, Sparkles } from "lucide-react";
+import { ChevronLeft, X, Sparkles, Film, Tv } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const contentTypes = [
+  { id: "movies" as const, label: "Movies", icon: Film },
+  { id: "series" as const, label: "Series", icon: Tv },
+];
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -16,6 +21,7 @@ export interface FilterState {
   category: string | null;
   vj: string | null;
   year: number | null;
+  contentType: "movies" | "series" | null;
 }
 
 export function FilterModal({
@@ -36,6 +42,9 @@ export function FilterModal({
   const [selectedYear, setSelectedYear] = useState<number | null>(
     initialFilters?.year || null
   );
+  const [selectedContentType, setSelectedContentType] = useState<"movies" | "series" | null>(
+    initialFilters?.contentType || null
+  );
   const [isAnimating, setIsAnimating] = useState(false);
 
   // Reset to initial filters when modal opens
@@ -44,6 +53,7 @@ export function FilterModal({
       setSelectedCategory(initialFilters?.category || null);
       setSelectedVJ(initialFilters?.vj || null);
       setSelectedYear(initialFilters?.year || null);
+      setSelectedContentType(initialFilters?.contentType || null);
       setIsAnimating(true);
     }
   }, [isOpen, initialFilters]);
@@ -52,6 +62,7 @@ export function FilterModal({
     setSelectedCategory(null);
     setSelectedVJ(null);
     setSelectedYear(null);
+    setSelectedContentType(null);
   };
 
   const handleApply = () => {
@@ -59,11 +70,12 @@ export function FilterModal({
       category: selectedCategory,
       vj: selectedVJ,
       year: selectedYear,
+      contentType: selectedContentType,
     });
     onClose();
   };
 
-  const hasActiveFilters = selectedCategory || selectedVJ || selectedYear;
+  const hasActiveFilters = selectedCategory || selectedVJ || selectedYear || selectedContentType;
 
   if (!isOpen) return null;
 
@@ -152,6 +164,43 @@ export function FilterModal({
 
         {/* Scrollable content */}
         <div className="relative h-[calc(100%-140px)] overflow-y-auto px-5 py-6 space-y-8 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          {/* Content Type Section - Movies/Series */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-semibold text-white/90">
+                Content Type
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {contentTypes.map((type, index) => {
+                const isActive = selectedContentType === type.id;
+                const Icon = type.icon;
+                return (
+                  <button
+                    key={type.id}
+                    onClick={() =>
+                      setSelectedContentType(isActive ? null : type.id)
+                    }
+                    className={cn(
+                      "px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 transform flex items-center gap-2",
+                      "hover:scale-105 active:scale-95",
+                      isActive
+                        ? "text-black border-transparent shadow-lg shadow-[#4ade80]/40"
+                        : "bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-white/15 hover:border-white/30"
+                    )}
+                    style={{
+                      background: isActive ? "#4ade80" : undefined,
+                      animationDelay: `${index * 50}ms`,
+                    }}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {type.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           {/* Categories Section */}
           <section className="space-y-4">
             <div className="flex items-center gap-2">
