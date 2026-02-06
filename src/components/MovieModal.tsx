@@ -480,7 +480,7 @@ function MobileMovieLayout({
 
   return (
     <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark">
-      {/* Multi-layer background for professional glass effect - matching desktop */}
+      {/* Multi-layer background - liquid glass effect */}
       <div className="absolute inset-0 z-0">
         {(!backgroundImage || !backdropLoaded) && (
           <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
@@ -508,9 +508,33 @@ function MobileMovieLayout({
             />
           </>
         )}
-        <div className="absolute inset-0 backdrop-blur-xl bg-black/50" />
+        <div className="absolute inset-0 backdrop-blur-2xl bg-black/60" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
+        
+        {/* Liquid glass decorative elements */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Top highlight reflection */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          {/* Left edge reflection */}
+          <div className="absolute top-0 left-0 bottom-0 w-px bg-gradient-to-b from-white/20 via-white/5 to-transparent" />
+          
+          {/* Animated liquid blobs */}
+          <div 
+            className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-[#4ade80]/15 blur-3xl"
+            style={{ animation: "liquidFloat 8s ease-in-out infinite" }}
+          />
+          <div 
+            className="absolute top-1/3 -left-20 w-40 h-40 rounded-full bg-primary/10 blur-3xl"
+            style={{ animation: "liquidFloat 10s ease-in-out infinite reverse" }}
+          />
+          <div 
+            className="absolute -bottom-20 right-1/4 w-52 h-52 rounded-full bg-[#4ade80]/10 blur-3xl"
+            style={{ animation: "liquidFloat 12s ease-in-out infinite", animationDelay: "2s" }}
+          />
+        </div>
+
+        {/* Glass noise texture overlay */}
         <div 
           className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
           style={{
@@ -520,7 +544,7 @@ function MobileMovieLayout({
       </div>
       
       {/* Glass border overlay */}
-      <div className="absolute inset-0 z-0 pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
+      <div className="absolute inset-0 z-0 pointer-events-none border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]" />
 
       {/* Fixed top navigation - stays in place while scrolling */}
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pt-safe bg-gradient-to-b from-black/70 to-transparent">
@@ -921,6 +945,16 @@ function MobileMovieLayout({
           </div>
         </div>
       </div>
+
+      {/* Liquid glass animation keyframes */}
+      <style>{`
+        @keyframes liquidFloat {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(10px, -15px) scale(1.05); }
+          50% { transform: translate(-5px, 10px) scale(0.95); }
+          75% { transform: translate(-15px, -5px) scale(1.02); }
+        }
+      `}</style>
     </div>
   );
 }
