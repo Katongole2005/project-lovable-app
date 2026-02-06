@@ -359,6 +359,7 @@ export default function Index() {
   // Handle tab change
   const handleTabChange = useCallback(async (tab: string) => {
     setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: "instant" });
     
     if (tab === "home") {
       setViewMode("home");
