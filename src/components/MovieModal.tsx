@@ -1,5 +1,7 @@
 import React from "react";
 import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List } from "lucide-react";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -270,13 +272,18 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                         <Maximize2 className="w-4 h-4" />
                       </button>
                       {!isSeries && movie.download_url && (
-                        <a
-                          href={movie.download_url}
-                          download
+                        <button
+                          onClick={() => {
+                            if (FEATURE_FLAGS.DOWNLOAD_ENABLED) {
+                              window.open(movie.download_url, "_blank");
+                            } else {
+                              toast.info("Download feature is not available");
+                            }
+                          }}
                           className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
                         >
                           <Download className="w-4 h-4" />
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -677,6 +684,10 @@ function MobileMovieLayout({
               <button
                 className="flex-1 flex items-center gap-3 rounded-full h-12 bg-black pl-1.5 pr-5 hover:bg-black/90 transition-colors"
                 onClick={() => {
+                  if (!FEATURE_FLAGS.DOWNLOAD_ENABLED) {
+                    toast.info("Download feature is not available");
+                    return;
+                  }
                   if (movie.download_url) {
                     window.open(movie.download_url, "_blank");
                   }
@@ -987,6 +998,10 @@ function MobileEpisodeCard({ episode, seriesTitle, seriesImage, seasonNumber = 1
           <button
             onClick={(e) => {
               e.stopPropagation();
+              if (!FEATURE_FLAGS.DOWNLOAD_ENABLED) {
+                toast.info("Download feature is not available");
+                return;
+              }
               if (episode.download_url) {
                 window.open(episode.download_url, "_blank");
               }
@@ -1039,11 +1054,17 @@ function MobileEpisodeItem({ episode, seriesTitle, onPlay }: MobileEpisodeItemPr
               size="sm"
               variant="ghost"
               className="text-muted-foreground hover:text-foreground h-9 w-9 p-0 rounded-lg"
-              asChild
+              onClick={() => {
+                if (!FEATURE_FLAGS.DOWNLOAD_ENABLED) {
+                  toast.info("Download feature is not available");
+                  return;
+                }
+                if (episode.download_url) {
+                  window.open(episode.download_url, "_blank");
+                }
+              }}
             >
-              <a href={episode.download_url} download>
-                <Download className="w-4 h-4" />
-              </a>
+              <Download className="w-4 h-4" />
             </Button>
             <Button
               size="sm"
@@ -1158,12 +1179,18 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                 size="sm"
                 variant="ghost"
                 className="text-white/70 hover:text-white hover:bg-white/10 h-8 px-3 rounded"
-                asChild
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!FEATURE_FLAGS.DOWNLOAD_ENABLED) {
+                    toast.info("Download feature is not available");
+                    return;
+                  }
+                  if (episode.download_url) {
+                    window.open(episode.download_url, "_blank");
+                  }
+                }}
               >
-                <a href={episode.download_url} download>
-                  <Download className="w-4 h-4" />
-                </a>
+                <Download className="w-4 h-4" />
               </Button>
             </>
           )}
