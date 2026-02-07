@@ -8,7 +8,8 @@ import {
   Minimize, 
   SkipBack, 
   SkipForward,
-  X
+  X,
+  ScreenShare
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -49,6 +50,57 @@ export function CinematicVideoPlayer({
   const [isBuffering, setIsBuffering] = useState(false);
   const [previewTime, setPreviewTime] = useState<number | null>(null);
   const [previewPosition, setPreviewPosition] = useState(0);
+  const [isLandscape, setIsLandscape] = useState(false);
+
+  // Toggle screen orientation (mobile only)
+  const toggleOrientation = useCallback(async () => {
+    try {
+      const screen = window.screen as any;
+      if (screen.orientation?.lock) {
+        if (isLandscape) {
+          await screen.orientation.lock("portrait");
+          setIsLandscape(false);
+        } else {
+          await screen.orientation.lock("landscape");
+          setIsLandscape(true);
+        }
+      }
+    } catch (err) {
+      // Fallback: orientation lock not supported or not in fullscreen
+      // Try entering fullscreen first then locking
+      try {
+        if (containerRef.current && !document.fullscreenElement) {
+          await containerRef.current.requestFullscreen();
+        }
+        const screen = window.screen as any;
+        if (screen.orientation?.lock) {
+          if (isLandscape) {
+            await screen.orientation.lock("portrait");
+            setIsLandscape(false);
+          } else {
+            await screen.orientation.lock("landscape");
+            setIsLandscape(true);
+          }
+        }
+      } catch (innerErr) {
+        console.log("Orientation lock not supported on this device");
+      }
+    }
+  }, [isLandscape]);
+
+  // Track actual orientation changes
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      const screen = window.screen as any;
+      const type = screen.orientation?.type || "";
+      setIsLandscape(type.includes("landscape"));
+    };
+    const screen = window.screen as any;
+    if (screen.orientation) {
+      screen.orientation.addEventListener("change", handleOrientationChange);
+      return () => screen.orientation.removeEventListener("change", handleOrientationChange);
+    }
+  }, []);
 
   // Format time as HH:MM:SS or MM:SS
   const formatTime = (seconds: number) => {
@@ -435,6 +487,18 @@ export function CinematicVideoPlayer({
 
                 {/* Right controls */}
                 <div className="flex items-center gap-2">
+                  {/* Rotate orientation - mobile only */}
+                  <button 
+                    onClick={toggleOrientation}
+                    className="md:hidden p-2 hover:bg-white/10 rounded-full transition-colors"
+                    title={isLandscape ? "Switch to portrait" : "Switch to landscape"}
+                  >
+                    <ScreenShare className={cn(
+                      "w-5 h-5 text-white transition-transform duration-300",
+                      isLandscape ? "rotate-0" : "rotate-90"
+                    )} />
+                  </button>
+                  
                   <button 
                     onClick={toggleFullscreen}
                     className="p-2 hover:bg-white/10 rounded-full transition-colors"
