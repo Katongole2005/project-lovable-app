@@ -271,14 +271,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                       <button className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200">
                         <Maximize2 className="w-4 h-4" />
                       </button>
-                      {!isSeries && movie.download_url && (
+                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
                         <button
                           onClick={() => {
-                            if (FEATURE_FLAGS.DOWNLOAD_ENABLED) {
-                              window.open(movie.download_url, "_blank");
-                            } else {
-                              toast.info("Download feature is not available");
-                            }
+                            window.open(movie.download_url, "_blank");
                           }}
                           className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
                         >
@@ -704,14 +700,10 @@ function MobileMovieLayout({
                 Episodes
                 <List className="w-5 h-5" />
               </Button>
-            ) : (
+            ) : FEATURE_FLAGS.DOWNLOAD_ENABLED ? (
               <button
                 className="flex-1 flex items-center gap-3 rounded-full h-12 bg-black pl-1.5 pr-5 hover:bg-black/90 transition-colors"
                 onClick={() => {
-                  if (!FEATURE_FLAGS.DOWNLOAD_ENABLED) {
-                    toast.info("Download feature is not available");
-                    return;
-                  }
                   if (movie.download_url) {
                     window.open(movie.download_url, "_blank");
                   }
@@ -722,7 +714,7 @@ function MobileMovieLayout({
                 </div>
                 <span className="text-white text-base font-medium">Download</span>
               </button>
-            )}
+            ) : null}
           </div>
 
           {/* Tabs */}
@@ -1028,14 +1020,10 @@ function MobileEpisodeCard({ episode, seriesTitle, seriesImage, seasonNumber = 1
         </p>
         
         {/* Download button */}
-        {hasVideo && (
+        {FEATURE_FLAGS.DOWNLOAD_ENABLED && hasVideo && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (!FEATURE_FLAGS.DOWNLOAD_ENABLED) {
-                toast.info("Download feature is not available");
-                return;
-              }
               if (episode.download_url) {
                 window.open(episode.download_url, "_blank");
               }
@@ -1084,15 +1072,12 @@ function MobileEpisodeItem({ episode, seriesTitle, onPlay }: MobileEpisodeItemPr
       <div className="flex items-center gap-2">
         {hasVideo && (
           <>
+            {FEATURE_FLAGS.DOWNLOAD_ENABLED && (
             <Button
               size="sm"
               variant="ghost"
               className="text-muted-foreground hover:text-foreground h-9 w-9 p-0 rounded-lg"
               onClick={() => {
-                if (!FEATURE_FLAGS.DOWNLOAD_ENABLED) {
-                  toast.info("Download feature is not available");
-                  return;
-                }
                 if (episode.download_url) {
                   window.open(episode.download_url, "_blank");
                 }
@@ -1100,6 +1085,7 @@ function MobileEpisodeItem({ episode, seriesTitle, onPlay }: MobileEpisodeItemPr
             >
               <Download className="w-4 h-4" />
             </Button>
+            )}
             <Button
               size="sm"
               className="gap-1.5 bg-primary/20 text-primary hover:bg-primary/30 h-9 px-4 rounded-lg font-medium"
@@ -1209,16 +1195,13 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                 <Play className="w-3.5 h-3.5 fill-current" />
                 Play
               </Button>
+              {FEATURE_FLAGS.DOWNLOAD_ENABLED && (
               <Button
                 size="sm"
                 variant="ghost"
                 className="text-white/70 hover:text-white hover:bg-white/10 h-8 px-3 rounded"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!FEATURE_FLAGS.DOWNLOAD_ENABLED) {
-                    toast.info("Download feature is not available");
-                    return;
-                  }
                   if (episode.download_url) {
                     window.open(episode.download_url, "_blank");
                   }
@@ -1226,6 +1209,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
               >
                 <Download className="w-4 h-4" />
               </Button>
+              )}
             </>
           )}
           {!hasVideo && episode.video_page_url && (
