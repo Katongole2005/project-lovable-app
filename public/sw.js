@@ -1,5 +1,5 @@
 // Bump the cache whenever we change caching behavior
-const CACHE_NAME = "moviebay-v4";
+const CACHE_NAME = "moviebay-v5";
 const CORE_ASSETS = [
   "/",
   "/index.html",
@@ -35,6 +35,11 @@ const isDevelopment = () => {
 // Check if a URL should never be cached
 const shouldNeverCache = (url) => {
   return NEVER_CACHE_PATTERNS.some(pattern => url.includes(pattern));
+};
+
+// Check if URL is a hashed asset (JS/CSS bundles from Vite)
+const isHashedAsset = (url) => {
+  return /\/assets\/.*-[a-f0-9]{8,}\.(js|css)$/i.test(url);
 };
 
 self.addEventListener("install", (event) => {
@@ -90,21 +95,45 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Navigation requests: network-first with offline fallback
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match("/index.html"))
+      fetch(event.request)
+        .then((response) => {
+          // Cache the latest index.html for offline fallback
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put("/index.html", clone));
+          return response;
+        })
+        .catch(() => caches.match("/index.html"))
     );
     return;
   }
 
+  // Hashed assets (JS/CSS bundles): network-first to prevent stale bundles
+  // These files have content hashes in their names, so old cached versions
+  // will break the app after a new deployment.
+  if (isHashedAsset(urlString)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || new Response("", { status: 503 })))
+    );
+    return;
+  }
+
+  // Static assets (images, fonts, etc.): cache-first with network fallback
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
       return fetch(event.request).then((response) => {
-        // Don't cache if it's a development resource
-        if (shouldNeverCache(event.request.url)) {
-          return response;
-        }
+        if (!response.ok) return response;
         
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
@@ -116,9 +145,19 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// Listen for messages to unregister service worker
+// Listen for messages
 self.addEventListener("message", (event) => {
   if (event.data === "skipWaiting") {
     self.skipWaiting();
+  }
+  // Force clear all caches when requested
+  if (event.data === "clearCaches") {
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((key) => caches.delete(key)))
+    ).then(() => {
+      self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => client.postMessage("cachesCleared"));
+      });
+    });
   }
 });
