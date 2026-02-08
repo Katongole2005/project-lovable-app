@@ -348,7 +348,7 @@ export function CinematicVideoPlayer({
               onLoadedMetadata={handleLoadedMetadata}
               onWaiting={() => setIsBuffering(true)}
               onPlaying={() => setIsBuffering(false)}
-              onClick={togglePlay}
+              onClick={resetControlsTimeout}
             />
 
             {/* Buffering indicator */}
