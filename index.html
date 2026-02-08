@@ -41,6 +41,47 @@
 
   <body>
     <div id="root"></div>
+    
+    <!-- Recovery script: detect blank screen from stale cache and force reload -->
+    <script>
+      (function() {
+        // Only run in production (not dev/preview)
+        var isDev = location.hostname === 'localhost' 
+          || location.hostname.includes('lovableproject.com')
+          || location.hostname.includes('lovable.app');
+        if (isDev) return;
+
+        var RECOVERY_KEY = 'moviebay_recovery_attempted';
+        var alreadyTried = sessionStorage.getItem(RECOVERY_KEY);
+
+        // After 6 seconds, if #root is still empty, clear caches and reload
+        setTimeout(function() {
+          var root = document.getElementById('root');
+          if (root && root.children.length === 0 && !alreadyTried) {
+            sessionStorage.setItem(RECOVERY_KEY, '1');
+            // Unregister service workers and clear caches
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(r) { r.unregister(); });
+              });
+            }
+            if ('caches' in window) {
+              caches.keys().then(function(keys) {
+                return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+              }).then(function() {
+                location.reload();
+              });
+            } else {
+              location.reload();
+            }
+          } else if (root && root.children.length > 0) {
+            // App loaded fine, clear the flag for next visit
+            sessionStorage.removeItem(RECOVERY_KEY);
+          }
+        }, 6000);
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
