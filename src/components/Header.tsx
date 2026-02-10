@@ -91,7 +91,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
           </Link>
 
           {/* Center - Pill Navigation */}
-          <nav className="hidden md:flex items-center gap-1 p-1.5 rounded-full" style={{ background: "#1c1c1e" }}>
+          <nav className="hidden md:flex items-center gap-1 p-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -155,7 +155,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
 
         {/* Mobile Navigation */}
         <div className="md:hidden mt-4 flex justify-center">
-          <nav className="flex items-center gap-1 p-1.5 rounded-full" style={{ background: "#1c1c1e" }}>
+          <nav className="flex items-center gap-1 p-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
