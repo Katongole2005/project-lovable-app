@@ -91,7 +91,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
           </Link>
 
           {/* Center - Pill Navigation */}
-          <nav className={cn("hidden md:flex items-center gap-1 p-1.5 rounded-full", isDark ? "bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]" : "")} style={!isDark ? { background: "#1c1c1e" } : undefined}>
+          <nav className={cn("hidden md:flex items-center gap-1 p-1.5 rounded-full", isDark ? "bg-white/10 backdrop-blur-xl border border-[#4ade80]/20 shadow-[0_4px_20px_rgba(74,222,128,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]" : "")} style={!isDark ? { background: "#1c1c1e" } : undefined}>
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -155,7 +155,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
 
         {/* Mobile Navigation */}
         <div className="md:hidden mt-4 flex justify-center">
-          <nav className={cn("flex items-center gap-1 p-1.5 rounded-full", isDark ? "bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]" : "")} style={!isDark ? { background: "#1c1c1e" } : undefined}>
+          <nav className={cn("flex items-center gap-1 p-1.5 rounded-full", isDark ? "bg-white/10 backdrop-blur-xl border border-[#4ade80]/20 shadow-[0_4px_20px_rgba(74,222,128,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]" : "")} style={!isDark ? { background: "#1c1c1e" } : undefined}>
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
