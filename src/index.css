@@ -162,7 +162,7 @@
   }
 
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     -webkit-tap-highlight-color: transparent;
     font-size: 16px;
     text-rendering: optimizeLegibility;
