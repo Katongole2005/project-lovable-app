@@ -338,10 +338,7 @@ export function HeroCarousel({
             <h3 className="text-lg md:text-xl lg:text-2xl font-display font-bold text-white tracking-tight drop-shadow-lg">
               {currentMovie.title}
             </h3>
-            <span className="px-2.5 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded-md text-black shadow-[0_0_30px_rgba(250,204,21,0.5),0_4px_15px_rgba(0,0,0,0.3)] bg-[hsl(50,100%,50%)]" style={{
-          animation: 'float 3s ease-in-out infinite',
-          transform: 'translateY(-2px)'
-        }}>
+            <span className="px-2.5 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded-sm text-black bg-[hsl(50,100%,50%)]">
               IMDB {getImdbRating(currentMovie)}
             </span>
           </div>
