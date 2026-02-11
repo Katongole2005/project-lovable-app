@@ -1,5 +1,5 @@
 // Bump the cache whenever we change caching behavior
-const CACHE_NAME = "moviebay-v6";
+const CACHE_NAME = "moviebay-v7";
 const CORE_ASSETS = [
   "/",
   "/index.html",
