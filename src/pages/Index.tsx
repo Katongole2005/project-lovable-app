@@ -149,7 +149,11 @@ export default function Index() {
 
         const baseForTrending = trendingData.length > 0 ? trendingData : moviesData;
         const sortedTrending = sortByYearDesc(baseForTrending);
-        setTrending(sortedTrending.slice(0, 5));
+        
+        // Hero carousel: 4 movies + 1 series
+        const heroMovies = sortedTrending.filter((m: Movie) => m.type === 'movie').slice(0, 4);
+        const heroSeries = seriesData.length > 0 ? [seriesData[0]] : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, 1);
+        setTrending([...heroMovies, ...heroSeries].slice(0, 5));
         setRecentMovies(sortedTrending.length > 0 ? sortedTrending : moviesData);
         setRecentSeries(seriesData);
 
