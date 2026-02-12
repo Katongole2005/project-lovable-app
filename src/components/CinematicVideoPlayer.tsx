@@ -6,14 +6,15 @@ import {
   VolumeX, 
   Maximize, 
   Minimize, 
-  SkipBack, 
-  SkipForward,
+  RotateCcw,
+  RotateCw,
   X,
   ScreenShare,
-  ChevronLeft,
-  SkipForward as NextIcon,
-  Subtitles,
-  MonitorSmartphone
+  ArrowLeft,
+  SkipForward,
+  Captions,
+  Airplay,
+  Flag
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -379,26 +380,26 @@ export function CinematicVideoPlayer({
               )}
             </div>
 
-            {/* Back button (top-left) - desktop/tablet style */}
+            {/* Back button (top-left) */}
             <button
               onClick={handleClose}
               className={cn(
-                "absolute top-4 left-4 z-50 p-2 rounded-full hover:bg-white/10 transition-all",
+                "absolute top-4 left-4 z-50 p-2 hover:bg-white/10 rounded-full transition-all",
                 showControls ? "opacity-100" : "opacity-0"
               )}
             >
-              <ChevronLeft className="w-7 h-7 text-white" />
+              <ArrowLeft className="w-6 h-6 text-white" />
             </button>
 
-            {/* Flag/report button (top-right) - decorative like the reference */}
-            <div
+            {/* Flag button (top-right) like reference */}
+            <button
               className={cn(
-                "absolute top-4 right-4 z-50 hidden md:block transition-all",
+                "absolute top-4 right-4 z-50 p-2 hover:bg-white/10 rounded-full transition-all hidden md:block",
                 showControls ? "opacity-100" : "opacity-0"
               )}
             >
-              {/* Placeholder for top-right icon like reference */}
-            </div>
+              <Flag className="w-5 h-5 text-white" />
+            </button>
 
             {/* Video Controls Overlay */}
             <div 
@@ -465,16 +466,18 @@ export function CinematicVideoPlayer({
                   
                   <button 
                     onClick={() => skip(-10)}
-                    className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="relative p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                   >
-                    <SkipBack className="w-5 h-5 text-white" />
+                    <RotateCcw className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] md:text-[9px] font-bold text-white mt-[1px]">10</span>
                   </button>
                   
                   <button 
                     onClick={() => skip(10)}
-                    className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="relative p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                   >
-                    <SkipForward className="w-5 h-5 text-white" />
+                    <RotateCw className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] md:text-[9px] font-bold text-white mt-[1px]">10</span>
                   </button>
 
                   {/* Volume control - desktop */}
@@ -530,23 +533,23 @@ export function CinematicVideoPlayer({
                     className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
                     title="Next"
                   >
-                    <NextIcon className="w-5 h-5 text-white" />
+                    <SkipForward className="w-5 h-5 text-white" />
                   </button>
 
-                  {/* Cast button - desktop */}
+                  {/* Cast/Airplay button - desktop */}
                   <button 
                     className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
                     title="Cast"
                   >
-                    <MonitorSmartphone className="w-5 h-5 text-white" />
+                    <Airplay className="w-5 h-5 text-white" />
                   </button>
 
-                  {/* Subtitles button - desktop */}
+                  {/* Subtitles/CC button - desktop */}
                   <button 
                     className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
                     title="Subtitles"
                   >
-                    <Subtitles className="w-5 h-5 text-white" />
+                    <Captions className="w-5 h-5 text-white" />
                   </button>
                   
                   <button 
