@@ -9,7 +9,11 @@ import {
   SkipBack, 
   SkipForward,
   X,
-  ScreenShare
+  ScreenShare,
+  ChevronLeft,
+  SkipForward as NextIcon,
+  Subtitles,
+  MonitorSmartphone
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -375,27 +379,37 @@ export function CinematicVideoPlayer({
               )}
             </div>
 
-            {/* Close button - always visible on mobile, hidden on hover elsewhere */}
+            {/* Back button (top-left) - desktop/tablet style */}
             <button
               onClick={handleClose}
               className={cn(
-                "absolute top-4 right-4 z-50 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-all",
-                showControls ? "opacity-100" : "opacity-0 md:opacity-0"
+                "absolute top-4 left-4 z-50 p-2 rounded-full hover:bg-white/10 transition-all",
+                showControls ? "opacity-100" : "opacity-0"
               )}
             >
-              <X className="w-6 h-6 text-white" />
+              <ChevronLeft className="w-7 h-7 text-white" />
             </button>
+
+            {/* Flag/report button (top-right) - decorative like the reference */}
+            <div
+              className={cn(
+                "absolute top-4 right-4 z-50 hidden md:block transition-all",
+                showControls ? "opacity-100" : "opacity-0"
+              )}
+            >
+              {/* Placeholder for top-right icon like reference */}
+            </div>
 
             {/* Video Controls Overlay */}
             <div 
               className={cn(
-                "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-20 pb-4 px-4 transition-opacity duration-300",
+                "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20 pb-3 md:pb-4 px-3 md:px-4 transition-opacity duration-300",
                 showControls ? "opacity-100" : "opacity-0"
               )}
             >
-              {/* Progress bar */}
+              {/* Progress bar - RED like YouTube */}
               <div 
-                className="relative mb-4 group"
+                className="relative mb-2 md:mb-3 group"
                 onMouseMove={handleProgressHover}
                 onMouseLeave={handleProgressLeave}
               >
@@ -418,22 +432,29 @@ export function CinematicVideoPlayer({
                   </div>
                 )}
                 
-                <Slider
-                  value={[currentTime]}
-                  max={duration || 100}
-                  step={0.1}
-                  onValueChange={handleSeek}
-                  className="w-full [&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:bg-white [&_[role=slider]]:border-0 [&_.relative]:h-1.5 [&_.relative]:rounded-full [&_.relative]:bg-white/30 [&_[data-state]]:bg-primary"
-                />
+                {/* Red progress bar */}
+                <div className="relative flex items-center w-full group">
+                  <Slider
+                    value={[currentTime]}
+                    max={duration || 100}
+                    step={0.1}
+                    onValueChange={handleSeek}
+                    className="w-full [&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5 [&_[role=slider]]:bg-[#ff0000] [&_[role=slider]]:border-0 [&_[role=slider]]:opacity-0 [&_[role=slider]]:group-hover:opacity-100 [&_[role=slider]]:transition-opacity [&_.relative]:h-[3px] [&_.relative]:group-hover:h-1 [&_.relative]:transition-all [&_.relative]:rounded-none [&_.relative]:bg-white/30 [&_[data-state]]:bg-[#ff0000]"
+                  />
+                  {/* Time on the right side of progress bar */}
+                  <span className="hidden md:block ml-3 text-white text-xs tabular-nums whitespace-nowrap">
+                    {formatTime(currentTime)}
+                  </span>
+                </div>
               </div>
 
-              {/* Controls row */}
-              <div className="flex items-center justify-between gap-4">
-                {/* Left controls */}
-                <div className="flex items-center gap-2 md:gap-4">
+              {/* Controls row - YouTube layout */}
+              <div className="flex items-center justify-between gap-2">
+                {/* Left controls: play, skip-10, skip+10, volume */}
+                <div className="flex items-center gap-1 md:gap-2">
                   <button 
                     onClick={togglePlay}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                   >
                     {isPlaying ? (
                       <Pause className="w-6 h-6 md:w-7 md:h-7 text-white" />
@@ -444,20 +465,20 @@ export function CinematicVideoPlayer({
                   
                   <button 
                     onClick={() => skip(-10)}
-                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                   >
                     <SkipBack className="w-5 h-5 text-white" />
                   </button>
                   
                   <button 
                     onClick={() => skip(10)}
-                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                   >
                     <SkipForward className="w-5 h-5 text-white" />
                   </button>
 
-                  {/* Volume control */}
-                  <div className="hidden md:flex items-center gap-2 group/volume">
+                  {/* Volume control - desktop */}
+                  <div className="hidden md:flex items-center gap-1 group/volume">
                     <button 
                       onClick={toggleMute}
                       className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -479,18 +500,23 @@ export function CinematicVideoPlayer({
                     </div>
                   </div>
 
-                  {/* Time display */}
-                  <span className="text-white text-sm tabular-nums">
-                    {formatTime(currentTime)} / {formatTime(duration)}
+                  {/* Time display - mobile only (desktop shows it near progress bar) */}
+                  <span className="md:hidden text-white text-xs tabular-nums ml-1">
+                    {formatTime(currentTime)}
                   </span>
                 </div>
 
-                {/* Right controls */}
-                <div className="flex items-center gap-2">
+                {/* Center: Title */}
+                <div className="hidden md:flex items-center justify-center flex-1 min-w-0 px-4">
+                  <span className="text-white text-sm font-medium truncate">{title}</span>
+                </div>
+
+                {/* Right controls: next, cast, subtitles, fullscreen */}
+                <div className="flex items-center gap-1 md:gap-2">
                   {/* Rotate orientation - mobile only */}
                   <button 
                     onClick={toggleOrientation}
-                    className="md:hidden p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="md:hidden p-1.5 hover:bg-white/10 rounded-full transition-colors"
                     title={isLandscape ? "Switch to portrait" : "Switch to landscape"}
                   >
                     <ScreenShare className={cn(
@@ -498,10 +524,34 @@ export function CinematicVideoPlayer({
                       isLandscape ? "rotate-0" : "rotate-90"
                     )} />
                   </button>
+
+                  {/* Next episode button - desktop */}
+                  <button 
+                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
+                    title="Next"
+                  >
+                    <NextIcon className="w-5 h-5 text-white" />
+                  </button>
+
+                  {/* Cast button - desktop */}
+                  <button 
+                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
+                    title="Cast"
+                  >
+                    <MonitorSmartphone className="w-5 h-5 text-white" />
+                  </button>
+
+                  {/* Subtitles button - desktop */}
+                  <button 
+                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
+                    title="Subtitles"
+                  >
+                    <Subtitles className="w-5 h-5 text-white" />
+                  </button>
                   
                   <button 
                     onClick={toggleFullscreen}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
                   >
                     {isFullscreen ? (
                       <Minimize className="w-5 h-5 text-white" />
