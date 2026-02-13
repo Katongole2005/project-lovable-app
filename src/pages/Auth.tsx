@@ -6,6 +6,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchTrending } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { sendBrandedEmail, getWelcomeEmailHtml } from "@/lib/email";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -68,6 +69,16 @@ const Auth = () => {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Check your email", description: "We sent you a verification link." });
+      // Send branded welcome email
+      try {
+        await sendBrandedEmail({
+          to: email,
+          subject: "Welcome to MovieBay! 🎬",
+          html: getWelcomeEmailHtml(firstName || "there"),
+        });
+      } catch (e) {
+        console.error("Welcome email failed:", e);
+      }
     }
   };
 
