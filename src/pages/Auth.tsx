@@ -36,13 +36,22 @@ const Auth = () => {
 
   // Fetch a random movie backdrop
   useEffect(() => {
-    fetchTrending().then((movies) => {
-      const withBackdrop = movies.filter((m) => m.backdrop_url);
-      if (withBackdrop.length > 0) {
-        const random = withBackdrop[Math.floor(Math.random() * Math.min(3, withBackdrop.length))];
-        setBackdropUrl(random.backdrop_url || random.image_url || null);
-      }
-    });
+    let cancelled = false;
+    fetchTrending()
+      .then((movies) => {
+        if (cancelled) return;
+        // Prefer movies with backdrop_url, fall back to image_url (poster)
+        const withBackdrop = movies.filter((m) => m.backdrop_url);
+        const pool = withBackdrop.length > 0 ? withBackdrop : movies.filter((m) => m.image_url);
+        if (pool.length > 0) {
+          const random = pool[Math.floor(Math.random() * Math.min(5, pool.length))];
+          setBackdropUrl(random.backdrop_url || random.image_url || null);
+        }
+      })
+      .catch(() => {
+        // Silently fail — the auth page works fine without a backdrop
+      });
+    return () => { cancelled = true; };
   }, []);
 
   const handleLogin = async () => {
@@ -111,7 +120,13 @@ const Auth = () => {
     else handleForgotPassword();
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 md:p-8"
