@@ -33,7 +33,7 @@ export function MovieRow({
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg md:text-xl font-display font-semibold text-foreground tracking-tight">{title}</h2>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
           {Array.from({ length: 24 }).map((_, i) => (
             <MovieCardSkeleton key={i} className="w-full" />
           ))}
@@ -85,7 +85,7 @@ export function MovieRow({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
         {movies.slice(0, 24).map((movie, index) => (
           <MovieCard
             key={movie.mobifliks_id}
