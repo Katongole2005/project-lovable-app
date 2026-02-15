@@ -19,18 +19,6 @@ type AuthView = "login" | "signup" | "forgot";
 const Auth = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-
-  // Force dark mode on auth page
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-    return () => {
-      // Restore theme on unmount
-      const stored = localStorage.getItem("theme") || localStorage.getItem("vite-ui-theme");
-      if (stored === "light") {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-  }, []);
   const { toast } = useToast();
   const [view, setView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
@@ -141,7 +129,8 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 md:p-8"
+    <div className="dark" style={{ colorScheme: "dark" }}>
+    <div className="min-h-screen flex items-center justify-center p-4 md:p-8 bg-background"
       style={{
         background: backdropUrl
           ? `linear-gradient(135deg, hsl(220 20% 15% / 0.85), hsl(220 20% 10% / 0.9)), url(${backdropUrl}) center/cover no-repeat`
@@ -327,6 +316,7 @@ const Auth = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };
