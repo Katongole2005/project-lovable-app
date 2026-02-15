@@ -140,16 +140,16 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
               </button>
             )}
             
-            <div className="hidden md:flex items-center gap-3 px-3 py-2 rounded-full bg-card/60 backdrop-blur border border-border/40">
+            <Link to="/profile" className="hidden md:flex items-center gap-3 px-3 py-2 rounded-full bg-card/60 backdrop-blur border border-border/40 hover:bg-accent/50 transition-colors">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                 <User className="w-4 h-4 text-primary" />
               </div>
               <div className="text-sm">
-                <p className="font-medium text-foreground leading-tight">Guest</p>
-                <p className="text-xs text-muted-foreground font-normal">Free</p>
+                <p className="font-medium text-foreground leading-tight">Profile</p>
+                <p className="text-xs text-muted-foreground font-normal">Account</p>
               </div>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            </div>
+            </Link>
           </div>
         </div>
 

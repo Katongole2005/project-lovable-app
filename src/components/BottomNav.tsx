@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Film, Tv, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ const tabs = [
 ];
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+  const navigate = useNavigate();
   return (
     <nav
       className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden"
@@ -54,7 +56,13 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
           return (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => {
+                if (tab.id === "profile") {
+                  navigate("/profile");
+                } else {
+                  onTabChange(tab.id);
+                }
+              }}
               className={cn(
                 "flex items-center gap-2 rounded-full transition-all duration-300 ease-out",
                 isActive
