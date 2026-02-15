@@ -7,5 +7,5 @@
 
 export const FEATURE_FLAGS = {
   /** Enable/disable the download functionality across the entire app */
-  DOWNLOAD_ENABLED: false,
+  DOWNLOAD_ENABLED: true,
 } as const;
