@@ -162,8 +162,7 @@ const Auth = () => {
           )}
           {/* Logo overlay */}
           <div className="absolute top-6 left-6 z-10">
-            <img src={logoLight} alt="Logo" className="h-8 hidden dark:block" />
-            <img src={logoLight} alt="Logo" className="h-8 dark:hidden" />
+            <img src={logoLight} alt="Logo" className="h-8" />
           </div>
           {/* Dark gradient overlay at bottom */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
