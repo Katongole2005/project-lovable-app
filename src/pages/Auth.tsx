@@ -174,8 +174,7 @@ const Auth = () => {
 
           {/* Mobile logo */}
           <div className="md:hidden mb-6 flex justify-center">
-            <img src={logoDark} alt="Logo" className="h-8 dark:hidden" />
-            <img src={logoLight} alt="Logo" className="h-8 hidden dark:block" />
+            <img src={logoLight} alt="Logo" className="h-8" />
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-1 font-display">
