@@ -146,9 +146,16 @@ const Auth = () => {
           : undefined,
       }}
     >
-      {/* Main card container - split layout on tablet/desktop */}
-      <div className="w-full max-w-[900px] bg-background rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px]">
+      {/* Main card container - split layout on desktop, glass on mobile/tablet */}
+      <div className="w-full max-w-[900px] relative rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px] bg-background/40 backdrop-blur-2xl border border-white/10 md:bg-background md:backdrop-blur-none md:border-0">
         
+        {/* Animated glass blobs - mobile/tablet only */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden md:hidden">
+          <div className="absolute -top-20 -right-20 w-52 h-52 rounded-full bg-primary/20 blur-3xl animate-pulse" />
+          <div className="absolute bottom-10 -left-16 w-44 h-44 rounded-full bg-cyan-500/15 blur-3xl animate-pulse" style={{ animationDelay: "1.5s" }} />
+          <div className="absolute top-1/2 right-10 w-32 h-32 rounded-full bg-purple-500/15 blur-3xl animate-pulse" style={{ animationDelay: "3s" }} />
+        </div>
+
         {/* Left side - Movie backdrop image (hidden on mobile) */}
         <div className="hidden md:block md:w-[45%] relative overflow-hidden rounded-2xl m-3">
           {backdropUrl ? (
