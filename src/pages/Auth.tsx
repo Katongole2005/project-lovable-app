@@ -77,7 +77,7 @@ const Auth = () => {
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Check your email", description: "We sent you a verification link." });
+      toast({ title: "Check your email", description: "We sent you a verification link. If you don't see it in your inbox, please check your spam or junk folder." });
       // Send branded welcome email
       try {
         await sendBrandedEmail({
