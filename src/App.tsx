@@ -11,6 +11,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Maintenance from "./pages/Maintenance";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +69,10 @@ const App = () => {
       document.removeEventListener("selectstart", handleSelectStart);
     };
   }, []);
+
+  if (FEATURE_FLAGS.MAINTENANCE_MODE) {
+    return <Maintenance />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
