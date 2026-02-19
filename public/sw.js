@@ -161,3 +161,40 @@ self.addEventListener("message", (event) => {
     });
   }
 });
+
+// Handle incoming push notifications
+self.addEventListener("push", (event) => {
+  let data = { title: "MovieBay", body: "You have a new notification", url: "/" };
+  try {
+    if (event.data) {
+      data = { ...data, ...JSON.parse(event.data.text()) };
+    }
+  } catch (e) {}
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: data.url },
+      vibrate: [200, 100, 200],
+    })
+  );
+});
+
+// Handle notification click - open the app
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
