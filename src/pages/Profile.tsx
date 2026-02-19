@@ -6,6 +6,8 @@ import { getRecentlyViewed, getContinueWatching } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { PushNotificationButton } from "@/components/PushNotificationButton";
+import { SendPushPanel } from "@/components/SendPushPanel";
 import {
   ArrowLeft,
   LogOut,
@@ -231,6 +233,9 @@ export default function Profile() {
           ))}
         </div>
 
+        {/* Push Notifications */}
+        <PushNotificationButton variant="profile" />
+
         {/* Theme Toggle */}
         <button
           onClick={() => setTheme(isDark ? "light" : "dark")}
@@ -254,6 +259,9 @@ export default function Profile() {
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>
+
+        {/* Send Push Notification Panel (admin) */}
+        <SendPushPanel />
 
         {/* Sign Out / Sign In */}
         {user ? (
