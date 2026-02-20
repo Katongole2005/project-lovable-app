@@ -1,4 +1,4 @@
-import logoLight from "@/assets/logo-optimized.webp";
+import logoLight from "@/assets/logo.png";
 import { Wrench } from "lucide-react";
 
 /* Inline keyframes for gear spin */

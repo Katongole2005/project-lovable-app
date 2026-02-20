@@ -11,8 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
-import logoLight from "@/assets/logo-optimized.webp";
-import logoDark from "@/assets/logo-dark-optimized.webp";
+import logoLight from "@/assets/logo.png";
+import logoDark from "@/assets/logo-dark.png";
 
 type AuthView = "login" | "signup" | "forgot";
 
