@@ -4,8 +4,8 @@ import { Search, ChevronDown, User, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import logoLight from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-optimized.webp";
+import logoDark from "@/assets/logo-dark-optimized.webp";
 
 interface HeaderProps {
   onSearch: (query: string) => void;

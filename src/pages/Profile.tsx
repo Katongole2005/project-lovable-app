@@ -23,8 +23,8 @@ import {
   Shield,
   Settings,
 } from "lucide-react";
-import logoLight from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-optimized.webp";
+import logoDark from "@/assets/logo-dark-optimized.webp";
 
 export default function Profile() {
   const navigate = useNavigate();
