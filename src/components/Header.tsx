@@ -80,12 +80,14 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
             )}
             <img 
               src={currentLogo} 
-              alt="SJ" 
+              alt="Logo" 
+              width={104}
+              height={32}
               className={cn(
                 "h-8 md:h-10 w-auto transition-opacity duration-300",
                 logoLoaded ? "opacity-100" : "opacity-0 absolute"
               )}
-              loading="lazy"
+              fetchPriority="high"
               onLoad={() => setLogoLoaded(true)}
             />
           </Link>
