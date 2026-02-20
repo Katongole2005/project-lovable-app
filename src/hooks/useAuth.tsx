@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { useSingleSession } from "@/hooks/useSingleSession";
 
 interface AuthContextType {
   user: User | null;
@@ -40,6 +41,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
   };
+
+  // Enforce single active session per user
+  useSingleSession(user);
 
   return (
     <AuthContext.Provider value={{ user, session, loading, signOut }}>
