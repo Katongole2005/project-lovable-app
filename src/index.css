@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+/* Google Fonts loaded non-render-blocking via index.html */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
