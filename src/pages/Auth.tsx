@@ -169,7 +169,7 @@ const Auth = () => {
           )}
           {/* Logo overlay */}
           <div className="absolute top-6 left-6 z-10">
-            <img src={logoLight} alt="Logo" className="h-8" />
+            <img src={logoLight} alt="Logo" width={104} height={32} className="h-8 w-auto" />
           </div>
           {/* Dark gradient overlay at bottom */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
@@ -189,7 +189,7 @@ const Auth = () => {
 
           {/* Mobile logo */}
           <div className="md:hidden mb-6 flex justify-center">
-            <img src={logoLight} alt="Logo" className="h-8" />
+            <img src={logoLight} alt="Logo" width={104} height={32} className="h-8 w-auto" fetchPriority="high" />
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-1 font-display">
