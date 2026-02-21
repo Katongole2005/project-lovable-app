@@ -4,7 +4,14 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
 
-export const getImageUrl = (url?: string) => url || fallbackPoster;
+/**
+ * Optimize TMDB image URLs by using appropriate sizes.
+ * Converts /original/ to /w500/ for posters (saves 70-80% bandwidth).
+ */
+export const getImageUrl = (url?: string) => {
+  if (!url) return fallbackPoster;
+  return url.replace('/original/', '/w500/');
+};
 
 /**
  * Optimize TMDB image URL by using a smaller size for faster loading.
