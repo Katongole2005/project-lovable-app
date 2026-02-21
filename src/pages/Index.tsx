@@ -114,10 +114,10 @@ export default function Index() {
 
   const sortByYearDesc = useCallback((items: Movie[]) => {
     return [...items].sort((a, b) => {
-      const yearA = typeof a.year === "number" ? a.year : -1;
-      const yearB = typeof b.year === "number" ? b.year : -1;
-      if (yearA === yearB) return 0;
-      return yearB - yearA;
+      // Use full release_date for precise sorting when available
+      const dateA = a.release_date ? new Date(a.release_date).getTime() : (typeof a.year === "number" ? new Date(a.year, 0, 1).getTime() : -1);
+      const dateB = b.release_date ? new Date(b.release_date).getTime() : (typeof b.year === "number" ? new Date(b.year, 0, 1).getTime() : -1);
+      return dateB - dateA;
     });
   }, []);
 
