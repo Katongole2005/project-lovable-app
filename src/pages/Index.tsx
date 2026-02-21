@@ -154,8 +154,8 @@ export default function Index() {
         const heroMovies = sortedTrending.filter((m: Movie) => m.type === 'movie').slice(0, 4);
         const heroSeries = seriesData.length > 0 ? [seriesData[0]] : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, 1);
         setTrending([...heroMovies, ...heroSeries].slice(0, 5));
-        setRecentMovies(sortedTrending.length > 0 ? sortedTrending : moviesData);
-        setRecentSeries(seriesData);
+        setRecentMovies(sortedTrending.length > 0 ? sortedTrending : sortByYearDesc(moviesData));
+        setRecentSeries(sortByYearDesc(seriesData));
 
         // Extract unique VJs from all movies and series
         const vjSet = new Set<string>();
@@ -375,7 +375,7 @@ export default function Index() {
       setIsLoading(true);
       try {
         const movies = await fetchRecent("movie", 40, 1);
-        setCategoryMovies(movies);
+        setCategoryMovies(sortByYearDesc(movies));
       } finally {
         setIsLoading(false);
       }
@@ -384,7 +384,7 @@ export default function Index() {
       setIsLoading(true);
       try {
         const series = await fetchSeries(40);
-        setCategoryMovies(series);
+        setCategoryMovies(sortByYearDesc(series));
       } finally {
         setIsLoading(false);
       }
@@ -543,7 +543,7 @@ export default function Index() {
       // Filter out duplicates
       const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
       const newMovies = more.filter(m => !existingIds.has(m.mobifliks_id));
-      setCategoryMovies(prev => [...prev, ...newMovies]);
+      setCategoryMovies(prev => sortByYearDesc([...prev, ...newMovies]));
     } finally {
       setIsLoadingMore(false);
     }
