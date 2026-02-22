@@ -101,7 +101,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
                   key={item.id}
                   onClick={() => onTabChange?.(item.id)}
                   className={cn(
-                    "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+                    "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 press-effect",
                     isActive ? "text-black" : "text-[#6b6b6b] hover:text-white"
                   )}
                   style={isActive ? { background: "#4ade80" } : undefined}
@@ -128,7 +128,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
             {mounted && (
               <button
                 onClick={toggleTheme}
-                className="p-2.5 rounded-full transition-all duration-300"
+                className="p-2.5 rounded-full transition-all duration-300 press-effect hover:scale-110"
                 style={{
                   background: isDark ? "#4ade80" : "#2c2c2e",
                 }}

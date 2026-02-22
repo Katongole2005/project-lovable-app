@@ -76,10 +76,10 @@ export function MovieRow({
           {onViewAll && (
             <button
               onClick={onViewAll}
-              className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors group"
+              className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors group press-effect"
             >
               View All
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
             </button>
           )}
         </div>
@@ -93,8 +93,8 @@ export function MovieRow({
             onClick={onMovieClick}
             className={cn(
               "w-full",
-              "opacity-0 animate-slide-up",
-              index < 6 && `stagger-${Math.min(index + 1, 5)}`
+              "opacity-0 animate-scale-in",
+              `stagger-${Math.min((index % 8) + 1, 8)}`
             )}
             priority={index < 4}
           />

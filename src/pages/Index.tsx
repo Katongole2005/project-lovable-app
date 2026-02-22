@@ -11,6 +11,7 @@ import { CinematicVideoPlayer } from "@/components/CinematicVideoPlayer";
 import { BottomNav } from "@/components/BottomNav";
 import { SearchBar } from "@/components/SearchBar";
 import { FilterModal, FilterState } from "@/components/FilterModal";
+import { PageTransition, SectionReveal } from "@/components/PageTransition";
 import { Button } from "@/components/ui/button";
 import { 
   fetchTrending, 
@@ -579,73 +580,96 @@ export default function Index() {
       <main className="container mx-auto px-4 py-4 space-y-6">
         {/* Home View */}
         {viewMode === "home" && (
-          <>
+          <PageTransition>
             {/* Hero Carousel */}
-            <HeroCarousel
-              movies={trending}
-              onPlay={handleHeroPlay}
-              onMovieClick={handleMovieClick}
-              title="Top Movies"
-              onViewAll={() => handleTabChange("movies")}
-            />
+            <SectionReveal>
+              <HeroCarousel
+                movies={trending}
+                onPlay={handleHeroPlay}
+                onMovieClick={handleMovieClick}
+                title="Top Movies"
+                onViewAll={() => handleTabChange("movies")}
+              />
+            </SectionReveal>
 
             {/* Category Chips */}
-            <CategoryChips 
-              activeCategory={activeCategory}
-              onCategoryChange={handleCategoryChange}
-            />
+            <SectionReveal delay={100}>
+              <div className="mt-6">
+                <CategoryChips 
+                  activeCategory={activeCategory}
+                  onCategoryChange={handleCategoryChange}
+                />
+              </div>
+            </SectionReveal>
 
             {/* VJ Chips */}
-            <VJChips
-              activeVJ={activeVJ}
-              onVJChange={handleVJChange}
-            />
+            <SectionReveal delay={150}>
+              <div className="mt-6">
+                <VJChips
+                  activeVJ={activeVJ}
+                  onVJChange={handleVJChange}
+                />
+              </div>
+            </SectionReveal>
 
             {/* Trending Section */}
-            <MovieRow
-              title={getCategoryTitle()}
-              movies={recentMovies}
-              onMovieClick={handleMovieClick}
-              onViewAll={() => handleTabChange("movies")}
-              isLoading={isLoading && recentMovies.length === 0}
-              showFilters
-              onFilterClick={() => setIsFilterOpen(true)}
-            />
+            <SectionReveal delay={200}>
+              <div className="mt-6">
+                <MovieRow
+                  title={getCategoryTitle()}
+                  movies={recentMovies}
+                  onMovieClick={handleMovieClick}
+                  onViewAll={() => handleTabChange("movies")}
+                  isLoading={isLoading && recentMovies.length === 0}
+                  showFilters
+                  onFilterClick={() => setIsFilterOpen(true)}
+                />
+              </div>
+            </SectionReveal>
 
             {/* Continue Watching */}
             {continueWatching.length > 0 && (
-              <MovieRow
-                title="Continue Watching"
-                movies={continueWatching.map(cw => ({
-                  mobifliks_id: cw.id,
-                  title: cw.title,
-                  image_url: cw.image,
-                  type: cw.type,
-                }))}
-                onMovieClick={(movie) => {
-                  const item = continueWatching.find(cw => cw.id === movie.mobifliks_id);
-                  if (item) {
-                    setVideoUrl(item.url);
-                    setVideoTitle(item.title);
-                    setIsVideoOpen(true);
-                  }
-                }}
-              />
+              <SectionReveal delay={250}>
+                <div className="mt-6">
+                  <MovieRow
+                    title="Continue Watching"
+                    movies={continueWatching.map(cw => ({
+                      mobifliks_id: cw.id,
+                      title: cw.title,
+                      image_url: cw.image,
+                      type: cw.type,
+                    }))}
+                    onMovieClick={(movie) => {
+                      const item = continueWatching.find(cw => cw.id === movie.mobifliks_id);
+                      if (item) {
+                        setVideoUrl(item.url);
+                        setVideoTitle(item.title);
+                        setIsVideoOpen(true);
+                      }
+                    }}
+                  />
+                </div>
+              </SectionReveal>
             )}
 
             {/* Popular Series */}
-            <MovieRow
-              title="Popular Series"
-              movies={recentSeries}
-              onMovieClick={handleMovieClick}
-              onViewAll={() => handleTabChange("series")}
-              isLoading={isLoading && recentSeries.length === 0}
-            />
-          </>
+            <SectionReveal delay={300}>
+              <div className="mt-6">
+                <MovieRow
+                  title="Popular Series"
+                  movies={recentSeries}
+                  onMovieClick={handleMovieClick}
+                  onViewAll={() => handleTabChange("series")}
+                  isLoading={isLoading && recentSeries.length === 0}
+                />
+              </div>
+            </SectionReveal>
+          </PageTransition>
         )}
 
         {/* Search View */}
         {viewMode === "search" && (
+          <PageTransition>
           <div className="space-y-6">
             <div className="max-w-xl mx-auto">
               <SearchBar
@@ -683,10 +707,12 @@ export default function Index() {
               </div>
             )}
           </div>
+          </PageTransition>
         )}
 
         {/* Movies Category */}
         {viewMode === "movies" && (
+          <PageTransition>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Button
@@ -720,10 +746,12 @@ export default function Index() {
               </div>
             )}
           </div>
+          </PageTransition>
         )}
 
         {/* Series Category */}
         {viewMode === "series" && (
+          <PageTransition>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Button
@@ -757,10 +785,12 @@ export default function Index() {
               </div>
             )}
           </div>
+          </PageTransition>
         )}
 
         {/* Originals (English) */}
         {viewMode === "originals" && (
+          <PageTransition>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Button
@@ -795,6 +825,7 @@ export default function Index() {
               </div>
             )}
           </div>
+          </PageTransition>
         )}
       </main>
 

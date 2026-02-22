@@ -43,12 +43,12 @@ export function CategoryChips({ activeCategory, onCategoryChange }: CategoryChip
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
               className={cn(
-                "category-chip flex-shrink-0 whitespace-nowrap font-medium tracking-normal transition-all duration-300 snap-start",
-                isActive ? "text-black" : "active"
+                "category-chip flex-shrink-0 whitespace-nowrap font-medium tracking-normal transition-all duration-300 snap-start press-effect",
+                isActive ? "text-black animate-scale-bounce" : "active"
               )}
               style={isActive ? { background: "#4ade80" } : undefined}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={cn("w-4 h-4 transition-transform duration-300", isActive && "animate-subtle-bounce")} />
               <span className="text-sm">{category.label}</span>
             </button>
           );
