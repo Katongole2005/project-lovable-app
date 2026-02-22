@@ -53,8 +53,8 @@ export function MovieGrid({ movies, onMovieClick, isLoading, emptyMessage = "No 
           onClick={onMovieClick}
           className={cn(
             "w-full",
-            "opacity-0 animate-slide-up",
-            index < 12 && `stagger-${Math.min((index % 6) + 1, 5)}`
+            "opacity-0 animate-scale-in",
+            `stagger-${Math.min((index % 8) + 1, 8)}`
           )}
           priority={index < 6}
         />

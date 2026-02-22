@@ -26,7 +26,7 @@ export function MovieCard({ movie, onClick, showProgress, className, priority }:
   return (
     <div
       className={cn(
-        "group relative flex-shrink-0 cursor-pointer",
+        "group relative flex-shrink-0 cursor-pointer press-effect",
         className
       )}
       onClick={() => onClick(movie)}
@@ -34,7 +34,7 @@ export function MovieCard({ movie, onClick, showProgress, className, priority }:
       onTouchStart={handleMouseEnter}
     >
       {/* Image container */}
-      <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card shadow-card card-hover">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card shadow-card card-hover hover-glow">
         <img
           src={getImageUrl(movie.image_url)}
           alt={movie.title}

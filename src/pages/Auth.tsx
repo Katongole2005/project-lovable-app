@@ -147,7 +147,7 @@ const Auth = () => {
       }}
     >
       {/* Main card container - split layout on desktop, glass on mobile/tablet */}
-      <div className="w-full max-w-[900px] relative rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px] bg-background/40 backdrop-blur-2xl border border-white/10 md:bg-background md:backdrop-blur-none md:border-0">
+      <div className="w-full max-w-[900px] relative rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px] bg-background/40 backdrop-blur-2xl border border-white/10 md:bg-background md:backdrop-blur-none md:border-0 animate-blur-in">
         
         {/* Animated glass blobs - mobile/tablet only */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden md:hidden">
@@ -192,7 +192,7 @@ const Auth = () => {
             <img src={logoLight} alt="Logo" width={104} height={32} className="h-8 w-auto" fetchPriority="high" />
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-1 font-display">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-1 font-display animate-slide-in-left">
             {view === "login" && "Log in"}
             {view === "signup" && "Create an Account"}
             {view === "forgot" && "Forgot Password"}
@@ -293,7 +293,7 @@ const Auth = () => {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold mt-2"
+              className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold mt-2 press-effect hover-glow"
             >
               {submitting
                 ? "Please wait..."

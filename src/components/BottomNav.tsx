@@ -64,7 +64,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 }
               }}
               className={cn(
-                "flex items-center gap-2 rounded-full transition-all duration-300 ease-out",
+                "flex items-center gap-2 rounded-full transition-all duration-300 ease-out press-effect",
                 isActive
                   ? "flex-[2] pl-1 pr-4 py-1"
                   : "flex-1 justify-center p-1"
