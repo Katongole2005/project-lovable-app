@@ -64,6 +64,7 @@ export default function Index() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTitle, setVideoTitle] = useState("");
+  const [videoStartTime, setVideoStartTime] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -242,9 +243,10 @@ export default function Index() {
   }, []);
 
   // Handle play video
-  const handlePlayVideo = useCallback((url: string, title: string) => {
+  const handlePlayVideo = useCallback((url: string, title: string, startAt = 0) => {
     setVideoUrl(url);
     setVideoTitle(title);
+    setVideoStartTime(startAt);
     setIsVideoOpen(true);
     setIsModalOpen(false);
   }, []);
@@ -620,9 +622,7 @@ export default function Index() {
                   <ContinueWatchingRow
                     items={continueWatching}
                     onResume={(item) => {
-                      setVideoUrl(item.url);
-                      setVideoTitle(item.title);
-                      setIsVideoOpen(true);
+                      handlePlayVideo(item.url, item.title, item.progress);
                     }}
                     onRemove={(id) => {
                       removeContinueWatching(id);
@@ -853,6 +853,7 @@ export default function Index() {
         title={videoTitle}
         movie={selectedMovie}
         onTimeUpdate={handleVideoTimeUpdate}
+        startTime={videoStartTime}
       />
 
       {/* Filter Modal */}
