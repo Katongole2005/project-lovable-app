@@ -6,6 +6,7 @@ import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
+import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
 import { MovieModal } from "@/components/MovieModal";
 import { CinematicVideoPlayer } from "@/components/CinematicVideoPlayer";
 import { BottomNav } from "@/components/BottomNav";
@@ -24,7 +25,7 @@ import {
   fetchByGenre,
   fetchOriginals,
 } from "@/lib/api";
-import { addToRecent, addRecentSearch, getContinueWatching, updateContinueWatching } from "@/lib/storage";
+import { addToRecent, addRecentSearch, getContinueWatching, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
 import type { Movie, Series, ContinueWatching } from "@/types/movie";
 import { ChevronLeft, Loader2 } from "lucide-react";
 
@@ -612,8 +613,28 @@ export default function Index() {
               </div>
             </SectionReveal>
 
+            {/* Continue Watching - above Trending */}
+            {continueWatching.length > 0 && (
+              <SectionReveal delay={200}>
+                <div className="mt-6">
+                  <ContinueWatchingRow
+                    items={continueWatching}
+                    onResume={(item) => {
+                      setVideoUrl(item.url);
+                      setVideoTitle(item.title);
+                      setIsVideoOpen(true);
+                    }}
+                    onRemove={(id) => {
+                      removeContinueWatching(id);
+                      setContinueWatching(getContinueWatching());
+                    }}
+                  />
+                </div>
+              </SectionReveal>
+            )}
+
             {/* Trending Section */}
-            <SectionReveal delay={200}>
+            <SectionReveal delay={continueWatching.length > 0 ? 250 : 200}>
               <div className="mt-6">
                 <MovieRow
                   title={getCategoryTitle()}
@@ -626,31 +647,6 @@ export default function Index() {
                 />
               </div>
             </SectionReveal>
-
-            {/* Continue Watching */}
-            {continueWatching.length > 0 && (
-              <SectionReveal delay={250}>
-                <div className="mt-6">
-                  <MovieRow
-                    title="Continue Watching"
-                    movies={continueWatching.map(cw => ({
-                      mobifliks_id: cw.id,
-                      title: cw.title,
-                      image_url: cw.image,
-                      type: cw.type,
-                    }))}
-                    onMovieClick={(movie) => {
-                      const item = continueWatching.find(cw => cw.id === movie.mobifliks_id);
-                      if (item) {
-                        setVideoUrl(item.url);
-                        setVideoTitle(item.title);
-                        setIsVideoOpen(true);
-                      }
-                    }}
-                  />
-                </div>
-              </SectionReveal>
-            )}
 
             {/* Popular Series */}
             <SectionReveal delay={300}>
@@ -849,7 +845,10 @@ export default function Index() {
       {/* Cinematic Video Player */}
       <CinematicVideoPlayer
         isOpen={isVideoOpen}
-        onClose={() => setIsVideoOpen(false)}
+        onClose={() => {
+          setIsVideoOpen(false);
+          setContinueWatching(getContinueWatching());
+        }}
         videoUrl={videoUrl}
         title={videoTitle}
         movie={selectedMovie}
