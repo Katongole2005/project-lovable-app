@@ -51,6 +51,7 @@ export default function Index() {
   const [categoryMovies, setCategoryMovies] = useState<Movie[]>([]);
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
   const [continueWatching, setContinueWatching] = useState<ContinueWatching[]>([]);
+  const [resumingItem, setResumingItem] = useState<ContinueWatching | null>(null);
   
   // UI states
   const [viewMode, setViewMode] = useState<ViewMode>("home");
@@ -351,18 +352,26 @@ export default function Index() {
 
   // Handle video time update
   const handleVideoTimeUpdate = useCallback((currentTime: number, duration: number) => {
-    if (selectedMovie && duration > 0) {
-      updateContinueWatching({
-        id: selectedMovie.mobifliks_id,
-        title: selectedMovie.title,
-        image: selectedMovie.image_url || "",
-        type: selectedMovie.type,
-        progress: currentTime,
-        duration,
-        url: videoUrl,
-      });
+    if (duration > 0) {
+      if (selectedMovie) {
+        updateContinueWatching({
+          id: selectedMovie.mobifliks_id,
+          title: selectedMovie.title,
+          image: selectedMovie.image_url || "",
+          type: selectedMovie.type,
+          progress: currentTime,
+          duration,
+          url: videoUrl,
+        });
+      } else if (resumingItem) {
+        updateContinueWatching({
+          ...resumingItem,
+          progress: currentTime,
+          duration,
+        });
+      }
     }
-  }, [selectedMovie, videoUrl]);
+  }, [selectedMovie, videoUrl, resumingItem]);
 
   // Handle tab change
   const handleTabChange = useCallback(async (tab: string) => {
@@ -622,6 +631,7 @@ export default function Index() {
                   <ContinueWatchingRow
                     items={continueWatching}
                     onResume={(item) => {
+                      setResumingItem(item);
                       handlePlayVideo(item.url, item.title, item.progress);
                     }}
                     onRemove={(id) => {
@@ -847,6 +857,7 @@ export default function Index() {
         isOpen={isVideoOpen}
         onClose={() => {
           setIsVideoOpen(false);
+          setResumingItem(null);
           setContinueWatching(getContinueWatching());
         }}
         videoUrl={videoUrl}
