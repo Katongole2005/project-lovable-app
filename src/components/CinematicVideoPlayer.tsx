@@ -123,13 +123,18 @@ export function CinematicVideoPlayer({
   useEffect(() => {
     if (isOpen && videoRef.current && startTime > 0) {
       const video = videoRef.current;
-      const handleLoadedMetadata = () => {
-        if (startTime > 0 && !isNaN(video.duration)) {
+      const seekToStart = () => {
+        if (startTime > 0 && !isNaN(video.duration) && video.duration > 0) {
           video.currentTime = Math.min(startTime, video.duration);
         }
       };
-      video.addEventListener("loadedmetadata", handleLoadedMetadata);
-      return () => video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      // If metadata is already loaded, seek immediately
+      if (video.readyState >= 1 && video.duration > 0) {
+        seekToStart();
+      } else {
+        video.addEventListener("loadedmetadata", seekToStart);
+        return () => video.removeEventListener("loadedmetadata", seekToStart);
+      }
     }
   }, [isOpen, startTime]);
 
