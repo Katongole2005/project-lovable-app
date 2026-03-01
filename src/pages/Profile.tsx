@@ -1,14 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTheme } from "next-themes";
-import { getRecentlyViewed, getContinueWatching, getWatchlist, getUserRatings } from "@/lib/storage";
+import { getRecentlyViewed, getContinueWatching, getWatchlist, getUserRatings, removeContinueWatching } from "@/lib/storage";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { PushNotificationButton } from "@/components/PushNotificationButton";
 import { SendPushPanel } from "@/components/SendPushPanel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   LogOut,
@@ -27,12 +36,231 @@ import {
   Star,
   Play,
   Bookmark,
-  TrendingUp,
-  Sparkles,
   Edit3,
   Crown,
+  Lock,
+  X,
+  Check,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 
+// ─── Edit Profile Dialog ──────────────────────────────────────────────
+function EditProfileDialog({
+  open,
+  onOpenChange,
+  user,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  user: any;
+}) {
+  const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || "");
+  const [lastName, setLastName] = useState(user?.user_metadata?.last_name || "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setFirstName(user?.user_metadata?.first_name || "");
+      setLastName(user?.user_metadata?.last_name || "");
+    }
+  }, [open, user]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { first_name: firstName.trim(), last_name: lastName.trim() },
+      });
+      if (error) throw error;
+      toast.success("Profile updated!");
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-display">Edit Profile</DialogTitle>
+          <DialogDescription>Update your display name</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">First Name</label>
+            <input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First name"
+              className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Last Name</label>
+            <input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Last name"
+              className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            />
+          </div>
+          <Button onClick={handleSave} disabled={saving} className="w-full h-11 rounded-xl gap-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {saving ? "Saving…" : "Save Changes"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Change Password Dialog ───────────────────────────────────────────
+function ChangePasswordDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) { setPassword(""); setConfirm(""); }
+  }, [open]);
+
+  const handleSave = async () => {
+    if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    if (password !== confirm) { toast.error("Passwords do not match"); return; }
+    setSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      toast.success("Password updated!");
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update password");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-display">Change Password</DialogTitle>
+          <DialogDescription>Enter a new password for your account</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">New Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min 6 characters"
+              className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Confirm Password</label>
+            <input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Re-enter password"
+              className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            />
+          </div>
+          <Button onClick={handleSave} disabled={saving} className="w-full h-11 rounded-xl gap-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+            {saving ? "Updating…" : "Update Password"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Preferences Dialog ───────────────────────────────────────────────
+function PreferencesDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const [quality, setQuality] = useState(() => localStorage.getItem("pref_quality") || "auto");
+  const [autoplay, setAutoplay] = useState(() => localStorage.getItem("pref_autoplay") !== "false");
+
+  const save = () => {
+    localStorage.setItem("pref_quality", quality);
+    localStorage.setItem("pref_autoplay", String(autoplay));
+    toast.success("Preferences saved!");
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-display">Preferences</DialogTitle>
+          <DialogDescription>Customize your viewing experience</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-5 pt-2">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">Streaming Quality</label>
+            <div className="grid grid-cols-3 gap-2">
+              {["auto", "720p", "1080p"].map((q) => (
+                <button
+                  key={q}
+                  onClick={() => setQuality(q)}
+                  className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                    quality === q
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/50 text-foreground border-border/50 hover:bg-accent"
+                  }`}
+                >
+                  {q === "auto" ? "Auto" : q}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <p className="text-sm font-medium text-foreground">Autoplay Next</p>
+              <p className="text-[11px] text-muted-foreground">Auto-play next episode</p>
+            </div>
+            <button
+              onClick={() => setAutoplay(!autoplay)}
+              className={`w-12 h-7 rounded-full transition-colors relative ${
+                autoplay ? "bg-primary" : "bg-muted"
+              }`}
+            >
+              <div
+                className={`absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform ${
+                  autoplay ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
+          <Button onClick={save} className="w-full h-11 rounded-xl gap-2">
+            <Check className="w-4 h-4" />
+            Save Preferences
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Main Profile Page ────────────────────────────────────────────────
 export default function Profile() {
   const navigate = useNavigate();
   const { user, loading, signOut } = useAuth();
@@ -40,6 +268,14 @@ export default function Profile() {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const [entranceReady, setEntranceReady] = useState(false);
+
+  // Dialog states
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
+
+  // Force re-render for localStorage data
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     requestAnimationFrame(() => setEntranceReady(true));
@@ -69,6 +305,29 @@ export default function Profile() {
     navigate("/");
   };
 
+  const navigateToMovie = useCallback((id: string, title: string, type: string) => {
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+    navigate(`/${type === "series" ? "series" : "movie"}/${slug}-${id}`);
+  }, [navigate]);
+
+  const handleRemoveContinueWatching = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    removeContinueWatching(id);
+    setRefreshKey((k) => k + 1);
+    toast.success("Removed from continue watching");
+  }, []);
+
+  const handleClearHistory = useCallback(() => {
+    localStorage.removeItem("recentMovies");
+    setRefreshKey((k) => k + 1);
+    toast.success("Watch history cleared");
+  }, []);
+
   const stagger = (index: number) => ({
     opacity: entranceReady ? 1 : 0,
     transform: entranceReady ? "translateY(0)" : "translateY(16px)",
@@ -97,10 +356,14 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24" key={refreshKey}>
+      {/* Dialogs */}
+      <EditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} user={user} />
+      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
+      <PreferencesDialog open={preferencesOpen} onOpenChange={setPreferencesOpen} />
+
       {/* Hero Header with gradient */}
       <div className="relative overflow-hidden">
-        {/* Background gradient */}
         <div
           className="absolute inset-0"
           style={{
@@ -109,7 +372,6 @@ export default function Profile() {
               : "linear-gradient(180deg, hsl(var(--primary) / 0.08) 0%, hsl(var(--background)) 100%)",
           }}
         />
-        {/* Decorative circles */}
         <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-secondary/10 blur-3xl" />
 
@@ -145,7 +407,10 @@ export default function Profile() {
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <button className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg border-2 border-background">
+              <button
+                onClick={() => user ? setEditProfileOpen(true) : navigate("/auth")}
+                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg border-2 border-background active:scale-90 transition-transform"
+              >
                 <Edit3 className="w-3.5 h-3.5 text-primary-foreground" />
               </button>
             </div>
@@ -219,7 +484,8 @@ export default function Profile() {
                 return (
                   <div
                     key={item.id}
-                    className="flex-shrink-0 w-32 rounded-2xl overflow-hidden bg-card/80 border border-border/30 group active:scale-95 transition-transform"
+                    onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                    className="flex-shrink-0 w-32 rounded-2xl overflow-hidden bg-card/80 border border-border/30 group active:scale-95 transition-transform cursor-pointer"
                   >
                     <div className="aspect-[2/3] relative overflow-hidden">
                       <img
@@ -227,7 +493,13 @@ export default function Profile() {
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      {/* Overlay with play icon */}
+                      {/* Remove button */}
+                      <button
+                        onClick={(e) => handleRemoveContinueWatching(e, item.id)}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-2">
                         <div className="flex items-center gap-1.5">
                           <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
@@ -236,7 +508,6 @@ export default function Profile() {
                           <span className="text-[10px] text-white font-medium">{pct}%</span>
                         </div>
                       </div>
-                      {/* Progress bar */}
                       <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/30">
                         <div
                           className="h-full bg-primary rounded-full transition-all"
@@ -268,7 +539,8 @@ export default function Profile() {
               {watchlist.slice(0, 8).map((item) => (
                 <div
                   key={item.id}
-                  className="flex-shrink-0 w-28 rounded-2xl overflow-hidden bg-card/80 border border-border/30 active:scale-95 transition-transform"
+                  onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                  className="flex-shrink-0 w-28 rounded-2xl overflow-hidden bg-card/80 border border-border/30 active:scale-95 transition-transform cursor-pointer"
                 >
                   <div className="aspect-[2/3] overflow-hidden">
                     <img
@@ -294,13 +566,20 @@ export default function Profile() {
                 <Clock className="w-4 h-4 text-muted-foreground" />
                 Recently Viewed
               </h3>
-              <span className="text-xs text-muted-foreground">{recentlyViewed.length} titles</span>
+              <button
+                onClick={handleClearHistory}
+                className="text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear
+              </button>
             </div>
             <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-4 px-4 pb-1">
               {recentlyViewed.slice(0, 10).map((item) => (
                 <div
                   key={item.id}
-                  className="flex-shrink-0 w-24 rounded-xl overflow-hidden bg-card/80 border border-border/30 active:scale-95 transition-transform"
+                  onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                  className="flex-shrink-0 w-24 rounded-xl overflow-hidden bg-card/80 border border-border/30 active:scale-95 transition-transform cursor-pointer"
                 >
                   <div className="aspect-[2/3] overflow-hidden">
                     <img
@@ -324,29 +603,52 @@ export default function Profile() {
             Settings
           </p>
           <div className="rounded-2xl bg-card/60 backdrop-blur border border-border/30 overflow-hidden divide-y divide-border/20">
-            {/* Push Notifications */}
             <PushNotificationButton variant="profile" />
 
-            {/* Menu Items */}
-            {[
-              { icon: User, label: "Account Details", subtitle: "Name, email, avatar" },
-              { icon: Shield, label: "Privacy & Security", subtitle: "Password, sessions" },
-              { icon: Settings, label: "Preferences", subtitle: "Language, quality" },
-            ].map((item) => (
-              <button
-                key={item.label}
-                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 active:bg-accent/70 transition-colors text-left"
-              >
-                <div className="w-9 h-9 rounded-xl bg-accent/80 flex items-center justify-center flex-shrink-0">
-                  <item.icon className="w-4 h-4 text-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{item.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{item.subtitle}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              </button>
-            ))}
+            {/* Account Details */}
+            <button
+              onClick={() => user ? setEditProfileOpen(true) : navigate("/auth")}
+              className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 active:bg-accent/70 transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-xl bg-accent/80 flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 text-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Account Details</p>
+                <p className="text-[11px] text-muted-foreground">Name, email, avatar</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            </button>
+
+            {/* Privacy & Security */}
+            <button
+              onClick={() => user ? setChangePasswordOpen(true) : navigate("/auth")}
+              className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 active:bg-accent/70 transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-xl bg-accent/80 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-4 h-4 text-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Privacy & Security</p>
+                <p className="text-[11px] text-muted-foreground">Change password</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            </button>
+
+            {/* Preferences */}
+            <button
+              onClick={() => setPreferencesOpen(true)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 active:bg-accent/70 transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-xl bg-accent/80 flex items-center justify-center flex-shrink-0">
+                <Settings className="w-4 h-4 text-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Preferences</p>
+                <p className="text-[11px] text-muted-foreground">Quality, autoplay</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            </button>
           </div>
         </div>
 
@@ -395,7 +697,6 @@ export default function Profile() {
           )}
         </div>
 
-        {/* App version */}
         <p className="text-center text-[10px] text-muted-foreground/50 pb-4" style={stagger(9)}>
           MovieBay v2.0 • Made with ♥
         </p>
