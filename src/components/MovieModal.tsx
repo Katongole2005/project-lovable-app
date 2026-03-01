@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List, Share2 } from "lucide-react";
+import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, ChevronDown, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List, Share2, Layers } from "lucide-react";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { toSlug } from "@/lib/slug";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import type { Movie, Series, Episode, CastMember } from "@/types/movie";
 import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
-import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist } from "@/lib/storage";
+import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist, getContinueWatching } from "@/lib/storage";
 
 /** Staggered animation helper — returns style for delayed fade-in */
 const staggerStyle = (index: number, isVisible: boolean): React.CSSProperties => ({
@@ -300,12 +300,12 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                           onClick={() => {
                             const firstEp = series.episodes?.[0];
                             if (firstEp?.download_url) {
-                              onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
+                              onPlay(firstEp.download_url, `${movie.title} - S1:E1`);
                             }
                           }}
                         >
                           <Play className="w-5 h-5 fill-current" />
-                          Play
+                          Play S1:E1
                         </Button>
                       )}
 
@@ -497,6 +497,20 @@ function MobileMovieLayout({
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
   const heroRef = React.useRef<HTMLDivElement>(null);
+
+  // Determine resume episode for series
+  const resumeEpisode = React.useMemo(() => {
+    if (!isSeries || !series.episodes?.length) return null;
+    const continueList = getContinueWatching();
+    // Find any episode from this series in continue watching
+    const found = continueList.find(c => c.id === movie.mobifliks_id || c.title.includes(movie.title));
+    if (found?.episodeInfo) {
+      // Parse "S1:E3" format
+      const match = found.episodeInfo.match(/S(\d+):E(\d+)/i);
+      if (match) return { season: parseInt(match[1]), episode: parseInt(match[2]) };
+    }
+    return null;
+  }, [movie.mobifliks_id, isSeries]);
 
   // Entrance animation trigger
   React.useEffect(() => {
@@ -771,6 +785,16 @@ function MobileMovieLayout({
               <h1 className="text-xl font-display font-bold text-white drop-shadow-lg leading-tight line-clamp-2">
                 {movie.title}
               </h1>
+              {isSeries && allEpisodes.length > 0 && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-primary/80 text-primary-foreground">
+                    SERIES
+                  </span>
+                  <span className="text-[11px] text-white/70 font-medium">
+                    {availableSeasons.length > 1 ? `${availableSeasons.length} Seasons • ` : ""}{allEpisodes.length} Episodes
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-1.5 flex-wrap text-sm text-white/90">
                 {runtimeLabel && <span>{runtimeLabel}</span>}
                 {runtimeLabel && certificationLabel && <span className="text-white/60">•</span>}
@@ -1013,70 +1037,109 @@ function MobileMovieLayout({
               {/* Episodes section for series */}
               {isSeries && allEpisodes.length > 0 && (
                 <div ref={episodesSectionRef} className="space-y-4 pt-2">
-                  {/* Season header - tappable dropdown */}
-                  <button
-                    onClick={() => setIsSeasonSelectorOpen(true)}
-                    className="w-full bg-card/80 rounded-xl p-4 border border-border/30 text-left active:bg-card transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-base font-semibold text-foreground">Season {selectedSeason}</h3>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {currentSeasonEpisodes.length} episodes
-                        </p>
-                      </div>
-                      <ChevronLeft className={cn(
-                        "w-5 h-5 text-muted-foreground transition-transform duration-200",
-                        isSeasonSelectorOpen ? "rotate-90" : "rotate-[270deg]"
-                      )} />
+                  {/* Season header with episode count badge */}
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => availableSeasons.length > 1 && setIsSeasonSelectorOpen(!isSeasonSelectorOpen)}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card/80 border border-border/30 transition-all duration-200",
+                        availableSeasons.length > 1 ? "active:scale-95" : "cursor-default"
+                      )}
+                    >
+                      <Layers className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">Season {selectedSeason}</span>
+                      {availableSeasons.length > 1 && (
+                        <ChevronDown className={cn(
+                          "w-4 h-4 text-muted-foreground transition-transform duration-200",
+                          isSeasonSelectorOpen && "rotate-180"
+                        )} />
+                      )}
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1.5 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20">
+                        {currentSeasonEpisodes.length} ep{currentSeasonEpisodes.length !== 1 ? "s" : ""}
+                      </span>
+                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && currentSeasonEpisodes.some(ep => ep.download_url) && (
+                        <button
+                          onClick={() => {
+                            toast.success(`Opening ${currentSeasonEpisodes.length} downloads...`);
+                            currentSeasonEpisodes.forEach((ep, i) => {
+                              if (ep.download_url) {
+                                setTimeout(() => window.open(ep.download_url, "_blank"), i * 500);
+                              }
+                            });
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-muted/50 text-muted-foreground border border-border/30 active:scale-95 transition-transform"
+                        >
+                          <Download className="w-3 h-3" />
+                          All
+                        </button>
+                      )}
                     </div>
-                  </button>
+                  </div>
 
-                  {/* Season selector dropdown */}
-                  {isSeasonSelectorOpen && (
-                    <div className="bg-card rounded-xl border border-border/30 overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                      {availableSeasons.map((seasonNum) => {
-                        const seasonEps = seasons.get(seasonNum) || [];
-                        const isSelected = seasonNum === selectedSeason;
-                        return (
-                          <button
-                            key={seasonNum}
-                            onClick={() => {
-                              setSelectedSeason(seasonNum);
-                              setIsSeasonSelectorOpen(false);
-                            }}
-                            className={cn(
-                              "w-full p-4 text-left flex items-center justify-between border-b border-border/20 last:border-0 transition-colors",
-                              isSelected ? "bg-primary/10" : "hover:bg-muted/50 active:bg-muted"
-                            )}
-                          >
-                            <div>
-                              <h4 className={cn(
-                                "font-medium",
-                                isSelected ? "text-primary" : "text-foreground"
-                              )}>
-                                Season {seasonNum}
-                              </h4>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {seasonEps.length} episodes
-                              </p>
-                            </div>
-                            {isSelected && (
-                              <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  {/* Season selector bottom sheet overlay */}
+                  {isSeasonSelectorOpen && availableSeasons.length > 1 && (
+                    <>
+                      <div 
+                        className="fixed inset-0 bg-black/50 z-[60] animate-in fade-in duration-200"
+                        onClick={() => setIsSeasonSelectorOpen(false)}
+                      />
+                      <div className="fixed bottom-0 left-0 right-0 z-[61] bg-card rounded-t-3xl border-t border-border/30 animate-in slide-in-from-bottom duration-300 pb-safe">
+                        <div className="flex justify-center pt-3 pb-2">
+                          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                        </div>
+                        <div className="px-4 pb-2">
+                          <h3 className="text-lg font-semibold text-foreground">Select Season</h3>
+                        </div>
+                        <div className="px-4 pb-6 space-y-1.5 max-h-[50vh] overflow-y-auto">
+                          {availableSeasons.map((seasonNum) => {
+                            const seasonEps = seasons.get(seasonNum) || [];
+                            const isSelected = seasonNum === selectedSeason;
+                            return (
+                              <button
+                                key={seasonNum}
+                                onClick={() => {
+                                  setSelectedSeason(seasonNum);
+                                  setIsSeasonSelectorOpen(false);
+                                }}
+                                className={cn(
+                                  "w-full p-4 rounded-xl text-left flex items-center justify-between transition-all duration-200 active:scale-[0.98]",
+                                  isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50 active:bg-muted border border-transparent"
+                                )}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold",
+                                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                                  )}>
+                                    {seasonNum}
+                                  </div>
+                                  <div>
+                                    <h4 className={cn("font-medium", isSelected ? "text-primary" : "text-foreground")}>
+                                      Season {seasonNum}
+                                    </h4>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{seasonEps.length} episodes</p>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                    <svg className="w-3.5 h-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
                   )}
 
                   {/* Episode list */}
-                  <div className="space-y-4">
-                    {currentSeasonEpisodes.map((episode) => (
+                  <div className="space-y-3">
+                    {currentSeasonEpisodes.map((episode, idx) => (
                       <MobileEpisodeCard
                         key={episode.mobifliks_id || `${selectedSeason}-${episode.episode_number}`}
                         episode={episode}
@@ -1084,6 +1147,7 @@ function MobileMovieLayout({
                         seriesImage={movie.image_url}
                         seasonNumber={selectedSeason}
                         onPlay={onPlay}
+                        isFirst={idx === 0}
                       />
                     ))}
                   </div>
@@ -1168,21 +1232,35 @@ function MobileMovieLayout({
       <div className="fixed bottom-0 left-0 right-0 z-50">
         {/* Gradient fade */}
         <div className="h-6 bg-gradient-to-t from-background to-transparent pointer-events-none" />
-        <div className="bg-background border-t border-border/30 px-4 py-3 pb-safe flex items-center gap-3">
+        <div className="bg-background/95 backdrop-blur-lg border-t border-border/30 px-4 py-3 pb-safe flex items-center gap-3">
           <Button
             size="lg"
             className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-12 text-base font-semibold"
             onClick={() => {
               if (isSeries && series.episodes && series.episodes.length > 0) {
+                if (resumeEpisode) {
+                  const ep = series.episodes.find(e => 
+                    e.episode_number === resumeEpisode.episode && 
+                    (e.season_number || 1) === resumeEpisode.season
+                  );
+                  if (ep?.download_url) {
+                    onPlay(ep.download_url, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
+                    return;
+                  }
+                }
                 const firstEp = series.episodes[0];
-                if (firstEp?.download_url) onPlay(firstEp.download_url, `${movie.title} - Episode 1`);
+                if (firstEp?.download_url) onPlay(firstEp.download_url, `${movie.title} - S1:E1`);
               } else if (movie.download_url) {
                 onPlay(movie.download_url, movie.title);
               }
             }}
           >
             <Play className="w-5 h-5 fill-current" />
-            Play
+            {isSeries && resumeEpisode 
+              ? `Continue S${resumeEpisode.season}:E${resumeEpisode.episode}` 
+              : isSeries 
+                ? "Play S1:E1" 
+                : "Play"}
           </Button>
           <button
             onClick={onToggleWatchlist}
@@ -1235,25 +1313,30 @@ interface MobileEpisodeCardProps {
   seriesImage?: string;
   seasonNumber?: number;
   onPlay: (url: string, title: string) => void;
+  isFirst?: boolean;
 }
 
-function MobileEpisodeCard({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay }: MobileEpisodeCardProps) {
+function MobileEpisodeCard({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, isFirst }: MobileEpisodeCardProps) {
   const hasVideo = episode.download_url && 
     (episode.download_url.includes(".mp4") || 
      episode.download_url.includes("downloadmp4.php") ||
      episode.download_url.includes("downloadserie.php"));
 
-  // Format episode number with leading zero
   const formattedEpisodeNum = episode.episode_number.toString().padStart(2, '0');
 
   return (
-    <div className="flex gap-4 items-start">
+    <div className={cn(
+      "flex gap-3.5 items-start p-3 rounded-2xl border transition-all duration-200 active:scale-[0.98]",
+      isFirst 
+        ? "bg-primary/5 border-primary/20" 
+        : "bg-card/40 border-border/20"
+    )}>
       {/* Episode thumbnail with number overlay and centered play button */}
       <div 
-        className="relative w-36 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-muted cursor-pointer group"
+        className="relative w-[140px] aspect-video flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer group"
         onClick={() => {
           if (hasVideo && episode.download_url) {
-            onPlay(episode.download_url, `${seriesTitle} - Episode ${episode.episode_number}`);
+            onPlay(episode.download_url, `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`);
           }
         }}
       >
@@ -1262,38 +1345,41 @@ function MobileEpisodeCard({ episode, seriesTitle, seriesImage, seasonNumber = 1
           alt={`Episode ${episode.episode_number}`}
           className="w-full h-full object-cover"
         />
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/40" />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         
-        {/* Episode number - bottom left */}
-        <span className="absolute bottom-2 left-2 text-2xl font-bold text-white">
-          {formattedEpisodeNum}
+        {/* Episode number badge - top left */}
+        <span className="absolute top-1.5 left-1.5 px-2 py-0.5 text-[10px] font-bold text-white bg-black/60 backdrop-blur-sm rounded-md">
+          E{formattedEpisodeNum}
         </span>
 
         {/* Centered play button */}
         {hasVideo && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-black/20 backdrop-blur-sm group-active:scale-95 transition-transform">
-              <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+            <div className="w-9 h-9 rounded-full border-2 border-white/90 flex items-center justify-center bg-black/30 backdrop-blur-sm group-active:scale-90 transition-transform">
+              <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
             </div>
           </div>
+        )}
+
+        {/* File size badge - bottom right */}
+        {episode.file_size && (
+          <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 text-[9px] font-medium text-white bg-black/60 backdrop-blur-sm rounded">
+            {episode.file_size}
+          </span>
         )}
       </div>
 
       {/* Episode info and download button */}
-      <div className="flex-1 min-w-0 py-1">
-        <div className="flex items-center gap-2">
-          <h4 className="font-semibold text-foreground text-sm">
-            Episode #{seasonNumber}.{episode.episode_number}
-          </h4>
-          {episode.file_size && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
-              {episode.file_size}
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-          {episode.description || episode.title || `Watch episode ${episode.episode_number} of ${seriesTitle}`}
+      <div className="flex-1 min-w-0 py-0.5">
+        <h4 className="font-semibold text-foreground text-sm leading-tight">
+          Episode {seasonNumber}.{episode.episode_number}
+        </h4>
+        {episode.title && episode.title !== `Episode ${episode.episode_number}` && (
+          <p className="text-xs text-foreground/70 mt-0.5 line-clamp-1 font-medium">{episode.title}</p>
+        )}
+        <p className="text-[11px] text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+          {episode.description || `Watch episode ${episode.episode_number} of ${seriesTitle}`}
         </p>
         
         {/* Download button */}
@@ -1305,9 +1391,11 @@ function MobileEpisodeCard({ episode, seriesTitle, seriesImage, seasonNumber = 1
                 window.open(episode.download_url, "_blank");
               }
             }}
-            className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/60 transition-colors text-sm text-foreground"
+            className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold active:scale-95 transition-transform"
           >
-            <Download className="w-4 h-4" />
+            <div className="w-5 h-5 rounded bg-[#c8f547] flex items-center justify-center">
+              <Download className="w-3 h-3 text-black" />
+            </div>
             Download
           </button>
         )}
