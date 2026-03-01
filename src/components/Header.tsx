@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, ChevronDown, User, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -15,8 +15,26 @@ interface HeaderProps {
   onTabChange?: (tab: string) => void;
 }
 
-export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
+const pathToTab: Record<string, string> = {
+  "/": "home",
+  "/movies": "movies",
+  "/series": "series",
+  "/search": "search",
+  "/originals": "originals",
+};
+
+const tabToPath: Record<string, string> = {
+  home: "/",
+  movies: "/movies",
+  series: "/series",
+  search: "/search",
+  originals: "/originals",
+};
+
+export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = activeTabProp ?? pathToTab[location.pathname] ?? "home";
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -84,7 +102,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
           <Link
             to="/"
             className="flex-shrink-0"
-            onClick={() => onTabChange?.("home")}
+            onClick={() => { navigate("/"); onTabChange?.("home"); }}
           >
             {!logoLoaded && (
               <Skeleton className="h-8 md:h-10 w-16 md:w-20 rounded" />
@@ -110,7 +128,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
               return (
                 <button
                   key={item.id}
-                  onClick={() => onTabChange?.(item.id)}
+                  onClick={() => { navigate(tabToPath[item.id] || "/"); onTabChange?.(item.id); }}
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 press-effect",
                     isActive ? "text-black" : "text-[#6b6b6b] hover:text-white"
@@ -122,7 +140,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
               );
             })}
             <button
-              onClick={() => onTabChange?.("search")}
+              onClick={() => { navigate("/search"); onTabChange?.("search"); }}
               className={cn(
                 "p-2 rounded-full transition-all duration-300",
                 activeTab === "search" ? "text-black" : "text-[#6b6b6b] hover:text-white"
@@ -174,7 +192,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
               return (
                 <button
                   key={item.id}
-                  onClick={() => onTabChange?.(item.id)}
+                  onClick={() => { navigate(tabToPath[item.id] || "/"); onTabChange?.(item.id); }}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300",
                     isActive ? "text-black" : "text-[#6b6b6b] hover:text-white"
@@ -186,7 +204,7 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
               );
             })}
             <button
-              onClick={() => onTabChange?.("search")}
+              onClick={() => { navigate("/search"); onTabChange?.("search"); }}
               className={cn(
                 "p-1.5 rounded-full transition-all duration-300",
                 activeTab === "search" ? "text-black" : "text-[#6b6b6b] hover:text-white"
