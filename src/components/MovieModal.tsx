@@ -179,15 +179,16 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
           
           <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
 
+          {/* Close button — outside ScrollArea so it stays fixed */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200 hover:scale-105 border border-white/20"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+
           <ScrollArea className="h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
             <div className="relative w-full max-w-full">
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200 hover:scale-105 border border-white/20"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
 
               {/* Backdrop hero section */}
               <div className="relative h-[280px] lg:h-[340px] overflow-hidden">
