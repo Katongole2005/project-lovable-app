@@ -88,6 +88,10 @@ const App = () => {
               <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
                 <Routes>
                   <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/movies" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/series" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/search" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/originals" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

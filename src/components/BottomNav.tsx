@@ -1,10 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Film, Tv, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 // Custom Home icon matching the reference design
@@ -30,8 +30,25 @@ const tabs = [
   { id: "profile", label: "Profile", icon: User },
 ];
 
-export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+const tabToPath: Record<string, string> = {
+  home: "/",
+  movies: "/movies",
+  series: "/series",
+  profile: "/profile",
+};
+
+const pathToTab: Record<string, string> = {
+  "/": "home",
+  "/movies": "movies",
+  "/series": "series",
+  "/profile": "profile",
+};
+
+export function BottomNav({ activeTab: activeTabProp, onTabChange }: BottomNavProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = activeTabProp ?? pathToTab[location.pathname] ?? "home";
+
   return (
     <nav
       className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden"
@@ -57,11 +74,9 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
             <button
               key={tab.id}
               onClick={() => {
-                if (tab.id === "profile") {
-                  navigate("/profile");
-                } else {
-                  onTabChange(tab.id);
-                }
+                const path = tabToPath[tab.id] || "/";
+                navigate(path);
+                onTabChange?.(tab.id);
               }}
               className={cn(
                 "flex items-center gap-2 rounded-full transition-all duration-300 ease-out press-effect",

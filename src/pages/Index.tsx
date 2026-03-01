@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { CategoryChips } from "@/components/CategoryChips";
@@ -44,6 +44,19 @@ const CATEGORY_TO_GENRE: Record<string, string> = {
 
 export default function Index() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const navigateTo = useNavigate();
+
+  // Derive viewMode from URL path
+  const pathToView: Record<string, ViewMode> = {
+    "/": "home",
+    "/movies": "movies",
+    "/series": "series",
+    "/search": "search",
+    "/originals": "originals",
+  };
+  const viewMode: ViewMode = pathToView[location.pathname] ?? "home";
+  const activeTab = viewMode === "home" ? "home" : viewMode;
   
   // Data states
   const [trending, setTrending] = useState<Movie[]>([]);
@@ -56,8 +69,6 @@ export default function Index() {
   const [activePlaybackItem, setActivePlaybackItem] = useState<ContinueWatching | null>(null);
   
   // UI states
-  const [viewMode, setViewMode] = useState<ViewMode>("home");
-  const [activeTab, setActiveTab] = useState("home");
   const [activeCategory, setActiveCategory] = useState("trending");
   const [activeVJ, setActiveVJ] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -202,12 +213,44 @@ export default function Index() {
     loadData();
   }, []);
 
-  // Handle search
+  // Load category data when route changes (for direct URL navigation)
+  useEffect(() => {
+    async function loadViewData() {
+      if (viewMode === "movies" && categoryMovies.length === 0) {
+        setIsLoading(true);
+        try {
+          const movies = await fetchRecent("movie", 40, 1);
+          setCategoryMovies(sortByYearDesc(movies));
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (viewMode === "series" && categoryMovies.length === 0) {
+        setIsLoading(true);
+        try {
+          const series = await fetchSeries(40);
+          setCategoryMovies(sortByYearDesc(series));
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (viewMode === "originals" && categoryMovies.length === 0) {
+        setIsLoading(true);
+        setOriginalsPage(1);
+        try {
+          const originals = await fetchOriginals(60, 1);
+          setCategoryMovies(sortByYearDesc(originals));
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+    loadViewData();
+  }, [viewMode]);
+
+
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
     setSearchQuery(query);
-    setViewMode("search");
-    setActiveTab("search");
+    navigateTo("/search");
     setCurrentPage(1);
     setIsLoading(true);
     addRecentSearch(query);
@@ -302,8 +345,7 @@ export default function Index() {
         return;
       }
       if (viewMode === "movies" || viewMode === "series" || viewMode === "search" || viewMode === "originals") {
-        setViewMode("home");
-        setActiveTab("home");
+        navigateTo("/");
         setSearchQuery("");
         return;
       }
@@ -326,35 +368,7 @@ export default function Index() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [isModalOpen, isVideoOpen, viewMode]);
 
-  useEffect(() => {
-    if (viewMode === "movies" && !moviesHistoryRef.current) {
-      window.history.pushState({ view: "movies" }, "");
-      moviesHistoryRef.current = true;
-    }
-    if (viewMode !== "movies") {
-      moviesHistoryRef.current = false;
-    }
-  }, [viewMode]);
-
-  useEffect(() => {
-    if (viewMode === "series" && !seriesHistoryRef.current) {
-      window.history.pushState({ view: "series" }, "");
-      seriesHistoryRef.current = true;
-    }
-    if (viewMode !== "series") {
-      seriesHistoryRef.current = false;
-    }
-  }, [viewMode]);
-
-  useEffect(() => {
-    if (viewMode === "search" && !searchHistoryRef.current) {
-      window.history.pushState({ view: "search" }, "");
-      searchHistoryRef.current = true;
-    }
-    if (viewMode !== "search") {
-      searchHistoryRef.current = false;
-    }
-  }, [viewMode]);
+  // React Router now handles history for movies/series/search/originals views
 
   // Handle play from hero
   const handleHeroPlay = useCallback((movie: Movie) => {
@@ -377,18 +391,22 @@ export default function Index() {
     }
   }, [activePlaybackItem, videoUrl]);
 
-  // Handle tab change
+  // Handle tab change - now navigates to URL
   const handleTabChange = useCallback(async (tab: string) => {
-    setActiveTab(tab);
+    const viewToPath: Record<string, string> = {
+      home: "/",
+      movies: "/movies",
+      series: "/series",
+      search: "/search",
+      originals: "/originals",
+    };
+    const path = viewToPath[tab] || "/";
+    navigateTo(path);
     window.scrollTo({ top: 0, behavior: "instant" });
     
     if (tab === "home") {
-      setViewMode("home");
       setSearchQuery("");
-    } else if (tab === "search") {
-      setViewMode("search");
     } else if (tab === "movies") {
-      setViewMode("movies");
       setIsLoading(true);
       try {
         const movies = await fetchRecent("movie", 40, 1);
@@ -397,7 +415,6 @@ export default function Index() {
         setIsLoading(false);
       }
     } else if (tab === "series") {
-      setViewMode("series");
       setIsLoading(true);
       try {
         const series = await fetchSeries(40);
@@ -406,7 +423,6 @@ export default function Index() {
         setIsLoading(false);
       }
     } else if (tab === "originals") {
-      setViewMode("originals");
       setIsLoading(true);
       setOriginalsPage(1);
       try {
@@ -416,7 +432,7 @@ export default function Index() {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [navigateTo]);
 
   // Handle category change
   const handleCategoryChange = useCallback(async (category: string) => {
@@ -467,8 +483,7 @@ export default function Index() {
       // If content type is selected, navigate to that view with filters
       if (filters.contentType) {
         const contentViewMode = filters.contentType === "movies" ? "movies" : "series";
-        setViewMode(contentViewMode);
-        setActiveTab(contentViewMode);
+        navigateTo(`/${contentViewMode}`);
         
         // Fetch content based on type
         let data: Movie[] = [];
