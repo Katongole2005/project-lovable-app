@@ -818,31 +818,32 @@ function MobileMovieLayout({
             <div className="w-12 h-1.5 rounded-full bg-muted-foreground/40" />
           </div>
 
-          {/* Quick action row */}
-          <div className="px-4 py-3 flex gap-3" style={staggerStyle(0, entranceReady)}>
-            {isSeries && allEpisodes.length > 0 && (
-              <Button
-                size="lg"
-                variant="outline"
-                className="flex-1 gap-2 rounded-xl h-11 text-sm font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
-                onClick={scrollToEpisodes}
-              >
-                Episodes
-                <List className="w-4 h-4" />
-              </Button>
-            )}
-            {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
-              <button
-                className="flex-1 flex items-center gap-3 rounded-full h-11 bg-black pl-1.5 pr-5 hover:bg-black/90 transition-colors"
-                onClick={() => { if (movie.download_url) window.open(movie.download_url, "_blank"); }}
-              >
-                <div className="w-8 h-8 rounded-full bg-[#c8f547] flex items-center justify-center flex-shrink-0">
-                  <Download className="w-4 h-4 text-black" />
-                </div>
-                <span className="text-white text-sm font-medium">Download</span>
-              </button>
-            )}
-          </div>
+          {/* Quick action row — only show if there are actions */}
+          {(isSeries && allEpisodes.length > 0) || (FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url) ? (
+            <div className="px-4 py-3 flex gap-3" style={staggerStyle(0, entranceReady)}>
+              {isSeries && allEpisodes.length > 0 && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 gap-2 rounded-xl h-11 text-sm font-semibold bg-muted/30 border-border/50 hover:bg-muted/50"
+                  onClick={scrollToEpisodes}
+                >
+                  Episodes
+                  <List className="w-4 h-4" />
+                </Button>
+              )}
+              {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
+                <Button
+                  size="lg"
+                  className="flex-1 gap-2 rounded-xl h-11 text-sm font-semibold bg-muted border-border text-foreground hover:bg-muted/80"
+                  onClick={() => { if (movie.download_url) window.open(movie.download_url, "_blank"); }}
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </Button>
+              )}
+            </div>
+          ) : null}
 
           {/* Tabs */}
           <div className="px-4 border-b border-border/30" style={staggerStyle(1, entranceReady)}>
@@ -927,29 +928,31 @@ function MobileMovieLayout({
               )}
 
               {/* Metadata row: Runtime, Certification, Release Date */}
-              <div className="grid grid-cols-3 gap-3" style={staggerStyle(5, entranceReady)}>
-                {runtimeLabel && (
-                  <div className="p-3 rounded-xl bg-card/60 border border-border/20 text-center">
-                    <Clock className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                    <p className="text-xs font-semibold text-foreground">{runtimeLabel}</p>
-                    <p className="text-[10px] text-muted-foreground">Duration</p>
-                  </div>
-                )}
-                {certificationLabel && (
-                  <div className="p-3 rounded-xl bg-card/60 border border-border/20 text-center">
-                    <Tag className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                    <p className="text-xs font-semibold text-foreground">{certificationLabel}</p>
-                    <p className="text-[10px] text-muted-foreground">Rating</p>
-                  </div>
-                )}
-                {formattedReleaseDate && (
-                  <div className="p-3 rounded-xl bg-card/60 border border-border/20 text-center">
-                    <CalendarDays className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                    <p className="text-xs font-semibold text-foreground">{formattedReleaseDate}</p>
-                    <p className="text-[10px] text-muted-foreground">Released</p>
-                  </div>
-                )}
-              </div>
+              {(runtimeLabel || certificationLabel || formattedReleaseDate) && (
+                <div className="flex gap-3" style={staggerStyle(5, entranceReady)}>
+                  {runtimeLabel && (
+                    <div className="flex-1 p-3 rounded-xl bg-card/60 border border-border/20 text-center">
+                      <Clock className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                      <p className="text-xs font-semibold text-foreground">{runtimeLabel}</p>
+                      <p className="text-[10px] text-muted-foreground">Duration</p>
+                    </div>
+                  )}
+                  {certificationLabel && (
+                    <div className="flex-1 p-3 rounded-xl bg-card/60 border border-border/20 text-center">
+                      <Tag className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                      <p className="text-xs font-semibold text-foreground">{certificationLabel}</p>
+                      <p className="text-[10px] text-muted-foreground">Rating</p>
+                    </div>
+                  )}
+                  {formattedReleaseDate && (
+                    <div className="flex-1 p-3 rounded-xl bg-card/60 border border-border/20 text-center">
+                      <CalendarDays className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                      <p className="text-xs font-semibold text-foreground">{formattedReleaseDate}</p>
+                      <p className="text-[10px] text-muted-foreground">Released</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Casts preview — horizontal scroll with avatars */}
               {cast.length > 0 && (
@@ -1147,8 +1150,10 @@ function MobileMovieLayout({
       </div>
 
       {/* Sticky bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-        <div className="bg-background/80 backdrop-blur-xl border-t border-border/30 px-4 py-3 flex items-center gap-3">
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        {/* Gradient fade */}
+        <div className="h-6 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+        <div className="bg-background border-t border-border/30 px-4 py-3 pb-safe flex items-center gap-3">
           <Button
             size="lg"
             className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-12 text-base font-semibold"
@@ -1167,10 +1172,10 @@ function MobileMovieLayout({
           <button
             onClick={onToggleWatchlist}
             className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center border-2 transition-all duration-200 active:scale-90",
+              "w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-200 active:scale-90",
               inWatchlist
                 ? "bg-primary/15 border-primary text-primary"
-                : "bg-card/60 border-border/40 text-muted-foreground"
+                : "bg-muted/50 border-border text-muted-foreground"
             )}
           >
             <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
@@ -1188,7 +1193,7 @@ function MobileMovieLayout({
                 toast.success("Link copied!");
               }
             }}
-            className="w-12 h-12 rounded-xl flex items-center justify-center bg-card/60 border-2 border-border/40 text-muted-foreground active:scale-90 transition-transform"
+            className="w-12 h-12 rounded-xl flex items-center justify-center bg-muted/50 border border-border text-muted-foreground active:scale-90 transition-transform"
           >
             <Share2 className="w-5 h-5" />
           </button>
