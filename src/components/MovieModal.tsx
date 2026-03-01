@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List } from "lucide-react";
+import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List, Share2 } from "lucide-react";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -300,6 +300,24 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                       >
                         <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
                       </button>
+                      {/* Share button */}
+                      <button
+                        onClick={async () => {
+                          const slug = movie.type === "series" ? "series" : "movie";
+                          const shareUrl = `${window.location.origin}/${slug}/${movie.mobifliks_id}`;
+                          if (navigator.share) {
+                            try {
+                              await navigator.share({ title: movie.title, url: shareUrl });
+                            } catch {}
+                          } else {
+                            await navigator.clipboard.writeText(shareUrl);
+                            toast.success("Link copied to clipboard!");
+                          }
+                        }}
+                        className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
                       {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
                         <button
                           onClick={() => {
@@ -585,8 +603,23 @@ function MobileMovieLayout({
         >
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
-        <button className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors">
-          <ExternalLink className="w-5 h-5 text-white" />
+        <button
+          className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
+          onClick={async () => {
+            if (!movie) return;
+            const slug = movie.type === "series" ? "series" : "movie";
+            const shareUrl = `${window.location.origin}/${slug}/${movie.mobifliks_id}`;
+            if (navigator.share) {
+              try {
+                await navigator.share({ title: movie.title, url: shareUrl });
+              } catch {}
+            } else {
+              await navigator.clipboard.writeText(shareUrl);
+              toast.success("Link copied to clipboard!");
+            }
+          }}
+        >
+          <Share2 className="w-5 h-5 text-white" />
         </button>
       </div>
 

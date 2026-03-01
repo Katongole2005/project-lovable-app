@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { CategoryChips } from "@/components/CategoryChips";
@@ -213,7 +213,28 @@ export default function Index() {
     loadData();
   }, []);
 
-  // Load category data when route changes (for direct URL navigation)
+  // Deep-link: open movie/series modal when visiting /movie/:id or /series/:id directly
+  useEffect(() => {
+    const match = location.pathname.match(/^\/(movie|series)\/(.+)$/);
+    if (match && !isModalOpen) {
+      const [, type, id] = match;
+      (async () => {
+        try {
+          const details = type === "series"
+            ? await fetchSeriesDetails(id)
+            : await fetchMovieDetails(id);
+          if (details) {
+            setSelectedMovie(details);
+            setIsModalOpen(true);
+          }
+        } catch (error) {
+          console.error("Error loading shared movie:", error);
+        }
+      })();
+    }
+  }, [location.pathname]);
+
+
   useEffect(() => {
     async function loadViewData() {
       if (viewMode === "movies" && categoryMovies.length === 0) {
@@ -273,6 +294,10 @@ export default function Index() {
     setIsModalOpen(true);
     addToRecent(movie);
 
+    // Push shareable URL
+    const slug = movie.type === "series" ? "series" : "movie";
+    navigateTo(`/${slug}/${movie.mobifliks_id}`, { replace: false });
+
     // Fetch full details in background (for episodes, cast, etc.)
     try {
       const details = movie.type === "series"
@@ -284,9 +309,8 @@ export default function Index() {
       }
     } catch (error) {
       console.error("Error fetching details:", error);
-      // Modal stays open with partial data - user can still see basic info
     }
-  }, []);
+  }, [navigateTo]);
 
   // Handle play video
   const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
@@ -889,7 +913,13 @@ export default function Index() {
       <MovieModal
         movie={selectedMovie}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          // Go back to the previous route when closing modal
+          if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
+            navigateTo(-1 as any);
+          }
+        }}
         onPlay={handlePlayVideo}
       />
 
