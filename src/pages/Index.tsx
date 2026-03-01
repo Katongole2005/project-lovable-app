@@ -917,7 +917,7 @@ export default function Index() {
           setIsModalOpen(false);
           // Go back to the previous route when closing modal
           if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
-            navigateTo(-1 as any);
+            navigateTo(-1);
           }
         }}
         onPlay={handlePlayVideo}
