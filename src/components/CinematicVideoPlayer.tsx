@@ -44,6 +44,7 @@ export function CinematicVideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const ignoreInitialTimeUpdateRef = useRef(false);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -121,20 +122,28 @@ export function CinematicVideoPlayer({
 
   // Set start time when video loads
   useEffect(() => {
-    if (isOpen && videoRef.current && startTime > 0) {
-      const video = videoRef.current;
-      const seekToStart = () => {
-        if (startTime > 0 && !isNaN(video.duration) && video.duration > 0) {
-          video.currentTime = Math.min(startTime, video.duration);
-        }
-      };
-      // If metadata is already loaded, seek immediately
-      if (video.readyState >= 1 && video.duration > 0) {
-        seekToStart();
-      } else {
-        video.addEventListener("loadedmetadata", seekToStart);
-        return () => video.removeEventListener("loadedmetadata", seekToStart);
+    if (!isOpen || !videoRef.current) return;
+
+    const video = videoRef.current;
+    ignoreInitialTimeUpdateRef.current = startTime > 0;
+
+    if (startTime <= 0) {
+      setCurrentTime(0);
+      return;
+    }
+
+    const seekToStart = () => {
+      if (!isNaN(video.duration) && video.duration > 0) {
+        video.currentTime = Math.min(startTime, video.duration);
+        setCurrentTime(Math.min(startTime, video.duration));
       }
+    };
+
+    if (video.readyState >= 1 && video.duration > 0) {
+      seekToStart();
+    } else {
+      video.addEventListener("loadedmetadata", seekToStart);
+      return () => video.removeEventListener("loadedmetadata", seekToStart);
     }
   }, [isOpen, startTime]);
 
@@ -282,8 +291,17 @@ export function CinematicVideoPlayer({
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-      onTimeUpdate?.(videoRef.current.currentTime, videoRef.current.duration);
+      const nextTime = videoRef.current.currentTime;
+      const nextDuration = videoRef.current.duration;
+
+      setCurrentTime(nextTime);
+
+      if (ignoreInitialTimeUpdateRef.current && startTime > 0 && nextTime < Math.max(1, startTime - 1.5)) {
+        return;
+      }
+
+      ignoreInitialTimeUpdateRef.current = false;
+      onTimeUpdate?.(nextTime, nextDuration);
     }
   };
 
@@ -318,6 +336,7 @@ export function CinematicVideoPlayer({
       handleTimeUpdate();
       videoRef.current.pause();
     }
+    ignoreInitialTimeUpdateRef.current = false;
     if (isFullscreen) {
       exitFullscreen();
     }
