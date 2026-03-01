@@ -51,7 +51,7 @@ export default function Index() {
   const [categoryMovies, setCategoryMovies] = useState<Movie[]>([]);
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
   const [continueWatching, setContinueWatching] = useState<ContinueWatching[]>([]);
-  const [resumingItem, setResumingItem] = useState<ContinueWatching | null>(null);
+  const [activePlaybackItem, setActivePlaybackItem] = useState<ContinueWatching | null>(null);
   
   // UI states
   const [viewMode, setViewMode] = useState<ViewMode>("home");
@@ -244,13 +244,26 @@ export default function Index() {
   }, []);
 
   // Handle play video
-  const handlePlayVideo = useCallback((url: string, title: string, startAt = 0) => {
+  const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
+    const fallbackItem = selectedMovie
+      ? {
+          id: selectedMovie.mobifliks_id,
+          title: selectedMovie.title,
+          image: selectedMovie.image_url || "",
+          type: selectedMovie.type,
+          progress: startAt,
+          duration: 0,
+          url,
+        }
+      : null;
+
     setVideoUrl(url);
     setVideoTitle(title);
     setVideoStartTime(startAt);
+    setActivePlaybackItem(playbackItem ?? fallbackItem);
     setIsVideoOpen(true);
     setIsModalOpen(false);
-  }, []);
+  }, [selectedMovie]);
 
   useEffect(() => {
     if (isModalOpen && !modalHistoryRef.current) {
@@ -352,26 +365,15 @@ export default function Index() {
 
   // Handle video time update
   const handleVideoTimeUpdate = useCallback((currentTime: number, duration: number) => {
-    if (duration > 0) {
-      if (selectedMovie) {
-        updateContinueWatching({
-          id: selectedMovie.mobifliks_id,
-          title: selectedMovie.title,
-          image: selectedMovie.image_url || "",
-          type: selectedMovie.type,
-          progress: currentTime,
-          duration,
-          url: videoUrl,
-        });
-      } else if (resumingItem) {
-        updateContinueWatching({
-          ...resumingItem,
-          progress: currentTime,
-          duration,
-        });
-      }
+    if (duration > 0 && activePlaybackItem) {
+      updateContinueWatching({
+        ...activePlaybackItem,
+        progress: currentTime,
+        duration,
+        url: videoUrl,
+      });
     }
-  }, [selectedMovie, videoUrl, resumingItem]);
+  }, [activePlaybackItem, videoUrl]);
 
   // Handle tab change
   const handleTabChange = useCallback(async (tab: string) => {
@@ -631,8 +633,7 @@ export default function Index() {
                   <ContinueWatchingRow
                     items={continueWatching}
                     onResume={(item) => {
-                      setResumingItem(item);
-                      handlePlayVideo(item.url, item.title, item.progress);
+                      handlePlayVideo(item.url, item.title, item.progress, item);
                     }}
                     onRemove={(id) => {
                       removeContinueWatching(id);
@@ -857,7 +858,7 @@ export default function Index() {
         isOpen={isVideoOpen}
         onClose={() => {
           setIsVideoOpen(false);
-          setResumingItem(null);
+          setActivePlaybackItem(null);
           setContinueWatching(getContinueWatching());
         }}
         videoUrl={videoUrl}
