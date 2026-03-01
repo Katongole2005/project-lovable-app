@@ -954,25 +954,40 @@ function MobileMovieLayout({
                 </div>
               )}
 
-              {/* Casts preview — horizontal scroll with avatars */}
+              {/* Cast preview — card-style horizontal scroll */}
               {cast.length > 0 && (
                 <div style={staggerStyle(6, entranceReady)}>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Cast</h4>
-                  <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
-                    {cast.slice(0, 6).map((member) => (
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-foreground">Cast</h4>
+                    <button
+                      onClick={() => setActiveTab("casts")}
+                      className="text-xs text-primary font-medium"
+                    >
+                      See all
+                    </button>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
+                    {cast.slice(0, 8).map((member, i) => (
                       <button
                         key={member.name}
-                        className="flex-none flex items-center gap-2 pr-3 rounded-full bg-card/60 border border-border/20 active:scale-95 transition-transform"
+                        className="flex-none w-[72px] text-center active:scale-95 transition-transform"
                         onClick={() => setActiveTab("casts")}
+                        style={staggerStyle(6 + i * 0.3, entranceReady)}
                       >
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-muted border border-border/30">
+                        <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden bg-muted border border-border/30 shadow-sm">
                           <img
-                            src={member.profile_url || `https://placehold.co/64x64/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
+                            src={member.profile_url || `https://placehold.co/128x128/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
                             alt={member.name}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://placehold.co/128x128/1a1a2e/ffffff?text=${member.name.charAt(0)}`;
+                            }}
                           />
                         </div>
-                        <span className="text-xs font-medium text-foreground whitespace-nowrap">{member.name.split(" ")[0]}</span>
+                        <p className="text-[11px] font-medium text-foreground mt-1.5 line-clamp-1 leading-tight">{member.name.split(" ")[0]}</p>
+                        {member.character && (
+                          <p className="text-[9px] text-muted-foreground line-clamp-1 mt-0.5">{member.character}</p>
+                        )}
                       </button>
                     ))}
                   </div>
