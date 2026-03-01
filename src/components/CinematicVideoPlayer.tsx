@@ -12,12 +12,11 @@ import {
   ScreenShare,
   ArrowLeft,
   SkipForward,
-  Captions,
   Airplay,
-  Flag,
   PictureInPicture2,
   Settings,
-  Gauge
+  Gauge,
+  ChevronDown
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -348,7 +347,6 @@ export function CinematicVideoPlayer({
     const sameSide = lastTapRef.current.side === side;
     
     if (timeSinceLastTap < 350 && sameSide && side !== "center") {
-      // Double-tap detected
       if (doubleTapTimerRef.current) clearTimeout(doubleTapTimerRef.current);
       const skipSeconds = side === "left" ? -10 : 10;
       skip(skipSeconds);
@@ -356,15 +354,9 @@ export function CinematicVideoPlayer({
       lastTapRef.current = { time: 0, side: "center" };
     } else {
       lastTapRef.current = { time: now, side };
-      // Single tap — toggle controls after short delay
       if (doubleTapTimerRef.current) clearTimeout(doubleTapTimerRef.current);
       doubleTapTimerRef.current = setTimeout(() => {
-        if (side === "center") {
-          // On mobile, single center tap toggles controls only (per memory)
-          setShowControls(prev => !prev);
-        } else {
-          setShowControls(prev => !prev);
-        }
+        setShowControls(prev => !prev);
       }, 300);
     }
   }, [duration]);
@@ -425,6 +417,9 @@ export function CinematicVideoPlayer({
     : formatTime(currentTime);
   const durationDisplay = formatTime(duration);
 
+  // Progress percentage for custom bar
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   // Get movie details
   const posterUrl = movie?.image_url ? getImageUrl(movie.image_url) : null;
   const year = movie?.year;
@@ -441,7 +436,7 @@ export function CinematicVideoPlayer({
         
         <div 
           ref={containerRef}
-          className="relative w-full h-full flex flex-col bg-black"
+          className="relative w-full h-full flex flex-col bg-black select-none"
           onMouseMove={resetControlsTimeout}
           onMouseLeave={() => isPlaying && setShowControls(false)}
         >
@@ -469,19 +464,22 @@ export function CinematicVideoPlayer({
               onPlaying={() => setIsBuffering(false)}
             />
 
-            {/* Buffering indicator */}
+            {/* Buffering — pulsing ring */}
             {isBuffering && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full border-[3px] border-primary/30 border-t-primary animate-spin" />
+                  <div className="absolute inset-0 w-16 h-16 rounded-full border-[3px] border-transparent border-b-primary/50 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+                </div>
               </div>
             )}
 
-            {/* Long-press 2x indicator */}
+            {/* Long-press 2x speed indicator — frosted pill */}
             {isLongPressing && (
               <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-                <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/70 backdrop-blur-sm border border-white/20">
-                  <Gauge className="w-4 h-4 text-white" />
-                  <span className="text-white text-sm font-semibold">2× Speed</span>
+                <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
+                  <Gauge className="w-4 h-4 text-primary" />
+                  <span className="text-primary text-sm font-bold tracking-wide">2× Speed</span>
                 </div>
               </div>
             )}
@@ -496,276 +494,283 @@ export function CinematicVideoPlayer({
               />
             )}
 
-            {/* Play/Pause overlay */}
+            {/* Center play button — glass morphism */}
             <div 
               className={cn(
-                "absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300",
-                showControls ? "opacity-100" : "opacity-0"
+                "absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-500",
+                showControls && !isPlaying && !isBuffering ? "opacity-100 scale-100" : "opacity-0 scale-90"
               )}
             >
-              {!isPlaying && !isBuffering && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                  className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center pointer-events-auto hover:bg-primary transition-colors"
-                >
-                  <Play className="w-10 h-10 text-primary-foreground fill-current ml-1" />
-                </button>
-              )}
-            </div>
-
-            {/* Back button (top-left) */}
-            <button
-              onClick={(e) => { e.stopPropagation(); handleClose(); }}
-              className={cn(
-                "absolute top-4 left-4 z-50 p-2 hover:bg-white/10 rounded-full transition-all pointer-events-auto",
-                showControls ? "opacity-100" : "opacity-0 pointer-events-none"
-              )}
-            >
-              <ArrowLeft className="w-6 h-6 text-white" />
-            </button>
-
-            {/* Top-right: Speed badge + Flag */}
-            <div className={cn(
-              "absolute top-4 right-4 z-50 flex items-center gap-2 transition-all",
-              showControls ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}>
-              {playbackSpeed !== 1 && (
-                <span className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-bold border border-white/20">
-                  {playbackSpeed}×
-                </span>
-              )}
-              <button
-                className="p-2 hover:bg-white/10 rounded-full transition-colors hidden md:block pointer-events-auto"
-                onClick={(e) => e.stopPropagation()}
+              <button 
+                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                className="w-[72px] h-[72px] rounded-full bg-white/15 backdrop-blur-xl border border-white/20 flex items-center justify-center pointer-events-auto hover:bg-white/25 hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
               >
-                <Flag className="w-5 h-5 text-white" />
+                <Play className="w-8 h-8 text-white fill-white ml-1" />
               </button>
             </div>
 
-            {/* Speed menu overlay */}
+            {/* Top bar — frosted glass */}
+            <div className={cn(
+              "absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 md:px-5 md:py-4 transition-all duration-500",
+              showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
+            )}>
+              {/* Back button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                className="p-2.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 hover:bg-white/15 active:scale-90 transition-all duration-200 pointer-events-auto"
+              >
+                <ChevronDown className="w-5 h-5 text-white" />
+              </button>
+
+              {/* Title — center on mobile */}
+              <div className="flex-1 mx-3 md:hidden">
+                <p className="text-white/90 text-sm font-semibold text-center truncate">{title}</p>
+              </div>
+
+              {/* Top-right actions */}
+              <div className="flex items-center gap-1.5">
+                {playbackSpeed !== 1 && (
+                  <span className="px-3 py-1.5 rounded-full bg-primary/20 backdrop-blur-xl text-primary text-xs font-bold border border-primary/30">
+                    {playbackSpeed}×
+                  </span>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); togglePiP(); }}
+                  className="hidden md:flex p-2.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 hover:bg-white/15 transition-all pointer-events-auto"
+                >
+                  <PictureInPicture2 className="w-4 h-4 text-white/80" />
+                </button>
+              </div>
+            </div>
+
+            {/* Speed menu — centered frosted panel */}
             {showSpeedMenu && (
               <div 
-                className="absolute inset-0 z-40 flex items-center justify-center bg-black/50"
+                className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
                 onClick={(e) => { e.stopPropagation(); setShowSpeedMenu(false); }}
               >
                 <div 
-                  className="bg-card/95 backdrop-blur-xl rounded-2xl border border-border/30 p-2 min-w-[200px] shadow-2xl"
+                  className="bg-black/70 backdrop-blur-2xl rounded-3xl border border-white/10 p-3 min-w-[220px] shadow-[0_24px_80px_rgba(0,0,0,0.6)] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <p className="text-sm font-semibold text-foreground px-3 py-2">Playback Speed</p>
-                  {PLAYBACK_SPEEDS.map((speed) => (
-                    <button
-                      key={speed}
-                      onClick={() => {
-                        setPlaybackSpeed(speed);
-                        setShowSpeedMenu(false);
-                      }}
-                      className={cn(
-                        "w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                        speed === playbackSpeed
-                          ? "bg-primary/15 text-primary"
-                          : "text-foreground hover:bg-muted/50"
-                      )}
-                    >
-                      {speed === 1 ? "Normal" : `${speed}×`}
-                      {speed === playbackSpeed && <span className="float-right">✓</span>}
-                    </button>
-                  ))}
+                  <p className="text-xs font-bold text-white/50 uppercase tracking-widest px-4 pt-2 pb-3">Speed</p>
+                  <div className="space-y-0.5">
+                    {PLAYBACK_SPEEDS.map((speed) => (
+                      <button
+                        key={speed}
+                        onClick={() => {
+                          setPlaybackSpeed(speed);
+                          setShowSpeedMenu(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-200",
+                          speed === playbackSpeed
+                            ? "bg-primary/20 text-primary"
+                            : "text-white/80 hover:bg-white/10 active:bg-white/15"
+                        )}
+                      >
+                        <span>{speed === 1 ? "Normal" : `${speed}×`}</span>
+                        {speed === playbackSpeed && (
+                          <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Video Controls Overlay */}
+            {/* ═══ Bottom Controls ═══ */}
             <div 
               className={cn(
-                "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20 pb-3 md:pb-4 px-3 md:px-4 transition-opacity duration-300 pointer-events-auto",
-                showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                "absolute bottom-0 left-0 right-0 z-30 transition-all duration-500 pointer-events-auto",
+                showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
               )}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Progress bar - RED like YouTube */}
-              <div 
-                className="relative mb-2 md:mb-3 group"
-                onMouseMove={handleProgressHover}
-                onMouseLeave={handleProgressLeave}
-              >
-                {/* Preview thumbnail on hover */}
-                {previewTime !== null && (
-                  <div 
-                    className="absolute bottom-8 -translate-x-1/2 bg-card border border-border rounded-lg overflow-hidden shadow-lg pointer-events-none z-10"
-                    style={{ left: previewPosition }}
-                  >
-                    {posterUrl && (
-                      <img src={posterUrl} alt="Preview" className="w-32 h-20 object-cover" />
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-xs text-center py-1">
-                      {formatTime(previewTime)}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Red progress bar */}
-                <div className="relative flex items-center w-full group">
-                  <Slider
-                    value={[currentTime]}
-                    max={duration || 100}
-                    step={0.1}
-                    onValueChange={handleSeek}
-                    className="w-full [&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5 [&_[role=slider]]:bg-[#ff0000] [&_[role=slider]]:border-0 [&_[role=slider]]:opacity-0 [&_[role=slider]]:group-hover:opacity-100 [&_[role=slider]]:transition-opacity [&_.relative]:h-[3px] [&_.relative]:group-hover:h-1 [&_.relative]:transition-all [&_.relative]:rounded-none [&_.relative]:bg-white/30 [&_[data-state]]:bg-[#ff0000]"
-                  />
-                  {/* Time on the right side of progress bar */}
-                  <span className="hidden md:block ml-3 text-white text-xs tabular-nums whitespace-nowrap">
-                    {timeDisplay} / {durationDisplay}
-                  </span>
-                </div>
-              </div>
+              {/* Gradient scrim */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none" />
 
-              {/* Controls row */}
-              <div className="flex items-center justify-between gap-2">
-                {/* Left controls: play, skip-10, skip+10, volume */}
-                <div className="flex items-center gap-1 md:gap-2">
-                  <button 
-                    onClick={togglePlay}
-                    className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    {isPlaying ? (
-                      <Pause className="w-6 h-6 md:w-7 md:h-7 text-white" />
-                    ) : (
-                      <Play className="w-6 h-6 md:w-7 md:h-7 text-white fill-current" />
-                    )}
-                  </button>
-                  
-                  <button 
-                    onClick={() => skip(-10)}
-                    className="relative p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    <RotateCcw className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                    <span className="absolute inset-0 flex items-center justify-center text-[8px] md:text-[9px] font-bold text-white mt-[1px]">10</span>
-                  </button>
-                  
-                  <button 
-                    onClick={() => skip(10)}
-                    className="relative p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    <RotateCw className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                    <span className="absolute inset-0 flex items-center justify-center text-[8px] md:text-[9px] font-bold text-white mt-[1px]">10</span>
-                  </button>
+              <div className="relative px-3 md:px-5 pb-4 md:pb-5 pt-16">
 
-                  {/* Volume control - desktop */}
-                  <div className="hidden md:flex items-center gap-1 group/volume">
-                    <button 
-                      onClick={toggleMute}
-                      className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                {/* Progress bar */}
+                <div 
+                  className="relative mb-3 md:mb-4 group/progress"
+                  onMouseMove={handleProgressHover}
+                  onMouseLeave={handleProgressLeave}
+                >
+                  {/* Hover time preview */}
+                  {previewTime !== null && (
+                    <div 
+                      className="absolute bottom-6 -translate-x-1/2 pointer-events-none z-10 animate-in fade-in duration-100"
+                      style={{ left: previewPosition }}
                     >
-                      {isMuted || volume === 0 ? (
-                        <VolumeX className="w-5 h-5 text-white" />
+                      <div className="px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-xl border border-white/10 shadow-lg">
+                        <span className="text-white text-xs font-bold tabular-nums">{formatTime(previewTime)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Custom progress track */}
+                  <div className="relative w-full h-[3px] group-hover/progress:h-[5px] transition-all duration-200 rounded-full overflow-visible cursor-pointer"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const pct = x / rect.width;
+                      handleSeek([pct * duration]);
+                    }}
+                  >
+                    {/* Background track */}
+                    <div className="absolute inset-0 rounded-full bg-white/20" />
+                    {/* Buffered (fake for now) */}
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-white/10" style={{ width: `${Math.min(progressPercent + 15, 100)}%` }} />
+                    {/* Played */}
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-100" style={{ width: `${progressPercent}%` }}>
+                      {/* Glow */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-[0_0_12px_hsl(var(--primary)/0.6)]" />
+                    </div>
+                    {/* Thumb dot */}
+                    <div 
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-0 h-0 group-hover/progress:w-[14px] group-hover/progress:h-[14px] rounded-full bg-primary border-2 border-white shadow-lg transition-all duration-200 z-10"
+                      style={{ left: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Controls row */}
+                <div className="flex items-center justify-between gap-1">
+                  {/* Left controls */}
+                  <div className="flex items-center gap-0.5 md:gap-1">
+                    {/* Play/Pause */}
+                    <button 
+                      onClick={togglePlay}
+                      className="p-2 md:p-2.5 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-200"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-6 h-6 md:w-7 md:h-7 text-white" />
                       ) : (
-                        <Volume2 className="w-5 h-5 text-white" />
+                        <Play className="w-6 h-6 md:w-7 md:h-7 text-white fill-white" />
                       )}
                     </button>
-                    <div className="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-200">
-                      <Slider
-                        value={[isMuted ? 0 : volume]}
-                        max={1}
-                        step={0.01}
-                        onValueChange={handleVolumeChange}
-                        className="w-20 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:bg-white [&_[role=slider]]:border-0 [&_.relative]:h-1 [&_.relative]:rounded-full [&_.relative]:bg-white/30 [&_[data-state]]:bg-white"
-                      />
+                    
+                    {/* Skip -10 */}
+                    <button 
+                      onClick={() => skip(-10)}
+                      className="relative p-2 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-200"
+                    >
+                      <RotateCcw className="w-5 h-5 text-white/90" />
+                      <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white/90 mt-[1px]">10</span>
+                    </button>
+                    
+                    {/* Skip +10 */}
+                    <button 
+                      onClick={() => skip(10)}
+                      className="relative p-2 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-200"
+                    >
+                      <RotateCw className="w-5 h-5 text-white/90" />
+                      <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white/90 mt-[1px]">10</span>
+                    </button>
+
+                    {/* Volume — desktop expandable */}
+                    <div className="hidden md:flex items-center gap-1 group/volume">
+                      <button 
+                        onClick={toggleMute}
+                        className="p-2.5 hover:bg-white/10 rounded-full transition-colors"
+                      >
+                        {isMuted || volume === 0 ? (
+                          <VolumeX className="w-5 h-5 text-white/80" />
+                        ) : (
+                          <Volume2 className="w-5 h-5 text-white/80" />
+                        )}
+                      </button>
+                      <div className="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-300 ease-out">
+                        <Slider
+                          value={[isMuted ? 0 : volume]}
+                          max={1}
+                          step={0.01}
+                          onValueChange={handleVolumeChange}
+                          className="w-20 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:bg-white [&_[role=slider]]:border-0 [&_.relative]:h-1 [&_.relative]:rounded-full [&_.relative]:bg-white/20 [&_[data-state]]:bg-white"
+                        />
+                      </div>
                     </div>
+
+                    {/* Time — tappable on mobile */}
+                    <button 
+                      className="text-white/70 text-xs tabular-nums ml-1 hover:text-white/90 transition-colors"
+                      onClick={() => setShowRemainingTime(!showRemainingTime)}
+                    >
+                      <span className="text-white/90 font-medium">{timeDisplay}</span>
+                      <span className="mx-1 text-white/40">/</span>
+                      <span>{durationDisplay}</span>
+                    </button>
                   </div>
 
-                  {/* Time display - mobile: tappable to toggle remaining */}
-                  <button 
-                    className="md:hidden text-white text-xs tabular-nums ml-1"
-                    onClick={() => setShowRemainingTime(!showRemainingTime)}
-                  >
-                    {timeDisplay} / {durationDisplay}
-                  </button>
-                </div>
+                  {/* Center title — desktop */}
+                  <div className="hidden md:flex items-center justify-center flex-1 min-w-0 px-4">
+                    <span className="text-white/70 text-sm font-medium truncate">{title}</span>
+                  </div>
 
-                {/* Center: Title */}
-                <div className="hidden md:flex items-center justify-center flex-1 min-w-0 px-4">
-                  <span className="text-white text-sm font-medium truncate">{title}</span>
-                </div>
+                  {/* Right controls */}
+                  <div className="flex items-center gap-0.5 md:gap-1">
+                    {/* Speed */}
+                    <button 
+                      onClick={() => setShowSpeedMenu(true)}
+                      className="p-2 md:p-2.5 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-200"
+                      title="Playback speed"
+                    >
+                      <Settings className="w-5 h-5 text-white/80" />
+                    </button>
 
-                {/* Right controls */}
-                <div className="flex items-center gap-1 md:gap-2">
-                  {/* Speed button - mobile */}
-                  <button 
-                    onClick={() => setShowSpeedMenu(true)}
-                    className="md:hidden p-1.5 hover:bg-white/10 rounded-full transition-colors"
-                    title="Playback speed"
-                  >
-                    <Settings className="w-5 h-5 text-white" />
-                  </button>
+                    {/* Orientation lock — mobile only */}
+                    <button 
+                      onClick={toggleOrientation}
+                      className="md:hidden p-2 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-200"
+                    >
+                      <ScreenShare className={cn(
+                        "w-5 h-5 text-white/80 transition-transform duration-300",
+                        isLandscape ? "rotate-0" : "rotate-90"
+                      )} />
+                    </button>
 
-                  {/* Rotate orientation - mobile only */}
-                  <button 
-                    onClick={toggleOrientation}
-                    className="md:hidden p-1.5 hover:bg-white/10 rounded-full transition-colors"
-                    title={isLandscape ? "Switch to portrait" : "Switch to landscape"}
-                  >
-                    <ScreenShare className={cn(
-                      "w-5 h-5 text-white transition-transform duration-300",
-                      isLandscape ? "rotate-0" : "rotate-90"
-                    )} />
-                  </button>
+                    {/* Next — desktop */}
+                    <button 
+                      className="hidden md:flex p-2.5 hover:bg-white/10 rounded-full transition-colors"
+                      title="Next"
+                    >
+                      <SkipForward className="w-5 h-5 text-white/80" />
+                    </button>
 
-                  {/* Speed button - desktop */}
-                  <button 
-                    onClick={() => setShowSpeedMenu(true)}
-                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
-                    title="Playback speed"
-                  >
-                    <Settings className="w-5 h-5 text-white" />
-                  </button>
-
-                  {/* PiP button */}
-                  <button 
-                    onClick={togglePiP}
-                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
-                    title="Picture in Picture"
-                  >
-                    <PictureInPicture2 className="w-5 h-5 text-white" />
-                  </button>
-
-                  {/* Next episode button - desktop */}
-                  <button 
-                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
-                    title="Next"
-                  >
-                    <SkipForward className="w-5 h-5 text-white" />
-                  </button>
-
-                  {/* Cast/Airplay button - desktop */}
-                  <button 
-                    className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors"
-                    title="Cast"
-                  >
-                    <Airplay className="w-5 h-5 text-white" />
-                  </button>
-                  
-                  <button 
-                    onClick={toggleFullscreen}
-                    className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    {isFullscreen ? (
-                      <Minimize className="w-5 h-5 text-white" />
-                    ) : (
-                      <Maximize className="w-5 h-5 text-white" />
-                    )}
-                  </button>
+                    {/* Cast — desktop */}
+                    <button 
+                      className="hidden md:flex p-2.5 hover:bg-white/10 rounded-full transition-colors"
+                      title="Cast"
+                    >
+                      <Airplay className="w-5 h-5 text-white/80" />
+                    </button>
+                    
+                    {/* Fullscreen */}
+                    <button 
+                      onClick={toggleFullscreen}
+                      className="p-2 md:p-2.5 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-200"
+                    >
+                      {isFullscreen ? (
+                        <Minimize className="w-5 h-5 text-white/80" />
+                      ) : (
+                        <Maximize className="w-5 h-5 text-white/80" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Movie Info Panel - Shows below video on non-fullscreen */}
+          {/* Movie Info Panel */}
           {!isFullscreen && movie && (
-            <div className="flex-shrink-0 bg-gradient-to-t from-card to-card/95 border-t border-border/20 px-4 py-4 md:px-6 md:py-5">
+            <div className="flex-shrink-0 bg-gradient-to-t from-card to-card/95 border-t border-white/5 px-4 py-4 md:px-6 md:py-5">
               <div className="flex gap-4 md:gap-6 max-w-6xl mx-auto">
                 {posterUrl && (
-                  <div className="hidden sm:block w-16 md:w-24 flex-shrink-0 rounded-lg overflow-hidden border border-border/30 shadow-lg">
+                  <div className="hidden sm:block w-16 md:w-24 flex-shrink-0 rounded-xl overflow-hidden border border-white/10 shadow-lg">
                     <img src={posterUrl} alt={title} className="w-full aspect-[2/3] object-cover" />
                   </div>
                 )}
@@ -774,17 +779,17 @@ export function CinematicVideoPlayer({
                     <div>
                       <h3 className="text-lg md:text-xl font-bold text-foreground">
                         {title}
-                        {year && <span className="text-muted-foreground font-normal ml-2">{year}</span>}
+                        {year && <span className="text-muted-foreground font-normal ml-2 text-sm">{year}</span>}
                       </h3>
                       {description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1 max-w-2xl">{description}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1 max-w-2xl leading-relaxed">{description}</p>
                       )}
                     </div>
                     {genres.length > 0 && (
                       <div className="hidden md:flex flex-wrap gap-2">
                         {genres.slice(0, 3).map((genre) => (
-                          <span key={genre} className="px-3 py-1 text-xs font-medium rounded-full bg-primary/20 text-primary border border-primary/30">
-                            {genre.toUpperCase()}
+                          <span key={genre} className="px-3 py-1 text-[10px] font-bold rounded-full bg-primary/10 text-primary/80 border border-primary/20 uppercase tracking-wider">
+                            {genre}
                           </span>
                         ))}
                       </div>
@@ -793,13 +798,13 @@ export function CinematicVideoPlayer({
                   <div className="hidden md:flex flex-wrap gap-x-6 gap-y-1 text-sm">
                     {cast.length > 0 && (
                       <p>
-                        <span className="text-muted-foreground">STARS:</span>{" "}
+                        <span className="text-muted-foreground text-xs uppercase tracking-wider">Stars</span>{" "}
                         <span className="text-foreground">{(cast as CastMember[]).slice(0, 4).map(c => c.name).join(", ")}</span>
                       </p>
                     )}
                     {director && (
                       <p>
-                        <span className="text-muted-foreground">DIRECTOR:</span>{" "}
+                        <span className="text-muted-foreground text-xs uppercase tracking-wider">Director</span>{" "}
                         <span className="text-foreground">{director}</span>
                       </p>
                     )}
@@ -828,21 +833,19 @@ function DoubleTapRipple({ side, seconds, onDone }: { side: "left" | "right"; se
         side === "left" ? "left-0 justify-center rounded-r-[50%]" : "right-0 justify-center rounded-l-[50%]"
       )}
     >
-      {/* Ripple background */}
       <div className={cn(
         "absolute inset-0 animate-in fade-in-0 duration-200",
         side === "left" ? "rounded-r-[50%]" : "rounded-l-[50%]"
       )} 
-        style={{ background: "radial-gradient(circle at center, rgba(255,255,255,0.15) 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(circle at center, rgba(255,255,255,0.12) 0%, transparent 70%)" }}
       />
-      {/* Skip indicator */}
-      <div className="flex flex-col items-center gap-1 animate-in zoom-in-75 duration-200">
+      <div className="flex flex-col items-center gap-1.5 animate-in zoom-in-75 duration-200">
         {side === "left" ? (
-          <RotateCcw className="w-8 h-8 text-white drop-shadow-lg" />
+          <RotateCcw className="w-7 h-7 text-white drop-shadow-lg" />
         ) : (
-          <RotateCw className="w-8 h-8 text-white drop-shadow-lg" />
+          <RotateCw className="w-7 h-7 text-white drop-shadow-lg" />
         )}
-        <span className="text-white text-sm font-bold drop-shadow-lg">{seconds}s</span>
+        <span className="text-white text-xs font-bold drop-shadow-lg tracking-wide">{seconds}s</span>
       </div>
     </div>
   );
