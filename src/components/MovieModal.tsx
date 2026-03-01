@@ -302,15 +302,28 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                       </button>
                       {/* Share button */}
                       <button
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           const slug = movie.type === "series" ? "series" : "movie";
                           const shareUrl = `${window.location.origin}/${slug}/${movie.mobifliks_id}`;
-                          if (navigator.share) {
-                            try {
+                          try {
+                            if (navigator.share) {
                               await navigator.share({ title: movie.title, url: shareUrl });
-                            } catch {}
-                          } else {
+                              return;
+                            }
+                          } catch {}
+                          try {
                             await navigator.clipboard.writeText(shareUrl);
+                            toast.success("Link copied to clipboard!");
+                          } catch {
+                            const textArea = document.createElement("textarea");
+                            textArea.value = shareUrl;
+                            textArea.style.position = "fixed";
+                            textArea.style.opacity = "0";
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand("copy");
+                            document.body.removeChild(textArea);
                             toast.success("Link copied to clipboard!");
                           }
                         }}
@@ -605,16 +618,32 @@ function MobileMovieLayout({
         </button>
         <button
           className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
-          onClick={async () => {
+          onClick={async (e) => {
+            e.stopPropagation();
             if (!movie) return;
             const slug = movie.type === "series" ? "series" : "movie";
             const shareUrl = `${window.location.origin}/${slug}/${movie.mobifliks_id}`;
-            if (navigator.share) {
-              try {
+            try {
+              if (navigator.share) {
                 await navigator.share({ title: movie.title, url: shareUrl });
-              } catch {}
-            } else {
+                return;
+              }
+            } catch (err) {
+              // share cancelled or failed, fall through to clipboard
+            }
+            try {
               await navigator.clipboard.writeText(shareUrl);
+              toast.success("Link copied to clipboard!");
+            } catch {
+              // Fallback for environments where clipboard API is blocked
+              const textArea = document.createElement("textarea");
+              textArea.value = shareUrl;
+              textArea.style.position = "fixed";
+              textArea.style.opacity = "0";
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand("copy");
+              document.body.removeChild(textArea);
               toast.success("Link copied to clipboard!");
             }
           }}
