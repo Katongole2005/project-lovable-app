@@ -16,6 +16,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { FilterModal, FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
+import { toSlug, fromSlug } from "@/lib/slug";
 import { Button } from "@/components/ui/button";
 import { 
   fetchTrending, 
@@ -218,7 +219,8 @@ export default function Index() {
   useEffect(() => {
     const match = location.pathname.match(/^\/(movie|series)\/(.+)$/);
     if (match && !isModalOpen) {
-      const [, type, id] = match;
+      const [, type, rawSlug] = match;
+      const id = fromSlug(rawSlug);
       (async () => {
         try {
           const details = type === "series"
@@ -295,9 +297,10 @@ export default function Index() {
     setIsModalOpen(true);
     addToRecent(movie);
 
-    // Push shareable URL
-    const slug = movie.type === "series" ? "series" : "movie";
-    navigateTo(`/${slug}/${movie.mobifliks_id}`, { replace: false });
+    // Push shareable URL with SEO-friendly slug
+    const typeSlug = movie.type === "series" ? "series" : "movie";
+    const urlSlug = toSlug(movie.title, movie.mobifliks_id, movie.year);
+    navigateTo(`/${typeSlug}/${urlSlug}`, { replace: false });
 
     // Fetch full details in background (for episodes, cast, etc.)
     try {

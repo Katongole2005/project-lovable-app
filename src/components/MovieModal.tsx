@@ -1,6 +1,7 @@
 import React from "react";
 import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List, Share2 } from "lucide-react";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
+import { toSlug } from "@/lib/slug";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -304,8 +305,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
-                          const slug = movie.type === "series" ? "series" : "movie";
-                          const shareUrl = `${window.location.origin}/${slug}/${movie.mobifliks_id}`;
+                          const typeSlug = movie.type === "series" ? "series" : "movie";
+                          const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
                           try {
                             if (navigator.share) {
                               await navigator.share({ title: movie.title, url: shareUrl });
@@ -621,8 +622,8 @@ function MobileMovieLayout({
           onClick={async (e) => {
             e.stopPropagation();
             if (!movie) return;
-            const slug = movie.type === "series" ? "series" : "movie";
-            const shareUrl = `${window.location.origin}/${slug}/${movie.mobifliks_id}`;
+            const typeSlug = movie.type === "series" ? "series" : "movie";
+            const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
             try {
               if (navigator.share) {
                 await navigator.share({ title: movie.title, url: shareUrl });
