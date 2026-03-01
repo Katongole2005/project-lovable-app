@@ -454,8 +454,10 @@ export default function Index() {
       series: "/series",
       search: "/search",
       originals: "/originals",
+      profile: "/profile",
     };
-    const path = viewToPath[tab] || "/";
+    const path = viewToPath[tab];
+    if (!path) return;
     navigateTo(path);
     window.scrollTo({ top: 0, behavior: "instant" });
     
