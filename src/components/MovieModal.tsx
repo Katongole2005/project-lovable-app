@@ -8,6 +8,8 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Movie, Series, Episode, CastMember } from "@/types/movie";
 import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { StarRating } from "@/components/StarRating";
+import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist } from "@/lib/storage";
 
 interface MovieModalProps {
   movie: Movie | Series | null;
@@ -28,8 +30,17 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   const backgroundImage = backdrop ? getOptimizedBackdropUrl(backdrop) : null;
 
   const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
+  const [userRating, setUserRatingState] = React.useState<number | null>(null);
+  const [inWatchlist, setInWatchlist] = React.useState(false);
+
   React.useEffect(() => {
-    // Reset whenever backdrop changes (optimistic modal data can hydrate later).
+    if (movie) {
+      setUserRatingState(getUserRating(movie.mobifliks_id));
+      setInWatchlist(isInWatchlist(movie.mobifliks_id));
+    }
+  }, [movie?.mobifliks_id]);
+
+  React.useEffect(() => {
     setDesktopBackdropLoaded(false);
     if (!backgroundImage) return;
 
@@ -38,13 +49,26 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
     img.onload = () => {
       if (!cancelled) setDesktopBackdropLoaded(true);
     };
-    // backgroundImage is already optimized, use directly
     img.src = backgroundImage;
 
     return () => {
       cancelled = true;
     };
   }, [backgroundImage]);
+
+  const handleRate = (rating: number) => {
+    if (!movie) return;
+    setUserRating(movie.mobifliks_id, rating);
+    setUserRatingState(rating);
+    toast.success(`Rated ${movie.title} ${rating}/5 ⭐`);
+  };
+
+  const handleToggleWatchlist = () => {
+    if (!movie) return;
+    const added = toggleWatchlist(movie as Movie);
+    setInWatchlist(added);
+    toast.success(added ? `Added to My List` : `Removed from My List`);
+  };
 
   if (!movie) return null;
 
@@ -265,11 +289,16 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                         </Button>
                       )}
 
-                      <button className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200">
-                        <Plus className="w-5 h-5" />
-                      </button>
-                      <button className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200">
-                        <Maximize2 className="w-4 h-4" />
+                      <button 
+                        onClick={handleToggleWatchlist}
+                        className={cn(
+                          "w-11 h-11 rounded-full backdrop-blur-sm border-2 flex items-center justify-center transition-all duration-200",
+                          inWatchlist 
+                            ? "bg-primary/90 border-primary text-white" 
+                            : "bg-white/10 border-white/50 text-white hover:bg-white/20 hover:border-white"
+                        )}
+                      >
+                        <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
                       </button>
                       {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
                         <button
@@ -288,6 +317,12 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                 {movie.description && (
                   <p className="text-white/90 leading-relaxed text-lg max-w-4xl">{movie.description}</p>
                 )}
+
+                {/* User Rating */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-white/70">Rate this:</span>
+                  <StarRating rating={userRating} onRate={handleRate} size="md" />
+                </div>
 
                 {/* Cast with images */}
                 {cast.length > 0 && (

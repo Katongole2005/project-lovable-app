@@ -227,7 +227,7 @@ export function HeroCarousel({
             transformStyle: "preserve-3d"
           }} onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}>
                 <div className={cn("w-full h-full rounded-xl overflow-hidden shadow-2xl transition-shadow duration-500", isSelected && "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]")}>
-                  <img src={getImageUrl(movie.image_url)} alt={movie.title} className="w-full h-full object-cover" loading={index < 3 ? "eager" : "lazy"} />
+                  <img src={getImageUrl(movie.image_url)} alt={movie.title} className={cn("w-full h-full object-cover", isSelected && "animate-ken-burns")} style={isSelected ? { animationDuration: '10s' } : undefined} loading={index < 3 ? "eager" : "lazy"} />
                   <div className={cn("absolute inset-0 bg-gradient-to-t from-black/40 to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-50")} />
                 </div>
               </div>;
@@ -285,8 +285,8 @@ export function HeroCarousel({
               boxShadow: isCenter ? '0 35px 70px -20px rgba(0,0,0,0.7), 0 0 50px -10px rgba(139,92,246,0.4)' : `${position * 10}px 25px 50px -15px rgba(0,0,0,0.55)`,
               transition: 'box-shadow 0.7s ease'
             }}>
-                  {/* Movie poster */}
-                  <img src={getImageUrl(movie.image_url)} alt={movie.title} className={cn("w-full h-full object-cover transition-transform duration-500", isCenter && "hover:scale-[1.02]")} loading={Math.abs(position) < 2 ? "eager" : "lazy"} />
+                  {/* Movie poster with Ken Burns effect */}
+                  <img src={getImageUrl(movie.image_url)} alt={movie.title} className={cn("w-full h-full object-cover transition-transform duration-500", isCenter && "animate-ken-burns")} loading={Math.abs(position) < 2 ? "eager" : "lazy"} style={isCenter ? { animationDuration: '12s' } : undefined} />
                   
                   {/* Gradient overlay */}
                   <div className="absolute inset-0" style={{
@@ -365,15 +365,15 @@ export function HeroCarousel({
         }
         @keyframes floatSlow {
           0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-3px) translateX(1px); }
+          50% { transform: translateY(-8px) translateX(4px); }
         }
-        @keyframes cinematicPulse {
-          0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.02); }
+        @keyframes kenBurns {
+          0% { transform: scale(1) translate(0, 0); }
+          50% { transform: scale(1.08) translate(-1.5%, -1%); }
+          100% { transform: scale(1) translate(0, 0); }
         }
-        @keyframes subtleFloat {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-2px); }
+        .animate-ken-burns {
+          animation: kenBurns 12s ease-in-out infinite;
         }
       `}</style>
     </div>;

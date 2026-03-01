@@ -7,6 +7,7 @@ import { VJChips } from "@/components/VJChips";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
+import { RecommendationRow } from "@/components/RecommendationRow";
 import { MovieModal } from "@/components/MovieModal";
 import { CinematicVideoPlayer } from "@/components/CinematicVideoPlayer";
 import { BottomNav } from "@/components/BottomNav";
@@ -659,8 +660,21 @@ export default function Index() {
               </div>
             </SectionReveal>
 
+            {/* Because You Watched Recommendations */}
+            {continueWatching.length > 0 && recentMovies.length > 0 && (
+              <SectionReveal delay={continueWatching.length > 0 ? 250 : 200}>
+                <div className="mt-6">
+                  <RecommendationRow
+                    continueWatching={continueWatching}
+                    allMovies={[...recentMovies, ...recentSeries]}
+                    onMovieClick={handleMovieClick}
+                  />
+                </div>
+              </SectionReveal>
+            )}
+
             {/* Popular Series */}
-            <SectionReveal delay={300}>
+            <SectionReveal delay={350}>
               <div className="mt-6">
                 <MovieRow
                   title="Popular Series"
