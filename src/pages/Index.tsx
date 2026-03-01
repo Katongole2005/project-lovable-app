@@ -660,6 +660,7 @@ export default function Index() {
       <AmbientParticles />
 
       {/* Site Announcement */}
+      <div className="relative z-10">
       <AnnouncementBanner />
 
       {/* Header */}
@@ -989,6 +990,7 @@ export default function Index() {
           contentType: "movies",
         }}
       />
+      </div>
     </div>
   );
 }
