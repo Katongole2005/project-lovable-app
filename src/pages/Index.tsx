@@ -730,41 +730,35 @@ export default function Index() {
 
             {/* Top 10 Today */}
             {siteSettings.top10_enabled && (
-            <SectionReveal delay={280}>
               <div className="mt-6">
                 <Top10Row
                   movies={recentMovies}
                   onMovieClick={handleMovieClick}
                 />
               </div>
-            </SectionReveal>
             )}
 
             {/* Because You Watched Recommendations */}
             {continueWatching.length > 0 && recentMovies.length > 0 && (
-              <SectionReveal delay={320}>
-                <div className="mt-6">
-                  <RecommendationRow
-                    continueWatching={continueWatching}
-                    allMovies={[...recentMovies, ...recentSeries]}
-                    onMovieClick={handleMovieClick}
-                  />
-                </div>
-              </SectionReveal>
+              <div className="mt-6">
+                <RecommendationRow
+                  continueWatching={continueWatching}
+                  allMovies={[...recentMovies, ...recentSeries]}
+                  onMovieClick={handleMovieClick}
+                />
+              </div>
             )}
 
             {/* Popular Series */}
-            <SectionReveal delay={350}>
-              <div className="mt-6">
-                <MovieRow
-                  title="Popular Series"
-                  movies={recentSeries}
-                  onMovieClick={handleMovieClick}
-                  onViewAll={() => handleTabChange("series")}
-                  isLoading={isLoading && recentSeries.length === 0}
-                />
-              </div>
-            </SectionReveal>
+            <div className="mt-6">
+              <MovieRow
+                title="Popular Series"
+                movies={recentSeries}
+                onMovieClick={handleMovieClick}
+                onViewAll={() => handleTabChange("series")}
+                isLoading={isLoading && recentSeries.length === 0}
+              />
+            </div>
           </PageTransition>
         )}
 
