@@ -671,8 +671,7 @@ export default function Index() {
         {viewMode === "home" && (
           <PageTransition>
             {/* Hero Carousel */}
-            {siteSettings.hero_carousel_enabled && (
-            <SectionReveal>
+            {siteSettings.hero_carousel_enabled && trending.length > 0 && (
               <HeroCarousel
                 movies={trending}
                 onPlay={handleHeroPlay}
@@ -680,28 +679,23 @@ export default function Index() {
                 title="Top Movies"
                 onViewAll={() => handleTabChange("movies")}
               />
-            </SectionReveal>
             )}
 
             {/* Category Chips */}
-            <SectionReveal delay={100}>
-              <div className="mt-6">
-                <CategoryChips 
-                  activeCategory={activeCategory}
-                  onCategoryChange={handleCategoryChange}
-                />
-              </div>
-            </SectionReveal>
+            <div className="mt-6">
+              <CategoryChips 
+                activeCategory={activeCategory}
+                onCategoryChange={handleCategoryChange}
+              />
+            </div>
 
             {/* VJ Chips */}
-            <SectionReveal delay={150}>
-              <div className="mt-6">
-                <VJChips
-                  activeVJ={activeVJ}
-                  onVJChange={handleVJChange}
-                />
-              </div>
-            </SectionReveal>
+            <div className="mt-6">
+              <VJChips
+                activeVJ={activeVJ}
+                onVJChange={handleVJChange}
+              />
+            </div>
 
             {/* Continue Watching - above Trending */}
             {siteSettings.continue_watching_enabled && continueWatching.length > 0 && (
@@ -722,19 +716,17 @@ export default function Index() {
             )}
 
             {/* Trending Section */}
-            <SectionReveal delay={continueWatching.length > 0 ? 250 : 200}>
-              <div className="mt-6">
-                <MovieRow
-                  title={getCategoryTitle()}
-                  movies={recentMovies}
-                  onMovieClick={handleMovieClick}
-                  onViewAll={() => handleTabChange("movies")}
-                  isLoading={isLoading && recentMovies.length === 0}
-                  showFilters
-                  onFilterClick={() => setIsFilterOpen(true)}
-                />
-              </div>
-            </SectionReveal>
+            <div className="mt-6">
+              <MovieRow
+                title={getCategoryTitle()}
+                movies={recentMovies}
+                onMovieClick={handleMovieClick}
+                onViewAll={() => handleTabChange("movies")}
+                isLoading={isLoading && recentMovies.length === 0}
+                showFilters
+                onFilterClick={() => setIsFilterOpen(true)}
+              />
+            </div>
 
             {/* Top 10 Today */}
             {siteSettings.top10_enabled && (

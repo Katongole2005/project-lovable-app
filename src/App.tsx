@@ -94,15 +94,7 @@ const App = () => {
 };
 
 function AppRoutes() {
-  const { settings, loading } = useSiteSettingsContext();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const { settings } = useSiteSettingsContext();
 
   if (settings.maintenance_mode) {
     return (

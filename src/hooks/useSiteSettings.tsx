@@ -50,7 +50,7 @@ export const useSiteSettingsContext = () => useContext(SiteSettingsContext);
 
 export function useSiteSettings() {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULTS);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     try {
