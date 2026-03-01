@@ -75,6 +75,14 @@ export function CinematicVideoPlayer({
   const [showGestureHints, setShowGestureHints] = useState(false);
   const gestureHintsShownRef = useRef(false);
   
+  // Swipe gesture state (brightness left, volume right)
+  const [brightness, setBrightness] = useState(1);
+  const [swipeIndicator, setSwipeIndicator] = useState<{ side: "left" | "right"; value: number } | null>(null);
+  const swipeRef = useRef<{ startY: number; startX: number; side: "left" | "right" | null; startValue: number; active: boolean }>({
+    startY: 0, startX: 0, side: null, startValue: 0, active: false
+  });
+  const swipeIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Double-tap skip animation state
   const [skipAnimation, setSkipAnimation] = useState<{
     side: "left" | "right";
@@ -329,6 +337,66 @@ export function CinematicVideoPlayer({
     }
   }, [isLongPressing, savedSpeed]);
 
+  // Swipe gesture handlers for brightness (left) / volume (right)
+  const handleSwipeTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const relativeX = (touch.clientX - rect.left) / rect.width;
+    // Only activate on the outer thirds
+    const side: "left" | "right" | null = relativeX < 0.35 ? "left" : relativeX > 0.65 ? "right" : null;
+    swipeRef.current = {
+      startY: touch.clientY,
+      startX: touch.clientX,
+      side,
+      startValue: side === "left" ? brightness : volume,
+      active: false,
+    };
+  }, [brightness, volume]);
+
+  const handleSwipeTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1 || !swipeRef.current.side) return;
+    const touch = e.touches[0];
+    const deltaY = swipeRef.current.startY - touch.clientY;
+    const deltaX = Math.abs(touch.clientX - swipeRef.current.startX);
+    
+    // Require vertical movement to exceed horizontal to activate
+    if (!swipeRef.current.active) {
+      if (Math.abs(deltaY) < 15) return; // dead zone
+      if (deltaX > Math.abs(deltaY)) { swipeRef.current.side = null; return; } // horizontal — ignore
+      swipeRef.current.active = true;
+    }
+    
+    // Scale: full container height = full range (0 to 1)
+    const containerHeight = (e.currentTarget as HTMLElement).getBoundingClientRect().height;
+    const change = deltaY / (containerHeight * 0.6);
+    const newValue = Math.max(0, Math.min(1, swipeRef.current.startValue + change));
+    
+    if (swipeRef.current.side === "right") {
+      if (videoRef.current) {
+        videoRef.current.volume = newValue;
+        videoRef.current.muted = newValue === 0;
+      }
+      setVolume(newValue);
+      setIsMuted(newValue === 0);
+      setSwipeIndicator({ side: "right", value: newValue });
+    } else {
+      setBrightness(newValue);
+      setSwipeIndicator({ side: "left", value: newValue });
+    }
+    
+    // Clear any existing dismiss timeout
+    if (swipeIndicatorTimeoutRef.current) clearTimeout(swipeIndicatorTimeoutRef.current);
+  }, []);
+
+  const handleSwipeTouchEnd = useCallback(() => {
+    if (swipeRef.current.active) {
+      // Keep indicator visible briefly after release
+      swipeIndicatorTimeoutRef.current = setTimeout(() => setSwipeIndicator(null), 800);
+    }
+    swipeRef.current = { startY: 0, startX: 0, side: null, startValue: 0, active: false };
+  }, []);
+
   // Double-tap to skip ±10s
   const handleVideoAreaTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -446,12 +514,21 @@ export function CinematicVideoPlayer({
           <div 
             className="relative flex-1 flex items-center justify-center bg-black min-h-0"
             onClick={handleVideoAreaTap}
-            onTouchEnd={handleVideoAreaTap}
+            onTouchEnd={(e) => { handleVideoAreaTap(e); handleSwipeTouchEnd(); }}
             onMouseDown={handleLongPressStart}
             onMouseUp={handleLongPressEnd}
-            onTouchStart={handleLongPressStart}
-            onTouchCancel={handleLongPressEnd}
+            onTouchStart={(e) => { handleLongPressStart(); handleSwipeTouchStart(e); }}
+            onTouchMove={handleSwipeTouchMove}
+            onTouchCancel={() => { handleLongPressEnd(); handleSwipeTouchEnd(); }}
           >
+            {/* Brightness overlay */}
+            {brightness < 1 && (
+              <div 
+                className="absolute inset-0 bg-black pointer-events-none z-[5]"
+                style={{ opacity: 1 - brightness }}
+              />
+            )}
+
             <video
               ref={videoRef}
               src={videoUrl}
@@ -484,6 +561,44 @@ export function CinematicVideoPlayer({
               </div>
             )}
 
+            {/* Swipe gesture indicator — vertical bar */}
+            {swipeIndicator && (
+              <div className={cn(
+                "absolute top-1/2 -translate-y-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 animate-in fade-in duration-150",
+                swipeIndicator.side === "left" ? "left-5" : "right-5"
+              )}>
+                <div className="flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10">
+                  {swipeIndicator.side === "left" ? (
+                    <svg className="w-5 h-5 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="5" />
+                      <line x1="12" y1="1" x2="12" y2="3" />
+                      <line x1="12" y1="21" x2="12" y2="23" />
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                      <line x1="1" y1="12" x2="3" y2="12" />
+                      <line x1="21" y1="12" x2="23" y2="12" />
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                  ) : (
+                    isMuted || swipeIndicator.value === 0 ? (
+                      <VolumeX className="w-5 h-5 text-white/90" />
+                    ) : (
+                      <Volume2 className="w-5 h-5 text-white/90" />
+                    )
+                  )}
+                  {/* Vertical bar */}
+                  <div className="relative w-1 h-24 rounded-full bg-white/20 overflow-hidden">
+                    <div 
+                      className="absolute bottom-0 left-0 right-0 rounded-full bg-white transition-all duration-75"
+                      style={{ height: `${swipeIndicator.value * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-white text-[10px] font-bold tabular-nums">{Math.round(swipeIndicator.value * 100)}%</span>
+                </div>
+              </div>
+            )}
+
             {/* Long-press 2x speed indicator — frosted pill */}
             {isLongPressing && (
               <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
@@ -507,30 +622,36 @@ export function CinematicVideoPlayer({
             {/* Gesture hints overlay */}
             {showGestureHints && (
               <div className="absolute inset-0 z-40 pointer-events-none animate-in fade-in duration-500">
-                {/* Left hint — double tap */}
-                <div className="absolute left-[12%] top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+                {/* Left hint — swipe + double tap */}
+                <div className="absolute left-[12%] top-1/2 -translate-y-1/2 flex flex-col items-center gap-3">
                   <div className="flex gap-1">
                     <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-ping" style={{ animationDuration: '1.5s' }} />
                     <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.2s' }} />
                   </div>
-                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10 mt-1">
+                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10">
                     <p className="text-white text-[11px] font-semibold text-center">Double tap<br/><span className="text-white/60 font-normal">to rewind 10s</span></p>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10">
+                    <p className="text-white text-[11px] font-semibold text-center">Swipe up/down<br/><span className="text-white/60 font-normal">for brightness</span></p>
                   </div>
                 </div>
 
-                {/* Right hint — double tap */}
-                <div className="absolute right-[12%] top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+                {/* Right hint — swipe + double tap */}
+                <div className="absolute right-[12%] top-1/2 -translate-y-1/2 flex flex-col items-center gap-3">
                   <div className="flex gap-1">
                     <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-ping" style={{ animationDuration: '1.5s' }} />
                     <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.2s' }} />
                   </div>
-                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10 mt-1">
+                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10">
                     <p className="text-white text-[11px] font-semibold text-center">Double tap<br/><span className="text-white/60 font-normal">to skip 10s</span></p>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10">
+                    <p className="text-white text-[11px] font-semibold text-center">Swipe up/down<br/><span className="text-white/60 font-normal">for volume</span></p>
                   </div>
                 </div>
 
                 {/* Center hint — long press */}
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-[30%] flex flex-col items-center gap-2">
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-[25%] flex flex-col items-center gap-2">
                   <div className="w-10 h-10 rounded-full border-2 border-white/30 flex items-center justify-center">
                     <div className="w-6 h-6 rounded-full bg-white/20 animate-pulse" />
                   </div>
