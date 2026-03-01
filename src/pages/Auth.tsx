@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSeo } from "@/hooks/useSeo";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -20,6 +21,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  useSeo({ title: "Sign In", description: "Sign in or create an account to start streaming movies and series on Moviebay." });
   const [view, setView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

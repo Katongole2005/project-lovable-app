@@ -16,7 +16,6 @@ import { SearchBar } from "@/components/SearchBar";
 import { FilterModal, FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
-import { toSlug, fromSlug } from "@/lib/slug";
 import { Button } from "@/components/ui/button";
 import { 
   fetchTrending, 
@@ -32,6 +31,8 @@ import {
 import { addToRecent, addRecentSearch, getContinueWatching, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
 import type { Movie, Series, ContinueWatching } from "@/types/movie";
 import { ChevronLeft, Loader2 } from "lucide-react";
+import { useSeo, buildMovieJsonLd } from "@/hooks/useSeo";
+import { toSlug, fromSlug } from "@/lib/slug";
 
 type ViewMode = "home" | "search" | "movies" | "series" | "originals";
 
@@ -59,6 +60,7 @@ export default function Index() {
   };
   const viewMode: ViewMode = pathToView[location.pathname] ?? "home";
   const activeTab = viewMode === "home" ? "home" : viewMode;
+
   
   // Data states
   const [trending, setTrending] = useState<Movie[]>([]);
@@ -94,6 +96,30 @@ export default function Index() {
   const exitToastTimerRef = useRef<number | null>(null);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Dynamic SEO per view/modal
+  const seoTitleMap: Record<ViewMode, string> = {
+    home: "",
+    movies: "Browse Movies",
+    series: "Browse Series",
+    search: searchQuery ? `Search: ${searchQuery}` : "Search",
+    originals: "Originals",
+  };
+  const seoTitle = selectedMovie && isModalOpen
+    ? `${selectedMovie.title}${selectedMovie.year ? ` (${selectedMovie.year})` : ""}`
+    : seoTitleMap[viewMode] || "";
+  const seoDescription = selectedMovie && isModalOpen
+    ? selectedMovie.description || `Watch ${selectedMovie.title} on Moviebay`
+    : undefined;
+
+  useSeo({
+    title: seoTitle || undefined,
+    description: seoDescription,
+    canonical: `/${viewMode === "home" ? "" : viewMode}`,
+    ogImage: selectedMovie?.backdrop_url || selectedMovie?.image_url || undefined,
+    ogType: selectedMovie && isModalOpen ? "video.movie" : "website",
+    jsonLd: selectedMovie && isModalOpen ? buildMovieJsonLd(selectedMovie) : undefined,
+  });
 
   // Filter data constants
   const filterCategories = useMemo(() => [
