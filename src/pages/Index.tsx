@@ -723,30 +723,26 @@ export default function Index() {
             )}
 
             {/* Trending Section */}
-            <SectionReveal delay={100} variant="slide-up">
-              <div className="mt-6">
-                <MovieRow
-                  title={getCategoryTitle()}
-                  movies={recentMovies}
-                  onMovieClick={handleMovieClick}
-                  onViewAll={() => handleTabChange("movies")}
-                  isLoading={isLoading && recentMovies.length === 0}
-                  showFilters
-                  onFilterClick={() => setIsFilterOpen(true)}
-                />
-              </div>
-            </SectionReveal>
+            <div className="mt-6">
+              <MovieRow
+                title={getCategoryTitle()}
+                movies={recentMovies}
+                onMovieClick={handleMovieClick}
+                onViewAll={() => handleTabChange("movies")}
+                isLoading={isLoading && recentMovies.length === 0}
+                showFilters
+                onFilterClick={() => setIsFilterOpen(true)}
+              />
+            </div>
 
             {/* Top 10 Today */}
             {siteSettings.top10_enabled && (
-              <SectionReveal delay={200} variant="scale">
-                <div className="mt-6">
-                  <Top10Row
-                    movies={recentMovies}
-                    onMovieClick={handleMovieClick}
-                  />
-                </div>
-              </SectionReveal>
+              <div className="mt-6">
+                <Top10Row
+                  movies={recentMovies}
+                  onMovieClick={handleMovieClick}
+                />
+              </div>
             )}
 
             {/* Because You Watched Recommendations */}
@@ -761,17 +757,15 @@ export default function Index() {
             )}
 
             {/* Popular Series */}
-            <SectionReveal delay={300} variant="slide-up">
-              <div className="mt-6">
-                <MovieRow
-                  title="Popular Series"
-                  movies={recentSeries}
-                  onMovieClick={handleMovieClick}
-                  onViewAll={() => handleTabChange("series")}
-                  isLoading={isLoading && recentSeries.length === 0}
-                />
-              </div>
-            </SectionReveal>
+            <div className="mt-6">
+              <MovieRow
+                title="Popular Series"
+                movies={recentSeries}
+                onMovieClick={handleMovieClick}
+                onViewAll={() => handleTabChange("series")}
+                isLoading={isLoading && recentSeries.length === 0}
+              />
+            </div>
           </PageTransition>
         )}
 
