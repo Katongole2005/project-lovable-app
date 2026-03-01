@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
@@ -652,6 +653,9 @@ export default function Index() {
 
   return (
     <div className="min-h-screen pb-safe">
+      {/* Site Announcement */}
+      <AnnouncementBanner />
+
       {/* Header */}
       <Header
         onSearch={handleSearch}
