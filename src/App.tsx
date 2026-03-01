@@ -91,7 +91,8 @@ const App = () => {
                   <Route path="/movies" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="/series" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="/search" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/originals" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/movie/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/series/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
