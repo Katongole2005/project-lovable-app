@@ -603,8 +603,6 @@ export default function Profile() {
             Settings
           </p>
           <div className="rounded-2xl bg-card/60 backdrop-blur border border-border/30 overflow-hidden divide-y divide-border/20">
-            <PushNotificationButton variant="profile" />
-
             {/* Account Details */}
             <button
               onClick={() => user ? setEditProfileOpen(true) : navigate("/auth")}
