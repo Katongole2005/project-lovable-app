@@ -521,12 +521,16 @@ export function CinematicVideoPlayer({
           {/* Video Container */}
           <div 
             className="relative flex-1 flex items-center justify-center bg-black min-h-0"
-            onClick={handleVideoAreaTap}
-            onTouchEnd={(e) => { handleVideoAreaTap(e); handleSwipeTouchEnd(); }}
-            onMouseDown={handleLongPressStart}
-            onMouseUp={handleLongPressEnd}
+            onClick={(e) => { 
+              // On touch devices, touchEnd already handles taps — skip onClick to avoid double-firing
+              if ((e as any).nativeEvent?.pointerType === 'touch' || 'ontouchstart' in window) return;
+              handleVideoAreaTap(e); 
+            }}
+            onTouchEnd={(e) => { handleLongPressEnd(); handleVideoAreaTap(e); handleSwipeTouchEnd(); }}
+            onMouseDown={(e) => { if (!('ontouchstart' in window)) handleLongPressStart(); }}
+            onMouseUp={(e) => { if (!('ontouchstart' in window)) handleLongPressEnd(); }}
             onTouchStart={(e) => { handleLongPressStart(); handleSwipeTouchStart(e); }}
-            onTouchMove={handleSwipeTouchMove}
+            onTouchMove={(e) => { handleSwipeTouchMove(e); if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; } }}
             onTouchCancel={() => { handleLongPressEnd(); handleSwipeTouchEnd(); }}
           >
             {/* Brightness overlay */}
