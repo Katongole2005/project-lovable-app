@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, forwardRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface PageTransitionProps {
@@ -33,38 +33,41 @@ interface SectionRevealProps {
   delay?: number;
 }
 
-export function SectionReveal({ children, className, delay = 0 }: SectionRevealProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const elRef = useRef<HTMLDivElement>(null);
+export const SectionReveal = forwardRef<HTMLDivElement, SectionRevealProps>(
+  function SectionReveal({ children, className, delay = 0 }, forwardedRef) {
+    const [isVisible, setIsVisible] = useState(false);
+    const internalRef = useRef<HTMLDivElement>(null);
+    const elRef = (forwardedRef as React.RefObject<HTMLDivElement>) || internalRef;
 
-  useEffect(() => {
-    const el = elRef.current;
-    if (!el) return;
+    useEffect(() => {
+      const el = elRef.current;
+      if (!el) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => setIsVisible(true), delay);
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.08, rootMargin: "0px 0px -50px 0px" }
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => setIsVisible(true), delay);
+            observer.unobserve(el);
+          }
+        },
+        { threshold: 0.08, rootMargin: "0px 0px -50px 0px" }
+      );
+
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, [delay]);
+
+    return (
+      <div
+        ref={elRef}
+        className={cn(
+          "transition-all duration-700 ease-out",
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
+          className
+        )}
+      >
+        {children}
+      </div>
     );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [delay]);
-
-  return (
-    <div
-      ref={elRef}
-      className={cn(
-        "transition-all duration-700 ease-out",
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
-}
+  }
+);

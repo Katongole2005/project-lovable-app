@@ -1,5 +1,5 @@
 import { ChevronRight, SlidersHorizontal, Filter } from "lucide-react";
-import { useRef } from "react";
+import { useRef, forwardRef } from "react";
 import type { Movie } from "@/types/movie";
 import { MovieCard, MovieCardSkeleton } from "./MovieCard";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ interface MovieRowProps {
   className?: string;
 }
 
-export function MovieRow({ 
+export const MovieRow = forwardRef<HTMLElement, MovieRowProps>(function MovieRow({ 
   title, 
   movies, 
   onMovieClick, 
@@ -24,12 +24,12 @@ export function MovieRow({
   showFilters = false,
   onFilterClick,
   className 
-}: MovieRowProps) {
+}, ref) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   if (isLoading) {
     return (
-      <section className={cn("py-4", className)}>
+      <section ref={ref} className={cn("py-4", className)}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg md:text-xl font-display font-semibold text-foreground tracking-tight">{title}</h2>
         </div>
@@ -45,7 +45,7 @@ export function MovieRow({
   if (movies.length === 0) return null;
 
   return (
-    <section className={cn("py-4", className)}>
+    <section ref={ref} className={cn("py-4", className)}>
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-lg md:text-xl font-display font-semibold text-foreground tracking-tight">{title}</h2>
         
@@ -102,4 +102,4 @@ export function MovieRow({
       </div>
     </section>
   );
-}
+});

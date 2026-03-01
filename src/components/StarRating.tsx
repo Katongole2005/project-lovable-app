@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, forwardRef } from "react";
 
 interface StarRatingProps {
   rating: number | null;
@@ -10,10 +10,10 @@ interface StarRatingProps {
 }
 
 /** Simple confetti burst using CSS */
-function ConfettiBurst({ active }: { active: boolean }) {
+const ConfettiBurst = forwardRef<HTMLDivElement, { active: boolean }>(function ConfettiBurst({ active }, ref) {
   if (!active) return null;
   return (
-    <div className="absolute -top-2 left-1/2 -translate-x-1/2 pointer-events-none">
+    <div ref={ref} className="absolute -top-2 left-1/2 -translate-x-1/2 pointer-events-none">
       {Array.from({ length: 8 }).map((_, i) => (
         <span
           key={i}
@@ -44,7 +44,7 @@ function ConfettiBurst({ active }: { active: boolean }) {
       `}</style>
     </div>
   );
-}
+});
 
 export function StarRating({ rating, onRate, size = "md", className }: StarRatingProps) {
   const [hovered, setHovered] = useState(0);
