@@ -634,7 +634,7 @@ export default function Index() {
                   <ContinueWatchingRow
                     items={continueWatching}
                     onResume={(item) => {
-                      handlePlayVideo(item.url, item.title, item.progress, item);
+                      handlePlayVideo(item.url, item.title, Number(item.progress) || 0, item);
                     }}
                     onRemove={(id) => {
                       removeContinueWatching(id);

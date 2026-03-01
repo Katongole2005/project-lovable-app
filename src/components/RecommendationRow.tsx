@@ -1,7 +1,7 @@
 import type { Movie, ContinueWatching } from "@/types/movie";
 import { MovieCard } from "./MovieCard";
 import { cn } from "@/lib/utils";
-import { useMemo } from "react";
+import { useMemo, forwardRef } from "react";
 
 interface RecommendationRowProps {
   continueWatching: ContinueWatching[];
@@ -14,7 +14,7 @@ interface RecommendationRowProps {
  * "Because You Watched X" — picks the most recent continue-watching item,
  * matches its genres against the full movie list, and shows up to 12 results.
  */
-export function RecommendationRow({ continueWatching, allMovies, onMovieClick, className }: RecommendationRowProps) {
+export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>(function RecommendationRow({ continueWatching, allMovies, onMovieClick, className }, ref) {
   const { sourceTitle, recommendations } = useMemo(() => {
     if (continueWatching.length === 0 || allMovies.length === 0) {
       return { sourceTitle: "", recommendations: [] };
@@ -50,7 +50,7 @@ export function RecommendationRow({ continueWatching, allMovies, onMovieClick, c
   if (recommendations.length < 3) return null;
 
   return (
-    <section className={cn("py-4", className)}>
+    <section ref={ref} className={cn("py-4", className)}>
       <h2 className="text-lg md:text-xl font-display font-semibold text-foreground tracking-tight mb-5">
         Because You Watched <span className="text-primary">{sourceTitle}</span>
       </h2>
@@ -71,4 +71,4 @@ export function RecommendationRow({ continueWatching, allMovies, onMovieClick, c
       </div>
     </section>
   );
-}
+});

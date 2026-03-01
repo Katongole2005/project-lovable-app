@@ -45,6 +45,9 @@ export function CinematicVideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const ignoreInitialTimeUpdateRef = useRef(false);
+  const lastReportedTimeRef = useRef(0);
+  const lastReportedDurationRef = useRef(0);
+  const closingRef = useRef(false);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -154,6 +157,15 @@ export function CinematicVideoPlayer({
       setIsPlaying(false);
     }
   }, [isOpen]);
+
+  // Reset close/persist guards every time player opens
+  useEffect(() => {
+    if (isOpen) {
+      closingRef.current = false;
+      lastReportedTimeRef.current = 0;
+      lastReportedDurationRef.current = 0;
+    }
+  }, [isOpen, videoUrl]);
 
   // Auto-hide controls
   const resetControlsTimeout = useCallback(() => {
@@ -301,6 +313,14 @@ export function CinematicVideoPlayer({
       }
 
       ignoreInitialTimeUpdateRef.current = false;
+
+      if (Number.isFinite(nextDuration) && nextDuration > 0) {
+        lastReportedDurationRef.current = nextDuration;
+      }
+      if (Number.isFinite(nextTime) && nextTime >= 0) {
+        lastReportedTimeRef.current = Math.max(lastReportedTimeRef.current, nextTime);
+      }
+
       onTimeUpdate?.(nextTime, nextDuration);
     }
   };
@@ -332,10 +352,24 @@ export function CinematicVideoPlayer({
   };
 
   const handleClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+
     if (videoRef.current) {
-      handleTimeUpdate();
-      videoRef.current.pause();
+      const video = videoRef.current;
+      const finalTime = Math.max(lastReportedTimeRef.current, currentTime, video.currentTime || 0);
+      const finalDuration =
+        (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0) ||
+        lastReportedDurationRef.current ||
+        duration;
+
+      if (finalDuration > 0 && finalTime > 0) {
+        onTimeUpdate?.(finalTime, finalDuration);
+      }
+
+      video.pause();
     }
+
     ignoreInitialTimeUpdateRef.current = false;
     if (isFullscreen) {
       exitFullscreen();
