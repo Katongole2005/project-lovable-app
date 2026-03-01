@@ -8,12 +8,13 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { CookieConsent } from "@/components/CookieConsent";
-import { FEATURE_FLAGS } from "@/lib/featureFlags";
+import { SiteSettingsProvider, useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import Maintenance from "./pages/Maintenance";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Profile = lazy(() => import("./pages/Profile"));
+const Admin = lazy(() => import("./pages/Admin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -72,10 +73,6 @@ const App = () => {
     };
   }, []);
 
-  if (FEATURE_FLAGS.MAINTENANCE_MODE) {
-    return <Maintenance />;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -85,20 +82,9 @@ const App = () => {
           <CookieConsent />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <AuthProvider>
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
-                <Routes>
-                  <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/movies" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/series" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/search" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/movie/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/series/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
-                </Routes>
-              </Suspense>
+              <SiteSettingsProvider>
+                <AppRoutes />
+              </SiteSettingsProvider>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
@@ -106,5 +92,48 @@ const App = () => {
     </QueryClientProvider>
   );
 };
+
+function AppRoutes() {
+  const { settings, loading } = useSiteSettingsContext();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (settings.maintenance_mode) {
+    return (
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="*" element={<Maintenance />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+      <Routes>
+        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/movies" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/series" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/search" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/originals" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/movie/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/series/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+      </Routes>
+    </Suspense>
+  );
+}
 
 export default App;

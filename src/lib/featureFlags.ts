@@ -1,8 +1,8 @@
 /**
  * Feature Flags
  * 
- * Toggle features on/off easily. 
- * Set to `true` to enable, `false` to disable.
+ * Static defaults — overridden at runtime by site_settings from the database.
+ * Use useSiteSettings() hook for dynamic values in components.
  */
 
 export const FEATURE_FLAGS = {

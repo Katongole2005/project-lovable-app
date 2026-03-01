@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useTheme } from "next-themes";
 import { getRecentlyViewed, getContinueWatching } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ import logoDark from "@/assets/logo-dark.png";
 export default function Profile() {
   const navigate = useNavigate();
   const { user, loading, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
@@ -260,8 +262,25 @@ export default function Profile() {
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>
 
+        {/* Admin Panel Link */}
+        {isAdmin && (
+          <button
+            onClick={() => navigate("/admin")}
+            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-foreground">Admin Panel</p>
+              <p className="text-xs text-muted-foreground">Manage site settings, users & more</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-primary" />
+          </button>
+        )}
+
         {/* Send Push Notification Panel (admin) */}
-        <SendPushPanel />
+        {isAdmin && <SendPushPanel />}
 
         {/* Sign Out / Sign In */}
         {user ? (

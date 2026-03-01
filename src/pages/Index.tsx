@@ -15,6 +15,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { SearchBar } from "@/components/SearchBar";
 import { FilterModal, FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
+import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import { Button } from "@/components/ui/button";
 import { 
   fetchTrending, 
@@ -47,7 +48,7 @@ export default function Index() {
   const location = useLocation();
   const navigateTo = useNavigate();
 
-  // Derive viewMode from URL path
+  const { settings: siteSettings } = useSiteSettingsContext();
   const pathToView: Record<string, ViewMode> = {
     "/": "home",
     "/movies": "movies",
@@ -637,6 +638,7 @@ export default function Index() {
         {viewMode === "home" && (
           <PageTransition>
             {/* Hero Carousel */}
+            {siteSettings.hero_carousel_enabled && (
             <SectionReveal>
               <HeroCarousel
                 movies={trending}
@@ -646,6 +648,7 @@ export default function Index() {
                 onViewAll={() => handleTabChange("movies")}
               />
             </SectionReveal>
+            )}
 
             {/* Category Chips */}
             <SectionReveal delay={100}>
@@ -668,7 +671,7 @@ export default function Index() {
             </SectionReveal>
 
             {/* Continue Watching - above Trending */}
-            {continueWatching.length > 0 && (
+            {siteSettings.continue_watching_enabled && continueWatching.length > 0 && (
               <SectionReveal delay={200}>
                 <div className="mt-6">
                   <ContinueWatchingRow
@@ -701,6 +704,7 @@ export default function Index() {
             </SectionReveal>
 
             {/* Top 10 Today */}
+            {siteSettings.top10_enabled && (
             <SectionReveal delay={280}>
               <div className="mt-6">
                 <Top10Row
@@ -709,6 +713,7 @@ export default function Index() {
                 />
               </div>
             </SectionReveal>
+            )}
 
             {/* Because You Watched Recommendations */}
             {continueWatching.length > 0 && recentMovies.length > 0 && (
