@@ -72,6 +72,8 @@ export function CinematicVideoPlayer({
   const [showRemainingTime, setShowRemainingTime] = useState(false);
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [savedSpeed, setSavedSpeed] = useState(1);
+  const [showGestureHints, setShowGestureHints] = useState(false);
+  const gestureHintsShownRef = useRef(false);
   
   // Double-tap skip animation state
   const [skipAnimation, setSkipAnimation] = useState<{
@@ -456,7 +458,15 @@ export function CinematicVideoPlayer({
               className="w-full h-full object-contain"
               autoPlay
               playsInline
-              onPlay={() => setIsPlaying(true)}
+              onPlay={() => {
+                setIsPlaying(true);
+                if (!gestureHintsShownRef.current && !localStorage.getItem("sp_gesture_hints_seen")) {
+                  gestureHintsShownRef.current = true;
+                  setShowGestureHints(true);
+                  setTimeout(() => setShowGestureHints(false), 4000);
+                  localStorage.setItem("sp_gesture_hints_seen", "1");
+                }
+              }}
               onPause={() => setIsPlaying(false)}
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
@@ -492,6 +502,43 @@ export function CinematicVideoPlayer({
                 seconds={skipAnimation.seconds}
                 onDone={() => setSkipAnimation(null)}
               />
+            )}
+
+            {/* Gesture hints overlay */}
+            {showGestureHints && (
+              <div className="absolute inset-0 z-40 pointer-events-none animate-in fade-in duration-500">
+                {/* Left hint — double tap */}
+                <div className="absolute left-[12%] top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-ping" style={{ animationDuration: '1.5s' }} />
+                    <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.2s' }} />
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10 mt-1">
+                    <p className="text-white text-[11px] font-semibold text-center">Double tap<br/><span className="text-white/60 font-normal">to rewind 10s</span></p>
+                  </div>
+                </div>
+
+                {/* Right hint — double tap */}
+                <div className="absolute right-[12%] top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-ping" style={{ animationDuration: '1.5s' }} />
+                    <div className="w-8 h-8 rounded-full border-2 border-white/40 animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.2s' }} />
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10 mt-1">
+                    <p className="text-white text-[11px] font-semibold text-center">Double tap<br/><span className="text-white/60 font-normal">to skip 10s</span></p>
+                  </div>
+                </div>
+
+                {/* Center hint — long press */}
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-[30%] flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 rounded-full border-2 border-white/30 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-white/20 animate-pulse" />
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-xl border border-white/10">
+                    <p className="text-white text-[11px] font-semibold text-center">Long press<br/><span className="text-white/60 font-normal">for 2× speed</span></p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Center play button — glass morphism */}
