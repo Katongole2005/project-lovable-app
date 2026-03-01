@@ -7,10 +7,17 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Movie, Series, Episode, CastMember } from "@/types/movie";
-import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
+import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
 import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist } from "@/lib/storage";
+
+/** Staggered animation helper — returns style for delayed fade-in */
+const staggerStyle = (index: number, isVisible: boolean): React.CSSProperties => ({
+  opacity: isVisible ? 1 : 0,
+  transform: isVisible ? "translateY(0)" : "translateY(16px)",
+  transition: `opacity 0.5s ease ${index * 0.08}s, transform 0.5s ease ${index * 0.08}s`,
+});
 
 interface MovieModalProps {
   movie: Movie | Series | null;
@@ -33,6 +40,15 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
   const [userRating, setUserRatingState] = React.useState<number | null>(null);
   const [inWatchlist, setInWatchlist] = React.useState(false);
+  const [entranceVisible, setEntranceVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setEntranceVisible(false);
+      const t = setTimeout(() => setEntranceVisible(true), 100);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
 
   React.useEffect(() => {
     if (movie) {
@@ -200,7 +216,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
               {/* Content area - overlapping backdrop */}
               <div className="relative -mt-32 px-10 pb-10 space-y-6">
                 {/* Poster + Title row */}
-                <div className="flex gap-6 items-start">
+                <div className="flex gap-6 items-start" style={staggerStyle(0, entranceVisible)}>
                   <div className="w-32 lg:w-40 flex-none rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
                     <img
                       src={getImageUrl(movie.image_url)}
@@ -210,12 +226,12 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   </div>
 
                   <div className="flex-1 min-w-0 space-y-4 pt-2">
-                    <h1 className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
+                    <h1 className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg" style={staggerStyle(1, entranceVisible)}>
                       {movie.title}
                       {isSeries && <span className="text-primary text-2xl ml-2 font-semibold">(Series)</span>}
                     </h1>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3" style={staggerStyle(2, entranceVisible)}>
                       {/* Rating */}
                       <span className="flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30">
                         <Star className="w-4 h-4 fill-[#4ade80]" />
@@ -263,7 +279,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3 pt-2">
+                    <div className="flex items-center gap-3 pt-2" style={staggerStyle(3, entranceVisible)}>
                       {!isSeries && movie.download_url && (
                         <Button
                           size="lg"
@@ -347,23 +363,27 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                 </div>
 
                 {movie.description && (
-                  <p className="text-white/90 leading-relaxed text-lg max-w-4xl">{movie.description}</p>
+                  <p className="text-white/90 leading-relaxed text-lg max-w-4xl" style={staggerStyle(4, entranceVisible)}>{movie.description}</p>
                 )}
 
                 {/* User Rating */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3" style={staggerStyle(5, entranceVisible)}>
                   <span className="text-sm font-medium text-white/70">Rate this:</span>
                   <StarRating rating={userRating} onRate={handleRate} size="md" />
                 </div>
 
-                {/* Cast with images */}
+                {/* Cast — improved horizontal carousel with larger cards */}
                 {cast.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-3" style={staggerStyle(6, entranceVisible)}>
                     <h4 className="text-lg font-semibold text-white/90">Cast</h4>
-                    <div className="flex flex-wrap gap-4">
-                      {cast.slice(0, 8).map((member, index) => (
-                        <div key={index} className="flex flex-col items-center gap-2 w-20">
-                          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 bg-white/10">
+                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin -mx-2 px-2">
+                      {cast.slice(0, 12).map((member, index) => (
+                        <div
+                          key={index}
+                          className="flex-none w-28 group"
+                          style={staggerStyle(7 + index * 0.5, entranceVisible)}
+                        >
+                          <div className="w-24 h-24 mx-auto rounded-2xl overflow-hidden border-2 border-white/15 bg-white/5 shadow-lg group-hover:border-white/30 group-hover:scale-105 transition-all duration-300">
                             <img
                               src={member.profile_url || fallbackCastAvatar}
                               alt={member.name}
@@ -373,9 +393,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                               }}
                             />
                           </div>
-                          <span className="text-xs text-white/80 text-center line-clamp-2 leading-tight">{member.name}</span>
+                          <p className="text-xs font-medium text-white/90 text-center mt-2 line-clamp-2 leading-tight">{member.name}</p>
                           {member.character && (
-                            <span className="text-[10px] text-white/50 text-center line-clamp-1">{member.character}</span>
+                            <p className="text-[10px] text-white/50 text-center line-clamp-1 mt-0.5">as {member.character}</p>
                           )}
                         </div>
                       ))}
@@ -465,9 +485,31 @@ function MobileMovieLayout({
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
   const [scrollProgress, setScrollProgress] = React.useState(0);
   const [backdropLoaded, setBackdropLoaded] = React.useState(false);
+  const [relatedMovies, setRelatedMovies] = React.useState<Movie[]>([]);
+  const [entranceReady, setEntranceReady] = React.useState(false);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
   const heroRef = React.useRef<HTMLDivElement>(null);
+
+  // Entrance animation trigger
+  React.useEffect(() => {
+    setEntranceReady(false);
+    const t = setTimeout(() => setEntranceReady(true), 150);
+    return () => clearTimeout(t);
+  }, [movie.mobifliks_id]);
+
+  // Fetch related movies by first genre
+  React.useEffect(() => {
+    const genre = movie.genres?.[0];
+    if (!genre) { setRelatedMovies([]); return; }
+    let cancelled = false;
+    fetchByGenre(genre, movie.type === "series" ? "series" : "movie", 12).then((data) => {
+      if (!cancelled) {
+        setRelatedMovies(data.filter((m) => m.mobifliks_id !== movie.mobifliks_id).slice(0, 10));
+      }
+    });
+    return () => { cancelled = true; };
+  }, [movie.mobifliks_id, movie.genres?.[0]]);
 
   // Preload backdrop image (ONLY the backdrop; never fall back to the poster)
   React.useEffect(() => {
@@ -770,7 +812,7 @@ function MobileMovieLayout({
           </div>
 
           {/* Action buttons */}
-          <div className="px-4 py-3 flex gap-3">
+          <div className="px-4 py-3 flex gap-3" style={staggerStyle(0, entranceReady)}>
             <Button
               size="lg"
               className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg h-12 text-base font-semibold"
@@ -816,7 +858,7 @@ function MobileMovieLayout({
           </div>
 
           {/* Tabs */}
-          <div className="px-4 border-b border-border/30">
+          <div className="px-4 border-b border-border/30" style={staggerStyle(1, entranceReady)}>
             <div className="flex gap-6">
               {(["overview", "casts", "related"] as const).map((tab) => (
                 <button
@@ -997,26 +1039,31 @@ function MobileMovieLayout({
             </>
           )}
 
-          {/* Casts Tab */}
+          {/* Casts Tab — improved larger cards */}
           {activeTab === "casts" && (
             <div className="space-y-4">
               {cast.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {cast.map((member) => (
-                    <div key={member.name} className="flex items-center gap-3 p-3 rounded-xl bg-card/50 border border-border/20">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border border-border/30 bg-muted flex-shrink-0">
+                <div className="grid grid-cols-2 gap-3">
+                  {cast.map((member, i) => (
+                    <div
+                      key={member.name}
+                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/60 border border-border/20 backdrop-blur-sm"
+                      style={staggerStyle(i * 0.3, entranceReady)}
+                    >
+                      <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-border/30 bg-muted shadow-lg">
                         <img
-                          src={member.profile_url || `https://placehold.co/96x96/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
+                          src={member.profile_url || `https://placehold.co/160x160/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
                           alt={member.name}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://placehold.co/160x160/1a1a2e/ffffff?text=${member.name.charAt(0)}`;
+                          }}
                         />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{member.name}</p>
-                        {member.character && (
-                          <p className="text-xs text-muted-foreground truncate">{member.character}</p>
-                        )}
-                      </div>
+                      <p className="text-sm font-semibold text-foreground text-center line-clamp-1">{member.name}</p>
+                      {member.character && (
+                        <p className="text-xs text-muted-foreground text-center line-clamp-1">as {member.character}</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1026,10 +1073,38 @@ function MobileMovieLayout({
             </div>
           )}
 
-          {/* Related Tab */}
+          {/* Related Tab — similar movies by genre */}
           {activeTab === "related" && (
-            <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground">No related content available.</p>
+            <div className="space-y-4">
+              {relatedMovies.length > 0 ? (
+                <div className="grid grid-cols-3 gap-3">
+                  {relatedMovies.map((m, i) => (
+                    <button
+                      key={m.mobifliks_id}
+                      className="group text-left"
+                      style={staggerStyle(i * 0.3, entranceReady)}
+                      onClick={() => {
+                        const typeSlug = m.type === "series" ? "series" : "movie";
+                        window.location.href = `/${typeSlug}/${toSlug(m.title, m.mobifliks_id, m.year)}`;
+                      }}
+                    >
+                      <div className="aspect-[2/3] rounded-xl overflow-hidden border border-border/20 bg-muted shadow-md group-active:scale-95 transition-transform duration-200">
+                        <img
+                          src={getImageUrl(m.image_url)}
+                          alt={m.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <p className="text-xs font-medium text-foreground mt-1.5 line-clamp-2 leading-tight">{m.title}</p>
+                      {m.year && <p className="text-[10px] text-muted-foreground">{m.year}</p>}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No related content available.</p>
+                </div>
+              )}
             </div>
           )}
           </div>
