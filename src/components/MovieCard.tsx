@@ -2,7 +2,7 @@ import { Play, Star, Heart, TrendingUp, Sparkles } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import { getImageUrl, preloadMovieBackdrop } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useCallback, useState, useEffect, forwardRef } from "react";
+import { useCallback, useState, useEffect, forwardRef, useRef } from "react";
 import { isInWatchlist, toggleWatchlist } from "@/lib/storage";
 import { BlurImage } from "./BlurImage";
 
@@ -34,6 +34,7 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
     : (6.0 + Math.random() * 2.5).toFixed(1);
 
   const [inWatchlist, setInWatchlist] = useState(false);
+  const tiltRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setInWatchlist(isInWatchlist(movie.mobifliks_id));
@@ -54,6 +55,28 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
     onWatchlistChange?.();
   }, [movie, onWatchlistChange]);
 
+  // 3D tilt handler
+  const handleTiltMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = tiltRef.current;
+    if (!el || window.innerWidth < 768) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const tiltX = (y - 0.5) * -8;
+    const tiltY = (x - 0.5) * 8;
+    el.style.transform = `perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.04,1.04,1.04)`;
+    el.style.setProperty("--gloss-x", `${x * 100}%`);
+    el.style.setProperty("--gloss-y", `${y * 100}%`);
+  }, []);
+
+  const handleTiltLeave = useCallback(() => {
+    const el = tiltRef.current;
+    if (!el) return;
+    el.style.transform = "";
+    el.style.setProperty("--gloss-x", "50%");
+    el.style.setProperty("--gloss-y", "50%");
+  }, []);
+
   const isNew = isNewRelease(movie);
   const trending = isTrending(movie);
 
@@ -68,12 +91,31 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
       onMouseEnter={handleMouseEnter}
       onTouchStart={handleMouseEnter}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card shadow-card card-hover hover-glow">
+      <div
+        ref={tiltRef}
+        className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/80 backdrop-blur-sm border border-border/30 shadow-card hover-glow"
+        style={{
+          transition: "transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s ease",
+          willChange: "transform",
+          ["--gloss-x" as string]: "50%",
+          ["--gloss-y" as string]: "50%",
+        }}
+        onMouseMove={handleTiltMove}
+        onMouseLeave={handleTiltLeave}
+      >
         <BlurImage
           src={getImageUrl(movie.image_url)}
           alt={movie.title}
           className="card-image-zoom"
           loading={priority ? "eager" : "lazy"}
+        />
+        
+        {/* Glossy light reflection overlay */}
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+          style={{
+            background: "radial-gradient(circle at var(--gloss-x) var(--gloss-y), hsl(0 0% 100% / 0.15) 0%, transparent 60%)",
+          }}
         />
         
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -88,13 +130,13 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
         {/* Badges row */}
         <div className="absolute top-2 left-2 flex flex-wrap gap-1">
           {isNew && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[hsl(142,71%,45%)] text-white flex items-center gap-0.5 animate-pulse shadow-md">
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[hsl(142,71%,45%)] text-primary-foreground flex items-center gap-0.5 animate-pulse shadow-md">
               <Sparkles className="w-2.5 h-2.5" />
               NEW
             </span>
           )}
           {trending && !isNew && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[hsl(25,95%,53%)] text-white flex items-center gap-0.5 shadow-md">
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[hsl(25,95%,53%)] text-primary-foreground flex items-center gap-0.5 shadow-md">
               <TrendingUp className="w-2.5 h-2.5" />
               HOT
             </span>
@@ -163,13 +205,21 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
 export function MovieCardSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn("flex-shrink-0", className)}>
-      <div className="aspect-[2/3] rounded-2xl bg-card overflow-hidden relative">
-        <div className="absolute inset-0 shimmer" />
-        <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+      <div className="aspect-[2/3] rounded-2xl bg-card/80 backdrop-blur-sm border border-border/30 overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40 animate-pulse" />
+        <div className="absolute inset-0 shimmer opacity-50" />
+        <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">
+          <div className="h-3 bg-muted/40 rounded-full w-2/3 shimmer" />
+          <div className="h-2 bg-muted/30 rounded-full w-1/3 shimmer" style={{ animationDelay: "0.3s" }} />
+        </div>
+        <div className="absolute top-2 left-2 h-4 w-10 rounded-full bg-muted/30 shimmer" style={{ animationDelay: "0.15s" }} />
       </div>
       <div className="mt-3 space-y-2">
-        <div className="h-4 bg-muted/30 rounded-lg shimmer w-3/4" />
-        <div className="h-3 bg-muted/30 rounded-lg shimmer w-1/2" />
+        <div className="h-4 bg-muted/30 rounded-lg shimmer w-4/5" />
+        <div className="flex gap-2">
+          <div className="h-3 bg-muted/20 rounded-lg shimmer w-10" style={{ animationDelay: "0.1s" }} />
+          <div className="h-3 bg-muted/20 rounded-lg shimmer w-8" style={{ animationDelay: "0.2s" }} />
+        </div>
       </div>
     </div>
   );
