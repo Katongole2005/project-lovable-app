@@ -16,6 +16,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { SearchBar } from "@/components/SearchBar";
 import { FilterModal, FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
+import { AmbientParticles } from "@/components/AmbientParticles";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import { Button } from "@/components/ui/button";
 import { 
@@ -654,7 +655,10 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen pb-safe">
+    <div className="min-h-screen pb-safe relative">
+      {/* Ambient floating particles (desktop only) */}
+      <AmbientParticles />
+
       {/* Site Announcement */}
       <AnnouncementBanner />
 
@@ -718,26 +722,30 @@ export default function Index() {
             )}
 
             {/* Trending Section */}
-            <div className="mt-6">
-              <MovieRow
-                title={getCategoryTitle()}
-                movies={recentMovies}
-                onMovieClick={handleMovieClick}
-                onViewAll={() => handleTabChange("movies")}
-                isLoading={isLoading && recentMovies.length === 0}
-                showFilters
-                onFilterClick={() => setIsFilterOpen(true)}
-              />
-            </div>
+            <SectionReveal delay={100} variant="slide-up">
+              <div className="mt-6">
+                <MovieRow
+                  title={getCategoryTitle()}
+                  movies={recentMovies}
+                  onMovieClick={handleMovieClick}
+                  onViewAll={() => handleTabChange("movies")}
+                  isLoading={isLoading && recentMovies.length === 0}
+                  showFilters
+                  onFilterClick={() => setIsFilterOpen(true)}
+                />
+              </div>
+            </SectionReveal>
 
             {/* Top 10 Today */}
             {siteSettings.top10_enabled && (
-              <div className="mt-6">
-                <Top10Row
-                  movies={recentMovies}
-                  onMovieClick={handleMovieClick}
-                />
-              </div>
+              <SectionReveal delay={200} variant="scale">
+                <div className="mt-6">
+                  <Top10Row
+                    movies={recentMovies}
+                    onMovieClick={handleMovieClick}
+                  />
+                </div>
+              </SectionReveal>
             )}
 
             {/* Because You Watched Recommendations */}
@@ -752,15 +760,17 @@ export default function Index() {
             )}
 
             {/* Popular Series */}
-            <div className="mt-6">
-              <MovieRow
-                title="Popular Series"
-                movies={recentSeries}
-                onMovieClick={handleMovieClick}
-                onViewAll={() => handleTabChange("series")}
-                isLoading={isLoading && recentSeries.length === 0}
-              />
-            </div>
+            <SectionReveal delay={300} variant="slide-up">
+              <div className="mt-6">
+                <MovieRow
+                  title="Popular Series"
+                  movies={recentSeries}
+                  onMovieClick={handleMovieClick}
+                  onViewAll={() => handleTabChange("series")}
+                  isLoading={isLoading && recentSeries.length === 0}
+                />
+              </div>
+            </SectionReveal>
           </PageTransition>
         )}
 
