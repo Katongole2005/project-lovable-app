@@ -8,6 +8,7 @@ import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
 import { RecommendationRow } from "@/components/RecommendationRow";
+import { Top10Row } from "@/components/Top10Row";
 import { MovieModal } from "@/components/MovieModal";
 import { CinematicVideoPlayer } from "@/components/CinematicVideoPlayer";
 import { BottomNav } from "@/components/BottomNav";
@@ -660,9 +661,19 @@ export default function Index() {
               </div>
             </SectionReveal>
 
+            {/* Top 10 Today */}
+            <SectionReveal delay={280}>
+              <div className="mt-6">
+                <Top10Row
+                  movies={recentMovies}
+                  onMovieClick={handleMovieClick}
+                />
+              </div>
+            </SectionReveal>
+
             {/* Because You Watched Recommendations */}
             {continueWatching.length > 0 && recentMovies.length > 0 && (
-              <SectionReveal delay={continueWatching.length > 0 ? 250 : 200}>
+              <SectionReveal delay={320}>
                 <div className="mt-6">
                   <RecommendationRow
                     continueWatching={continueWatching}

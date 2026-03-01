@@ -18,6 +18,7 @@ interface HeaderProps {
 export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -27,8 +28,17 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
   }, []);
 
   useEffect(() => {
+    let lastScrollY = window.scrollY;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      const currentY = window.scrollY;
+      setIsScrolled(currentY > 20);
+      // Hide header on scroll down (past 80px), show on scroll up
+      if (currentY > 80 && currentY > lastScrollY) {
+        setIsHidden(true);
+      } else {
+        setIsHidden(false);
+      }
+      lastScrollY = currentY;
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -62,8 +72,9 @@ export function Header({ activeTab = "home", onTabChange }: HeaderProps) {
       />
       <header 
         className={cn(
-          "sticky top-0 z-40 pb-4 transition-all duration-500",
-          isScrolled && "bg-background/40 backdrop-blur-md"
+          "sticky top-0 z-40 pb-4 transition-all duration-300",
+          isScrolled && "bg-background/40 backdrop-blur-md",
+          isHidden && "-translate-y-full"
         )}
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >

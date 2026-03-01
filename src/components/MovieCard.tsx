@@ -4,6 +4,7 @@ import { getImageUrl, preloadMovieBackdrop } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useCallback, useState, useEffect, forwardRef } from "react";
 import { isInWatchlist, toggleWatchlist } from "@/lib/storage";
+import { BlurImage } from "./BlurImage";
 
 interface MovieCardProps {
   movie: Movie;
@@ -42,10 +43,14 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
     preloadMovieBackdrop(movie);
   }, [movie]);
 
+  const [heartFlip, setHeartFlip] = useState(false);
+
   const handleWatchlistToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const added = toggleWatchlist(movie);
     setInWatchlist(added);
+    setHeartFlip(true);
+    setTimeout(() => setHeartFlip(false), 400);
     onWatchlistChange?.();
   }, [movie, onWatchlistChange]);
 
@@ -64,10 +69,10 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
       onTouchStart={handleMouseEnter}
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card shadow-card card-hover hover-glow">
-        <img
+        <BlurImage
           src={getImageUrl(movie.image_url)}
           alt={movie.title}
-          className="w-full h-full object-cover card-image-zoom"
+          className="card-image-zoom"
           loading={priority ? "eager" : "lazy"}
         />
         
@@ -108,11 +113,21 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
             "absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-10",
             inWatchlist 
               ? "bg-primary/90 text-primary-foreground scale-100" 
-              : "bg-background/60 backdrop-blur text-foreground opacity-0 group-hover:opacity-100"
+              : "bg-background/60 backdrop-blur text-foreground opacity-0 group-hover:opacity-100",
+            heartFlip && "animate-heart-flip"
           )}
         >
-          <Heart className={cn("w-4 h-4", inWatchlist && "fill-current")} />
+          <Heart className={cn("w-4 h-4 transition-transform", inWatchlist && "fill-current")} />
         </button>
+        
+        <style>{`
+          @keyframes heartFlip {
+            0% { transform: scale(1) rotateY(0deg); }
+            50% { transform: scale(1.3) rotateY(180deg); }
+            100% { transform: scale(1) rotateY(360deg); }
+          }
+          .animate-heart-flip { animation: heartFlip 0.4s ease-out; }
+        `}</style>
 
         {/* Progress bar */}
         {showProgress !== undefined && showProgress > 0 && (
