@@ -2,7 +2,7 @@ import { Play, Star, Heart, TrendingUp, Sparkles } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import { getImageUrl, preloadMovieBackdrop } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, forwardRef } from "react";
 import { isInWatchlist, toggleWatchlist } from "@/lib/storage";
 
 interface MovieCardProps {
@@ -27,7 +27,7 @@ function isTrending(movie: Movie): boolean {
   return (movie.views ?? 0) >= 5000;
 }
 
-export function MovieCard({ movie, onClick, showProgress, className, priority, onWatchlistChange }: MovieCardProps) {
+export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, onWatchlistChange }, ref) {
   const rating = movie.views 
     ? Math.min(8.5, Math.max(6.0, (movie.views / 10000) + 6)).toFixed(1)
     : (6.0 + Math.random() * 2.5).toFixed(1);
@@ -54,6 +54,7 @@ export function MovieCard({ movie, onClick, showProgress, className, priority, o
 
   return (
     <div
+      ref={ref}
       className={cn(
         "group relative flex-shrink-0 cursor-pointer press-effect",
         className
@@ -142,7 +143,7 @@ export function MovieCard({ movie, onClick, showProgress, className, priority, o
       </div>
     </div>
   );
-}
+});
 
 export function MovieCardSkeleton({ className }: { className?: string }) {
   return (

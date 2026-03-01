@@ -35,10 +35,31 @@ export function getContinueWatching(): ContinueWatching[] {
 }
 
 export function updateContinueWatching(item: ContinueWatching): void {
-  const list = getContinueWatching().filter(m => m.id !== item.id);
-  if (item.progress > 0 && item.progress < item.duration - 30) {
-    list.unshift(item);
+  const existing = getContinueWatching().find((m) => m.id === item.id);
+  const list = getContinueWatching().filter((m) => m.id !== item.id);
+
+  const safeDuration = Number.isFinite(item.duration) && item.duration > 0
+    ? item.duration
+    : (existing?.duration ?? 0);
+
+  const safeProgress = Number.isFinite(item.progress) && item.progress > 0
+    ? item.progress
+    : 0;
+
+  // Prevent regressions (e.g. accidental 0:00 overwrite during player init/close race)
+  const mergedProgress = Math.max(existing?.progress ?? 0, safeProgress);
+
+  const mergedItem: ContinueWatching = {
+    ...(existing ?? item),
+    ...item,
+    duration: safeDuration,
+    progress: mergedProgress,
+  };
+
+  if (mergedItem.duration > 0 && mergedItem.progress > 0 && mergedItem.progress < mergedItem.duration - 30) {
+    list.unshift(mergedItem);
   }
+
   localStorage.setItem(CONTINUE_KEY, JSON.stringify(list.slice(0, 10)));
 }
 
