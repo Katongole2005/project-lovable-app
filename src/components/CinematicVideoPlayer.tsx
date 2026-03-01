@@ -72,6 +72,8 @@ export function CinematicVideoPlayer({
   const [showRemainingTime, setShowRemainingTime] = useState(false);
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [savedSpeed, setSavedSpeed] = useState(1);
+  const isLongPressingRef = useRef(false);
+  const savedSpeedRef = useRef(1);
   const [showGestureHints, setShowGestureHints] = useState(false);
   const gestureHintsShownRef = useRef(false);
   
@@ -186,6 +188,9 @@ export function CinematicVideoPlayer({
       lastReportedDurationRef.current = 0;
       setShowSpeedMenu(false);
       setIsLongPressing(false);
+      isLongPressingRef.current = false;
+      setPlaybackSpeed(1);
+      savedSpeedRef.current = 1;
     }
   }, [isOpen, videoUrl]);
 
@@ -315,27 +320,30 @@ export function CinematicVideoPlayer({
     }
   };
 
-  // Long-press for 2x speed
+  // Long-press for 2x speed — use refs to avoid stale closures
   const handleLongPressStart = useCallback(() => {
     longPressTimerRef.current = setTimeout(() => {
       if (videoRef.current) {
-        setSavedSpeed(playbackSpeed);
+        savedSpeedRef.current = videoRef.current.playbackRate;
+        setSavedSpeed(videoRef.current.playbackRate);
         setPlaybackSpeed(2);
+        isLongPressingRef.current = true;
         setIsLongPressing(true);
       }
     }, 500);
-  }, [playbackSpeed]);
+  }, []);
 
   const handleLongPressEnd = useCallback(() => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    if (isLongPressing) {
-      setPlaybackSpeed(savedSpeed);
+    if (isLongPressingRef.current) {
+      setPlaybackSpeed(savedSpeedRef.current);
+      isLongPressingRef.current = false;
       setIsLongPressing(false);
     }
-  }, [isLongPressing, savedSpeed]);
+  }, []);
 
   // Swipe gesture handlers for brightness (left) / volume (right)
   const handleSwipeTouchStart = useCallback((e: React.TouchEvent) => {
