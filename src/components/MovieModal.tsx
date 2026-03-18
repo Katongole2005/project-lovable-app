@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
 import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist, getContinueWatching } from "@/lib/storage";
 import { motion, AnimatePresence } from "framer-motion";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -158,10 +159,6 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   const [inWatchlist, setInWatchlist] = React.useState(false);
   const [entranceVisible, setEntranceVisible] = React.useState(false);
 
-  const handlePlayProxy = React.useCallback((url: string, title: string) => {
-    onPlay(getProxiedPlayUrl(url, title), title);
-  }, [onPlay]);
-
   // Fetch missing TMDB data (especially for series)
   React.useEffect(() => {
     setTmdbBackdrop(null);
@@ -277,11 +274,12 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   const handlePlay = (url: string, title: string) => {
     onClose();
     setTimeout(() => {
-      onPlay(url, title);
+      onPlay(getProxiedPlayUrl(url, title), title);
     }, 0);
   };
 
   return (
+    <ErrorBoundary>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* Mobile: Full screen sheet, Desktop: Centered modal */}
       <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-200 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] data-[state=open]:slide-in-from-bottom md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-bottom md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%]">
@@ -608,7 +606,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                   <DesktopEpisodeSection
                     series={series}
                     movie={movie}
-                    onPlay={handlePlayProxy}
+                    onPlay={handlePlay}
                   />
                 )}
 
@@ -623,6 +621,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
         </motion.div>
       </DialogContent>
     </Dialog>
+    </ErrorBoundary>
   );
 }
 
@@ -1345,7 +1344,7 @@ function MobileMovieLayout({
                             seriesTitle={movie.title}
                             seriesImage={movie.image_url}
                             seasonNumber={selectedSeason}
-                            onPlay={handlePlayProxy}
+                            onPlay={onPlay}
                             index={idx}
                             accentHue={accentHue}
                             isResumeTarget={
@@ -1463,14 +1462,14 @@ function MobileMovieLayout({
                     (e.season_number || 1) === resumeEpisode.season
                   );
                   if (ep?.download_url) {
-                    handlePlayProxy(ep.download_url, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
+                    onPlay(ep.download_url, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
                     return;
                   }
                 }
                 const firstEp = series.episodes[0];
-                if (firstEp?.download_url) handlePlayProxy(firstEp.download_url, `${movie.title} - S1:E1`);
+                if (firstEp?.download_url) onPlay(firstEp.download_url, `${movie.title} - S1:E1`);
               } else if (movie.download_url) {
-                handlePlayProxy(movie.download_url, movie.title);
+                onPlay(movie.download_url, movie.title);
               }
             }}
           >
