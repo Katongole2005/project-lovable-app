@@ -1,0 +1,433 @@
+import type { Movie, Series, Episode, SearchResult } from "@/types/movie";
+import { supabase } from "@/integrations/supabase/client";
+
+const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
+
+export const getImageUrl = (url?: string) => {
+  if (!url) return fallbackPoster;
+  return url.replace('/original/', '/w500/');
+};
+
+export const getOptimizedBackdropUrl = (url?: string): string => {
+  if (!url) return fallbackPoster;
+  return url.replace('/w1280/', '/w780/').replace('/original/', '/w780/');
+};
+
+export const preloadImage = (url: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!url) { resolve(); return; }
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error(`Failed to preload: ${url}`));
+    img.src = url;
+  });
+};
+
+export const preloadMovieBackdrop = (movie: { backdrop_url?: string | null; image_url?: string }): void => {
+  const backdropUrl = movie.backdrop_url;
+  if (backdropUrl) {
+    const optimizedUrl = getOptimizedBackdropUrl(backdropUrl);
+    preloadImage(optimizedUrl).catch(() => { });
+  }
+};
+
+// ─── Helper ───────────────────────────────────────────────────────────────────
+
+/** Strip common site watermarks from scraped titles */
+const cleanTitle = (title: string): string => {
+  if (!title) return title;
+  return title
+    .replace(/mobifliks\.com\s*[-–—|:]\s*/gi, "")
+    .replace(/\s*[-–—|:]\s*mobifliks\.com/gi, "")
+    .replace(/mobifliks\.com/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+};
+
+const fixYear = (year?: number): number | undefined => {
+  if (!year) return year;
+  const currentYear = new Date().getFullYear();
+  return year > currentYear ? currentYear : year;
+};
+
+const fixReleaseDate = (dateStr?: string): string | undefined => {
+  if (!dateStr) return dateStr;
+  try {
+    const d = new Date(dateStr);
+    const currentYear = new Date().getFullYear();
+    if (d.getFullYear() > currentYear) {
+      d.setFullYear(currentYear);
+      // Return YYYY-MM-DD
+      return d.toISOString().split("T")[0];
+    }
+  } catch (e) {
+    // Ignore invalid dates
+  }
+  return dateStr;
+};
+
+const normalize = (items: unknown[]): Movie[] =>
+  Array.isArray(items)
+    ? (items as Movie[])
+      .filter((m) => m && (m.type === "movie" || m.type === "series"))
+      .map((m) => ({
+        ...m,
+        title: cleanTitle(m.title ?? ""),
+        year: fixYear(m.year),
+        release_date: fixReleaseDate(m.release_date),
+      }))
+    : [];
+
+// ─── Series Grouping ─────────────────────────────────────────────────────────
+
+const seasonPattern = /\s*[-–—]?\s*Season\s*\d+/i;
+
+export function getSeriesBaseName(title: string): string {
+  return title
+    .replace(seasonPattern, "")
+    .replace(/\s*\(?\d{4}\s*[-–—].*\)\s*$/i, "")
+    .replace(/\s*\(\d{4}\)\s*$/, "")
+    .trim();
+}
+
+function extractSeasonNumber(title: string): number {
+  const match = title.match(/Season\s*(\d+)/i);
+  return match ? parseInt(match[1]) : 1;
+}
+
+function splitEpisodesByGap(episodes: any[]): any[][] {
+  if (episodes.length <= 1) return [episodes];
+  const chunks: any[][] = [[episodes[0]]];
+  for (let i = 1; i < episodes.length; i++) {
+    const gap = (episodes[i].episode_number ?? 0) - (episodes[i - 1].episode_number ?? 0);
+    if (gap > 20) {
+      chunks.push([episodes[i]]);
+    } else {
+      chunks[chunks.length - 1].push(episodes[i]);
+    }
+  }
+  return chunks;
+}
+
+function groupSeriesList(movies: Movie[]): Movie[] {
+  const seriesGroups = new Map<string, { items: Movie[]; firstIndex: number }>();
+  const result: { item: Movie; index: number }[] = [];
+
+  for (let i = 0; i < movies.length; i++) {
+    const m = movies[i];
+    if (m.type !== "series") {
+      result.push({ item: m, index: i });
+      continue;
+    }
+    const baseName = getSeriesBaseName(m.title);
+    if (!seriesGroups.has(baseName)) {
+      seriesGroups.set(baseName, { items: [], firstIndex: i });
+    }
+    seriesGroups.get(baseName)!.items.push(m);
+  }
+
+  for (const [, group] of seriesGroups) {
+    if (group.items.length === 1) {
+      result.push({ item: group.items[0], index: group.firstIndex });
+      continue;
+    }
+    const sorted = group.items.sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
+    const primary = sorted.reduce((best, cur) => ((cur.views ?? 0) > (best.views ?? 0) ? cur : best), sorted[0]);
+    const totalViews = group.items.reduce((sum, s) => sum + (s.views ?? 0), 0);
+    const relatedIds = sorted.map((s) => s.mobifliks_id);
+    const baseName = getSeriesBaseName(primary.title);
+    result.push({
+      item: {
+        ...primary,
+        title: baseName,
+        views: totalViews,
+        relatedSeasonIds: relatedIds,
+      } as Movie,
+      index: group.firstIndex,
+    });
+  }
+
+  return result.sort((a, b) => a.index - b.index).map((r) => r.item);
+}
+
+export interface FilterOptions {
+  vj?: string | null;
+  year?: number | null;
+  genre?: string | null;
+}
+
+function applyFilters(query: any, filters?: FilterOptions) {
+  if (!filters) return query;
+  if (filters.vj) query = query.eq("vj_name", filters.vj);
+  if (filters.year) query = query.eq("year", filters.year);
+  if (filters.genre) query = query.contains("genres", [filters.genre]);
+  return query;
+}
+
+// ─── Data Fetching (Supabase Direct) ─────────────────────────────────────────
+
+export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
+  let query = supabase
+    .from("movies")
+    .select("*")
+    .eq("type", "movie")
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .order("views", { ascending: false })
+    .limit(filters?.vj || filters?.year ? 200 : 50);
+  query = applyFilters(query, filters);
+  const { data, error } = await query;
+  if (error) { console.error("fetchTrending error:", error); return []; }
+  return normalize(data ?? []);
+}
+
+export async function fetchRecent(
+  contentType: string = "movie",
+  limit: number = 20,
+  page: number = 1
+): Promise<Movie[]> {
+  const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+  const offset = (page - 1) * limit;
+  const { data, error } = await supabase
+    .from("movies")
+    .select("*")
+    .eq("type", contentType)
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + fetchLimit - 1);
+  if (error) { console.error("fetchRecent error:", error); return []; }
+  const results = normalize(data ?? []);
+  return contentType === "series" ? groupSeriesList(results).slice(0, limit) : results;
+}
+
+export async function fetchMoviesSorted(
+  contentType: string = "movie",
+  limit: number = 20,
+  page: number = 1,
+  filters?: FilterOptions
+): Promise<Movie[]> {
+  const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+  const offset = (page - 1) * limit;
+  let query = supabase
+    .from("movies")
+    .select("*")
+    .eq("type", contentType)
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .order("year", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + fetchLimit - 1);
+  query = applyFilters(query, filters);
+  const { data, error } = await query;
+  if (error) { console.error("fetchMoviesSorted error:", error); return []; }
+  const results = normalize(data ?? []);
+  return contentType === "series" ? groupSeriesList(results).slice(0, limit) : results;
+}
+
+export async function fetchSeries(limit: number = 20, page: number = 1, language?: string, filters?: FilterOptions): Promise<Movie[]> {
+  const fetchLimit = Math.min(limit * 2, 200);
+  const offset = (page - 1) * limit;
+  let query = supabase
+    .from("movies")
+    .select("*")
+    .eq("type", "series")
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .order("views", { ascending: false })
+    .range(offset, offset + fetchLimit - 1);
+
+  query = applyFilters(query, filters);
+
+  if (language) {
+    query = query.eq("language", language);
+  }
+
+  const { data, error } = await query;
+  if (error) { console.error("fetchSeries error:", error); return []; }
+  return groupSeriesList(normalize(data ?? [])).slice(0, limit);
+}
+
+export async function searchMovies(query: string, page: number = 1, limit: number = 20): Promise<SearchResult> {
+  const fetchLimit = Math.min(limit * 2, 200);
+  const offset = (page - 1) * limit;
+  const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
+  const { data, error, count } = await supabase
+    .from("movies")
+    .select("*", { count: "exact" })
+    .in("type", ["movie", "series"])
+    .ilike("title", `%${safeQuery}%`)
+    .order("views", { ascending: false })
+    .range(offset, offset + fetchLimit - 1);
+  if (error) { console.error("searchMovies error:", error); return { results: [], total_results: 0, page }; }
+  const grouped = groupSeriesList(normalize(data ?? []));
+  return {
+    results: grouped.slice(0, limit),
+    total_results: count ?? 0,
+    page,
+  };
+}
+
+export async function searchAll(query: string, page: number = 1, limit: number = 100): Promise<Movie[]> {
+  const fetchLimit = Math.min(limit * 2, 200);
+  const offset = (page - 1) * limit;
+  const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
+  const { data, error } = await supabase
+    .from("movies")
+    .select("*")
+    .in("type", ["movie", "series"])
+    .or(`title.ilike.%${safeQuery}%,director.ilike.%${safeQuery}%,vj_name.ilike.%${safeQuery}%`)
+    .order("views", { ascending: false })
+    .range(offset, offset + fetchLimit - 1);
+  if (error) { console.error("searchAll error:", error); return []; }
+  return groupSeriesList(normalize(data ?? [])).slice(0, limit);
+}
+
+export async function fetchMovieDetails(id: string): Promise<Movie | null> {
+  const { data, error } = await supabase
+    .from("movies")
+    .select("*")
+    .eq("mobifliks_id", id)
+    .single();
+  if (error) { console.error("fetchMovieDetails error:", error); return null; }
+  return data as Movie;
+}
+
+export async function fetchSeriesDetails(id: string): Promise<Series | null> {
+  const { data: series, error } = await supabase
+    .from("movies")
+    .select("*")
+    .eq("mobifliks_id", id)
+    .eq("type", "series")
+    .single();
+  if (error || !series) { console.error("fetchSeriesDetails error:", error); return null; }
+
+  const baseName = getSeriesBaseName(series.title);
+
+  const { data: allRelated } = await supabase
+    .from("movies")
+    .select("mobifliks_id, title")
+    .eq("type", "series")
+    .ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`)
+    .order("title", { ascending: true });
+
+  const seasonEntries = (allRelated ?? [])
+    .filter((r) => getSeriesBaseName(r.title) === baseName)
+    .sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
+
+  const seasonIds = seasonEntries.length > 1
+    ? seasonEntries.map((s) => s.mobifliks_id)
+    : [id];
+
+  const assignedSeasons = new Set<number>();
+  const seasonNumbers: number[] = [];
+  for (const entry of seasonEntries) {
+    let sNum = extractSeasonNumber(entry.title);
+    while (assignedSeasons.has(sNum)) sNum++;
+    assignedSeasons.add(sNum);
+    seasonNumbers.push(sNum);
+  }
+
+  const allEpisodes: Episode[] = [];
+  let maxSeasonUsed = 0;
+
+  for (let i = 0; i < seasonIds.length; i++) {
+    const baseSeason = seasonEntries.length > 1
+      ? seasonNumbers[i]
+      : 1;
+
+    const { data: eps } = await supabase
+      .from("movies")
+      .select("*")
+      .eq("series_id", seasonIds[i])
+      .eq("type", "episode")
+      .order("episode_number", { ascending: true });
+
+    if (eps?.length) {
+      const chunks = splitEpisodesByGap(eps);
+      for (let c = 0; c < chunks.length; c++) {
+        const seasonNum = c === 0 ? baseSeason : maxSeasonUsed + 1 + c;
+        chunks[c].forEach((ep: any, idx: number) => {
+          allEpisodes.push({
+            ...ep,
+            season_number: seasonNum,
+            episode_number: idx + 1,
+          } as Episode);
+        });
+      }
+      maxSeasonUsed = Math.max(maxSeasonUsed, baseSeason + chunks.length - 1);
+    }
+  }
+
+  return {
+    ...series,
+    title: baseName,
+    episodes: allEpisodes,
+    total_episodes: allEpisodes.length,
+    relatedSeasonIds: seasonIds.length > 1 ? seasonIds : undefined,
+  } as Series;
+}
+
+export async function fetchSuggestions(query: string): Promise<Movie[]> {
+  const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
+  const { data, error } = await supabase
+    .from("movies")
+    .select("*")
+    .in("type", ["movie", "series"])
+    .ilike("title", `%${safeQuery}%`)
+    .order("views", { ascending: false })
+    .limit(20);
+  if (error) { console.error("fetchSuggestions error:", error); return []; }
+  return groupSeriesList(normalize(data ?? [])).slice(0, 10);
+}
+
+export async function fetchStats(): Promise<{ popular_searches: string[] }> {
+  const { data, error } = await supabase
+    .from("search_history")
+    .select("query")
+    .order("search_time", { ascending: false })
+    .limit(10);
+  if (error) { return { popular_searches: [] }; }
+  return { popular_searches: (data ?? []).map((r: { query: string }) => r.query) };
+}
+
+export async function fetchOriginals(limit: number = 50, page: number = 1): Promise<Movie[]> {
+  // "Originals" = items without VJ translations (English Movies)
+  const offset = (page - 1) * limit;
+  const { data, error } = await supabase
+    .from("movies")
+    .select("*")
+    .eq("type", "movie")
+    .is("vj_name", null)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) { console.error("fetchOriginals error:", error); return []; }
+  return normalize(data ?? []);
+}
+
+export async function fetchByGenre(
+  genre: string,
+  contentType: "movie" | "series" | "all" = "movie",
+  limit: number = 40,
+  filters?: FilterOptions,
+  page: number = 1
+): Promise<Movie[]> {
+  const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+  const offset = (page - 1) * fetchLimit;
+  let query = supabase
+    .from("movies")
+    .select("*")
+    .contains("genres", [genre])
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .order("views", { ascending: false, nullsFirst: false })
+    .order("year", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + fetchLimit - 1);
+
+  if (contentType !== "all") {
+    query = query.eq("type", contentType);
+  }
+
+  query = applyFilters(query, { vj: filters?.vj, year: filters?.year });
+
+  const { data, error } = await query;
+  if (error) { console.error("fetchByGenre error:", error); return []; }
+  const results = normalize(data ?? []);
+  return contentType === "series" ? groupSeriesList(results).slice(0, limit) : groupSeriesList(results);
+}

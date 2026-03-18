@@ -1,0 +1,1007 @@
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
+import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Header } from "@/components/Header";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { HeroCarousel } from "@/components/HeroCarousel";
+import { CategoryChips } from "@/components/CategoryChips";
+import { VJChips } from "@/components/VJChips";
+import { MovieRow } from "@/components/MovieRow";
+import { MovieGrid } from "@/components/MovieGrid";
+import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
+import { RecommendationRow } from "@/components/RecommendationRow";
+import { Top10Row } from "@/components/Top10Row";
+import { BottomNav } from "@/components/BottomNav";
+import { SearchBar } from "@/components/SearchBar";
+import { FilterState } from "@/components/FilterModal";
+import { PageTransition, SectionReveal } from "@/components/PageTransition";
+
+const MovieModal = lazy(() => import("@/components/MovieModal").then(module => ({ default: module.MovieModal })));
+const CinematicVideoPlayer = lazy(() => import("@/components/CinematicVideoPlayer").then(module => ({ default: module.CinematicVideoPlayer })));
+const FilterModal = lazy(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
+import { AmbientParticles } from "@/components/AmbientParticles";
+import { DynamicBackground } from "@/components/DynamicBackground";
+import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
+import { Button } from "@/components/ui/button";
+import {
+  fetchTrending,
+  fetchRecent,
+  fetchSeries,
+  searchMovies,
+  fetchMovieDetails,
+  fetchSeriesDetails,
+  fetchStats,
+  fetchByGenre,
+  fetchOriginals,
+  fetchMoviesSorted,
+} from "@/lib/api";
+import type { FilterOptions } from "@/lib/api";
+import { addToRecent, addRecentSearch, getContinueWatching, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
+import type { Movie, Series, ContinueWatching } from "@/types/movie";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { useSeo, buildMovieJsonLd } from "@/hooks/useSeo";
+import { toSlug, fromSlug } from "@/lib/slug";
+
+type ViewMode = "home" | "search" | "movies" | "series" | "originals";
+
+const CATEGORY_TO_GENRE: Record<string, string> = {
+  action: "Action",
+  romance: "Romance",
+  animation: "Animation",
+  horror: "Horror",
+  special: "Special",
+  drama: "Drama",
+};
+
+export default function Index() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const navigateTo = useNavigate();
+
+  const { settings: siteSettings } = useSiteSettingsContext();
+  const pathToView: Record<string, ViewMode> = {
+    "/": "home",
+    "/movies": "movies",
+    "/series": "series",
+    "/search": "search",
+    "/originals": "originals",
+  };
+
+  const locationState = location.state as { backgroundView?: ViewMode } | null;
+  const isMovieRoute = /^\/(movie|series)\//.test(location.pathname);
+
+  const viewMode: ViewMode = (isMovieRoute && locationState?.backgroundView)
+    ? locationState.backgroundView
+    : (pathToView[location.pathname] ?? "home");
+
+  const activeTab = viewMode === "home" ? "home" : viewMode;
+
+
+  // Data states
+  const [searchResults, setSearchResults] = useState<Movie[]>([]);
+  const [categoryMovies, setCategoryMovies] = useState<Movie[]>([]);
+  const [popularSearches, setPopularSearches] = useState<string[]>([]);
+  const [continueWatching, setContinueWatching] = useState<ContinueWatching[]>([]);
+  const [activePlaybackItem, setActivePlaybackItem] = useState<ContinueWatching | null>(null);
+  const activePlaybackItemRef = useRef<ContinueWatching | null>(null);
+  const [trending, setTrending] = useState<Movie[]>([]);
+  const [recentMovies, setRecentMovies] = useState<Movie[]>([]);
+  const [recentSeries, setRecentSeries] = useState<Movie[]>([]);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | Series | null>(null);
+
+  // UI states
+  const [activeCategory, setActiveCategory] = useState("trending");
+  const [activeVJ, setActiveVJ] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoStartTime, setVideoStartTime] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [originalsPage, setOriginalsPage] = useState(1);
+  const selectedMovieRef = useRef<Movie | Series | null>(null);
+  const modalHistoryRef = useRef(false);
+  const videoHistoryRef = useRef(false);
+  const moviesHistoryRef = useRef(false);
+  const searchHistoryRef = useRef(false);
+  const lastBackPressRef = useRef(0);
+  const exitToastTimerRef = useRef<number | null>(null);
+  const [showExitToast, setShowExitToast] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterState>({
+    category: null,
+    vj: null,
+    year: null,
+    contentType: "movies",
+  });
+  const [nextPage, setNextPage] = useState(2);
+  const [allVJs, setAllVJs] = useState<{ id: string; label: string }[]>([]);
+
+  const filterCategories = useMemo(() => [
+    { id: "trending", label: "Trending" },
+    ...Object.entries(CATEGORY_TO_GENRE).map(([id, label]) => ({ id, label }))
+  ], []);
+
+  const filterYears = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 25 }, (_, i) => currentYear - i);
+  }, []);
+
+  useEffect(() => {
+    setContinueWatching(getContinueWatching());
+  }, []);
+
+  // React Query for instant tab switching and caching
+  const { data: trendingData, isLoading: isTrendingLoading } = useQuery({
+    queryKey: ["trending"],
+    queryFn: () => fetchTrending(),
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+
+  const { data: moviesQueryData, isLoading: isMoviesLoading } = useQuery({
+    queryKey: ["movies", "recent", 1],
+    queryFn: () => fetchMoviesSorted("movie", 40, 1),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "movies" || viewMode === "home",
+  });
+
+  const { data: seriesQueryData, isLoading: isSeriesLoading } = useQuery({
+    queryKey: ["series", "recent", 1],
+    queryFn: () => fetchSeries(40, 1),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "series" || viewMode === "home",
+  });
+
+  const { data: originalsQueryData, isLoading: isOriginalsLoading } = useQuery({
+    queryKey: ["movies", "originals", 1],
+    queryFn: () => fetchOriginals(60, 1),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "originals",
+  });
+  // Dynamic SEO per view/modal
+  const seoTitleMap: Record<ViewMode, string> = {
+    home: "",
+    movies: "Browse Uganda Translated Movies",
+    series: "Browse Translated Series",
+    search: searchQuery ? `Search: ${searchQuery}` : "Search VJ Translated Movies",
+    originals: "Originals",
+  };
+  const seoTitle = selectedMovie && isModalOpen
+    ? `${selectedMovie.title}${selectedMovie.year ? ` (${selectedMovie.year})` : ""} - Translated by VJ`
+    : seoTitleMap[viewMode] || "";
+  const seoDescription = selectedMovie && isModalOpen
+    ? selectedMovie.description || `Watch ${selectedMovie.title} translated to Luganda by top VJs on Moviebay Uganda`
+    : undefined;
+
+  useSeo({
+    title: seoTitle || undefined,
+    description: seoDescription,
+    canonical: `/${viewMode === "home" ? "" : viewMode}`,
+    ogImage: selectedMovie?.backdrop_url || selectedMovie?.image_url || undefined,
+    ogType: selectedMovie && isModalOpen ? "video.movie" : "website",
+    jsonLd: selectedMovie && isModalOpen ? buildMovieJsonLd(selectedMovie) : undefined,
+  });
+
+  const sortByYearDesc = useCallback((items: Movie[]) => {
+    return [...items].sort((a, b) => {
+      // Primary: release_date (YYYY-MM-DD string comparison)
+      const dateA = a.release_date || "";
+      const dateB = b.release_date || "";
+      if (dateA && dateB) {
+        if (dateA > dateB) return -1;
+        if (dateA < dateB) return 1;
+      }
+      if (dateA && !dateB) return -1;
+      if (!dateA && dateB) return 1;
+
+      // Secondary: year
+      const yearA = a.year || 0;
+      const yearB = b.year || 0;
+      if (yearA !== yearB) return yearB - yearA;
+
+      // Tertiary: created_at (if available in types)
+      return 0;
+    });
+  }, []);
+
+  // Load initial data
+  useEffect(() => {
+    async function loadData() {
+      // Sync React Query data to local state for components expecting state
+      if (trendingData || moviesQueryData) {
+        const tData = trendingData || [];
+        const mData = moviesQueryData || [];
+
+        const baseForTrending = tData.length > 0 ? tData : mData;
+        const sortedTrending = sortByYearDesc(baseForTrending);
+
+        // Hero carousel: up to 20 movies + 5 series
+        const heroMovies = sortedTrending.filter((m: Movie) => m.type === 'movie').slice(0, 20);
+        const heroSeries = (seriesQueryData && seriesQueryData.length > 0)
+          ? seriesQueryData.slice(0, 5)
+          : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, 5);
+
+        setTrending([...heroMovies, ...heroSeries].slice(0, 25));
+        setRecentMovies(sortedTrending.length > 0 ? sortedTrending : sortByYearDesc(mData));
+
+        if (seriesQueryData) {
+          setRecentSeries(sortByYearDesc(seriesQueryData));
+        }
+      }
+
+      try {
+        const statsRes = await fetchStats();
+
+        const allAvailable = [
+          ...(trendingData || []),
+          ...(moviesQueryData || []),
+          ...(seriesQueryData || []),
+        ];
+
+        const vjSet = new Set<string>();
+        ["Junior", "Jingo", "Ice P", "Emmy", "Kevo"].forEach(vj => vjSet.add(vj));
+        allAvailable.forEach((movie: Movie) => {
+          if (movie.vj_name && movie.vj_name.trim()) {
+            vjSet.add(movie.vj_name.trim());
+          }
+        });
+
+        const vjList = Array.from(vjSet)
+          .filter(vj => vj.toLowerCase() !== "juniorv")
+          .sort((a, b) => a.localeCompare(b))
+          .map(vj => ({ id: vj, label: `VJ ${vj}` }));
+
+        if (vjList.length > 0) {
+          setAllVJs(vjList);
+        }
+
+        if (statsRes) {
+          setPopularSearches(
+            statsRes.popular_searches
+              .map((s: string) => s.replace(/\s*\(\d+ searches\)\s*$/g, "").trim())
+              .filter(Boolean)
+              .slice(0, 8)
+          );
+        }
+      } catch (error) {
+        console.error("Error loading extra data:", error);
+      }
+      setContinueWatching(getContinueWatching());
+    }
+    loadData();
+  }, [trendingData, moviesQueryData, seriesQueryData]);
+
+  // Deep-link: open movie/series modal when visiting /movie/:id or /series/:id directly
+  useEffect(() => {
+    const match = location.pathname.match(/^\/(movie|series)\/(.+)$/);
+    if (match && !isModalOpen) {
+      const [, type, rawSlug] = match;
+      const id = fromSlug(rawSlug);
+      (async () => {
+        try {
+          const details = type === "series"
+            ? await fetchSeriesDetails(id)
+            : await fetchMovieDetails(id);
+          if (details) {
+            setSelectedMovie(details);
+            setIsModalOpen(true);
+          }
+        } catch (error) {
+          console.error("Error loading shared movie:", error);
+        }
+      })();
+    }
+  }, [location.pathname]);
+
+
+  useEffect(() => {
+    if (viewMode === "movies" && moviesQueryData) {
+      setCategoryMovies(sortByYearDesc(moviesQueryData));
+      setIsLoading(false);
+    } else if (viewMode === "series" && seriesQueryData) {
+      setCategoryMovies(sortByYearDesc(seriesQueryData));
+      setIsLoading(false);
+    } else if (viewMode === "originals" && originalsQueryData) {
+      setCategoryMovies(sortByYearDesc(originalsQueryData));
+      setOriginalsPage(1);
+      setIsLoading(false);
+    } else if ((viewMode === "movies" && isMoviesLoading) ||
+      (viewMode === "series" && isSeriesLoading) ||
+      (viewMode === "originals" && isOriginalsLoading)) {
+      setIsLoading(true);
+    }
+  }, [viewMode, moviesQueryData, seriesQueryData, originalsQueryData, isMoviesLoading, isSeriesLoading, isOriginalsLoading]);
+
+
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim()) return;
+    setSearchQuery(query);
+    navigateTo("/search");
+    setCurrentPage(1);
+    setIsLoading(true);
+    addRecentSearch(query);
+
+    try {
+      const results = await searchMovies(query, 1, 50);
+      setSearchResults(results.results);
+      setTotalResults(results.total_results);
+    } catch (error) {
+      console.error("Search error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Handle movie click - show modal immediately, load details in background
+  const handleMovieClick = useCallback(async (movie: Movie) => {
+    // Show modal immediately with existing data
+    setSelectedMovie(movie as Movie | Series);
+    setIsModalOpen(true);
+    addToRecent(movie);
+
+    // Push shareable URL with SEO-friendly slug
+    const typeSlug = movie.type === "series" ? "series" : "movie";
+    const urlSlug = toSlug(movie.title, movie.mobifliks_id, movie.year);
+    navigateTo(`/${typeSlug}/${urlSlug}`, {
+      replace: false,
+      state: { backgroundView: viewMode }
+    });
+
+    // Fetch full details in background (for episodes, cast, etc.)
+    try {
+      const details = movie.type === "series"
+        ? await fetchSeriesDetails(movie.mobifliks_id)
+        : await fetchMovieDetails(movie.mobifliks_id);
+
+      if (details) {
+        setSelectedMovie(details);
+      }
+    } catch (error) {
+      console.error("Error fetching details:", error);
+    }
+  }, [navigateTo, viewMode]);
+
+  selectedMovieRef.current = selectedMovie;
+
+  const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
+    const movie = selectedMovieRef.current;
+    const fallbackItem: ContinueWatching | null = movie
+      ? {
+        id: movie.mobifliks_id,
+        title: movie.title,
+        image: movie.image_url || "",
+        type: movie.type,
+        progress: startAt,
+        duration: 0,
+        url,
+      }
+      : null;
+
+    setVideoUrl(url);
+    setVideoTitle(title);
+    setVideoStartTime(startAt);
+    setActivePlaybackItem(playbackItem ?? fallbackItem);
+    setIsVideoOpen(true);
+    setIsModalOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (isModalOpen && !modalHistoryRef.current) {
+      window.history.pushState({ modal: true }, "");
+      modalHistoryRef.current = true;
+    }
+    if (!isModalOpen) {
+      modalHistoryRef.current = false;
+    }
+  }, [isModalOpen]);
+
+  useEffect(() => {
+    if (isVideoOpen && !videoHistoryRef.current) {
+      window.history.pushState({ video: true }, "");
+      videoHistoryRef.current = true;
+    }
+    if (!isVideoOpen) {
+      videoHistoryRef.current = false;
+    }
+  }, [isVideoOpen]);
+
+  useEffect(() => {
+    window.history.pushState({ exitGuard: true }, "");
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isVideoOpen) {
+        setIsVideoOpen(false);
+        return;
+      }
+      if (isModalOpen) {
+        setIsModalOpen(false);
+        return;
+      }
+      if (viewMode === "movies" || viewMode === "series" || viewMode === "search" || viewMode === "originals") {
+        navigateTo("/");
+        setSearchQuery("");
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastBackPressRef.current < 2000) {
+        return;
+      }
+      lastBackPressRef.current = now;
+      setShowExitToast(true);
+      if (exitToastTimerRef.current) {
+        window.clearTimeout(exitToastTimerRef.current);
+      }
+      exitToastTimerRef.current = window.setTimeout(() => {
+        setShowExitToast(false);
+      }, 1500);
+      window.history.pushState({ exitGuard: true }, "");
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isModalOpen, isVideoOpen, viewMode]);
+
+  // React Router now handles history for movies/series/search/originals views
+
+  // Handle play from hero
+  const handleHeroPlay = useCallback((movie: Movie) => {
+    if (movie.download_url) {
+      const item: ContinueWatching = {
+        id: movie.mobifliks_id,
+        title: movie.title,
+        image: movie.image_url || "",
+        type: movie.type,
+        progress: 0,
+        duration: 0,
+        url: movie.download_url,
+      };
+      handlePlayVideo(movie.download_url, movie.title, 0, item);
+    } else {
+      handleMovieClick(movie);
+    }
+  }, [handlePlayVideo, handleMovieClick]);
+
+  const videoUrlRef = useRef(videoUrl);
+  videoUrlRef.current = videoUrl;
+  activePlaybackItemRef.current = activePlaybackItem;
+
+  const handleVideoTimeUpdate = useCallback((currentTime: number, duration: number) => {
+    const item = activePlaybackItemRef.current;
+    if (duration > 0 && item) {
+      updateContinueWatching({
+        ...item,
+        progress: currentTime,
+        duration,
+        url: videoUrlRef.current,
+      });
+    }
+  }, []);
+
+  const handleTabChange = useCallback(async (tab: string) => {
+    const viewToPath: Record<string, string> = {
+      home: "/",
+      movies: "/movies",
+      series: "/series",
+      search: "/search",
+      originals: "/originals",
+      profile: "/profile",
+    };
+    const path = viewToPath[tab];
+    if (!path) return;
+    navigateTo(path);
+    window.scrollTo({ top: 0, behavior: "instant" });
+
+    setActiveFilters({ category: null, vj: null, year: null, contentType: tab === "movies" ? "movies" : tab === "series" ? "series" : null });
+    setActiveVJ(null);
+    setActiveCategory("trending");
+
+    if (tab === "home") {
+      setSearchQuery("");
+    } else if (tab === "movies") {
+      setIsLoading(true);
+      try {
+        const movies = await fetchMoviesSorted("movie", 40, 1);
+        setCategoryMovies(sortByYearDesc(movies));
+      } finally {
+        setIsLoading(false);
+      }
+    } else if (tab === "series") {
+      setIsLoading(true);
+      try {
+        const series = await fetchSeries(40);
+        setCategoryMovies(sortByYearDesc(series));
+      } finally {
+        setIsLoading(false);
+      }
+    } else if (tab === "originals") {
+      setIsLoading(true);
+      setOriginalsPage(1);
+      try {
+        const originals = await fetchOriginals(60, 1);
+        setCategoryMovies(sortByYearDesc(originals));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [navigateTo]);
+
+  // Handle category change
+  const handleCategoryChange = useCallback(async (category: string, vjOverride?: string | null) => {
+    setActiveCategory(category);
+    if (vjOverride === undefined) setActiveVJ(null);
+    setIsLoading(true);
+    const vj = vjOverride === undefined ? null : vjOverride;
+    const dbFilters: FilterOptions = { vj };
+    try {
+      if (category === "trending") {
+        const data = await fetchTrending(dbFilters);
+        setRecentMovies(sortByYearDesc(data));
+      } else {
+        const genre = CATEGORY_TO_GENRE[category] || category;
+        const data = await fetchByGenre(genre, "movie", 40, dbFilters);
+        setRecentMovies(sortByYearDesc(data));
+      }
+    } catch (error) {
+      console.error("Error loading category:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleVJChange = useCallback(async (vj: string | null) => {
+    setActiveVJ(vj);
+    handleCategoryChange(activeCategory, vj);
+  }, [activeCategory, handleCategoryChange]);
+
+  const handleApplyFilters = useCallback(async (filters: FilterState) => {
+    setIsLoading(true);
+    const dbFilters: FilterOptions = { vj: filters.vj, year: filters.year };
+
+    try {
+      if (filters.contentType) {
+        const contentViewMode = filters.contentType === "movies" ? "movies" : "series";
+        navigateTo(`/${contentViewMode}`);
+
+        let data: Movie[] = [];
+        if (filters.contentType === "movies") {
+          if (filters.category && filters.category !== "trending") {
+            const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
+            data = await fetchByGenre(genre, "movie", 100, dbFilters);
+          } else {
+            data = await fetchMoviesSorted("movie", 100, 1, dbFilters);
+          }
+        } else {
+          if (filters.category && filters.category !== "trending") {
+            const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
+            data = await fetchByGenre(genre, "series", 100, dbFilters);
+          } else {
+            data = await fetchSeries(100, 1, undefined, dbFilters);
+          }
+        }
+
+        setCategoryMovies(sortByYearDesc(data));
+        setActiveVJ(filters.vj);
+        setActiveFilters(filters);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        let data: Movie[] = [];
+
+        if (filters.category && filters.category !== "trending") {
+          const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
+          data = await fetchByGenre(genre, "movie", 100, dbFilters);
+        } else if (filters.category === "trending") {
+          data = await fetchTrending(dbFilters);
+        } else {
+          data = await fetchMoviesSorted("movie", 100, 1, dbFilters);
+        }
+
+        if (filters.category) {
+          setActiveCategory(filters.category);
+        }
+        setActiveVJ(filters.vj);
+        setActiveFilters(filters);
+        setRecentMovies(sortByYearDesc(data));
+      }
+    } catch (error) {
+      console.error("Error applying filters:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sortByYearDesc]);
+
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    const dbFilters: FilterOptions = { vj: activeFilters.vj, year: activeFilters.year };
+    try {
+      const currentCount = categoryMovies.length;
+      const nextPage = Math.floor(currentCount / 20) + 1;
+
+      let more: Movie[] = [];
+      if (viewMode === "movies") {
+        if (activeFilters.category && activeFilters.category !== "trending") {
+          const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
+          more = await fetchByGenre(genre, "movie", 20, dbFilters, nextPage);
+        } else {
+          more = await fetchMoviesSorted("movie", 20, nextPage, dbFilters);
+        }
+      } else if (viewMode === "series") {
+        if (activeFilters.category && activeFilters.category !== "trending") {
+          const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
+          more = await fetchByGenre(genre, "series", 20, dbFilters, nextPage);
+        } else {
+          more = await fetchSeries(20, nextPage, undefined, dbFilters);
+        }
+      } else if (viewMode === "originals") {
+        const nextOriginalsPage = originalsPage + 1;
+        const originals = await fetchOriginals(60, nextOriginalsPage);
+        more = sortByYearDesc(originals);
+        setOriginalsPage(nextOriginalsPage);
+      }
+
+      const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
+      const newMovies = more.filter(m => !existingIds.has(m.mobifliks_id));
+      setCategoryMovies(prev => sortByYearDesc([...prev, ...newMovies]));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByYearDesc, activeFilters]);
+
+  // Get category title
+  const getCategoryTitle = () => {
+    const titles: Record<string, string> = {
+      trending: "Trending",
+      action: "Action",
+      romance: "Romance",
+      animation: "Animation",
+      horror: "Horror",
+      special: "Special",
+      drama: "Drama",
+    };
+    if (activeCategory === "trending") return "Trending";
+    return `Trending in ${titles[activeCategory] || "All"}`;
+  };
+
+  return (
+    <div className="min-h-screen pb-safe relative">
+      {/* Ambient floating particles (desktop only) */}
+      <AmbientParticles />
+
+      {/* Premium Dynamic Mesh Background */}
+      <DynamicBackground />
+
+      {/* Site Announcement */}
+      <div className="relative z-10">
+        <AnnouncementBanner />
+
+        {/* Header */}
+        <Header
+          onSearch={handleSearch}
+          onMovieSelect={handleMovieClick}
+          popularSearches={popularSearches}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+        />
+
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-4">
+          {/* Home View */}
+          {viewMode === "home" && (
+            <PageTransition>
+              {siteSettings.hero_carousel_enabled && trending.length > 0 && (
+                <HeroCarousel
+                  movies={trending}
+                  onPlay={handleHeroPlay}
+                  onMovieClick={handleMovieClick}
+                  title="Top Movies"
+                  onViewAll={() => handleTabChange("movies")}
+                />
+              )}
+
+              <div className="mt-8">
+                <CategoryChips
+                  activeCategory={activeCategory}
+                  onCategoryChange={handleCategoryChange}
+                />
+              </div>
+
+              <div className="mt-4">
+                <VJChips
+                  activeVJ={activeVJ}
+                  onVJChange={handleVJChange}
+                  vjs={allVJs}
+                />
+              </div>
+
+              {siteSettings.continue_watching_enabled && continueWatching.length > 0 && (
+                <SectionReveal delay={200}>
+                  <div className="mt-8">
+                    <div className="section-divider mb-2" />
+                    <ContinueWatchingRow
+                      items={continueWatching}
+                      onResume={(item) => {
+                        handlePlayVideo(item.url, item.title, Number(item.progress) || 0, item);
+                      }}
+                      onRemove={(id) => {
+                        removeContinueWatching(id);
+                        setContinueWatching(getContinueWatching());
+                      }}
+                    />
+                  </div>
+                </SectionReveal>
+              )}
+
+              <div className="mt-4">
+                <div className="section-divider mb-2" />
+                <MovieRow
+                  title={getCategoryTitle()}
+                  movies={recentMovies}
+                  onMovieClick={handleMovieClick}
+                  onViewAll={() => handleTabChange("movies")}
+                  isLoading={isLoading && recentMovies.length === 0}
+                  showFilters
+                  onFilterClick={() => setIsFilterOpen(true)}
+                />
+              </div>
+
+              {siteSettings.top10_enabled && (
+                <div className="mt-4">
+                  <div className="section-divider mb-2" />
+                  <Top10Row
+                    movies={recentMovies}
+                    onMovieClick={handleMovieClick}
+                  />
+                </div>
+              )}
+
+              {continueWatching.length > 0 && recentMovies.length > 0 && (
+                <div className="mt-4">
+                  <div className="section-divider mb-2" />
+                  <RecommendationRow
+                    continueWatching={continueWatching}
+                    allMovies={[...recentMovies, ...recentSeries]}
+                    onMovieClick={handleMovieClick}
+                  />
+                </div>
+              )}
+
+              <div className="mt-4">
+                <div className="section-divider mb-2" />
+                <MovieRow
+                  title="Popular Series"
+                  movies={recentSeries}
+                  onMovieClick={handleMovieClick}
+                  onViewAll={() => handleTabChange("series")}
+                  isLoading={isLoading && recentSeries.length === 0}
+                />
+              </div>
+            </PageTransition>
+          )}
+
+          {/* Search View */}
+          {viewMode === "search" && (
+            <PageTransition>
+              <div className="space-y-6">
+                <div className="max-w-xl mx-auto">
+                  <SearchBar
+                    onSearch={handleSearch}
+                    onMovieSelect={handleMovieClick}
+                    popularSearches={popularSearches}
+                  />
+                </div>
+
+                {searchQuery && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleTabChange("home")}
+                        className="shrink-0"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </Button>
+                      <div>
+                        <h2 className="text-xl font-semibold">Search Results</h2>
+                        <p className="text-sm text-muted-foreground">
+                          {totalResults} results for "{searchQuery}"
+                        </p>
+                      </div>
+                    </div>
+
+                    <MovieGrid
+                      movies={searchResults}
+                      onMovieClick={handleMovieClick}
+                      isLoading={isLoading}
+                      emptyMessage={`No results for "${searchQuery}"`}
+                    />
+                  </div>
+                )}
+              </div>
+            </PageTransition>
+          )}
+
+          {/* Movies Category */}
+          {viewMode === "movies" && (
+            <PageTransition>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleTabChange("home")}
+                    className="shrink-0"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                  <h2 className="text-xl font-semibold">All Movies</h2>
+                </div>
+
+                <MovieGrid
+                  movies={categoryMovies}
+                  onMovieClick={handleMovieClick}
+                  isLoading={isLoading && categoryMovies.length === 0}
+                />
+
+                {categoryMovies.length > 0 && (
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      className="gap-2"
+                    >
+                      {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Load More
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </PageTransition>
+          )}
+
+          {/* Series Category */}
+          {viewMode === "series" && (
+            <PageTransition>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleTabChange("home")}
+                    className="shrink-0"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                  <h2 className="text-xl font-semibold">All Series</h2>
+                </div>
+
+                <MovieGrid
+                  movies={categoryMovies}
+                  onMovieClick={handleMovieClick}
+                  isLoading={isLoading && categoryMovies.length === 0}
+                />
+
+                {categoryMovies.length > 0 && (
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      className="gap-2"
+                    >
+                      {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Load More
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </PageTransition>
+          )}
+
+          {/* Originals (English) */}
+          {viewMode === "originals" && (
+            <PageTransition>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleTabChange("home")}
+                    className="shrink-0"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                  <h2 className="text-xl font-semibold">Originals (English)</h2>
+                </div>
+
+                <MovieGrid
+                  movies={categoryMovies}
+                  onMovieClick={handleMovieClick}
+                  isLoading={isLoading && categoryMovies.length === 0}
+                  emptyMessage="No English originals found."
+                />
+
+                {categoryMovies.length > 0 && (
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      className="gap-2"
+                    >
+                      {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Load More
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </PageTransition>
+          )}
+        </main>
+
+        {/* Bottom Navigation - Mobile */}
+        <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+
+        {showExitToast && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-card/90 backdrop-blur border border-border/50 text-sm text-foreground shadow-lg">
+            Press back again to exit
+          </div>
+        )}
+
+        {/* Lazy Loaded Heavy Modals */}
+        <Suspense fallback={null}>
+          {/* Movie Details Modal */}
+          <MovieModal
+            movie={selectedMovie}
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              // Go back to the previous route when closing modal securely 
+              if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
+                const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
+                navigateTo(targetPath, { replace: true });
+              }
+            }}
+            onPlay={handlePlayVideo}
+          />
+
+          {/* Cinematic Video Player */}
+          <CinematicVideoPlayer
+            isOpen={isVideoOpen}
+            onClose={() => {
+              setIsVideoOpen(false);
+              setActivePlaybackItem(null);
+              setContinueWatching(getContinueWatching());
+            }}
+            videoUrl={videoUrl}
+            title={videoTitle}
+            movie={selectedMovie}
+            onTimeUpdate={handleVideoTimeUpdate}
+            startTime={videoStartTime}
+          />
+
+          {/* Filter Modal */}
+          {isFilterOpen && (
+            <FilterModal
+              isOpen={isFilterOpen}
+              onClose={() => setIsFilterOpen(false)}
+              onApplyFilters={handleApplyFilters}
+              categories={filterCategories}
+              vjs={allVJs}
+              years={filterYears}
+              initialFilters={activeFilters}
+            />
+          )}
+        </Suspense>
+      </div>
+    </div>
+  );
+}

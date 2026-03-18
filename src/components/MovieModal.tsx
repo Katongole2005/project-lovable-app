@@ -1,0 +1,1928 @@
+import React from "react";
+import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List, Share2, Layers } from "lucide-react";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
+import { toSlug } from "@/lib/slug";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import type { Movie, Series, Episode, CastMember } from "@/types/movie";
+import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { StarRating } from "@/components/StarRating";
+import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist, getContinueWatching } from "@/lib/storage";
+import { motion, AnimatePresence } from "framer-motion";
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Cloudflare Worker URL
+ * After deploying cloudflare-worker/download-worker.js, paste your worker
+ * URL here (e.g. "https://download.yourname.workers.dev").
+ * Leave as empty string to skip this strategy and fall back to CORS fetch.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+const CLOUDFLARE_WORKER_URL = "https://cdn.s-u.in";
+
+export function getProxiedPlayUrl(url: string, title: string) {
+  if (!CLOUDFLARE_WORKER_URL || !url) return url;
+  
+  const cleanTitle = title
+    .replace(/mobifliks\.com\s*[-–—|:]\s*/gi, "")
+    .replace(/\s*[-–—|:]\s*mobifliks\.com/gi, "")
+    .replace(/mobifliks\.com/gi, "")
+    .trim();
+    
+  const safeName = cleanTitle.replace(/[/\\:*?"<>|]/g, "-").trim() || "video";
+  const extMatch = url.match(/\.(mp4|mkv|avi|mov|webm)(\?|$)/i);
+  const ext = extMatch ? extMatch[1].toLowerCase() : "mp4";
+  const fullName = `${safeName} - s-u.in.${ext}`;
+  
+  return `${CLOUDFLARE_WORKER_URL}?url=${encodeURIComponent(url)}&name=${encodeURIComponent(fullName)}&play=1`;
+}
+
+/**
+ * Downloads a file with a clean, movie-title filename.
+ *
+ * Strategy 1: Cloudflare Worker proxy — worker fetches & renames server-side.
+ *             Works for ALL URLs, bypasses CORS and Content-Disposition limits.
+ * Strategy 2: Direct CORS fetch → Blob (works for Supabase / CORS-enabled CDNs)
+ * Strategy 3: window.open fallback — browser assigns original filename.
+ */
+async function downloadWithName(url: string, filename: string): Promise<void> {
+  // Strip site watermark / domain leftover from scraped titles
+  const cleanFilename = filename
+    .replace(/mobifliks\.com\s*[-–—|:]\s*/gi, "")
+    .replace(/\s*[-–—|:]\s*mobifliks\.com/gi, "")
+    .replace(/mobifliks\.com/gi, "")
+    .trim();
+
+  const safeName = cleanFilename.replace(/[/\\:*?"<>|]/g, "-").trim() || "download";
+  const extMatch = url.match(/\.(mp4|mkv|avi|mov|webm)(\?|$)/i);
+  const ext = extMatch ? extMatch[1].toLowerCase() : "mp4";
+  const fullName = `${safeName} - s-u.in.${ext}`;
+
+  // ── Strategy 1: Direct anchor → Cloudflare Worker ─────────────────────────
+  // The worker sets Content-Disposition server-side, so no fetch needed.
+  // Browser native download bar starts IMMEDIATELY.
+  if (CLOUDFLARE_WORKER_URL) {
+    const workerUrl = `${CLOUDFLARE_WORKER_URL}?url=${encodeURIComponent(url)}&name=${encodeURIComponent(fullName)}`;
+    const a = document.createElement("a");
+    a.href = workerUrl;
+    a.download = fullName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success(`Downloading "${safeName}"`, { duration: 3000 });
+    return;
+  }
+
+
+  // ── Strategy 2: Direct CORS fetch → Blob ──────────────────────────────────
+  try {
+    toast.loading(`Preparing "${safeName}"…`, { id: "dl-toast" });
+    const response = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+      mode: "cors",
+      credentials: "omit",
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    if (blob.size === 0) throw new Error("empty blob");
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fullName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+    toast.success(`Downloading "${safeName}"`, { id: "dl-toast" });
+    return;
+  } catch {
+    toast.dismiss("dl-toast");
+  }
+
+  // ── Strategy 3: window.open fallback ──────────────────────────────────────
+  toast.info("Opening download link in a new tab…");
+  window.open(url, "_blank");
+}
+
+
+
+/** Staggered animation variants for Framer Motion */
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    }
+  }
+};
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as any }
+  }
+};
+
+
+interface MovieModalProps {
+  movie: Movie | Series | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onPlay: (url: string, title: string) => void;
+}
+
+const fallbackCastAvatar = "https://placehold.co/160x160/1a1a2e/ffffff?text=Actor";
+
+export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) {
+  // NOTE: hooks must be called unconditionally; keep all hooks above the null-guard return.
+  const [tmdbBackdrop, setTmdbBackdrop] = React.useState<string | null>(null);
+  const [tmdbCast, setTmdbCast] = React.useState<CastMember[] | null>(null);
+
+  const backdrop = tmdbBackdrop || movie?.backdrop_url || null;
+
+  // IMPORTANT: do NOT fall back to poster for the backdrop/background.
+  // This avoids the "image swap" where a poster loads first, then the backdrop replaces it.
+  // Use optimized (smaller) backdrop URL for faster loading.
+  const backgroundImage = backdrop ? getOptimizedBackdropUrl(backdrop) : null;
+
+  const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
+  const [userRating, setUserRatingState] = React.useState<number | null>(null);
+  const [inWatchlist, setInWatchlist] = React.useState(false);
+  const [entranceVisible, setEntranceVisible] = React.useState(false);
+
+  const handlePlayProxy = React.useCallback((url: string, title: string) => {
+    onPlay(getProxiedPlayUrl(url, title), title);
+  }, [onPlay]);
+
+  // Fetch missing TMDB data (especially for series)
+  React.useEffect(() => {
+    setTmdbBackdrop(null);
+    setTmdbCast(null);
+    if (!movie || (!isOpen)) return;
+
+    // Fetch if backdrop is missing OR cast is missing
+    const needsBackdrop = !movie.backdrop_url;
+    const needsCast = !movie.cast || movie.cast.length === 0;
+
+    if (needsBackdrop || needsCast) {
+      const fetchTmdb = async () => {
+        try {
+          const type = movie.type === "series" ? "tv" : "movie";
+          const cleanedTitle = movie.title
+            .replace(/\s*[-–—]?\s*Season\s*\d+/i, '')
+            .replace(/\s*\(?\d{4}\s*[-–—].*\)\s*$/i, '')
+            .replace(/\s*\(\d{4}\)\s*$/, '')
+            .trim();
+          const query = encodeURIComponent(cleanedTitle);
+          const year = movie.year ? `&year=${movie.year}` : '';
+          const searchRes = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=422176371cbca367ffda12fccee25ba7&query=${query}${year}`);
+          const searchData = await searchRes.json();
+          const tmdbId = searchData.results?.[0]?.id;
+
+          if (tmdbId) {
+            const detailsRes = await fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=422176371cbca367ffda12fccee25ba7&append_to_response=credits`);
+            const detailsData = await detailsRes.json();
+
+            if (needsBackdrop && detailsData.backdrop_path) {
+              setTmdbBackdrop(`https://image.tmdb.org/t/p/original${detailsData.backdrop_path}`);
+            }
+            if (needsCast && detailsData.credits?.cast) {
+              const fetchedCast = detailsData.credits.cast.slice(0, 15).map((c: any) => ({
+                name: c.name,
+                character: c.character,
+                profile_url: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null,
+              }));
+              setTmdbCast(fetchedCast);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch TMDB fallback data:", error);
+        }
+      };
+      fetchTmdb();
+    }
+  }, [movie?.mobifliks_id, isOpen]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setEntranceVisible(false);
+      const t = setTimeout(() => setEntranceVisible(true), 100);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
+
+  React.useEffect(() => {
+    if (movie) {
+      setUserRatingState(getUserRating(movie.mobifliks_id));
+      setInWatchlist(isInWatchlist(movie.mobifliks_id));
+    }
+  }, [movie?.mobifliks_id]);
+
+  React.useEffect(() => {
+    setDesktopBackdropLoaded(false);
+    if (!backgroundImage) return;
+
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled) setDesktopBackdropLoaded(true);
+    };
+    img.src = backgroundImage;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [backgroundImage]);
+
+  const handleRate = (rating: number) => {
+    if (!movie) return;
+    setUserRating(movie.mobifliks_id, rating);
+    setUserRatingState(rating);
+    toast.success(`Rated ${movie.title} ${rating}/5 ⭐`);
+  };
+
+  const handleToggleWatchlist = () => {
+    if (!movie) return;
+    const added = toggleWatchlist(movie as Movie);
+    setInWatchlist(added);
+    toast.success(added ? `Added to My List` : `Removed from My List`);
+  };
+
+  if (!movie) return null;
+
+  const isSeries = movie.type === "series";
+  const series = movie as Series;
+  const cast: CastMember[] = tmdbCast && tmdbCast.length > 0
+    ? tmdbCast
+    : movie.cast && movie.cast.length > 0
+      ? movie.cast
+      : (movie.stars || []).map((name) => ({ name }));
+  const rating = movie.views ? Math.min(4.5 + (movie.views / 100000) * 0.5, 5).toFixed(1) : "4.5";
+  const runtimeLabel =
+    typeof movie.runtime_minutes === "number" && movie.runtime_minutes > 0
+      ? movie.runtime_minutes < 60
+        ? `${movie.runtime_minutes}m`
+        : `${Math.floor(movie.runtime_minutes / 60)}h ${movie.runtime_minutes % 60}m`
+      : null;
+  const releaseLabel = movie.release_date ? movie.release_date : null;
+  const certificationLabel = movie.certification ? movie.certification : null;
+  const handlePlay = (url: string, title: string) => {
+    onClose();
+    setTimeout(() => {
+      onPlay(url, title);
+    }, 0);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      {/* Mobile: Full screen sheet, Desktop: Centered modal */}
+      <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-200 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] data-[state=open]:slide-in-from-bottom md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-bottom md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%]">
+        <DialogTitle className="sr-only">{movie.title}</DialogTitle>
+        <DialogDescription className="sr-only">
+          {movie.description || (isSeries ? "Series details and episodes." : "Movie details and playback.")}
+        </DialogDescription>
+
+        {/* Mobile Layout - completely separate, handles its own scroll */}
+        <MobileMovieLayout
+          movie={movie}
+          isSeries={isSeries}
+          series={series}
+          cast={cast}
+          rating={rating}
+          runtimeLabel={runtimeLabel}
+          certificationLabel={certificationLabel}
+          backgroundImage={backgroundImage}
+          onClose={onClose}
+          onPlay={handlePlay}
+          inWatchlist={inWatchlist}
+          onToggleWatchlist={handleToggleWatchlist}
+        />
+
+        {/* Desktop/Tablet Layout with glassmorphism */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="hidden md:block relative h-full md:rounded-3xl overflow-hidden"
+        >
+          {/* Multi-layer background for professional glass effect */}
+          <div className="absolute inset-0">
+            {(!backgroundImage || !desktopBackdropLoaded) && (
+              <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                <div className="absolute inset-0 shimmer" />
+              </div>
+            )}
+
+            {backgroundImage && (
+              <>
+                <img
+                  src={backgroundImage}
+                  alt=""
+                  className={cn(
+                    "w-full h-full object-cover object-top scale-110 transition-opacity duration-500",
+                    desktopBackdropLoaded ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                <img
+                  src={backgroundImage}
+                  alt=""
+                  className={cn(
+                    "absolute inset-0 w-full h-full object-cover object-top scale-150 blur-3xl transition-opacity duration-500",
+                    desktopBackdropLoaded ? "opacity-80" : "opacity-0"
+                  )}
+                />
+              </>
+            )}
+            <div className="absolute inset-0 backdrop-blur-xl bg-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+            <motion.div
+              className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+              }}
+            />
+          </div>
+
+          <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
+
+          {/* Close button — outside ScrollArea so it stays fixed */}
+          <button
+            onClick={onClose}
+            aria-label="Close modal"
+            className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200 hover:scale-105 border border-white/20"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+
+          <ScrollArea className="h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
+            <div className="relative w-full max-w-full">
+
+              {/* Backdrop hero section */}
+              <div className="relative h-[350px] lg:h-[425px] overflow-hidden">
+                {backgroundImage ? (
+                  <>
+                    {!desktopBackdropLoaded && (
+                      <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                        <div className="absolute inset-0 shimmer" />
+                      </div>
+                    )}
+                    <img
+                      src={backgroundImage}
+                      alt={`${movie.title} backdrop`}
+                      className={cn(
+                        "w-full h-full object-cover object-top transition-opacity duration-500",
+                        desktopBackdropLoaded ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                    <div className="absolute inset-0 shimmer" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+              </div>
+
+              {/* Content area - overlapping backdrop */}
+              <motion.div
+                variants={staggerContainer}
+                initial="hidden"
+                animate={entranceVisible ? "visible" : "hidden"}
+                className="relative -mt-32 px-10 pb-10 space-y-6"
+              >
+                {/* Poster + Title row */}
+                <motion.div variants={fadeInUp} className="flex gap-6 items-start">
+                  <div className="w-32 lg:w-40 flex-none rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
+                    <img
+                      src={getImageUrl(movie.image_url)}
+                      alt={`${movie.title} poster`}
+                      className="w-full aspect-[2/3] object-cover"
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0 space-y-4 pt-2">
+                    <motion.h1 variants={fadeInUp} className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
+                      {movie.title}
+                      {isSeries && <span className="text-primary text-2xl ml-2 font-semibold">(Series)</span>}
+                    </motion.h1>
+
+                    <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-3">
+                      {/* Rating */}
+                      <span className="flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30">
+                        <Star className="w-4 h-4 fill-[#4ade80]" />
+                        {rating}
+                      </span>
+                      {movie.year && (
+                        <span className="text-lg font-medium text-white/90">{movie.year}</span>
+                      )}
+                      {/* Release Date */}
+                      {releaseLabel && (
+                        <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          <CalendarDays className="w-4 h-4" />
+                          {releaseLabel}
+                        </span>
+                      )}
+                      {certificationLabel && (
+                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          {certificationLabel}
+                        </span>
+                      )}
+                      {runtimeLabel && (
+                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          {runtimeLabel}
+                        </span>
+                      )}
+                      {movie.vj_name && (
+                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          VJ {movie.vj_name}
+                        </span>
+                      )}
+                      {movie.views !== undefined && movie.views > 0 && (
+                        <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          <Eye className="w-4 h-4" />
+                          {movie.views >= 1000000
+                            ? `${(movie.views / 1000000).toFixed(1)}M`
+                            : movie.views >= 1000
+                              ? `${(movie.views / 1000).toFixed(1)}K`
+                              : movie.views}
+                        </span>
+                      )}
+                      {isSeries && (
+                        <span className="px-2.5 py-0.5 text-sm font-semibold rounded bg-primary/30 text-primary border border-primary/40">
+                          SERIES
+                        </span>
+                      )}
+                    </motion.div>
+
+                    <motion.div variants={fadeInUp} className="flex items-center gap-3 pt-2">
+                      {!isSeries && movie.download_url && (
+                        <Button
+                          size="lg"
+                          className="gap-2 bg-white hover:bg-white/90 text-black rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]"
+                          onClick={() => onPlay(movie.download_url!, movie.title)}
+                        >
+                          <Play className="w-5 h-5 fill-current" />
+                          Play
+                        </Button>
+                      )}
+                      {isSeries && series.episodes && series.episodes.length > 0 && (
+                        <Button
+                          size="lg"
+                          className="gap-2 bg-white hover:bg-white/90 text-black rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]"
+                          onClick={() => {
+                            const firstEp = series.episodes?.[0];
+                            if (firstEp?.download_url) {
+                              onPlay(firstEp.download_url, `${movie.title} - S1:E1`);
+                            }
+                          }}
+                        >
+                          <Play className="w-5 h-5 fill-current" />
+                          Play S1:E1
+                        </Button>
+                      )}
+
+                      <button
+                        onClick={handleToggleWatchlist}
+                        aria-label={inWatchlist ? "Remove from My List" : "Add to My List"}
+                        className={cn(
+                          "w-11 h-11 rounded-full backdrop-blur-sm border-2 flex items-center justify-center transition-all duration-200",
+                          inWatchlist
+                            ? "bg-primary/90 border-primary text-white"
+                            : "bg-white/10 border-white/50 text-white hover:bg-white/20 hover:border-white"
+                        )}
+                      >
+                        <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
+                      </button>
+                      {/* Share button */}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const typeSlug = movie.type === "series" ? "series" : "movie";
+                          const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
+                          try {
+                            if (navigator.share) {
+                              await navigator.share({ title: movie.title, url: shareUrl });
+                              return;
+                            }
+                          } catch { }
+                          try {
+                            await navigator.clipboard.writeText(shareUrl);
+                            toast.success("Link copied to clipboard!");
+                          } catch {
+                            const textArea = document.createElement("textarea");
+                            textArea.value = shareUrl;
+                            textArea.style.position = "fixed";
+                            textArea.style.opacity = "0";
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand("copy");
+                            document.body.removeChild(textArea);
+                            toast.success("Link copied to clipboard!");
+                          }
+                        }}
+                        aria-label="Share"
+                        className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
+                        <button
+                          onClick={() => {
+                            const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
+                            downloadWithName(movie.download_url!, name);
+                          }}
+                          aria-label="Download"
+                          className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      )}
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {movie.description && (
+                  <motion.p variants={fadeInUp} className="text-white/90 leading-relaxed text-lg max-w-4xl">{movie.description}</motion.p>
+                )}
+
+                {/* User Rating */}
+                <motion.div variants={fadeInUp} className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-white/70">Rate this:</span>
+                  <StarRating rating={userRating} onRate={handleRate} size="md" />
+                </motion.div>
+
+                {/* Cast — improved horizontal carousel with larger cards */}
+                {cast.length > 0 && (
+                  <motion.div variants={fadeInUp} className="space-y-3">
+                    <h4 className="text-lg font-semibold text-white/90">Cast</h4>
+                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin -mx-2 px-2">
+                      {cast.slice(0, 12).map((member, index) => (
+                        <div
+                          key={index}
+                          className="flex-none w-28 group"
+                        >
+                          <div className="w-24 h-24 mx-auto rounded-2xl overflow-hidden border-2 border-white/15 bg-white/5 shadow-lg group-hover:border-white/30 group-hover:scale-105 transition-all duration-300">
+                            <img
+                              src={member.profile_url || fallbackCastAvatar}
+                              alt={member.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = fallbackCastAvatar;
+                              }}
+                            />
+                          </div>
+                          <p className="text-xs font-medium text-white/90 text-center mt-2 line-clamp-2 leading-tight">{member.name}</p>
+                          {member.character && (
+                            <p className="text-[10px] text-white/50 text-center line-clamp-1 mt-0.5">as {member.character}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {movie.genres && movie.genres.length > 0 && (
+                  <motion.p variants={fadeInUp} className="text-base">
+                    <span className="text-white/60 font-medium">Genres:</span>{" "}
+                    <span className="text-white/90">{movie.genres.join(", ")}</span>
+                  </motion.p>
+                )}
+
+                {movie.file_size && (
+                  <motion.p variants={fadeInUp} className="text-base">
+                    <span className="text-white/60 font-medium">Size:</span>{" "}
+                    <span className="text-white/90">{movie.file_size}</span>
+                  </motion.p>
+                )}
+
+                {isSeries && series.episodes && series.episodes.length > 0 && (
+                  <DesktopEpisodeSection
+                    series={series}
+                    movie={movie}
+                    onPlay={handlePlayProxy}
+                  />
+                )}
+
+                {isSeries && (!series.episodes || series.episodes.length === 0) && (
+                  <motion.div variants={fadeInUp} className="pt-4 text-center py-8 text-white/60 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
+                    No episodes available yet.
+                  </motion.div>
+                )}
+              </motion.div>
+            </div>
+          </ScrollArea>
+        </motion.div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Mobile layout component matching reference design
+interface MobileMovieLayoutProps {
+  movie: Movie | Series;
+  isSeries: boolean;
+  series: Series;
+  cast: CastMember[];
+  rating: string;
+  runtimeLabel: string | null;
+  certificationLabel: string | null;
+  backgroundImage: string | null;
+  onClose: () => void;
+  onPlay: (url: string, title: string) => void;
+  inWatchlist: boolean;
+  onToggleWatchlist: () => void;
+}
+
+function MobileMovieLayout({
+  movie,
+  isSeries,
+  series,
+  cast,
+  rating,
+  runtimeLabel,
+  certificationLabel,
+  backgroundImage,
+  onClose,
+  onPlay,
+  inWatchlist,
+  onToggleWatchlist,
+}: MobileMovieLayoutProps) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [selectedSeason, setSelectedSeason] = React.useState(1);
+  const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
+  const [scrollProgress, setScrollProgress] = React.useState(0);
+  const [backdropLoaded, setBackdropLoaded] = React.useState(false);
+  const [relatedMovies, setRelatedMovies] = React.useState<Movie[]>([]);
+  const [entranceReady, setEntranceReady] = React.useState(false);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const episodesSectionRef = React.useRef<HTMLDivElement>(null);
+  const heroRef = React.useRef<HTMLDivElement>(null);
+
+  const resumeEpisode = React.useMemo(() => {
+    if (!isSeries || !series.episodes?.length) return null;
+    const continueList = getContinueWatching();
+    const found = continueList.find(c => c.id === movie.mobifliks_id || c.title.includes(movie.title));
+    if (found?.episodeInfo) {
+      const match = found.episodeInfo.match(/S(\d+):E(\d+)/i);
+      if (match) return { season: parseInt(match[1]), episode: parseInt(match[2]) };
+    }
+    return null;
+  }, [movie.mobifliks_id, isSeries]);
+
+  const cwProgressMap = React.useMemo(() => {
+    const map = new Map<string, number>();
+    if (!isSeries) return map;
+    const continueList = getContinueWatching();
+    for (const cw of continueList) {
+      if (!cw.episodeInfo) continue;
+      const m = cw.episodeInfo.match(/S(\d+):E(\d+)/i);
+      if (m && cw.duration > 0) {
+        const key = `${parseInt(m[1])}-${parseInt(m[2])}`;
+        map.set(key, Math.min((cw.progress / cw.duration) * 100, 100));
+      }
+    }
+    return map;
+  }, [movie.mobifliks_id, isSeries]);
+
+  React.useEffect(() => {
+    setEntranceReady(false);
+    const t = setTimeout(() => setEntranceReady(true), 150);
+    return () => clearTimeout(t);
+  }, [movie.mobifliks_id]);
+
+  React.useEffect(() => {
+    const genre = movie.genres?.[0];
+    if (!genre) { setRelatedMovies([]); return; }
+    let cancelled = false;
+    fetchByGenre(genre, movie.type === "series" ? "series" : "movie", 12).then((data) => {
+      if (!cancelled) {
+        setRelatedMovies(data.filter((m) => m.mobifliks_id !== movie.mobifliks_id).slice(0, 10));
+      }
+    });
+    return () => { cancelled = true; };
+  }, [movie.mobifliks_id, movie.genres?.[0]]);
+
+  React.useEffect(() => {
+    setBackdropLoaded(false);
+    if (!backgroundImage) return;
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => { if (!cancelled) setBackdropLoaded(true); };
+    img.src = backgroundImage;
+    return () => { cancelled = true; };
+  }, [backgroundImage]);
+
+  React.useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+    const handleScroll = () => {
+      const scrollTop = scrollContainer.scrollTop;
+      const heroHeight = 380;
+      const progress = Math.min(Math.max(scrollTop / heroHeight, 0), 1);
+      setScrollProgress(progress);
+    };
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToEpisodes = () => {
+    if (episodesSectionRef.current && scrollContainerRef.current) {
+      const offset = episodesSectionRef.current.offsetTop - 80;
+      scrollContainerRef.current.scrollTo({ top: offset, behavior: 'smooth' });
+    }
+  };
+
+  const maxDescriptionLength = 200;
+  const description = movie.description || "";
+  const shouldTruncate = description.length > maxDescriptionLength;
+  const displayDescription = isExpanded ? description : description.slice(0, maxDescriptionLength);
+
+  const allEpisodes = series.episodes || [];
+  const seasons = React.useMemo(() => {
+    const seasonMap = new Map<number, typeof allEpisodes>();
+    allEpisodes.forEach((ep) => {
+      const seasonNum = ep.season_number || 1;
+      if (!seasonMap.has(seasonNum)) seasonMap.set(seasonNum, []);
+      seasonMap.get(seasonNum)!.push(ep);
+    });
+    if (seasonMap.size === 0 && allEpisodes.length > 0) seasonMap.set(1, allEpisodes);
+    return seasonMap;
+  }, [allEpisodes]);
+
+  const availableSeasons = Array.from(seasons.keys()).sort((a, b) => a - b);
+
+  React.useEffect(() => {
+    if (availableSeasons.length > 0 && !availableSeasons.includes(selectedSeason)) {
+      setSelectedSeason(availableSeasons[0]);
+    }
+  }, [movie.mobifliks_id, availableSeasons]);
+
+  const currentSeasonEpisodes = seasons.get(selectedSeason) || allEpisodes;
+
+  const formattedReleaseDate = movie.release_date
+    ? new Date(movie.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    : null;
+
+  const accentHue = React.useMemo(() => {
+    const hash = movie.mobifliks_id.split('').reduce((a, b) => { a = (a << 5) - a + b.charCodeAt(0); return a & a; }, 0);
+    return Math.abs(hash) % 360;
+  }, [movie.mobifliks_id]);
+
+  return (
+    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark" data-testid="mobile-movie-layout">
+      <div className="absolute inset-0 z-0">
+        {(!backgroundImage || !backdropLoaded) && (
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(230,20%,8%)] via-[hsl(240,15%,6%)] to-[hsl(220,18%,5%)]">
+            <div className="absolute inset-0 shimmer" />
+          </div>
+        )}
+
+        {backgroundImage && (
+          <>
+            <img
+              src={backgroundImage}
+              alt=""
+              className={cn(
+                "w-full h-full object-cover object-top scale-110 transition-opacity duration-700",
+                backdropLoaded ? "opacity-100" : "opacity-0"
+              )}
+            />
+            <img
+              src={backgroundImage}
+              alt=""
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover object-top scale-[2] blur-[60px] transition-opacity duration-700",
+                backdropLoaded ? "opacity-60" : "opacity-0"
+              )}
+            />
+          </>
+        )}
+        <div className="absolute inset-0 backdrop-blur-2xl bg-black/50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(230,18%,5%)] via-transparent to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
+
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <motion.div
+            className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[80px]"
+            style={{
+              background: `hsl(${accentHue} 60% 50% / 0.12)`,
+              animation: "liquidFloat 8s ease-in-out infinite",
+            }}
+          />
+          <motion.div
+            className="absolute top-1/3 -left-24 w-48 h-48 rounded-full blur-[60px]"
+            style={{
+              background: `hsl(${(accentHue + 120) % 360} 50% 45% / 0.08)`,
+              animation: "liquidFloat 12s ease-in-out infinite reverse",
+            }}
+          />
+          <motion.div
+            className="absolute -bottom-24 right-1/4 w-56 h-56 rounded-full blur-[70px]"
+            style={{
+              background: `hsl(${(accentHue + 240) % 360} 40% 40% / 0.06)`,
+              animation: "liquidFloat 15s ease-in-out infinite",
+              animationDelay: "3s",
+            }}
+          />
+        </div>
+
+        <div className="glass-noise-overlay" />
+      </div>
+
+      <motion.div
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pt-safe transition-all duration-300"
+        animate={{
+          "--scroll-gradient": scrollProgress > 0.3
+            ? `linear-gradient(180deg, hsl(230 18% 5% / ${Math.min(scrollProgress * 1.5, 0.95)}) 0%, transparent 100%)`
+            : "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)",
+          background: "var(--scroll-gradient)",
+        } as any}
+        transition={{ duration: 0 }}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Go back"
+          data-testid="button-close-modal"
+          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 active:scale-90 transition-transform"
+        >
+          <ChevronLeft className="w-5 h-5 text-white" />
+        </button>
+
+        <AnimatePresence>
+          {scrollProgress > 0.5 && (
+            <motion.h2
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="text-sm font-semibold text-white truncate max-w-[50vw]"
+            >
+              {movie.title}
+            </motion.h2>
+          )}
+        </AnimatePresence>
+
+        <button
+          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 active:scale-90 transition-transform"
+          aria-label="Share movie"
+          data-testid="button-share"
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (!movie) return;
+            const typeSlug = movie.type === "series" ? "series" : "movie";
+            const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
+            try {
+              if (navigator.share) { await navigator.share({ title: movie.title, url: shareUrl }); return; }
+            } catch { }
+            try {
+              await navigator.clipboard.writeText(shareUrl);
+              toast.success("Link copied to clipboard!");
+            } catch {
+              const textArea = document.createElement("textarea");
+              textArea.value = shareUrl;
+              textArea.style.position = "fixed";
+              textArea.style.opacity = "0";
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand("copy");
+              document.body.removeChild(textArea);
+              toast.success("Link copied to clipboard!");
+            }
+          }}
+        >
+          <Share2 className="w-4.5 h-4.5 text-white" />
+        </button>
+      </motion.div>
+
+      <motion.div
+        ref={heroRef as any}
+        className="absolute top-0 left-0 right-0 z-10 transition-all duration-100 ease-out"
+        animate={{
+          transform: `translateY(${scrollProgress * -80}px) scale(${1 + scrollProgress * 0.08})`,
+          filter: `blur(${scrollProgress * 12}px)`,
+          opacity: 1 - scrollProgress * 0.4,
+        }}
+      >
+        <div className="relative w-full aspect-[3/4] max-h-[525px] overflow-hidden">
+          {!backdropLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-br from-[hsl(230,20%,12%)] via-[hsl(240,15%,8%)] to-[hsl(220,18%,6%)]">
+              <div className="absolute inset-0 shimmer" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[hsl(230,18%,5%)] via-black/40 to-transparent" />
+            </div>
+          )}
+
+          {backgroundImage && (
+            <motion.div
+              className="w-full h-full"
+              animate={{
+                "--transform-val": `scale(${1.15 + scrollProgress * 0.2}) translateY(${scrollProgress * 30}px)`
+              } as any}
+              transition={{ duration: 0 }}
+            >
+              <motion.img
+                src={backgroundImage}
+                alt={movie.title}
+                className={cn(
+                  "w-full h-full object-cover object-top transition-opacity duration-700",
+                  backdropLoaded ? "opacity-100" : "opacity-0"
+                )}
+                style={{
+                  animation: backdropLoaded ? "kenBurnsMobile 20s ease-in-out infinite" : "none",
+                }}
+              />
+            </motion.div>
+          )}
+
+          <div className="absolute inset-0 modal-hero-backdrop-gradient" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
+
+          <motion.div
+            className="absolute inset-0 bg-black transition-opacity duration-100"
+            animate={{ opacity: scrollProgress * 0.5 }} transition={{ duration: 0 }}
+          />
+
+          <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none modal-accent-bottom-gradient" />
+
+          <motion.div
+            className="absolute bottom-0 left-0 right-0 p-5 flex gap-4 items-end transition-all duration-100"
+            style={{
+              transform: `translateY(${scrollProgress * -40}px)`,
+              opacity: 1 - scrollProgress * 0.6,
+            }}
+          >
+            <motion.div
+              className="w-24 h-36 flex-shrink-0 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-transform duration-100 relative"
+              style={{
+                transform: `scale(${1 - scrollProgress * 0.15}) translateY(${scrollProgress * -15}px)`,
+              }}
+            >
+              <img
+                src={getImageUrl(movie.image_url)}
+                alt={movie.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 rounded-2xl ring-1 ring-white/20 ring-inset pointer-events-none" />
+              <div className="absolute -inset-1 rounded-2xl pointer-events-none modal-accent-box-shadow" />
+            </motion.div>
+
+            <div className="flex-1 min-w-0 pb-1">
+              <h1 className="text-2xl font-display font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] leading-tight line-clamp-2 tracking-tight" data-testid="text-movie-title">
+                {movie.title}
+              </h1>
+              {isSeries && allEpisodes.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex items-center gap-2 mt-1.5"
+                >
+                  <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-gradient-to-r from-primary to-secondary text-white shadow-sm">
+                    SERIES
+                  </span>
+                  <span className="text-[11px] text-white/60 font-medium">
+                    {availableSeasons.length > 1 ? `${availableSeasons.length} Seasons` : ""}{availableSeasons.length > 1 ? " · " : ""}{allEpisodes.length} Episodes
+                  </span>
+                </motion.div>
+              )}
+              <div className="flex items-center gap-2 mt-2 flex-wrap text-[13px] text-white/80">
+                {movie.year && <span className="font-semibold">{movie.year}</span>}
+                {movie.year && runtimeLabel && <span className="w-1 h-1 rounded-full bg-white/40" />}
+                {runtimeLabel && <span>{runtimeLabel}</span>}
+                {certificationLabel && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-white/40" />
+                    <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded border border-white/30 leading-none">
+                      {certificationLabel}
+                    </span>
+                  </>
+                )}
+                {movie.vj_name && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-white/40" />
+                    <span className="text-white/70">VJ {movie.vj_name}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative z-20">
+        <div className="w-full aspect-[3/4] max-h-[525px]" />
+
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate={entranceReady ? "visible" : "hidden"}
+          className="relative min-h-[70vh]"
+          style={{
+            background: `linear-gradient(180deg, hsl(230 18% 5% / 0.95) 0%, hsl(230 18% 5%) 40px)`,
+            borderRadius: "28px 28px 0 0",
+            boxShadow: `0 -20px 60px hsl(230 18% 5% / 0.5), 0 -2px 0 hsl(${accentHue} 40% 40% / 0.15)`,
+          }}
+        >
+          <div className="flex justify-center pt-3 pb-1">
+            <motion.div
+              className="w-10 h-1 rounded-full"
+              style={{ background: `linear-gradient(90deg, transparent, hsl(${accentHue} 40% 60% / 0.5), transparent)` }}
+              initial={{ width: 0 }}
+              animate={{ width: 40 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            />
+          </div>
+
+          {(isSeries && allEpisodes.length > 0) || (FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url) ? (
+            <motion.div variants={fadeInUp} className="px-4 py-3 flex gap-3">
+              {isSeries && allEpisodes.length > 0 && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 gap-2 rounded-2xl h-11 text-sm font-semibold bg-white/5 border-white/10 text-white/90 hover:bg-white/10 backdrop-blur-sm"
+                  onClick={scrollToEpisodes}
+                  data-testid="button-episodes"
+                >
+                  Episodes
+                  <List className="w-4 h-4" />
+                </Button>
+              )}
+              {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
+                <Button
+                  size="lg"
+                  className="flex-1 gap-2 rounded-2xl h-11 text-sm font-semibold bg-white/5 border border-white/10 text-white/90 hover:bg-white/10 backdrop-blur-sm"
+                  onClick={() => {
+                    if (movie.download_url) {
+                      const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
+                      downloadWithName(movie.download_url, name);
+                    }
+                  }}
+                  data-testid="button-download"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </Button>
+              )}
+            </motion.div>
+          ) : null}
+
+          <motion.div variants={fadeInUp} className="px-4 border-b border-white/8">
+            <div className="flex gap-0 relative">
+              {(["overview", "casts", "related"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  data-testid={`tab-${tab}`}
+                  className={cn(
+                    "relative pb-3.5 pt-1 px-5 text-sm font-medium capitalize transition-colors duration-200",
+                    activeTab === tab
+                      ? "text-white"
+                      : "text-white/40"
+                  )}
+                >
+                  {tab === "casts" ? "Casts" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {activeTab === tab && (
+                    <motion.div
+                      layoutId="mobile-tab-indicator"
+                      className="absolute bottom-0 left-2 right-2 h-[3px] rounded-full"
+                      style={{
+                        background: `linear-gradient(90deg, hsl(${accentHue} 60% 55%), hsl(${(accentHue + 40) % 360} 50% 50%))`,
+                        boxShadow: `0 0 12px hsl(${accentHue} 60% 55% / 0.5)`,
+                      }}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+
+          <div className="px-4 py-5 space-y-5 pb-28">
+            {activeTab === "overview" && (
+              <>
+                <motion.div
+                  variants={fadeInUp}
+                  className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/8 relative overflow-hidden"
+                  style={{
+                    background: `linear-gradient(135deg, hsl(${accentHue} 30% 15% / 0.3) 0%, hsl(230 18% 8% / 0.6) 100%)`,
+                  }}
+                >
+                  <div className="absolute inset-0 backdrop-blur-sm" />
+                  <div className="relative flex items-center gap-1.5">
+                    <Star className="w-5 h-5 fill-[#facc15] text-[#facc15] drop-shadow-[0_0_6px_rgba(250,204,21,0.4)]" />
+                    <span className="text-xl font-bold text-white">{rating}</span>
+                    <span className="text-xs text-white/40">/5</span>
+                  </div>
+                  <div className="relative flex-1 h-2.5 rounded-full bg-white/8 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full rating-progress-gradient"
+                      style={{
+                        width: entranceReady ? `${(parseFloat(rating) / 5) * 100}%` : "0%",
+                        transition: "width 1.2s cubic-bezier(0.22, 1, 0.36, 1)",
+                      }}
+                    />
+                  </div>
+                  {movie.views !== undefined && movie.views > 0 && (
+                    <span className="relative text-xs text-white/50 whitespace-nowrap flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      {movie.views >= 1000000
+                        ? `${(movie.views / 1000000).toFixed(1)}M`
+                        : movie.views >= 1000
+                          ? `${(movie.views / 1000).toFixed(1)}K`
+                          : movie.views}
+                    </span>
+                  )}
+                </motion.div>
+
+                {description && (
+                  <motion.p variants={fadeInUp} className="text-sm text-white/60 leading-relaxed">
+                    {displayDescription}
+                    {shouldTruncate && !isExpanded && "... "}
+                    {shouldTruncate && (
+                      <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="font-semibold ml-1 modal-accent-text"
+                      >
+                        {isExpanded ? "less" : "more"}
+                      </button>
+                    )}
+                  </motion.p>
+                )}
+
+                {movie.genres && movie.genres.length > 0 && (
+                  <motion.div variants={fadeInUp} className="flex flex-wrap gap-2">
+                    {movie.genres.map((genre) => (
+                      <span
+                        key={genre}
+                        className="px-3.5 py-1.5 text-xs font-medium rounded-full border backdrop-blur-sm modal-genre-chip"
+                      >
+                        {genre}
+                      </span>
+                    ))}
+                  </motion.div>
+                )}
+
+                {(runtimeLabel || certificationLabel || formattedReleaseDate) && (
+                  <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-2.5">
+                    {runtimeLabel && (
+                      <div className="p-3.5 rounded-2xl text-center border border-white/6 relative overflow-hidden modal-stats-card">
+                        <div className="w-8 h-8 mx-auto rounded-xl bg-white/5 flex items-center justify-center mb-2">
+                          <Clock className="w-4 h-4 text-white/50" />
+                        </div>
+                        <p className="text-xs font-bold text-white tracking-wide">{runtimeLabel}</p>
+                        <p className="text-[9px] text-white/30 mt-0.5 uppercase tracking-wider">Duration</p>
+                      </div>
+                    )}
+                    {certificationLabel && (
+                      <div className="p-3.5 rounded-2xl text-center border border-white/6 relative overflow-hidden modal-stats-card">
+                        <div className="w-8 h-8 mx-auto rounded-xl bg-white/5 flex items-center justify-center mb-2">
+                          <Tag className="w-4 h-4 text-white/50" />
+                        </div>
+                        <p className="text-xs font-bold text-white tracking-wide">{certificationLabel}</p>
+                        <p className="text-[9px] text-white/30 mt-0.5 uppercase tracking-wider">Rating</p>
+                      </div>
+                    )}
+                    {formattedReleaseDate && (
+                      <div className="p-3.5 rounded-2xl text-center border border-white/6 relative overflow-hidden modal-stats-card">
+                        <div className="w-8 h-8 mx-auto rounded-xl bg-white/5 flex items-center justify-center mb-2">
+                          <CalendarDays className="w-4 h-4 text-white/50" />
+                        </div>
+                        <p className="text-xs font-bold text-white tracking-wide">{formattedReleaseDate}</p>
+                        <p className="text-[9px] text-white/30 mt-0.5 uppercase tracking-wider">Released</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {cast.length > 0 && (
+                  <motion.div variants={fadeInUp}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-white/90">Cast</h4>
+                      <button
+                        onClick={() => setActiveTab("casts")}
+                        className="text-xs font-medium modal-accent-text"
+                      >
+                        See all
+                      </button>
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
+                      {cast.slice(0, 8).map((member, i) => (
+                        <motion.button
+                          variants={fadeInUp}
+                          key={member.name}
+                          className="flex-none w-[68px] text-center active:scale-95 transition-transform"
+                          onClick={() => setActiveTab("casts")}
+                        >
+                          <motion.div
+                            className="w-[60px] h-[60px] mx-auto rounded-full overflow-hidden shadow-lg p-[2px] modal-cast-member-ring"
+                            animate={{
+                              "--member-hue": (accentHue + i * 30) % 360,
+                              "--member-hue-alt": (accentHue + i * 30 + 60) % 360,
+                            } as any}
+                            transition={{ duration: 0 }}
+                          >
+                            <div className="w-full h-full rounded-full overflow-hidden bg-[hsl(230,18%,8%)]">
+                              <img
+                                src={member.profile_url || `https://placehold.co/128x128/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
+                                alt={member.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = `https://placehold.co/128x128/1a1a2e/ffffff?text=${member.name.charAt(0)}`;
+                                }}
+                              />
+                            </div>
+                          </motion.div>
+                          <p className="text-[11px] font-medium text-white/80 mt-2 line-clamp-1 leading-tight">{member.name.split(" ")[0]}</p>
+                          {member.character && (
+                            <p className="text-[9px] text-white/35 line-clamp-1 mt-0.5">{member.character}</p>
+                          )}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {movie.vj_name && (
+                  <motion.div variants={fadeInUp} className="flex items-center gap-3 p-3 rounded-2xl border border-white/6 modal-stats-card">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-secondary/20 flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">VJ</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-white/30 uppercase tracking-wider">Translator</p>
+                      <p className="text-sm font-semibold text-white/90">{movie.vj_name}</p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {movie.file_size && (
+                  <motion.div variants={fadeInUp} className="flex items-center gap-2 text-sm">
+                    <span className="text-white/30">Size:</span>
+                    <span className="text-white/70 font-medium">{movie.file_size}</span>
+                  </motion.div>
+                )}
+
+                {isSeries && allEpisodes.length > 0 && (
+                  <div ref={episodesSectionRef} className="space-y-0 pt-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center modal-episode-section-icon">
+                          <Layers className="w-4 h-4 modal-accent-text" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-white tracking-tight">Episodes</h3>
+                          <p className="text-[10px] text-white/35 mt-0.5">{currentSeasonEpisodes.length} episode{currentSeasonEpisodes.length !== 1 ? "s" : ""} available</p>
+                        </div>
+                      </div>
+                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && currentSeasonEpisodes.some(ep => ep.download_url) && (
+                        <button
+                          onClick={() => {
+                            toast.info(`Starting ${currentSeasonEpisodes.filter(ep => ep.download_url).length} downloads...`);
+                            const seasonNum = currentSeasonEpisodes[0]?.season_number ?? 1;
+                            currentSeasonEpisodes.forEach((ep, i) => {
+                              if (ep.download_url) {
+                                const epName = `${movie.title} - S${seasonNum}E${String(ep.episode_number).padStart(2, '0')}`;
+                                setTimeout(() => downloadWithName(ep.download_url!, epName), i * 800);
+                              }
+                            });
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full active:scale-95 transition-transform modal-footer-watchlist-active"
+                        >
+                          <Download className="w-3 h-3" />
+                          All
+                        </button>
+                      )}
+                    </div>
+
+                    {availableSeasons.length > 1 && (
+                      <div className="mb-5 -mx-4 px-4">
+                        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+                          {availableSeasons.map((seasonNum) => {
+                            const isActive = seasonNum === selectedSeason;
+                            const seasonEps = seasons.get(seasonNum) || [];
+                            return (
+                              <button
+                                key={seasonNum}
+                                onClick={() => setSelectedSeason(seasonNum)}
+                                data-testid={`button-season-${seasonNum}`}
+                                className={cn(
+                                  "relative flex-none px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 active:scale-95 whitespace-nowrap",
+                                  isActive ? "text-white modal-season-btn-active" : "text-white/45 bg-white/5 border border-white/10"
+                                )}
+                              >
+                                <span className="relative z-10">S{seasonNum}</span>
+                                <span className={cn("ml-1.5 relative z-10", isActive ? "text-white/70" : "text-white/25")}>
+                                  {seasonEps.length}ep
+                                </span>
+                                {isActive && (
+                                  <motion.div
+                                    layoutId="mobile-season-pill"
+                                    className="absolute inset-0 rounded-xl modal-season-btn-active"
+                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                  />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="relative pl-6">
+                      <div className="absolute left-[11px] top-4 bottom-4 w-[2px] rounded-full modal-timeline-line" />
+                      <div className="space-y-0">
+                        {currentSeasonEpisodes.map((episode, idx) => (
+                          <MobileTimelineEpisode
+                            key={episode.mobifliks_id || `${selectedSeason}-${episode.episode_number}`}
+                            episode={episode}
+                            seriesTitle={movie.title}
+                            seriesImage={movie.image_url}
+                            seasonNumber={selectedSeason}
+                            onPlay={handlePlayProxy}
+                            index={idx}
+                            accentHue={accentHue}
+                            isResumeTarget={
+                              resumeEpisode
+                                ? resumeEpisode.season === selectedSeason && resumeEpisode.episode === episode.episode_number
+                                : idx === 0
+                            }
+                            progressPct={cwProgressMap.get(`${selectedSeason}-${episode.episode_number}`) || 0}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeTab === "casts" && (
+              <div className="space-y-4">
+                {cast.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {cast.map((member, i) => (
+                      <motion.div
+                        variants={fadeInUp}
+                        key={member.name}
+                        className="flex flex-col items-center gap-2.5 p-4 rounded-2xl border border-white/6 backdrop-blur-sm modal-stats-card"
+                      >
+                        <motion.div
+                          className="w-20 h-20 rounded-full overflow-hidden shadow-lg p-[2px] modal-cast-member-ring"
+                          animate={{
+                            "--member-hue": (accentHue + i * 25) % 360,
+                            "--member-hue-alt": (accentHue + i * 25 + 60) % 360,
+                          } as any}
+                          transition={{ duration: 0 }}
+                        >
+                          <div className="w-full h-full rounded-full overflow-hidden bg-[hsl(230,18%,8%)]">
+                            <img
+                              src={member.profile_url || `https://placehold.co/160x160/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
+                              alt={member.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://placehold.co/160x160/1a1a2e/ffffff?text=${member.name.charAt(0)}`;
+                              }}
+                            />
+                          </div>
+                        </motion.div>
+                        <p className="text-sm font-semibold text-white text-center line-clamp-1">{member.name}</p>
+                        {member.character && (
+                          <p className="text-xs text-white/35 text-center line-clamp-1">as {member.character}</p>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-white/40 text-center py-8">No cast information available.</p>
+                )}
+              </div>
+            )}
+
+            {activeTab === "related" && (
+              <div className="space-y-4">
+                {relatedMovies.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {relatedMovies.map((m, i) => (
+                      <motion.button
+                        variants={fadeInUp}
+                        key={m.mobifliks_id}
+                        className="group text-left"
+                        onClick={() => {
+                          const typeSlug = m.type === "series" ? "series" : "movie";
+                          window.location.href = `/${typeSlug}/${toSlug(m.title, m.mobifliks_id, m.year)}`;
+                        }}
+                      >
+                        <div className="aspect-[2/3] rounded-xl overflow-hidden border border-white/8 bg-white/5 shadow-lg group-active:scale-95 transition-transform duration-200 relative">
+                          <img
+                            src={getImageUrl(m.image_url)}
+                            alt={m.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 rounded-xl ring-1 ring-white/10 ring-inset pointer-events-none" />
+                        </div>
+                        <p className="text-xs font-medium text-white/80 mt-2 line-clamp-2 leading-tight">{m.title}</p>
+                        {m.year && <p className="text-[10px] text-white/35 mt-0.5">{m.year}</p>}
+                      </motion.button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-white/40">No related content available.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div >
+      </div >
+
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        <div className="h-8 bg-gradient-to-t from-[hsl(230,18%,5%)] to-transparent pointer-events-none" />
+        <div
+          className="px-4 py-3.5 pb-safe flex items-center gap-3 relative modal-footer-container"
+        >
+          <div
+            className="absolute top-0 left-0 right-0 h-px modal-footer-glow"
+          />
+          <Button
+            size="lg"
+            data-testid="button-play"
+            className="flex-1 gap-2 text-white rounded-2xl h-[52px] text-base font-bold relative overflow-hidden border-0 active:scale-[0.97] transition-transform modal-footer-play-btn"
+            onClick={() => {
+              if (isSeries && series.episodes && series.episodes.length > 0) {
+                if (resumeEpisode) {
+                  const ep = series.episodes.find(e =>
+                    e.episode_number === resumeEpisode.episode &&
+                    (e.season_number || 1) === resumeEpisode.season
+                  );
+                  if (ep?.download_url) {
+                    handlePlayProxy(ep.download_url, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
+                    return;
+                  }
+                }
+                const firstEp = series.episodes[0];
+                if (firstEp?.download_url) handlePlayProxy(firstEp.download_url, `${movie.title} - S1:E1`);
+              } else if (movie.download_url) {
+                handlePlayProxy(movie.download_url, movie.title);
+              }
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/5 pointer-events-none" />
+            <Play className="w-5 h-5 fill-current relative z-10" />
+            <span className="relative z-10">
+              {isSeries && resumeEpisode
+                ? `Continue S${resumeEpisode.season}:E${resumeEpisode.episode}`
+                : isSeries
+                  ? "Play S1:E1"
+                  : "Play"}
+            </span>
+          </Button>
+          <motion.button
+            onClick={onToggleWatchlist}
+            aria-label={inWatchlist ? "Remove from My List" : "Add to My List"}
+            data-testid="button-watchlist"
+            className={cn(
+              "w-[52px] h-[52px] rounded-2xl flex items-center justify-center border transition-all duration-200 active:scale-90",
+              inWatchlist
+                ? "border-transparent"
+                : "bg-white/5 border-white/10 text-white/60"
+            )}
+            animate={inWatchlist ? {
+              "--btn-bg": `hsl(${accentHue} 40% 20% / 0.5)`,
+              "--btn-border": `hsl(${accentHue} 50% 50% / 0.3)`,
+              "--btn-text": `hsl(${accentHue} 60% 65%)`,
+            } as any : {}}
+            transition={{ duration: 0 }}
+          >
+            <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
+          </motion.button>
+          <button
+            aria-label="Share movie link"
+            data-testid="button-share-bottom"
+            className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center bg-white/5 border border-white/10 text-white/60 active:scale-90 transition-transform"
+            onClick={async () => {
+              const typeSlug = movie.type === "series" ? "series" : "movie";
+              const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
+              try {
+                if (navigator.share) { await navigator.share({ title: movie.title, url: shareUrl }); return; }
+              } catch { }
+              try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); } catch {
+                const ta = document.createElement("textarea"); ta.value = shareUrl; ta.style.cssText = "position:fixed;opacity:0";
+                document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+                toast.success("Link copied!");
+              }
+            }}
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+    </div >
+  );
+}
+
+interface MobileTimelineEpisodeProps {
+  episode: Episode;
+  seriesTitle: string;
+  seriesImage?: string;
+  seasonNumber?: number;
+  onPlay: (url: string, title: string) => void;
+  index: number;
+  accentHue: number;
+  isResumeTarget: boolean;
+  progressPct?: number;
+}
+
+function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, accentHue, isResumeTarget, progressPct = 0 }: MobileTimelineEpisodeProps) {
+  const hasVideo = episode.download_url &&
+    (episode.download_url.includes(".mp4") ||
+      episode.download_url.includes("downloadmp4.php") ||
+      episode.download_url.includes("downloadserie.php"));
+
+  const epNum = episode.episode_number.toString().padStart(2, '0');
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="relative pb-1"
+    >
+      <div className="absolute -left-6 top-4 flex flex-col items-center w-[22px]">
+        <motion.div
+          className={cn(
+            "w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all duration-300 relative",
+            isResumeTarget ? "scale-110" : ""
+          )}
+          animate={isResumeTarget ? {
+            "--circle-bg": `linear-gradient(135deg, hsl(${accentHue} 65% 50%), hsl(${(accentHue + 40) % 360} 55% 45%))`,
+            "--circle-shadow": `0 0 12px hsl(${accentHue} 60% 50% / 0.5), 0 0 4px hsl(${accentHue} 60% 50% / 0.3)`,
+          } as any : {
+            "--circle-bg": progressPct > 0
+              ? `linear-gradient(135deg, hsl(${accentHue} 50% 45% / 0.6), hsl(${accentHue} 40% 35% / 0.4))`
+              : "hsl(230 15% 18%)",
+            "--circle-border": progressPct > 0 ? "none" : "2px solid hsl(230 15% 25%)",
+          } as any}
+          transition={{ duration: 0 }}
+        >
+          {isResumeTarget ? (
+            <Play className="w-2.5 h-2.5 text-white fill-white ml-[1px]" />
+          ) : (
+            <span className={cn(
+              "text-[8px] font-bold",
+              progressPct > 0 ? "text-white" : "text-white/40"
+            )}>{epNum}</span>
+          )}
+          {isResumeTarget && (
+            <motion.div
+              className="absolute inset-[-3px] rounded-full"
+              style={{ "--ring-border": `2px solid hsl(${accentHue} 60% 55% / 0.4)` } as React.CSSProperties}
+              animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0, 0.6] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+          )}
+        </motion.div>
+      </div>
+
+      <motion.div
+        className={cn(
+          "rounded-2xl overflow-hidden transition-all duration-200 active:scale-[0.98]",
+          isResumeTarget ? "ring-1" : ""
+        )}
+        animate={{
+          "--ep-bg": isResumeTarget
+            ? `linear-gradient(135deg, hsl(${accentHue} 25% 12% / 0.6), hsl(230 18% 8% / 0.8))`
+            : "linear-gradient(135deg, hsl(230 18% 11% / 0.5), hsl(230 18% 7% / 0.4))",
+          "--ep-border": isResumeTarget ? "none" : "1px solid hsl(230 15% 20% / 0.4)",
+          ...(isResumeTarget ? { "--ep-ring": `hsl(${accentHue} 50% 50% / 0.2)` } : {}),
+          "--ep-shadow": isResumeTarget
+            ? `0 4px 20px hsl(${accentHue} 50% 30% / 0.15), inset 0 1px 0 rgba(255,255,255,0.05)`
+            : "0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)",
+        } as any}
+        transition={{ duration: 0 }}
+        onClick={() => {
+          if (hasVideo && episode.download_url) {
+            onPlay(episode.download_url, `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`);
+          }
+        }}
+      >
+        <div className="relative w-full aspect-[2.4/1] overflow-hidden">
+          <motion.img
+            src={getImageUrl(seriesImage)}
+            alt={`Episode ${episode.episode_number}`}
+            className="w-full h-full object-cover custom-obj-pos"
+            animate={{ "--obj-pos": `center ${30 + (index * 5) % 40}%` } as any}
+            transition={{ duration: 0 }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+
+          {isResumeTarget && (
+            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+              <motion.div
+                className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider text-white flex items-center gap-1"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${accentHue} 65% 50%), hsl(${(accentHue + 40) % 360} 55% 45%))`,
+                  boxShadow: `0 2px 8px hsl(${accentHue} 60% 50% / 0.4)`,
+                }}
+                animate={{ opacity: [0.85, 1, 0.85] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Play className="w-2.5 h-2.5 fill-current" />
+                Continue
+              </motion.div>
+            </div>
+          )}
+
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+            {episode.file_size && (
+              <span className="px-2 py-0.5 text-[9px] font-semibold text-white/80 bg-black/50 backdrop-blur-sm rounded-md">
+                {episode.file_size}
+              </span>
+            )}
+          </div>
+
+          {hasVideo && !isResumeTarget && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 active:scale-90 transition-transform">
+                <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+              </div>
+            </div>
+          )}
+
+          {isResumeTarget && hasVideo && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                className="w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border-2 border-white/30"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${accentHue} 60% 45% / 0.8), hsl(${(accentHue + 40) % 360} 50% 40% / 0.6))`,
+                  boxShadow: `0 4px 20px hsl(${accentHue} 60% 50% / 0.4)`,
+                }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+              </motion.div>
+            </div>
+          )}
+
+          <div className="absolute bottom-0 left-0 right-0">
+            <div className="flex items-end justify-between px-3 pb-2.5">
+              <div>
+                <p className="text-white font-bold text-sm tracking-tight drop-shadow-lg">
+                  Episode {epNum}
+                </p>
+                {episode.title && episode.title !== `Episode ${episode.episode_number}` && (
+                  <p className="text-white/60 text-[11px] mt-0.5 line-clamp-1 font-medium">{episode.title}</p>
+                )}
+              </div>
+              {episode.views !== undefined && episode.views > 0 && (
+                <span className="text-[10px] text-white/40 flex items-center gap-1 flex-shrink-0">
+                  <Eye className="w-3 h-3" />
+                  {episode.views >= 1000 ? `${(episode.views / 1000).toFixed(1)}K` : episode.views}
+                </span>
+              )}
+            </div>
+
+            {progressPct > 0 && (
+              <div className="w-full h-[3px] bg-white/10">
+                <motion.div
+                  className="h-full rounded-r-full"
+                  style={{
+                    background: `linear-gradient(90deg, hsl(${accentHue} 65% 55%), hsl(${(accentHue + 40) % 360} 55% 50%))`,
+                    boxShadow: `0 0 8px hsl(${accentHue} 60% 55% / 0.5)`,
+                  }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPct}%` }}
+                  transition={{ delay: 0.3 + index * 0.05, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {(episode.description || (FEATURE_FLAGS.DOWNLOAD_ENABLED && hasVideo)) && (
+          <div className="px-3 py-2.5">
+            {episode.description && (
+              <p className="text-[11px] text-white/40 leading-relaxed line-clamp-2">
+                {episode.description}
+              </p>
+            )}
+            {FEATURE_FLAGS.DOWNLOAD_ENABLED && hasVideo && (
+              <motion.button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (episode.download_url) {
+                    const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, '0')}`;
+                    downloadWithName(episode.download_url, epName);
+                  }
+                }}
+                className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold active:scale-95 transition-transform"
+                animate={{ color: `hsl(${accentHue} 50% 65%)` } as any}
+                transition={{ duration: 0 }}
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download
+              </motion.button>
+            )}
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+
+function DesktopEpisodeSection({ series, movie, onPlay }: { series: Series; movie: Movie; onPlay: (url: string, title: string) => void }) {
+  const [selectedSeason, setSelectedSeason] = React.useState(1);
+  const allEpisodes = series.episodes || [];
+
+  const seasons = React.useMemo(() => {
+    const seasonMap = new Map<number, Episode[]>();
+    allEpisodes.forEach((ep) => {
+      const seasonNum = ep.season_number || 1;
+      if (!seasonMap.has(seasonNum)) seasonMap.set(seasonNum, []);
+      seasonMap.get(seasonNum)!.push(ep);
+    });
+    if (seasonMap.size === 0 && allEpisodes.length > 0) seasonMap.set(1, allEpisodes);
+    return seasonMap;
+  }, [allEpisodes]);
+
+  const availableSeasons = Array.from(seasons.keys()).sort((a, b) => a - b);
+
+  React.useEffect(() => {
+    if (availableSeasons.length > 0 && !availableSeasons.includes(selectedSeason)) {
+      setSelectedSeason(availableSeasons[0]);
+    }
+  }, [movie.mobifliks_id, availableSeasons]);
+
+  const currentEpisodes = seasons.get(selectedSeason) || allEpisodes;
+
+  return (
+    <motion.div variants={fadeInUp} className="pt-4 space-y-4">
+      <div className="flex items-center gap-4 flex-wrap">
+        <h4 className="text-xl font-display font-semibold text-white">Episodes</h4>
+        {availableSeasons.length > 1 ? (
+          <div className="flex items-center gap-2">
+            {availableSeasons.map((sNum) => (
+              <button
+                key={sNum}
+                data-testid={`button-desktop-season-${sNum}`}
+                onClick={() => setSelectedSeason(sNum)}
+                className={cn(
+                  "px-4 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 border",
+                  sNum === selectedSeason
+                    ? "bg-white text-black border-white"
+                    : "bg-white/5 text-white/70 border-white/15 hover:bg-white/10 hover:text-white"
+                )}
+              >
+                Season {sNum}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span className="px-3 py-1.5 text-sm font-medium rounded bg-white/10 text-white/80 border border-white/20">
+            {allEpisodes.length} Episodes
+          </span>
+        )}
+        <span className="text-sm text-white/50 ml-auto">
+          {currentEpisodes.length} episode{currentEpisodes.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+        {currentEpisodes.map((episode) => (
+          <DesktopEpisodeCard
+            key={episode.mobifliks_id || `${selectedSeason}-${episode.episode_number}`}
+            episode={episode}
+            seriesTitle={movie.title}
+            seriesImage={movie.image_url}
+            onPlay={onPlay}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+interface DesktopEpisodeCardProps {
+  episode: Episode;
+  seriesTitle: string;
+  seriesImage?: string;
+  onPlay: (url: string, title: string) => void;
+}
+
+// Desktop episode card - Netflix-style horizontal layout with thumbnail
+function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: DesktopEpisodeCardProps) {
+  const hasVideo = episode.download_url &&
+    (episode.download_url.includes(".mp4") ||
+      episode.download_url.includes("downloadmp4.php") ||
+      episode.download_url.includes("downloadserie.php"));
+
+  return (
+    <div
+      className="flex gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200 group cursor-pointer"
+      onClick={() => {
+        if (hasVideo && episode.download_url) {
+          onPlay(episode.download_url, `${seriesTitle} - Episode ${episode.episode_number}`);
+        }
+      }}
+    >
+      {/* Thumbnail */}
+      <div className="relative w-44 flex-none rounded-lg overflow-hidden bg-white/10">
+        <img
+          src={getImageUrl(seriesImage)}
+          alt={`Episode ${episode.episode_number}`}
+          className="w-full aspect-video object-cover"
+        />
+        {/* Play overlay on hover */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+            <Play className="w-5 h-5 text-black fill-current ml-0.5" />
+          </div>
+        </div>
+        {/* Watch progress indicator */}
+        {episode.file_size && (
+          <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/70 text-xs text-white/90 backdrop-blur-sm">
+            {episode.file_size}
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0 py-1">
+        {/* Title row with duration and date */}
+        <div className="flex items-start justify-between gap-4">
+          <h5 className="text-lg font-semibold text-white">
+            {episode.episode_number}. {episode.title || `Episode ${episode.episode_number}`}
+          </h5>
+          <div className="flex items-center gap-3 text-sm text-white/60 flex-shrink-0">
+            {episode.file_size && <span>{episode.file_size}</span>}
+          </div>
+        </div>
+
+        {/* Description */}
+        {episode.description && (
+          <p className="mt-2 text-sm text-white/70 leading-relaxed line-clamp-2">
+            {episode.description}
+          </p>
+        )}
+
+        {/* Action buttons on hover */}
+        <div className="mt-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {hasVideo && (
+            <>
+              <Button
+                size="sm"
+                className="gap-1.5 bg-white text-black hover:bg-white/90 h-8 px-4 rounded font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPlay(episode.download_url!, `${seriesTitle} - Episode ${episode.episode_number}`);
+                }}
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                Play
+              </Button>
+              {FEATURE_FLAGS.DOWNLOAD_ENABLED && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-white/70 hover:text-white hover:bg-white/10 h-8 px-3 rounded"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (episode.download_url) {
+                      const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, '0')}`;
+                      downloadWithName(episode.download_url, epName);
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              )}
+            </>
+          )}
+          {!hasVideo && episode.video_page_url && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-4 rounded border-white/30 text-white hover:bg-white/10"
+              asChild
+              onClick={(e) => e.stopPropagation()}
+            >
+              <a href={episode.video_page_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                Watch
+              </a>
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
