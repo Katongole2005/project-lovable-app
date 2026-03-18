@@ -686,7 +686,9 @@
   }
 
   .hero-cinematic-container {
-    min-height: clamp(420px, 55vh, 620px);
+    height: calc(100vh - 7rem);
+    min-height: 500px;
+    max-height: 850px;
   }
 
   .hero-info-track-number {
