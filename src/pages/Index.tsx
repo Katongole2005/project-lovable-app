@@ -34,6 +34,7 @@ import {
   fetchByGenre,
   fetchOriginals,
   fetchMoviesSorted,
+  preloadMovieBackdrop
 } from "@/lib/api";
 import type { FilterOptions } from "@/lib/api";
 import { addToRecent, addRecentSearch, getContinueWatching, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
@@ -225,7 +226,14 @@ export default function Index() {
           ? seriesQueryData.slice(0, 5)
           : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, 5);
 
-        setTrending([...heroMovies, ...heroSeries].slice(0, 25));
+        const newTrending = [...heroMovies, ...heroSeries].slice(0, 25);
+        setTrending(newTrending);
+        
+        // Strategy: Preload the first hero's backdrop immediately
+        if (newTrending.length > 0) {
+          preloadMovieBackdrop(newTrending[0]);
+        }
+
         setRecentMovies(sortedTrending.length > 0 ? sortedTrending : sortByYearDesc(mData));
 
         if (seriesQueryData) {
@@ -986,6 +994,14 @@ export default function Index() {
             movie={selectedMovie}
             onTimeUpdate={handleVideoTimeUpdate}
             startTime={videoStartTime}
+            subtitles={selectedMovie?.subtitles || [
+              { id: "en", label: "English", language: "en", url: "" },
+              { id: "lug", label: "Luganda", language: "lug", url: "" },
+            ]}
+            skipSegments={selectedMovie?.skip_segments || [
+              { label: "Intro", startTime: 2, endTime: 12 },
+              { label: "Recap", startTime: 60, endTime: 90 },
+            ]}
           />
 
           {/* Filter Modal */}

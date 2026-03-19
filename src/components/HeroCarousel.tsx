@@ -28,9 +28,9 @@ export function HeroCarousel({
   const [slideProgress, setSlideProgress] = React.useState(0);
   const totalSlides = Math.min(movies.length, 25);
 
+  // Removed artificial 100ms delay to ensure instant render
   React.useEffect(() => {
-    const timer = setTimeout(() => setIsLoaded(true), 100);
-    return () => clearTimeout(timer);
+    setIsLoaded(true);
   }, []);
 
   const TRANSITION_DURATION = 1300;
@@ -287,6 +287,7 @@ export function HeroCarousel({
                 alt=""
                 className="w-full h-full object-cover will-change-transform"
                 loading="eager"
+                fetchPriority="high"
                 initial={{ scale: 1.12, x: "-2%" }}
                 animate={{ scale: 1, x: "0%" }}
                 transition={{ duration: 10, ease: [0.25, 0.1, 0.25, 1] }}

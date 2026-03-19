@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Play,
   Pause,
@@ -17,11 +17,14 @@ import {
   ChevronDown,
   Airplay,
   Keyboard,
+  Captions,
+  FastForward,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/lib/api";
-import type { Movie, Series, CastMember } from "@/types/movie";
+import type { Movie, Series, CastMember, SubtitleTrack, SkipSegment } from "@/types/movie";
 
 interface CinematicVideoPlayerProps {
   isOpen: boolean;
@@ -31,6 +34,8 @@ interface CinematicVideoPlayerProps {
   movie?: Movie | Series | null;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   startTime?: number;
+  subtitles?: SubtitleTrack[];
+  skipSegments?: SkipSegment[];
 }
 
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -43,6 +48,8 @@ export function CinematicVideoPlayer({
   movie,
   onTimeUpdate,
   startTime = 0,
+  subtitles = [],
+  skipSegments = [],
 }: CinematicVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,6 +84,8 @@ export function CinematicVideoPlayer({
   const gestureHintsShownRef = useRef(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [selectedSubtitleId, setSelectedSubtitleId] = useState<string>("off");
+  const [showSubtitlesMenu, setShowSubtitlesMenu] = useState(false);
 
   // Swipe gesture state
   const [brightness, setBrightness] = useState(1);
@@ -168,6 +177,7 @@ export function CinematicVideoPlayer({
       isLongPressingRef.current = false;
       setPlaybackSpeed(1);
       savedSpeedRef.current = 1;
+      setShowSubtitlesMenu(false);
     }
   }, [isOpen, videoUrl]);
 
@@ -179,6 +189,7 @@ export function CinematicVideoPlayer({
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     setShowControls(true);
     setShowSpeedMenu(false);
+    setShowSubtitlesMenu(false);
     if (isPlaying && !isScrubbing) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
@@ -220,8 +231,12 @@ export function CinematicVideoPlayer({
 
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) videoRef.current.pause();
-      else videoRef.current.play();
+      if (isPlaying) {
+        videoRef.current.pause();
+        onTimeUpdate?.(videoRef.current.currentTime, duration);
+      } else {
+        videoRef.current.play();
+      }
     }
   };
 
@@ -384,7 +399,12 @@ export function CinematicVideoPlayer({
       ignoreInitialTimeUpdateRef.current = false;
       if (Number.isFinite(nextDuration) && nextDuration > 0) lastReportedDurationRef.current = nextDuration;
       if (Number.isFinite(nextTime) && nextTime >= 0) lastReportedTimeRef.current = nextTime;
-      onTimeUpdate?.(nextTime, nextDuration);
+
+      // Throttle reports to every 5 seconds or if it's nearing the end
+      const timeSinceLastReport = Math.abs(nextTime - lastReportedTimeRef.current);
+      if (timeSinceLastReport >= 5 || (nextDuration > 0 && nextDuration - nextTime < 5)) {
+        onTimeUpdate?.(nextTime, nextDuration);
+      }
     }
   };
 
@@ -399,6 +419,18 @@ export function CinematicVideoPlayer({
       setCurrentTime(t);
     }
   };
+
+  const skipToTime = (time: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+      setCurrentTime(time);
+      resetControlsTimeout();
+    }
+  };
+
+  const activeSkipSegment = useMemo(() => {
+    return skipSegments?.find(s => currentTime >= s.startTime && currentTime <= s.endTime);
+  }, [currentTime, skipSegments]);
 
   const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -535,7 +567,18 @@ export function CinematicVideoPlayer({
               onLoadedMetadata={handleLoadedMetadata}
               onWaiting={() => setIsBuffering(true)}
               onPlaying={() => setIsBuffering(false)}
-            />
+            >
+              {subtitles.map(track => (
+                <track
+                  key={track.id}
+                  label={track.label}
+                  srclang={track.language}
+                  src={track.url}
+                  kind="subtitles"
+                  default={track.id === selectedSubtitleId}
+                />
+              ))}
+            </video>
 
             {/* ─── BUFFERING INDICATOR ─── */}
             {isBuffering && (
@@ -706,6 +749,23 @@ export function CinematicVideoPlayer({
               </div>
             </div>
 
+            {/* ─── SKIP INTRO / AD / RECAP ─── */}
+            <AnimatePresence>
+              {activeSkipSegment && (
+                <motion.button
+                  key="skip-btn"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  onClick={(e) => { e.stopPropagation(); skipToTime(activeSkipSegment.endTime); }}
+                  className="absolute bottom-24 right-6 md:right-10 z-30 px-5 md:px-7 py-3 md:py-4 rounded-2xl bg-[#c8f547] text-black font-black text-xs md:text-sm uppercase tracking-widest shadow-[0_0_30px_rgba(200,245,71,0.3)] flex items-center gap-2.5 hover:scale-105 active:scale-95 transition-all group"
+                >
+                  <FastForward className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                  Skip {activeSkipSegment.label}
+                </motion.button>
+              )}
+            </AnimatePresence>
+
             {/* ══════════════════════════════════════════════════════ */}
             {/* KEYBOARD SHORTCUTS PANEL */}
             {/* ══════════════════════════════════════════════════════ */}
@@ -786,8 +846,54 @@ export function CinematicVideoPlayer({
             )}
 
             {/* ══════════════════════════════════════════════════════ */}
-            {/* BOTTOM CONTROLS */}
+            {/* SUBTITLES MENU */}
             {/* ══════════════════════════════════════════════════════ */}
+            {showSubtitlesMenu && subtitles.length > 0 && (
+              <div
+                className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                onClick={(e) => { e.stopPropagation(); setShowSubtitlesMenu(false); }}
+              >
+                <div
+                  className="bg-[#0d0d0d]/95 rounded-2xl border border-white/10 p-3 min-w-[220px] shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-3 pt-1 pb-3">Subtitles</p>
+                  <div className="space-y-0.5 max-h-[60vh] overflow-y-auto no-scrollbar">
+                    <button
+                      onClick={() => { setSelectedSubtitleId("off"); setShowSubtitlesMenu(false); }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                        selectedSubtitleId === "off"
+                          ? "bg-[#c8f547]/15 text-[#c8f547]"
+                          : "text-white/70 hover:bg-white/8 hover:text-white"
+                      )}
+                    >
+                      <span>Off</span>
+                      {selectedSubtitleId === "off" && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#c8f547] shadow-[0_0_6px_#c8f547]" />
+                      )}
+                    </button>
+                    {subtitles.map((track) => (
+                      <button
+                        key={track.id}
+                        onClick={() => { setSelectedSubtitleId(track.id); setShowSubtitlesMenu(false); }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                          track.id === selectedSubtitleId
+                            ? "bg-[#c8f547]/15 text-[#c8f547]"
+                            : "text-white/70 hover:bg-white/8 hover:text-white"
+                        )}
+                      >
+                        <span>{track.label}</span>
+                        {track.id === selectedSubtitleId && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#c8f547] shadow-[0_0_6px_#c8f547]" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             <div
               className={cn(
                 "absolute bottom-0 left-0 right-0 z-30 transition-all duration-400 pointer-events-auto",
@@ -933,6 +1039,13 @@ export function CinematicVideoPlayer({
                         </span>
                       </div>
                     </CtrlBtn>
+
+                    {/* Subtitles */}
+                    {subtitles.length > 0 && (
+                      <CtrlBtn onClick={() => setShowSubtitlesMenu(true)} title="Subtitles (C)">
+                        <Captions className={cn("w-4.5 h-4.5", selectedSubtitleId !== "off" ? "text-[#c8f547]" : "text-white/70")} />
+                      </CtrlBtn>
+                    )}
 
                     {/* Airplay — desktop */}
                     <CtrlBtn className="hidden md:flex" onClick={() => { }} title="Cast">

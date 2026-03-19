@@ -4,6 +4,19 @@ export interface CastMember {
   profile_url?: string | null;
 }
 
+export interface SubtitleTrack {
+  id: string;
+  label: string;
+  language: string;
+  url: string;
+}
+
+export interface SkipSegment {
+  label: string;
+  startTime: number;
+  endTime: number;
+}
+
 export interface Movie {
   mobifliks_id: string;
   title: string;
@@ -24,6 +37,8 @@ export interface Movie {
   file_size?: string;
   stars?: string[];
   details_url?: string;
+  subtitles?: SubtitleTrack[];
+  skip_segments?: SkipSegment[];
 }
 
 export interface Episode {
@@ -36,6 +51,8 @@ export interface Episode {
   views?: number;
   description?: string;
   video_page_url?: string;
+  subtitles?: SubtitleTrack[];
+  skip_segments?: SkipSegment[];
 }
 
 export interface Series extends Movie {

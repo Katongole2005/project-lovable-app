@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -46,6 +46,7 @@ import {
   TrendingUp,
   Sparkles,
   Bell,
+  Camera,
 } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -61,20 +62,56 @@ function EditProfileDialog({
 }) {
   const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || "");
   const [lastName, setLastName] = useState(user?.user_metadata?.last_name || "");
+  const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || "");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setFirstName(user?.user_metadata?.first_name || "");
       setLastName(user?.user_metadata?.last_name || "");
+      setAvatarUrl(user?.user_metadata?.avatar_url || "");
     }
   }, [open, user]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload avatar");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const { error } = await supabase.auth.updateUser({
-        data: { first_name: firstName.trim(), last_name: lastName.trim() },
+        data: { 
+          first_name: firstName.trim(), 
+          last_name: lastName.trim(),
+          avatar_url: avatarUrl
+        },
       });
       if (error) throw error;
       toast.success("Profile updated!");
@@ -91,16 +128,47 @@ function EditProfileDialog({
       <DialogContent className="sm:max-w-md rounded-2xl border-white/[0.06] bg-card/95 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="font-display">Edit Profile</DialogTitle>
-          <DialogDescription>Update your display name</DialogDescription>
+          <DialogDescription>Update your display name and photo</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
+          {/* Avatar preview and upload */}
+          <div className="flex flex-col items-center gap-3 mb-2">
+            <div className="relative group">
+              <Avatar className="w-20 h-20 border-2 border-border/50">
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+                  {firstName?.[0] || user?.email?.[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+              >
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5 text-white" />
+                )}
+              </button>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Click to update photo</p>
+          </div>
+
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">First Name</label>
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="First name"
-              data-testid="input-edit-first-name"
               className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
             />
           </div>
@@ -110,11 +178,10 @@ function EditProfileDialog({
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Last name"
-              data-testid="input-edit-last-name"
               className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
             />
           </div>
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-profile" className="w-full h-11 rounded-xl gap-2">
+          <Button onClick={handleSave} disabled={saving || uploading} className="w-full h-11 rounded-xl gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             {saving ? "Saving…" : "Save Changes"}
           </Button>
@@ -303,6 +370,8 @@ export default function Profile() {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [watchlistFilter, setWatchlistFilter] = useState<"all" | "movie" | "series">("all");
+  const [watchlistSort, setWatchlistSort] = useState<"newest" | "oldest">("newest");
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<"activity" | "watchlist" | "settings">("activity");
   const heroRef = useRef<HTMLDivElement>(null);
@@ -322,6 +391,16 @@ export default function Profile() {
   const recentlyViewed = getRecentlyViewed();
   const continueWatching = getContinueWatching();
   const watchlist = getWatchlist();
+  const filteredWatchlist = useMemo(() => {
+    let list = watchlistFilter === "all" 
+      ? [...watchlist] 
+      : watchlist.filter(item => item.type === watchlistFilter);
+    return list.sort((a, b) => {
+      const dateA = new Date(a.addedAt || 0).getTime();
+      const dateB = new Date(b.addedAt || 0).getTime();
+      return watchlistSort === "newest" ? dateB - dateA : dateA - dateB;
+    });
+  }, [watchlist, watchlistFilter, watchlistSort]);
   const ratings = getUserRatings();
 
   const movieCount = recentlyViewed.filter((m) => m.type === "movie").length;
@@ -704,6 +783,34 @@ export default function Profile() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="space-y-6"
             >
+              {/* Guest CTA */}
+              {!user && (
+                <motion.div
+                  variants={itemVariants}
+                  className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent border border-primary/20 shadow-xl shadow-primary/5"
+                >
+                  <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0 animate-pulse">
+                      <Sparkles className="w-8 h-8 text-primary" />
+                    </div>
+                    <div className="text-center md:text-left">
+                      <h3 className="text-xl font-bold font-display text-foreground mb-1">Unlock the Full Experience</h3>
+                      <p className="text-sm text-muted-foreground max-w-md">
+                        Sign up to sync your watchlist, ratings, and viewing progress across all your devices.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={() => navigate("/auth")} 
+                      className="md:ml-auto h-12 px-8 rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+                    >
+                      Join MovieBay
+                    </Button>
+                  </div>
+                  {/* Decorative element */}
+                  <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
+                </motion.div>
+              )}
+
               {/* Activity Summary */}
               <motion.div
                 variants={containerVariants}
@@ -876,10 +983,49 @@ export default function Profile() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-6"
             >
-              {watchlist.length > 0 ? (
+              {watchlist.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+                  {/* Type Filter */}
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/30 border border-border/10 overflow-x-auto no-scrollbar max-w-full">
+                    {[
+                      { id: "all", label: "All" },
+                      { id: "movie", label: "Movies" },
+                      { id: "series", label: "Series" }
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setWatchlistFilter(f.id as any)}
+                        className={cn(
+                          "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap",
+                          watchlistFilter === f.id 
+                            ? "bg-primary text-primary-foreground shadow-sm" 
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Date Sort */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60 whitespace-nowrap">Sort by</span>
+                    <button
+                      onClick={() => setWatchlistSort(v => v === "newest" ? "oldest" : "newest")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/30 border border-border/10 text-xs font-medium hover:bg-muted/50 transition-colors"
+                    >
+                      <TrendingUp className={cn("w-3.5 h-3.5 text-primary transition-transform", watchlistSort === "oldest" && "rotate-180")} />
+                      {watchlistSort === "newest" ? "Recently Added" : "Oldest first"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {filteredWatchlist.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {watchlist.map((item, i) => (
+                  {filteredWatchlist.map((item, i) => (
                     <motion.div
                       key={item.id}
                       initial={{ opacity: 0, y: 20 }}
