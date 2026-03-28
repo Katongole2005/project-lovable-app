@@ -4,6 +4,7 @@ import type { Movie } from "@/types/movie";
 import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -22,72 +23,95 @@ export function HeroCarousel({
   showViewAll = true,
   onViewAll
 }: HeroCarouselProps) {
+  const deviceProfile = useDeviceProfile();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [isLoaded, setIsLoaded] = React.useState(false);
   const [isTransitioning, setIsTransitioning] = React.useState(false);
   const [slideProgress, setSlideProgress] = React.useState(0);
-  const totalSlides = Math.min(movies.length, 25);
+  const totalSlides = Math.min(
+    movies.length,
+    deviceProfile.isWeakDevice ? (deviceProfile.isMobile ? 6 : 12) : 25
+  );
+  const displayMovies = React.useMemo(() => movies.slice(0, totalSlides), [movies, totalSlides]);
+  const mobileDeck = displayMovies;
+  const transitionDuration = deviceProfile.isWeakDevice ? 700 : 1300;
+  const autoplayDelayMs = deviceProfile.autoplayDelayMs;
+  const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
+  const carouselPerspectiveStyle: React.CSSProperties = { perspective: "1200px" };
 
   // Removed artificial 100ms delay to ensure instant render
   React.useEffect(() => {
     setIsLoaded(true);
   }, []);
 
-  const TRANSITION_DURATION = 1300;
-
   const scrollTo = React.useCallback((index: number) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setSelectedIndex(index);
-    setTimeout(() => setIsTransitioning(false), TRANSITION_DURATION);
-  }, [isTransitioning]);
+    setTimeout(() => setIsTransitioning(false), transitionDuration);
+  }, [isTransitioning, transitionDuration]);
 
   const scrollPrev = React.useCallback(() => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setSelectedIndex(prev => (prev - 1 + totalSlides) % totalSlides);
-    setTimeout(() => setIsTransitioning(false), TRANSITION_DURATION);
-  }, [totalSlides, isTransitioning]);
+    setTimeout(() => setIsTransitioning(false), transitionDuration);
+  }, [totalSlides, isTransitioning, transitionDuration]);
 
   const scrollNext = React.useCallback(() => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setSelectedIndex(prev => (prev + 1) % totalSlides);
-    setTimeout(() => setIsTransitioning(false), TRANSITION_DURATION);
-  }, [totalSlides, isTransitioning]);
-
-  const isMobileRef = React.useRef(typeof window !== "undefined" && window.innerWidth < 768);
-  React.useEffect(() => {
-    const check = () => { isMobileRef.current = window.innerWidth < 768; };
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+    setTimeout(() => setIsTransitioning(false), transitionDuration);
+  }, [totalSlides, isTransitioning, transitionDuration]);
 
   React.useEffect(() => {
     if (totalSlides <= 1) return;
-    const ms = isMobileRef.current ? 3000 : 5000;
-    const timer = setInterval(() => {
+    const timer = window.setInterval(() => {
       scrollNext();
-    }, ms);
-    return () => clearInterval(timer);
-  }, [scrollNext, totalSlides]);
+    }, autoplayDelayMs);
+    return () => window.clearInterval(timer);
+  }, [autoplayDelayMs, scrollNext, totalSlides]);
 
   React.useEffect(() => {
     setSlideProgress(0);
+    if (totalSlides <= 1) return;
+
     const INTERVAL = 50;
-    const TOTAL_MS = isMobileRef.current ? 3000 : 5000;
+    const TOTAL_MS = autoplayDelayMs;
     const step = (INTERVAL / TOTAL_MS) * 100;
-    const id = setInterval(() => {
+    const id = window.setInterval(() => {
       setSlideProgress(p => Math.min(p + step, 100));
     }, INTERVAL);
-    return () => clearInterval(id);
-  }, [selectedIndex]);
+    return () => window.clearInterval(id);
+  }, [autoplayDelayMs, selectedIndex, totalSlides]);
 
   React.useEffect(() => {
-    if (selectedIndex >= totalSlides && totalSlides > 0) {
+    if (totalSlides > 0 && selectedIndex >= totalSlides) {
       setSelectedIndex(0);
     }
-  }, [totalSlides]);
+  }, [selectedIndex, totalSlides]);
+
+  const getBackdrop = React.useCallback(
+    (movie: Movie) =>
+      movie.backdrop_url
+        ? deviceProfile.allowHighResImages
+          ? movie.backdrop_url.replace('/original/', '/w1280/').replace('/w780/', '/w1280/')
+          : getOptimizedBackdropUrl(movie.backdrop_url)
+        : getImageUrl(movie.image_url),
+    [deviceProfile.allowHighResImages]
+  );
+
+  React.useEffect(() => {
+    if (totalSlides <= 1 || deviceProfile.isWeakDevice) return;
+
+    const nextIdx = (selectedIndex + 1) % totalSlides;
+    const nextMovie = displayMovies[nextIdx];
+    if (!nextMovie) return;
+
+    const img = new Image();
+    img.src = getBackdrop(nextMovie);
+  }, [deviceProfile.isWeakDevice, displayMovies, getBackdrop, selectedIndex, totalSlides]);
 
   const touchStartX = React.useRef(0);
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -113,7 +137,7 @@ export function HeroCarousel({
     return Math.round(rating / 2);
   };
 
-  if (!movies.length) {
+  if (!displayMovies.length) {
     return <div className="rounded-3xl p-6 overflow-hidden relative loading-gradient-complex">
       <div className="flex justify-between items-center mb-6">
         <div className="h-7 w-32 bg-white/8 rounded-lg shimmer" />
@@ -127,34 +151,18 @@ export function HeroCarousel({
     </div>;
   }
 
-  const currentMovie = movies[selectedIndex];
-  const getBackdrop = (movie: Movie) =>
-    movie.backdrop_url
-      ? movie.backdrop_url.replace('/original/', '/w1280/').replace('/w780/', '/w1280/')
-      : getImageUrl(movie.image_url);
-
+  const currentMovie = displayMovies[selectedIndex];
   const backdropSrc = getBackdrop(currentMovie);
-
-  React.useEffect(() => {
-    const nextIdx = (selectedIndex + 1) % totalSlides;
-    const prevIdx = (selectedIndex - 1 + totalSlides) % totalSlides;
-    [nextIdx, prevIdx].forEach(idx => {
-      if (movies[idx]) {
-        const img = new Image();
-        img.src = getBackdrop(movies[idx]);
-      }
-    });
-  }, [selectedIndex, totalSlides, movies]);
 
   const getSideCards = () => {
     if (totalSlides <= 1) return [];
     const cards: { movie: Movie; originalIndex: number }[] = [];
     const seen = new Set<number>([selectedIndex]);
-    for (let i = 1; i <= totalSlides && cards.length < 3; i++) {
+    for (let i = 1; i <= totalSlides && cards.length < sideCardCount; i++) {
       const idx = (selectedIndex + i) % totalSlides;
       if (!seen.has(idx)) {
         seen.add(idx);
-        cards.push({ movie: movies[idx], originalIndex: idx });
+        cards.push({ movie: displayMovies[idx], originalIndex: idx });
       }
     }
     return cards;
@@ -162,7 +170,7 @@ export function HeroCarousel({
 
   return (
     <div className="overflow-hidden relative">
-      {/* ===== MOBILE CAROUSEL - COMPLETELY UNCHANGED ===== */}
+      {/* Mobile carousel */}
       <div className="md:hidden rounded-3xl p-4 overflow-hidden relative hero-mobile-gradient">
         <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[600px] bg-[radial-gradient(ellipse_at_center,hsl(270,60%,55%)/0.3_0%,transparent_65%)] pointer-events-none" />
         <div className="relative z-10 flex justify-between items-center mb-3">
@@ -170,11 +178,11 @@ export function HeroCarousel({
           {showViewAll && <button onClick={onViewAll} className="text-sm font-medium text-white/70 hover:text-white transition-colors">View all</button>}
         </div>
 
-        <motion.div className="relative flex items-center justify-center py-2" style={{ ["perspective" as any]: "1200px" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <motion.div className="relative flex items-center justify-center py-2" style={carouselPerspectiveStyle} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <div className="relative w-[160px] h-[240px]">
-            {movies.slice(0, 8).map((movie, index) => {
+            {mobileDeck.map((movie, index) => {
               const offset = index - selectedIndex;
-              const numSlides = Math.min(movies.length, 8);
+              const numSlides = mobileDeck.length;
               let adjustedOffset = offset;
               if (offset > numSlides / 2) adjustedOffset = offset - numSlides;
               if (offset < -numSlides / 2) adjustedOffset = offset + numSlides;
@@ -195,12 +203,18 @@ export function HeroCarousel({
                     transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
                     opacity,
                     zIndex,
-                    ["transformStyle" as any]: "preserve-3d"
+                    transformStyle: "preserve-3d"
                   }}
                   onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}
                 >
                   <div className={cn("w-full h-full rounded-xl overflow-hidden shadow-2xl transition-shadow duration-500", isSelected && "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]")}>
-                    <motion.img src={getImageUrl(movie.image_url)} alt={movie.title} className={cn("w-full h-full object-cover", isSelected && "animate-ken-burns")} style={isSelected ? { animationDuration: '10s' } : undefined} loading={index < 3 ? "eager" : "lazy"} />
+                    <motion.img
+                      src={getImageUrl(movie.image_url)}
+                      alt={movie.title}
+                      className={cn("w-full h-full object-cover", isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns")}
+                      style={isSelected && deviceProfile.allowAmbientEffects ? { animationDuration: '10s' } : undefined}
+                      loading={index < 2 ? "eager" : "lazy"}
+                    />
                     <div className={cn("absolute inset-0 bg-gradient-to-t from-black/40 to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-50")} />
                   </div>
                 </motion.div>
@@ -232,7 +246,7 @@ export function HeroCarousel({
         <div className="relative z-10 mt-3">
           <div className="flex flex-col items-center gap-2">
             <div className="flex justify-center gap-1.5">
-              {movies.slice(0, 8).map((_, index) => (
+              {mobileDeck.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => scrollTo(index)}
@@ -288,9 +302,9 @@ export function HeroCarousel({
                 className="w-full h-full object-cover will-change-transform"
                 loading="eager"
                 fetchPriority="high"
-                initial={{ scale: 1.12, x: "-2%" }}
-                animate={{ scale: 1, x: "0%" }}
-                transition={{ duration: 10, ease: [0.25, 0.1, 0.25, 1] }}
+                initial={deviceProfile.allowAmbientEffects ? { scale: 1.08, x: "-1%" } : false}
+                animate={deviceProfile.allowAmbientEffects ? { scale: 1, x: "0%" } : undefined}
+                transition={deviceProfile.allowAmbientEffects ? { duration: 10, ease: [0.25, 0.1, 0.25, 1] } : undefined}
               />
             </motion.div>
           </AnimatePresence>
@@ -411,7 +425,7 @@ export function HeroCarousel({
                 </button>
                 <div className="flex items-center gap-1.5 ml-2">
                   {totalSlides <= 10
-                    ? movies.slice(0, totalSlides).map((_, index) => (
+                    ? displayMovies.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => scrollTo(index)}

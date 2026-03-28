@@ -22,7 +22,7 @@ export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>
 
     // Find the source movie from continueWatching in allMovies
     const sourceItem = continueWatching[0];
-    const sourceMovie = allMovies.find(m => m.mobifliks_id === sourceItem.id);
+    const sourceMovie = allMovies.find(m => m.mobifliks_id === sourceItem.contentId);
 
     if (!sourceMovie || !sourceMovie.genres || sourceMovie.genres.length === 0) {
       return { sourceTitle: "", recommendations: [] };

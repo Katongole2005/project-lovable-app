@@ -12,6 +12,8 @@ export interface SiteSettings {
   site_announcement: string;
 }
 
+type SiteSettingValue = SiteSettings[keyof SiteSettings];
+
 const DEFAULTS: SiteSettings = {
   download_enabled: true,
   maintenance_mode: false,
@@ -26,7 +28,7 @@ const DEFAULTS: SiteSettings = {
 interface SiteSettingsContextType {
   settings: SiteSettings;
   loading: boolean;
-  updateSetting: (key: keyof SiteSettings, value: any) => Promise<void>;
+  updateSetting: <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -61,18 +63,19 @@ export function useSiteSettings() {
       if (error) throw error;
 
       const parsed = { ...DEFAULTS };
-      data?.forEach((row: { key: string; value: any }) => {
+      data?.forEach((row: { key: string; value: SiteSettingValue | string | null }) => {
         if (row.key in parsed) {
           const val = row.value;
+          const settingKey = row.key as keyof SiteSettings;
           // Handle jsonb values - they may already be parsed
           if (typeof val === "string") {
             try {
-              (parsed as any)[row.key] = JSON.parse(val);
+              parsed[settingKey] = JSON.parse(val) as SiteSettings[typeof settingKey];
             } catch {
-              (parsed as any)[row.key] = val;
+              parsed[settingKey] = val as SiteSettings[typeof settingKey];
             }
           } else {
-            (parsed as any)[row.key] = val;
+            parsed[settingKey] = val as SiteSettings[typeof settingKey];
           }
         }
       });
@@ -88,7 +91,7 @@ export function useSiteSettings() {
     fetchSettings();
   }, [fetchSettings]);
 
-  const updateSetting = useCallback(async (key: keyof SiteSettings, value: any) => {
+  const updateSetting = useCallback(async <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) => {
     const { error } = await supabase
       .from("site_settings")
       .update({ value: JSON.stringify(value), updated_at: new Date().toISOString() })

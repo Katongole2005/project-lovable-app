@@ -22,6 +22,7 @@ const FilterModal = lazy(() => import("@/components/FilterModal").then(module =>
 import { AmbientParticles } from "@/components/AmbientParticles";
 import { DynamicBackground } from "@/components/DynamicBackground";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
+import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { Button } from "@/components/ui/button";
 import {
   fetchTrending,
@@ -34,14 +35,17 @@ import {
   fetchByGenre,
   fetchOriginals,
   fetchMoviesSorted,
-  preloadMovieBackdrop
+  preloadMovieBackdrop,
+  buildMediaUrl,
+  resolveMediaAvailability
 } from "@/lib/api";
 import type { FilterOptions } from "@/lib/api";
-import { addToRecent, addRecentSearch, getContinueWatching, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
+import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
 import type { Movie, Series, ContinueWatching } from "@/types/movie";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useSeo, buildMovieJsonLd } from "@/hooks/useSeo";
 import { toSlug, fromSlug } from "@/lib/slug";
+import { toast } from "sonner";
 
 type ViewMode = "home" | "search" | "movies" | "series" | "originals";
 
@@ -53,6 +57,35 @@ const CATEGORY_TO_GENRE: Record<string, string> = {
   special: "Special",
   drama: "Drama",
 };
+
+function HeroCarouselSkeleton() {
+  return (
+    <div className="rounded-3xl overflow-hidden relative min-h-[320px] md:min-h-[460px] bg-[linear-gradient(135deg,hsl(230_18%_9%)_0%,hsl(230_16%_6%)_100%)] border border-white/5">
+      <div className="absolute inset-0 opacity-60 loading-gradient-complex" />
+      <div className="relative z-10 flex h-full flex-col justify-end p-6 md:p-10">
+        <div className="h-4 w-24 rounded-full bg-white/8 shimmer mb-4" />
+        <div className="h-10 w-2/3 rounded-xl bg-white/10 shimmer mb-3" />
+        <div className="h-4 w-1/2 rounded-lg bg-white/8 shimmer mb-8" />
+        <div className="flex gap-3">
+          <div className="h-11 w-32 rounded-full bg-white/12 shimmer" />
+          <div className="h-11 w-24 rounded-full bg-white/8 shimmer" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function parseEpisodeInfoFromTitle(title: string): {
+  seasonNumber?: number;
+  episodeNumber?: number;
+} {
+  const match = title.match(/\bS(\d+)\s*:\s*E(\d+)\b/i);
+  if (!match) return {};
+  return {
+    seasonNumber: parseInt(match[1], 10),
+    episodeNumber: parseInt(match[2], 10),
+  };
+}
 
 export default function Index() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -82,7 +115,7 @@ export default function Index() {
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [categoryMovies, setCategoryMovies] = useState<Movie[]>([]);
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
-  const [continueWatching, setContinueWatching] = useState<ContinueWatching[]>([]);
+  const continueWatching = useContinueWatching();
   const [activePlaybackItem, setActivePlaybackItem] = useState<ContinueWatching | null>(null);
   const activePlaybackItemRef = useRef<ContinueWatching | null>(null);
   const [trending, setTrending] = useState<Movie[]>([]);
@@ -132,10 +165,6 @@ export default function Index() {
     return Array.from({ length: 25 }, (_, i) => currentYear - i);
   }, []);
 
-  useEffect(() => {
-    setContinueWatching(getContinueWatching());
-  }, []);
-
   // React Query for instant tab switching and caching
   const { data: trendingData, isLoading: isTrendingLoading } = useQuery({
     queryKey: ["trending"],
@@ -163,6 +192,9 @@ export default function Index() {
     staleTime: 1000 * 60 * 10,
     enabled: viewMode === "originals",
   });
+
+  const shouldShowHero = siteSettings.hero_carousel_enabled;
+  const isHeroLoading = shouldShowHero && trending.length === 0 && (isTrendingLoading || isMoviesLoading || isSeriesLoading);
   // Dynamic SEO per view/modal
   const seoTitleMap: Record<ViewMode, string> = {
     home: "",
@@ -278,7 +310,6 @@ export default function Index() {
       } catch (error) {
         console.error("Error loading extra data:", error);
       }
-      setContinueWatching(getContinueWatching());
     }
     loadData();
   }, [trendingData, moviesQueryData, seriesQueryData]);
@@ -375,17 +406,43 @@ export default function Index() {
 
   selectedMovieRef.current = selectedMovie;
 
-  const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
+  const handlePlayVideo = useCallback(async (url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
+    const mediaStatus = await resolveMediaAvailability(url);
+    if (!mediaStatus.available) {
+      toast.error("This title is not currently playable from Mobifliks.");
+      return;
+    }
+
     const movie = selectedMovieRef.current;
+    const parsedEpisode = parseEpisodeInfoFromTitle(title);
+    const selectedSeries = movie?.type === "series" ? movie as Series : null;
+    const matchedEpisode = selectedSeries?.episodes?.find((episode) => {
+      if (parsedEpisode.seasonNumber && parsedEpisode.episodeNumber) {
+        return (
+          (episode.season_number || 1) === parsedEpisode.seasonNumber &&
+          episode.episode_number === parsedEpisode.episodeNumber
+        );
+      }
+      return episode.download_url === url;
+    });
     const fallbackItem: ContinueWatching | null = movie
       ? {
-        id: movie.mobifliks_id,
+        id: movie.type === "series" ? `series:${movie.mobifliks_id}` : `movie:${movie.mobifliks_id}`,
+        contentId: movie.mobifliks_id,
         title: movie.title,
         image: movie.image_url || "",
         type: movie.type,
         progress: startAt,
         duration: 0,
         url,
+        seriesId: movie.type === "series" ? movie.mobifliks_id : undefined,
+        episodeId: matchedEpisode?.mobifliks_id,
+        episodeTitle: matchedEpisode?.title,
+        seasonNumber: parsedEpisode.seasonNumber ?? matchedEpisode?.season_number,
+        episodeNumber: parsedEpisode.episodeNumber ?? matchedEpisode?.episode_number,
+        episodeInfo: parsedEpisode.seasonNumber && parsedEpisode.episodeNumber
+          ? `S${parsedEpisode.seasonNumber}:E${parsedEpisode.episodeNumber}`
+          : undefined,
       }
       : null;
 
@@ -425,6 +482,7 @@ export default function Index() {
     const handlePopState = () => {
       if (isVideoOpen) {
         setIsVideoOpen(false);
+        setActivePlaybackItem(null);
         return;
       }
       if (isModalOpen) {
@@ -460,16 +518,24 @@ export default function Index() {
   // Handle play from hero
   const handleHeroPlay = useCallback((movie: Movie) => {
     if (movie.download_url) {
+      const mediaUrl = buildMediaUrl({
+        url: movie.download_url,
+        title: movie.title,
+        detailsUrl: movie.video_page_url || movie.details_url,
+        mobifliksId: movie.mobifliks_id,
+        play: true,
+      });
       const item: ContinueWatching = {
-        id: movie.mobifliks_id,
+        id: movie.type === "series" ? `series:${movie.mobifliks_id}` : `movie:${movie.mobifliks_id}`,
+        contentId: movie.mobifliks_id,
         title: movie.title,
         image: movie.image_url || "",
         type: movie.type,
         progress: 0,
         duration: 0,
-        url: movie.download_url,
+        url: mediaUrl,
       };
-      handlePlayVideo(movie.download_url, movie.title, 0, item);
+      handlePlayVideo(mediaUrl, movie.title, 0, item);
     } else {
       handleMovieClick(movie);
     }
@@ -703,14 +769,18 @@ export default function Index() {
           {/* Home View */}
           {viewMode === "home" && (
             <PageTransition>
-              {siteSettings.hero_carousel_enabled && trending.length > 0 && (
-                <HeroCarousel
-                  movies={trending}
-                  onPlay={handleHeroPlay}
-                  onMovieClick={handleMovieClick}
-                  title="Top Movies"
-                  onViewAll={() => handleTabChange("movies")}
-                />
+              {shouldShowHero && (
+                trending.length > 0 ? (
+                  <HeroCarousel
+                    movies={trending}
+                    onPlay={handleHeroPlay}
+                    onMovieClick={handleMovieClick}
+                    title="Top Movies"
+                    onViewAll={() => handleTabChange("movies")}
+                  />
+                ) : isHeroLoading ? (
+                  <HeroCarouselSkeleton />
+                ) : null
               )}
 
               <div className="mt-8">
@@ -735,12 +805,21 @@ export default function Index() {
                     <ContinueWatchingRow
                       items={continueWatching}
                       onResume={(item) => {
-                        handlePlayVideo(item.url, item.title, Number(item.progress) || 0, item);
+                        const resumeTitle = item.episodeInfo
+                          ? `${item.title} - ${item.episodeInfo}`
+                          : item.title;
+                        const mediaUrl = buildMediaUrl({
+                          url: item.url,
+                          title: resumeTitle,
+                          mobifliksId: item.contentId,
+                          play: true,
+                        });
+                        handlePlayVideo(mediaUrl, resumeTitle, Number(item.progress) || 0, {
+                          ...item,
+                          url: mediaUrl,
+                        });
                       }}
-                      onRemove={(id) => {
-                        removeContinueWatching(id);
-                        setContinueWatching(getContinueWatching());
-                      }}
+                      onRemove={(id) => removeContinueWatching(id)}
                     />
                   </div>
                 </SectionReveal>
@@ -987,7 +1066,6 @@ export default function Index() {
             onClose={() => {
               setIsVideoOpen(false);
               setActivePlaybackItem(null);
-              setContinueWatching(getContinueWatching());
             }}
             videoUrl={videoUrl}
             title={videoTitle}

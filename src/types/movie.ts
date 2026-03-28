@@ -69,12 +69,19 @@ export interface SearchResult {
 
 export interface ContinueWatching {
   id: string;
+  contentId: string;
   title: string;
   image: string;
   type: 'movie' | 'series';
   progress: number;
   duration: number;
   url: string;
+  updatedAt?: string;
+  seriesId?: string;
+  episodeId?: string;
+  episodeTitle?: string;
+  seasonNumber?: number;
+  episodeNumber?: number;
   episodeInfo?: string;
 }
 

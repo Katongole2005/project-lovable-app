@@ -4,28 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { fetchTrending } from "@/lib/api";
+import { fetchTrending, getOptimizedBackdropUrl } from "@/lib/api";
 import { sendBrandedEmail, getWelcomeEmailHtml } from "@/lib/email";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, Loader2, Film, Sparkles } from "lucide-react";
 import logoDark from "@/assets/logo-dark.png";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 
 type AuthView = "login" | "signup" | "forgot";
-
-function usePrefersReducedMotion() {
-  const framerReduced = useReducedMotion();
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-  return framerReduced || reduced;
-}
 
 const QUOTES = [
   { text: "Movies are a door to another world.", author: "Martin Scorsese" },
@@ -61,15 +49,22 @@ const Auth = () => {
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const formRef = useRef<HTMLFormElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const reducedMotion = usePrefersReducedMotion();
+  const deviceProfile = useDeviceProfile();
+  const reducedMotion = deviceProfile.prefersReducedMotion;
 
   useEffect(() => {
     if (!loading && user) navigate("/", { replace: true });
   }, [user, loading, navigate]);
 
   useEffect(() => {
+    if (deviceProfile.isWeakDevice) {
+      setBackdropUrl(null);
+      setBackdropLoaded(false);
+      return;
+    }
+
     let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     fetchTrending()
       .then((movies) => {
         if (cancelled) return;
@@ -77,7 +72,8 @@ const Auth = () => {
         const pool = withBackdrop.length > 0 ? withBackdrop : movies.filter((m) => m.image_url);
         if (pool.length > 0) {
           const random = pool[Math.floor(Math.random() * Math.min(5, pool.length))];
-          const url = random.backdrop_url || random.image_url || null;
+          const rawUrl = random.backdrop_url || random.image_url || null;
+          const url = rawUrl ? getOptimizedBackdropUrl(rawUrl) : null;
           if (url) {
             const img = new Image();
             img.onload = () => {
@@ -91,11 +87,14 @@ const Auth = () => {
         }
       })
       .catch(() => {});
-    return () => { cancelled = true; clearTimeout(timeoutId); };
-  }, []);
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [deviceProfile.isWeakDevice]);
 
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion || deviceProfile.isWeakDevice) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -171,7 +170,7 @@ const Auth = () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", resize);
     };
-  }, [reducedMotion]);
+  }, [deviceProfile.isWeakDevice, reducedMotion]);
 
   const handleLogin = useCallback(async () => {
     setSubmitting(true);
@@ -270,11 +269,12 @@ const Auth = () => {
         <div className="absolute inset-0">
           <div
             className={cn(
-              "absolute inset-0 transition-opacity duration-[2.5s] ease-out bg-center bg-cover",
+              "absolute inset-0 transition-opacity ease-out bg-center bg-cover",
               backdropLoaded ? "opacity-25" : "opacity-0"
             )}
             style={{
               ...(backdropUrl ? { backgroundImage: `url(${backdropUrl})` } : {}),
+              transitionDuration: "2500ms",
               animation: backdropLoaded && !reducedMotion ? "auth-ken-burns 25s ease-in-out infinite alternate" : "none",
             }}
           />
@@ -286,43 +286,49 @@ const Auth = () => {
         </div>
 
         {/* === FLOATING PARTICLES (canvas) === */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 pointer-events-none z-[1]"
-          aria-hidden="true"
-        />
+        {!deviceProfile.isWeakDevice && (
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 pointer-events-none z-[1]"
+            aria-hidden="true"
+          />
+        )}
 
         {/* === ANIMATED AMBIENT GLOW ORBS === */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <motion.div
-            animate={reducedMotion ? {} : { x: [0, 30, -20, 0], y: [0, -25, 15, 0], scale: [1, 1.1, 0.95, 1] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute top-[10%] left-[8%] w-[500px] h-[500px] rounded-full opacity-[0.035]"
-            style={{ background: "radial-gradient(circle, hsl(210 100% 60%), transparent 65%)" }}
-          />
-          <motion.div
-            animate={reducedMotion ? {} : { x: [0, -25, 20, 0], y: [0, 20, -30, 0], scale: [1, 0.9, 1.1, 1] }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="absolute bottom-[5%] right-[10%] w-[450px] h-[450px] rounded-full opacity-[0.03]"
-            style={{ background: "radial-gradient(circle, hsl(180 70% 50%), transparent 65%)" }}
-          />
-          <motion.div
-            animate={reducedMotion ? {} : { x: [0, 15, -10, 0], y: [0, -15, 25, 0] }}
-            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-            className="absolute top-[50%] right-[30%] w-[300px] h-[300px] rounded-full opacity-[0.02]"
-            style={{ background: "radial-gradient(circle, hsl(260 60% 55%), transparent 65%)" }}
-          />
-        </div>
+        {!deviceProfile.isWeakDevice && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <motion.div
+              animate={reducedMotion ? {} : { x: [0, 30, -20, 0], y: [0, -25, 15, 0], scale: [1, 1.1, 0.95, 1] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute top-[10%] left-[8%] w-[500px] h-[500px] rounded-full opacity-[0.035]"
+              style={{ background: "radial-gradient(circle, hsl(210 100% 60%), transparent 65%)" }}
+            />
+            <motion.div
+              animate={reducedMotion ? {} : { x: [0, -25, 20, 0], y: [0, 20, -30, 0], scale: [1, 0.9, 1.1, 1] }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              className="absolute bottom-[5%] right-[10%] w-[450px] h-[450px] rounded-full opacity-[0.03]"
+              style={{ background: "radial-gradient(circle, hsl(180 70% 50%), transparent 65%)" }}
+            />
+            <motion.div
+              animate={reducedMotion ? {} : { x: [0, 15, -10, 0], y: [0, -15, 25, 0] }}
+              transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+              className="absolute top-[50%] right-[30%] w-[300px] h-[300px] rounded-full opacity-[0.02]"
+              style={{ background: "radial-gradient(circle, hsl(260 60% 55%), transparent 65%)" }}
+            />
+          </div>
+        )}
 
         {/* === NOISE TEXTURE === */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-[2]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "repeat",
-            backgroundSize: "192px 192px",
-            mixBlendMode: "overlay",
-          }}
-        />
+        {!deviceProfile.isWeakDevice && (
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-[2]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "repeat",
+              backgroundSize: "192px 192px",
+              mixBlendMode: "overlay",
+            }}
+          />
+        )}
 
         {/* === MAIN LAYOUT === */}
         <div className="relative z-10 w-full max-w-[1100px] mx-4 md:mx-8 flex items-center min-h-screen py-8 md:py-0">

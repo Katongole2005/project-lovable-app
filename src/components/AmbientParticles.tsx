@@ -1,4 +1,5 @@
 import { useEffect, useRef, memo } from "react";
+import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 
 /**
  * Floating bokeh particles background — subtle ambient depth.
@@ -6,15 +7,15 @@ import { useEffect, useRef, memo } from "react";
  */
 function AmbientParticlesInner() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const deviceProfile = useDeviceProfile();
 
   useEffect(() => {
+    if (!deviceProfile.allowAmbientEffects) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    // Check if mobile
-    if (window.innerWidth < 768) return;
 
     let animId: number;
     const dpr = Math.min(window.devicePixelRatio, 2);
@@ -24,7 +25,7 @@ function AmbientParticlesInner() {
       canvas!.height = window.innerHeight * dpr;
       canvas!.style.width = `${window.innerWidth}px`;
       canvas!.style.height = `${window.innerHeight}px`;
-      ctx!.scale(dpr, dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     resize();
 
@@ -38,7 +39,7 @@ function AmbientParticlesInner() {
       hue: number;
     }
 
-    const particles: Particle[] = Array.from({ length: 18 }, () => ({
+    const particles: Particle[] = Array.from({ length: deviceProfile.isCompact ? 12 : 18 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       r: Math.random() * 60 + 20,
@@ -75,12 +76,13 @@ function AmbientParticlesInner() {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [deviceProfile.allowAmbientEffects, deviceProfile.isCompact]);
 
   return (
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
+      style={{ display: deviceProfile.allowAmbientEffects ? "block" : "none" }}
       aria-hidden="true"
     />
   );

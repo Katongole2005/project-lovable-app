@@ -100,6 +100,11 @@ function ContinueWatchingCard({
           <h3 className="text-sm font-semibold text-white line-clamp-1 drop-shadow-md" data-testid={`text-continue-title-${item.id}`}>
             {item.title}
           </h3>
+          {item.seasonNumber && item.episodeNumber && (
+            <p className="text-[11px] text-white/70 font-medium">
+              S{item.seasonNumber} E{item.episodeNumber}
+            </p>
+          )}
           <p className="text-[11px] text-white/60 font-medium">
             {remainingMin} min remaining
           </p>

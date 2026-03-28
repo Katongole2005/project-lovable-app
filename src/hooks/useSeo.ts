@@ -6,7 +6,7 @@ interface SeoProps {
   canonical?: string;
   ogImage?: string;
   ogType?: string;
-  jsonLd?: Record<string, any>;
+  jsonLd?: Record<string, unknown>;
 }
 
 const BASE_TITLE = "Moviebay Uganda";

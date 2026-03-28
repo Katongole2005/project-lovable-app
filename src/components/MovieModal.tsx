@@ -7,12 +7,14 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Movie, Series, Episode, CastMember } from "@/types/movie";
-import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre } from "@/lib/api";
+import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, resolveMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
-import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist, getContinueWatching } from "@/lib/storage";
+import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist } from "@/lib/storage";
 import { motion, AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useDeviceProfile } from "@/hooks/useDeviceProfile";
+import { useContinueWatching } from "@/hooks/useContinueWatching";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -24,8 +26,15 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
  */
 const CLOUDFLARE_WORKER_URL = "https://cdn.s-u.in";
 
-export function getProxiedPlayUrl(url: string, title: string) {
-  if (!CLOUDFLARE_WORKER_URL || !url) return url;
+export function getProxiedPlayUrl(url: string, title: string, detailsUrl?: string | null, mobifliksId?: string | null) {
+  return buildMediaUrl({
+    url,
+    title,
+    detailsUrl,
+    mobifliksId,
+    play: true,
+  });
+  if (url === "__legacy_worker_disabled__") {
   
   const cleanTitle = title
     .replace(/mobifliks\.com\s*[-–—|:]\s*/gi, "")
@@ -37,8 +46,22 @@ export function getProxiedPlayUrl(url: string, title: string) {
   const extMatch = url.match(/\.(mp4|mkv|avi|mov|webm)(\?|$)/i);
   const ext = extMatch ? extMatch[1].toLowerCase() : "mp4";
   const fullName = `${safeName} - s-u.in.${ext}`;
-  
-  return `${CLOUDFLARE_WORKER_URL}?url=${encodeURIComponent(url)}&name=${encodeURIComponent(fullName)}&play=1`;
+  const mediaUrl = buildMediaUrl({
+    url,
+    title: fullName,
+    detailsUrl,
+    mobifliksId,
+    play: false,
+  });
+  const anchor = document.createElement("a");
+  anchor.href = mediaUrl;
+  anchor.download = fullName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  toast.success(`Downloading "${safeName}"`, { duration: 3000 });
+  return;
+  }
 }
 
 /**
@@ -49,7 +72,7 @@ export function getProxiedPlayUrl(url: string, title: string) {
  * Strategy 2: Direct CORS fetch → Blob (works for Supabase / CORS-enabled CDNs)
  * Strategy 3: window.open fallback — browser assigns original filename.
  */
-async function downloadWithName(url: string, filename: string): Promise<void> {
+async function downloadWithName(url: string, filename: string, detailsUrl?: string | null, mobifliksId?: string | null): Promise<void> {
   // Strip site watermark / domain leftover from scraped titles
   const cleanFilename = filename
     .replace(/mobifliks\.com\s*[-–—|:]\s*/gi, "")
@@ -61,14 +84,40 @@ async function downloadWithName(url: string, filename: string): Promise<void> {
   const extMatch = url.match(/\.(mp4|mkv|avi|mov|webm)(\?|$)/i);
   const ext = extMatch ? extMatch[1].toLowerCase() : "mp4";
   const fullName = `${safeName} - s-u.in.${ext}`;
+  const mediaUrl = buildMediaUrl({
+    url,
+    title: fullName,
+    detailsUrl,
+    mobifliksId,
+    play: false,
+  });
+  const mediaStatus = await resolveMediaAvailability(mediaUrl);
+  if (!mediaStatus.available) {
+    toast.error(`"${safeName}" is not currently downloadable from Mobifliks.`);
+    return;
+  }
+  const anchor = document.createElement("a");
+  anchor.href = mediaUrl;
+  anchor.download = fullName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  toast.success(`Downloading "${safeName}"`, { duration: 3000 });
+  return;
 
   // ── Strategy 1: Direct anchor → Cloudflare Worker ─────────────────────────
   // The worker sets Content-Disposition server-side, so no fetch needed.
   // Browser native download bar starts IMMEDIATELY.
-  if (CLOUDFLARE_WORKER_URL) {
-    const workerUrl = `${CLOUDFLARE_WORKER_URL}?url=${encodeURIComponent(url)}&name=${encodeURIComponent(fullName)}`;
+  {
+    const mediaUrl = buildMediaUrl({
+      url,
+      title: fullName,
+      detailsUrl,
+      mobifliksId,
+      play: false,
+    });
     const a = document.createElement("a");
-    a.href = workerUrl;
+    a.href = mediaUrl;
     a.download = fullName;
     document.body.appendChild(a);
     a.click();
@@ -144,15 +193,20 @@ const fallbackCastAvatar = "https://placehold.co/160x160/1a1a2e/ffffff?text=Acto
 
 export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) {
   // NOTE: hooks must be called unconditionally; keep all hooks above the null-guard return.
-  const [tmdbBackdrop, setTmdbBackdrop] = React.useState<string | null>(null);
+  const deviceProfile = useDeviceProfile();
+  const [, setTmdbBackdrop] = React.useState<string | null>(null);
   const [tmdbCast, setTmdbCast] = React.useState<CastMember[] | null>(null);
-
-  const backdrop = tmdbBackdrop || movie?.backdrop_url || null;
+  const backdrop = movie?.backdrop_url || null;
 
   // IMPORTANT: do NOT fall back to poster for the backdrop/background.
   // This avoids the "image swap" where a poster loads first, then the backdrop replaces it.
   // Use optimized (smaller) backdrop URL for faster loading.
-  const backgroundImage = backdrop ? getOptimizedBackdropUrl(backdrop) : null;
+  const backgroundImage = React.useMemo(() => {
+    if (!backdrop) return null;
+    return deviceProfile.allowHighResImages
+      ? backdrop.replace("/original/", "/w1280/").replace("/w780/", "/w1280/")
+      : getOptimizedBackdropUrl(backdrop);
+  }, [backdrop, deviceProfile.allowHighResImages]);
 
   const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
   const [userRating, setUserRatingState] = React.useState<number | null>(null);
@@ -161,9 +215,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
   // Fetch missing TMDB data (especially for series)
   React.useEffect(() => {
-    setTmdbBackdrop(null);
-    setTmdbCast(null);
-    if (!movie || (!isOpen)) return;
+    if (!movie || !isOpen) return;
+    return;
 
     // Fetch if backdrop is missing OR cast is missing
     const needsBackdrop = !movie.backdrop_url;
@@ -180,13 +233,16 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
             .trim();
           const query = encodeURIComponent(cleanedTitle);
           const year = movie.year ? `&year=${movie.year}` : '';
-          const searchRes = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=422176371cbca367ffda12fccee25ba7&query=${query}${year}`);
-          const searchData = await searchRes.json();
+          const searchData: { results?: Array<{ id?: number }> } = { results: [] };
           const tmdbId = searchData.results?.[0]?.id;
 
           if (tmdbId) {
-            const detailsRes = await fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=422176371cbca367ffda12fccee25ba7&append_to_response=credits`);
-            const detailsData = await detailsRes.json();
+            const detailsData: {
+              backdrop_path?: string;
+              credits?: {
+                cast?: Array<{ name: string; character?: string; profile_path?: string | null }>;
+              };
+            } = {};
 
             if (needsBackdrop && detailsData.backdrop_path) {
               setTmdbBackdrop(`https://image.tmdb.org/t/p/original${detailsData.backdrop_path}`);
@@ -272,9 +328,17 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   const releaseLabel = movie.release_date ? movie.release_date : null;
   const certificationLabel = movie.certification ? movie.certification : null;
   const handlePlay = (url: string, title: string) => {
-    onClose();
     setTimeout(() => {
-      onPlay(getProxiedPlayUrl(url, title), title);
+      onPlay(
+        buildMediaUrl({
+          url,
+          title,
+          detailsUrl: movie.video_page_url || movie.details_url,
+          mobifliksId: movie.mobifliks_id,
+          play: true,
+        }),
+        title
+      );
     }, 0);
   };
 
@@ -329,25 +393,29 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                     desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                   )}
                 />
-                <img
-                  src={backgroundImage}
-                  alt=""
-                  className={cn(
-                    "absolute inset-0 w-full h-full object-cover object-top scale-150 blur-3xl transition-opacity duration-500",
-                    desktopBackdropLoaded ? "opacity-80" : "opacity-0"
-                  )}
-                />
+                {deviceProfile.allowAmbientEffects && (
+                  <img
+                    src={backgroundImage}
+                    alt=""
+                    className={cn(
+                      "absolute inset-0 w-full h-full object-cover object-top scale-150 blur-3xl transition-opacity duration-500",
+                      desktopBackdropLoaded ? "opacity-80" : "opacity-0"
+                    )}
+                  />
+                )}
               </>
             )}
             <div className="absolute inset-0 backdrop-blur-xl bg-black/40" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
-            <motion.div
-              className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-              }}
-            />
+            {deviceProfile.allowAmbientEffects && (
+              <motion.div
+                className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+                }}
+              />
+            )}
           </div>
 
           <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
@@ -536,7 +604,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                         <button
                           onClick={() => {
                             const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-                            downloadWithName(movie.download_url!, name);
+                            downloadWithName(movie.download_url!, name, movie.video_page_url || movie.details_url, movie.mobifliks_id);
                           }}
                           aria-label="Download"
                           className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
@@ -655,6 +723,7 @@ function MobileMovieLayout({
   inWatchlist,
   onToggleWatchlist,
 }: MobileMovieLayoutProps) {
+  const deviceProfile = useDeviceProfile();
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [selectedSeason, setSelectedSeason] = React.useState(1);
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
@@ -665,32 +734,37 @@ function MobileMovieLayout({
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
   const heroRef = React.useRef<HTMLDivElement>(null);
+  const continueWatching = useContinueWatching();
 
   const resumeEpisode = React.useMemo(() => {
     if (!isSeries || !series.episodes?.length) return null;
-    const continueList = getContinueWatching();
-    const found = continueList.find(c => c.id === movie.mobifliks_id || c.title.includes(movie.title));
+    const found = continueWatching.find(
+      (entry) => entry.type === "series" && entry.seriesId === movie.mobifliks_id
+    );
+    if (found?.seasonNumber && found?.episodeNumber) {
+      return { season: found.seasonNumber, episode: found.episodeNumber };
+    }
     if (found?.episodeInfo) {
       const match = found.episodeInfo.match(/S(\d+):E(\d+)/i);
-      if (match) return { season: parseInt(match[1]), episode: parseInt(match[2]) };
+      if (match) return { season: parseInt(match[1], 10), episode: parseInt(match[2], 10) };
     }
     return null;
-  }, [movie.mobifliks_id, isSeries]);
+  }, [continueWatching, isSeries, movie.mobifliks_id, series.episodes]);
 
   const cwProgressMap = React.useMemo(() => {
     const map = new Map<string, number>();
     if (!isSeries) return map;
-    const continueList = getContinueWatching();
-    for (const cw of continueList) {
-      if (!cw.episodeInfo) continue;
-      const m = cw.episodeInfo.match(/S(\d+):E(\d+)/i);
-      if (m && cw.duration > 0) {
-        const key = `${parseInt(m[1])}-${parseInt(m[2])}`;
-        map.set(key, Math.min((cw.progress / cw.duration) * 100, 100));
+    for (const entry of continueWatching) {
+      if (entry.type !== "series" || entry.seriesId !== movie.mobifliks_id) continue;
+      const seasonNumber = entry.seasonNumber;
+      const episodeNumber = entry.episodeNumber;
+      if (seasonNumber && episodeNumber && entry.duration > 0) {
+        const key = `${seasonNumber}-${episodeNumber}`;
+        map.set(key, Math.min((entry.progress / entry.duration) * 100, 100));
       }
     }
     return map;
-  }, [movie.mobifliks_id, isSeries]);
+  }, [continueWatching, isSeries, movie.mobifliks_id]);
 
   React.useEffect(() => {
     setEntranceReady(false);
@@ -795,47 +869,53 @@ function MobileMovieLayout({
                 backdropLoaded ? "opacity-100" : "opacity-0"
               )}
             />
-            <img
-              src={backgroundImage}
-              alt=""
-              className={cn(
-                "absolute inset-0 w-full h-full object-cover object-top scale-[2] blur-[60px] transition-opacity duration-700",
-                backdropLoaded ? "opacity-60" : "opacity-0"
-              )}
-            />
+            {deviceProfile.allowAmbientEffects && (
+              <img
+                src={backgroundImage}
+                alt=""
+                className={cn(
+                  "absolute inset-0 w-full h-full object-cover object-top scale-[2] blur-[60px] transition-opacity duration-700",
+                  backdropLoaded ? "opacity-60" : "opacity-0"
+                )}
+              />
+            )}
           </>
         )}
-        <div className="absolute inset-0 backdrop-blur-2xl bg-black/50" />
+        <div className={cn("absolute inset-0 bg-black/50", deviceProfile.allowAmbientEffects ? "backdrop-blur-2xl" : "backdrop-blur-sm")} />
         <div className="absolute inset-0 bg-gradient-to-t from-[hsl(230,18%,5%)] via-transparent to-black/30" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
 
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-          <motion.div
-            className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[80px]"
-            style={{
-              background: `hsl(${accentHue} 60% 50% / 0.12)`,
-              animation: "liquidFloat 8s ease-in-out infinite",
-            }}
-          />
-          <motion.div
-            className="absolute top-1/3 -left-24 w-48 h-48 rounded-full blur-[60px]"
-            style={{
-              background: `hsl(${(accentHue + 120) % 360} 50% 45% / 0.08)`,
-              animation: "liquidFloat 12s ease-in-out infinite reverse",
-            }}
-          />
-          <motion.div
-            className="absolute -bottom-24 right-1/4 w-56 h-56 rounded-full blur-[70px]"
-            style={{
-              background: `hsl(${(accentHue + 240) % 360} 40% 40% / 0.06)`,
-              animation: "liquidFloat 15s ease-in-out infinite",
-              animationDelay: "3s",
-            }}
-          />
-        </div>
+        {deviceProfile.allowAmbientEffects && (
+          <>
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <motion.div
+                className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[80px]"
+                style={{
+                  background: `hsl(${accentHue} 60% 50% / 0.12)`,
+                  animation: "liquidFloat 8s ease-in-out infinite",
+                }}
+              />
+              <motion.div
+                className="absolute top-1/3 -left-24 w-48 h-48 rounded-full blur-[60px]"
+                style={{
+                  background: `hsl(${(accentHue + 120) % 360} 50% 45% / 0.08)`,
+                  animation: "liquidFloat 12s ease-in-out infinite reverse",
+                }}
+              />
+              <motion.div
+                className="absolute -bottom-24 right-1/4 w-56 h-56 rounded-full blur-[70px]"
+                style={{
+                  background: `hsl(${(accentHue + 240) % 360} 40% 40% / 0.06)`,
+                  animation: "liquidFloat 15s ease-in-out infinite",
+                  animationDelay: "3s",
+                }}
+              />
+            </div>
 
-        <div className="glass-noise-overlay" />
+            <div className="glass-noise-overlay" />
+          </>
+        )}
       </div>
 
       <motion.div
@@ -935,7 +1015,7 @@ function MobileMovieLayout({
                   backdropLoaded ? "opacity-100" : "opacity-0"
                 )}
                 style={{
-                  animation: backdropLoaded ? "kenBurnsMobile 20s ease-in-out infinite" : "none",
+                  animation: backdropLoaded && deviceProfile.allowAmbientEffects ? "kenBurnsMobile 20s ease-in-out infinite" : "none",
                 }}
               />
             </motion.div>
@@ -1061,7 +1141,7 @@ function MobileMovieLayout({
                   onClick={() => {
                     if (movie.download_url) {
                       const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-                      downloadWithName(movie.download_url, name);
+                      downloadWithName(movie.download_url, name, movie.video_page_url || movie.details_url, movie.mobifliks_id);
                     }
                   }}
                   data-testid="button-download"
@@ -1288,7 +1368,7 @@ function MobileMovieLayout({
                             currentSeasonEpisodes.forEach((ep, i) => {
                               if (ep.download_url) {
                                 const epName = `${movie.title} - S${seasonNum}E${String(ep.episode_number).padStart(2, '0')}`;
-                                setTimeout(() => downloadWithName(ep.download_url!, epName), i * 800);
+                                setTimeout(() => downloadWithName(ep.download_url!, epName, undefined, ep.mobifliks_id), i * 800);
                               }
                             });
                           }}
@@ -1720,7 +1800,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
                   e.stopPropagation();
                   if (episode.download_url) {
                     const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, '0')}`;
-                    downloadWithName(episode.download_url, epName);
+                    downloadWithName(episode.download_url, epName, undefined, episode.mobifliks_id);
                   }
                 }}
                 className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold active:scale-95 transition-transform"
@@ -1829,7 +1909,10 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
       className="flex gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200 group cursor-pointer"
       onClick={() => {
         if (hasVideo && episode.download_url) {
-          onPlay(episode.download_url, `${seriesTitle} - Episode ${episode.episode_number}`);
+          onPlay(
+            episode.download_url,
+            `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
+          );
         }
       }}
     >
@@ -1882,7 +1965,10 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                 className="gap-1.5 bg-white text-black hover:bg-white/90 h-8 px-4 rounded font-medium"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onPlay(episode.download_url!, `${seriesTitle} - Episode ${episode.episode_number}`);
+                  onPlay(
+                    episode.download_url!,
+                    `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
+                  );
                 }}
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -1897,7 +1983,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                     e.stopPropagation();
                     if (episode.download_url) {
                       const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, '0')}`;
-                      downloadWithName(episode.download_url, epName);
+                      downloadWithName(episode.download_url, epName, undefined, episode.mobifliks_id);
                     }
                   }}
                 >

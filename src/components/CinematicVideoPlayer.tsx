@@ -56,6 +56,7 @@ export function CinematicVideoPlayer({
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const ignoreInitialTimeUpdateRef = useRef(false);
   const lastReportedTimeRef = useRef(0);
+  const lastPersistedTimeRef = useRef(0);
   const lastReportedDurationRef = useRef(0);
   const closingRef = useRef(false);
   const doubleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -164,13 +165,24 @@ export function CinematicVideoPlayer({
   }, [isOpen, startTime]);
 
   useEffect(() => {
-    if (!isOpen && videoRef.current) { videoRef.current.pause(); setIsPlaying(false); }
+    if (!isOpen && videoRef.current) {
+      const video = videoRef.current;
+      const finalTime = video.currentTime > 0 ? video.currentTime : (currentTime > 0 ? currentTime : lastReportedTimeRef.current);
+      const finalDuration = (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0) || lastReportedDurationRef.current || duration;
+      if (finalDuration > 0 && finalTime > 0 && finalTime !== lastPersistedTimeRef.current) {
+        onTimeUpdate?.(finalTime, finalDuration);
+        lastPersistedTimeRef.current = finalTime;
+      }
+      video.pause();
+      setIsPlaying(false);
+    }
   }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
       closingRef.current = false;
       lastReportedTimeRef.current = 0;
+      lastPersistedTimeRef.current = 0;
       lastReportedDurationRef.current = 0;
       setShowSpeedMenu(false);
       setIsLongPressing(false);
@@ -185,8 +197,33 @@ export function CinematicVideoPlayer({
     if (videoRef.current) videoRef.current.playbackRate = playbackSpeed;
   }, [playbackSpeed]);
 
+  const persistProgress = useCallback((timeArg?: number, durationArg?: number) => {
+    const video = videoRef.current;
+    const finalTime = timeArg ?? (video?.currentTime && video.currentTime > 0 ? video.currentTime : (currentTime > 0 ? currentTime : lastReportedTimeRef.current));
+    const finalDuration = durationArg ?? (((video?.duration && Number.isFinite(video.duration) && video.duration > 0) ? video.duration : 0) || lastReportedDurationRef.current || duration);
+    if (finalDuration > 0 && finalTime > 0) {
+      onTimeUpdate?.(finalTime, finalDuration);
+      lastPersistedTimeRef.current = finalTime;
+    }
+  }, [currentTime, duration, onTimeUpdate]);
+
+  const clearControlsTimeout = useCallback(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+      controlsTimeoutRef.current = null;
+    }
+  }, []);
+
+  const hideControlsOverlay = useCallback(() => {
+    clearControlsTimeout();
+    setShowControls(false);
+    setShowSpeedMenu(false);
+    setShowSubtitlesMenu(false);
+    setShowVolumeSlider(false);
+  }, [clearControlsTimeout]);
+
   const resetControlsTimeout = useCallback(() => {
-    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    clearControlsTimeout();
     setShowControls(true);
     setShowSpeedMenu(false);
     setShowSubtitlesMenu(false);
@@ -196,7 +233,7 @@ export function CinematicVideoPlayer({
         setShowVolumeSlider(false);
       }, 3500);
     }
-  }, [isPlaying, isScrubbing]);
+  }, [clearControlsTimeout, isPlaying, isScrubbing]);
 
   useEffect(() => {
     resetControlsTimeout();
@@ -233,7 +270,7 @@ export function CinematicVideoPlayer({
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
-        onTimeUpdate?.(videoRef.current.currentTime, duration);
+        persistProgress(videoRef.current.currentTime, videoRef.current.duration || duration);
       } else {
         videoRef.current.play();
       }
@@ -372,18 +409,38 @@ export function CinematicVideoPlayer({
     const now = Date.now();
     const timeSinceLastTap = now - lastTapRef.current.time;
     const sameSide = lastTapRef.current.side === side;
+    const isTouchInteraction = "changedTouches" in e;
+
     if (timeSinceLastTap < 350 && sameSide && side !== "center") {
       if (doubleTapTimerRef.current) clearTimeout(doubleTapTimerRef.current);
       const skipSeconds = side === "left" ? -10 : 10;
       skip(skipSeconds);
+      resetControlsTimeout();
       setSkipAnimation({ side, seconds: Math.abs(skipSeconds), key: now });
       lastTapRef.current = { time: 0, side: "center" };
-    } else {
-      lastTapRef.current = { time: now, side };
-      if (doubleTapTimerRef.current) clearTimeout(doubleTapTimerRef.current);
-      doubleTapTimerRef.current = setTimeout(() => { setShowControls(prev => !prev); }, 300);
+      return;
     }
-  }, [duration, isScrubbing]);
+
+    lastTapRef.current = { time: now, side };
+    if (doubleTapTimerRef.current) clearTimeout(doubleTapTimerRef.current);
+
+    if (side === "center" || isTouchInteraction) {
+      if (showControls) {
+        hideControlsOverlay();
+      } else {
+        resetControlsTimeout();
+      }
+      return;
+    }
+
+    doubleTapTimerRef.current = setTimeout(() => {
+      if (showControls) {
+        hideControlsOverlay();
+      } else {
+        resetControlsTimeout();
+      }
+    }, 300);
+  }, [hideControlsOverlay, isScrubbing, resetControlsTimeout, showControls]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
@@ -401,9 +458,10 @@ export function CinematicVideoPlayer({
       if (Number.isFinite(nextTime) && nextTime >= 0) lastReportedTimeRef.current = nextTime;
 
       // Throttle reports to every 5 seconds or if it's nearing the end
-      const timeSinceLastReport = Math.abs(nextTime - lastReportedTimeRef.current);
+      const timeSinceLastReport = Math.abs(nextTime - lastPersistedTimeRef.current);
       if (timeSinceLastReport >= 5 || (nextDuration > 0 && nextDuration - nextTime < 5)) {
         onTimeUpdate?.(nextTime, nextDuration);
+        lastPersistedTimeRef.current = nextTime;
       }
     }
   };
@@ -475,22 +533,49 @@ export function CinematicVideoPlayer({
     e.stopPropagation();
     setIsScrubbing(false);
     resetControlsTimeout();
-  }, [resetControlsTimeout]);
+    persistProgress();
+  }, [persistProgress, resetControlsTimeout]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const flushProgress = () => persistProgress();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushProgress();
+      }
+    };
+
+    window.addEventListener("pagehide", flushProgress);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", flushProgress);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isOpen, persistProgress]);
 
   const handleClose = () => {
     if (closingRef.current) return;
     closingRef.current = true;
     if (videoRef.current) {
       const video = videoRef.current;
-      const finalTime = video.currentTime > 0 ? video.currentTime : (currentTime > 0 ? currentTime : lastReportedTimeRef.current);
-      const finalDuration = (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0) || lastReportedDurationRef.current || duration;
-      if (finalDuration > 0 && finalTime > 0) onTimeUpdate?.(finalTime, finalDuration);
+      persistProgress(
+        video.currentTime > 0 ? video.currentTime : (currentTime > 0 ? currentTime : lastReportedTimeRef.current),
+        (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0) || lastReportedDurationRef.current || duration
+      );
       video.pause();
     }
     ignoreInitialTimeUpdateRef.current = false;
     if (isFullscreen) exitFullscreen();
     onClose();
   };
+
+  const handleEnded = useCallback(() => {
+    if (!videoRef.current) return;
+    persistProgress(videoRef.current.duration || duration, videoRef.current.duration || duration);
+    setIsPlaying(false);
+  }, [duration, persistProgress]);
 
   const timeDisplay = showRemainingTime && duration > 0 ? `-${formatTime(duration - currentTime)}` : formatTime(currentTime);
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -567,6 +652,7 @@ export function CinematicVideoPlayer({
               onLoadedMetadata={handleLoadedMetadata}
               onWaiting={() => setIsBuffering(true)}
               onPlaying={() => setIsBuffering(false)}
+              onEnded={handleEnded}
             >
               {subtitles.map(track => (
                 <track
@@ -681,6 +767,8 @@ export function CinematicVideoPlayer({
             )}>
               <button
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
                 aria-label="Play"
                 title="Play"
                 className="w-20 h-20 rounded-full border-2 border-[#c8f547]/60 bg-black/40 backdrop-blur-xl flex items-center justify-center pointer-events-auto hover:bg-[#c8f547]/10 hover:border-[#c8f547] hover:scale-110 active:scale-95 transition-all duration-200 shadow-[0_0_40px_rgba(200,245,71,0.2),inset_0_0_20px_rgba(200,245,71,0.05)]"
@@ -695,7 +783,10 @@ export function CinematicVideoPlayer({
             <div className={cn(
               "absolute top-0 left-0 right-0 z-50 transition-all duration-400",
               showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3 pointer-events-none"
-            )}>
+            )}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
               {/* Top gradient */}
               <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none" />
               <div className="relative flex items-center gap-3 px-3 py-3 md:px-5 md:py-4">
@@ -758,6 +849,8 @@ export function CinematicVideoPlayer({
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   onClick={(e) => { e.stopPropagation(); skipToTime(activeSkipSegment.endTime); }}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => e.stopPropagation()}
                   className="absolute bottom-24 right-6 md:right-10 z-30 px-5 md:px-7 py-3 md:py-4 rounded-2xl bg-[#c8f547] text-black font-black text-xs md:text-sm uppercase tracking-widest shadow-[0_0_30px_rgba(200,245,71,0.3)] flex items-center gap-2.5 hover:scale-105 active:scale-95 transition-all group"
                 >
                   <FastForward className="w-5 h-5 transition-transform group-hover:translate-x-1" />
@@ -900,6 +993,8 @@ export function CinematicVideoPlayer({
                 showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
               )}
               onClick={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
             >
               {/* Bottom gradient scrim */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
@@ -1135,6 +1230,8 @@ function CtrlBtn({
   return (
     <button
       onClick={onClick}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
       title={title}
       className={cn(
         "flex items-center justify-center p-2 md:p-2.5 rounded-full hover:bg-white/10 active:scale-90 active:bg-white/15 transition-all duration-150 text-white",

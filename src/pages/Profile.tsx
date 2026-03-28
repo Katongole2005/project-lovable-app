@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTheme } from "next-themes";
-import { getRecentlyViewed, getContinueWatching, getWatchlist, getUserRatings, removeContinueWatching } from "@/lib/storage";
+import { getRecentlyViewed, getWatchlist, getUserRatings, removeContinueWatching } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
+import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PushNotificationButton } from "@/components/PushNotificationButton";
@@ -389,7 +390,7 @@ export default function Profile() {
   }, [scrollY]);
 
   const recentlyViewed = getRecentlyViewed();
-  const continueWatching = getContinueWatching();
+  const continueWatching = useContinueWatching();
   const watchlist = getWatchlist();
   const filteredWatchlist = useMemo(() => {
     let list = watchlistFilter === "all" 
@@ -853,7 +854,7 @@ export default function Profile() {
                           transition={{ delay: i * 0.06 }}
                           variants={cardHover}
                           whileHover="hover"
-                          onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                          onClick={() => navigateToMovie(item.contentId, item.title, item.type)}
                           data-testid={`card-continue-${item.id}`}
                           className="flex-shrink-0 w-[140px] md:w-[160px] snap-start rounded-2xl overflow-hidden bg-card/80 border border-border/20 group cursor-pointer"
                         >
@@ -890,9 +891,9 @@ export default function Profile() {
                           </div>
                           <div className="p-2.5">
                             <p className="text-[11px] font-semibold text-foreground truncate">{item.title}</p>
-                            {item.season_number && (
+                            {item.seasonNumber && item.episodeNumber && (
                               <p className="text-[10px] text-muted-foreground mt-0.5">
-                                S{item.season_number} E{item.episode_number}
+                                S{item.seasonNumber} E{item.episodeNumber}
                               </p>
                             )}
                           </div>

@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import logoLight from "@/assets/logo.png";
 import logoDark from "@/assets/logo-dark.png";
+import type { Movie } from "@/types/movie";
 
 interface HeaderProps {
   onSearch: (query: string) => void;
-  onMovieSelect: (movie: any) => void;
+  onMovieSelect: (movie: Movie) => void;
   popularSearches?: string[];
   activeTab?: string;
   onTabChange?: (tab: string) => void;

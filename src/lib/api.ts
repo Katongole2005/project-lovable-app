@@ -2,6 +2,8 @@ import type { Movie, Series, Episode, SearchResult } from "@/types/movie";
 import { supabase } from "@/integrations/supabase/client";
 
 const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
+const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "https://api.s-u.in/api";
+export const API_BASE = (import.meta.env.VITE_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, "");
 
 export const getImageUrl = (url?: string) => {
   if (!url) return fallbackPoster;
@@ -30,6 +32,116 @@ export const preloadMovieBackdrop = (movie: { backdrop_url?: string | null; imag
     preloadImage(optimizedUrl).catch(() => { });
   }
 };
+
+function unwrapLegacyWorkerUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!/cdn\.s-u\.in$/i.test(parsed.hostname)) return url;
+    return parsed.searchParams.get("url") || url;
+  } catch {
+    return url;
+  }
+}
+
+export function shouldProxyMediaUrl(url?: string): boolean {
+  if (!url) return false;
+  const normalized = unwrapLegacyWorkerUrl(url);
+  return /mobifliks\.(info|com)/i.test(normalized) || /download(mp4|serie)\.php/i.test(normalized);
+}
+
+export function buildMediaUrl({
+  url,
+  title,
+  detailsUrl,
+  mobifliksId,
+  play = false,
+}: {
+  url: string;
+  title: string;
+  detailsUrl?: string | null;
+  mobifliksId?: string | null;
+  play?: boolean;
+}): string {
+  const normalizedUrl = unwrapLegacyWorkerUrl(url);
+  if (!shouldProxyMediaUrl(normalizedUrl)) {
+    return normalizedUrl;
+  }
+
+  const endpoint = new URL(`${API_BASE}/media`);
+  endpoint.searchParams.set("url", normalizedUrl);
+  endpoint.searchParams.set("title", title || "video");
+  if (detailsUrl) {
+    endpoint.searchParams.set("details_url", detailsUrl);
+  }
+  if (mobifliksId) {
+    endpoint.searchParams.set("mobifliks_id", mobifliksId);
+  }
+  if (play) {
+    endpoint.searchParams.set("play", "true");
+  }
+
+  return endpoint.toString();
+}
+
+export interface MediaAvailability {
+  available: boolean;
+  resolved_url: string | null;
+  candidate_urls: string[];
+}
+
+export function buildResolveMediaUrl(mediaUrl: string): string | null {
+  try {
+    const parsed = new URL(mediaUrl);
+    if (!parsed.pathname.endsWith("/media")) {
+      return null;
+    }
+    parsed.pathname = parsed.pathname.replace(/\/media$/, "/resolve-media");
+    parsed.searchParams.delete("title");
+    parsed.searchParams.delete("play");
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaAvailability> {
+  const resolveUrl = buildResolveMediaUrl(mediaUrl);
+  if (!resolveUrl) {
+    return {
+      available: true,
+      resolved_url: mediaUrl,
+      candidate_urls: [mediaUrl],
+    };
+  }
+
+  try {
+    const response = await fetch(resolveUrl, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return {
+        available: true,
+        resolved_url: mediaUrl,
+        candidate_urls: [mediaUrl],
+      };
+    }
+
+    const data = await response.json() as Partial<MediaAvailability>;
+    return {
+      available: Boolean(data.available),
+      resolved_url: data.resolved_url ?? null,
+      candidate_urls: Array.isArray(data.candidate_urls) ? data.candidate_urls : [mediaUrl],
+    };
+  } catch {
+    return {
+      available: true,
+      resolved_url: mediaUrl,
+      candidate_urls: [mediaUrl],
+    };
+  }
+}
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
