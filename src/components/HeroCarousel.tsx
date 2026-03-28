@@ -93,12 +93,12 @@ export function HeroCarousel({
   }, [selectedIndex, totalSlides]);
 
   const getBackdrop = React.useCallback(
-    (movie: Movie) =>
-      movie.backdrop_url
-        ? deviceProfile.allowHighResImages
-          ? movie.backdrop_url.replace('/original/', '/w1280/').replace('/w780/', '/w1280/')
-          : getOptimizedBackdropUrl(movie.backdrop_url)
-        : getImageUrl(movie.image_url),
+    (movie: Movie) => {
+      if (!movie.backdrop_url) return null;
+      return deviceProfile.allowHighResImages
+        ? movie.backdrop_url.replace('/original/', '/w1280/').replace('/w780/', '/w1280/')
+        : getOptimizedBackdropUrl(movie.backdrop_url);
+    },
     [deviceProfile.allowHighResImages]
   );
 
@@ -109,8 +109,11 @@ export function HeroCarousel({
     const nextMovie = displayMovies[nextIdx];
     if (!nextMovie) return;
 
-    const img = new Image();
-    img.src = getBackdrop(nextMovie);
+    const backdropUrl = getBackdrop(nextMovie);
+    if (backdropUrl) {
+      const img = new Image();
+      img.src = backdropUrl;
+    }
   }, [deviceProfile.isWeakDevice, displayMovies, getBackdrop, selectedIndex, totalSlides]);
 
   const touchStartX = React.useRef(0);
@@ -288,25 +291,42 @@ export function HeroCarousel({
           <div className="absolute inset-0 bg-[#0a0a0f]" />
 
           <AnimatePresence initial={false}>
-            <motion.div
-              key={`backdrop-${selectedIndex}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0"
-            >
-              <motion.img
-                src={backdropSrc}
-                alt=""
-                className="w-full h-full object-cover will-change-transform"
-                loading="eager"
-                fetchPriority="high"
-                initial={deviceProfile.allowAmbientEffects ? { scale: 1.08, x: "-1%" } : false}
-                animate={deviceProfile.allowAmbientEffects ? { scale: 1, x: "0%" } : undefined}
-                transition={deviceProfile.allowAmbientEffects ? { duration: 10, ease: [0.25, 0.1, 0.25, 1] } : undefined}
+            {backdropSrc && (
+              <motion.div
+                key={`backdrop-${selectedIndex}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute inset-0"
+              >
+                <motion.img
+                  src={backdropSrc}
+                  alt=""
+                  className="w-full h-full object-cover will-change-transform"
+                  loading="eager"
+                  fetchPriority="high"
+                  initial={deviceProfile.allowAmbientEffects ? { scale: 1.08, x: "-1%" } : false}
+                  animate={deviceProfile.allowAmbientEffects ? { scale: 1, x: "0%" } : undefined}
+                  transition={deviceProfile.allowAmbientEffects ? { duration: 10, ease: [0.25, 0.1, 0.25, 1] } : undefined}
+                />
+              </motion.div>
+            )}
+            {!backdropSrc && (
+              <motion.div
+                key={`backdrop-fallback-${selectedIndex}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute inset-0 opacity-40 blur-[80px] pointer-events-none"
+                style={{
+                  backgroundImage: `url(${getImageUrl(currentMovie.image_url)})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
               />
-            </motion.div>
+            )}
           </AnimatePresence>
 
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/40" />

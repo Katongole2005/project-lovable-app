@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
 const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "https://api.s-u.in/api";
 export const API_BASE = (import.meta.env.VITE_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, "");
+export const CLOUDFLARE_WORKER_URL = "https://cdn.s-u.in";
 
 export const getImageUrl = (url?: string) => {
   if (!url) return fallbackPoster;
@@ -67,6 +68,16 @@ export function buildMediaUrl({
     return normalizedUrl;
   }
 
+  if (CLOUDFLARE_WORKER_URL) {
+    const endpoint = new URL(CLOUDFLARE_WORKER_URL);
+    endpoint.searchParams.set("url", normalizedUrl);
+    endpoint.searchParams.set("name", title || "video");
+    if (play) {
+      endpoint.searchParams.set("play", "1");
+    }
+    return endpoint.toString();
+  }
+
   const endpoint = new URL(`${API_BASE}/media`);
   endpoint.searchParams.set("url", normalizedUrl);
   endpoint.searchParams.set("title", title || "video");
@@ -92,6 +103,16 @@ export interface MediaAvailability {
 export function buildResolveMediaUrl(mediaUrl: string): string | null {
   try {
     const parsed = new URL(mediaUrl);
+    
+    // Support for resolving Cloudflare worker proxy URLs mapping back to python api
+    if (CLOUDFLARE_WORKER_URL && parsed.hostname === new URL(CLOUDFLARE_WORKER_URL).hostname) {
+      const targetUrl = parsed.searchParams.get("url");
+      if (!targetUrl) return null;
+      const endpoint = new URL(`${API_BASE}/resolve-media`);
+      endpoint.searchParams.set("url", targetUrl);
+      return endpoint.toString();
+    }
+
     if (!parsed.pathname.endsWith("/media")) {
       return null;
     }

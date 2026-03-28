@@ -16,16 +16,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * Cloudflare Worker URL
- * After deploying cloudflare-worker/download-worker.js, paste your worker
- * URL here (e.g. "https://download.yourname.workers.dev").
- * Leave as empty string to skip this strategy and fall back to CORS fetch.
- * ─────────────────────────────────────────────────────────────────────────────
- */
-const CLOUDFLARE_WORKER_URL = "https://cdn.s-u.in";
-
 export function getProxiedPlayUrl(url: string, title: string, detailsUrl?: string | null, mobifliksId?: string | null) {
   return buildMediaUrl({
     url,
@@ -34,43 +24,11 @@ export function getProxiedPlayUrl(url: string, title: string, detailsUrl?: strin
     mobifliksId,
     play: true,
   });
-  if (url === "__legacy_worker_disabled__") {
-  
-  const cleanTitle = title
-    .replace(/mobifliks\.com\s*[-–—|:]\s*/gi, "")
-    .replace(/\s*[-–—|:]\s*mobifliks\.com/gi, "")
-    .replace(/mobifliks\.com/gi, "")
-    .trim();
-    
-  const safeName = cleanTitle.replace(/[/\\:*?"<>|]/g, "-").trim() || "video";
-  const extMatch = url.match(/\.(mp4|mkv|avi|mov|webm)(\?|$)/i);
-  const ext = extMatch ? extMatch[1].toLowerCase() : "mp4";
-  const fullName = `${safeName} - s-u.in.${ext}`;
-  const mediaUrl = buildMediaUrl({
-    url,
-    title: fullName,
-    detailsUrl,
-    mobifliksId,
-    play: false,
-  });
-  const anchor = document.createElement("a");
-  anchor.href = mediaUrl;
-  anchor.download = fullName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  toast.success(`Downloading "${safeName}"`, { duration: 3000 });
-  return;
-  }
 }
 
 /**
  * Downloads a file with a clean, movie-title filename.
- *
- * Strategy 1: Cloudflare Worker proxy — worker fetches & renames server-side.
- *             Works for ALL URLs, bypasses CORS and Content-Disposition limits.
- * Strategy 2: Direct CORS fetch → Blob (works for Supabase / CORS-enabled CDNs)
- * Strategy 3: window.open fallback — browser assigns original filename.
+ * Routes through the proxy defined in buildMediaUrl for the best performance.
  */
 async function downloadWithName(url: string, filename: string, detailsUrl?: string | null, mobifliksId?: string | null): Promise<void> {
   // Strip site watermark / domain leftover from scraped titles
@@ -91,71 +49,21 @@ async function downloadWithName(url: string, filename: string, detailsUrl?: stri
     mobifliksId,
     play: false,
   });
+  
+  toast.loading(`Checking "${safeName}"...`, { id: "dl-toast" });
   const mediaStatus = await resolveMediaAvailability(mediaUrl);
   if (!mediaStatus.available) {
-    toast.error(`"${safeName}" is not currently downloadable from Mobifliks.`);
+    toast.error(`"${safeName}" is not currently downloadable from Mobifliks.`, { id: "dl-toast" });
     return;
   }
+  
+  toast.success(`Downloading "${safeName}"`, { id: "dl-toast" });
   const anchor = document.createElement("a");
   anchor.href = mediaUrl;
   anchor.download = fullName;
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
-  toast.success(`Downloading "${safeName}"`, { duration: 3000 });
-  return;
-
-  // ── Strategy 1: Direct anchor → Cloudflare Worker ─────────────────────────
-  // The worker sets Content-Disposition server-side, so no fetch needed.
-  // Browser native download bar starts IMMEDIATELY.
-  {
-    const mediaUrl = buildMediaUrl({
-      url,
-      title: fullName,
-      detailsUrl,
-      mobifliksId,
-      play: false,
-    });
-    const a = document.createElement("a");
-    a.href = mediaUrl;
-    a.download = fullName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    toast.success(`Downloading "${safeName}"`, { duration: 3000 });
-    return;
-  }
-
-
-  // ── Strategy 2: Direct CORS fetch → Blob ──────────────────────────────────
-  try {
-    toast.loading(`Preparing "${safeName}"…`, { id: "dl-toast" });
-    const response = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      mode: "cors",
-      credentials: "omit",
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const blob = await response.blob();
-    if (blob.size === 0) throw new Error("empty blob");
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = fullName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
-    toast.success(`Downloading "${safeName}"`, { id: "dl-toast" });
-    return;
-  } catch {
-    toast.dismiss("dl-toast");
-  }
-
-  // ── Strategy 3: window.open fallback ──────────────────────────────────────
-  toast.info("Opening download link in a new tab…");
-  window.open(url, "_blank");
 }
 
 
@@ -216,7 +124,6 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   // Fetch missing TMDB data (especially for series)
   React.useEffect(() => {
     if (!movie || !isOpen) return;
-    return;
 
     // Fetch if backdrop is missing OR cast is missing
     const needsBackdrop = !movie.backdrop_url;
@@ -333,7 +240,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
         buildMediaUrl({
           url,
           title,
-          detailsUrl: movie.video_page_url || movie.details_url,
+          detailsUrl: (movie as any).video_page_url || movie.details_url,
           mobifliksId: movie.mobifliks_id,
           play: true,
         }),
