@@ -59,6 +59,29 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- framer-motion (Animations)
+- Supabase (Auth, Database, Storage)
+- Cloudflare Workers (Media Proxy)
+
+## Architecture & Features
+
+This project is a high-performance movie/series discovery and streaming platform.
+
+- **Automated Scraper**: Python-based scraper (`run_scraper.py`) that synchronizes movie and series metadata to Supabase.
+- **Series Management**: Full support for seasons and episodes, including progress tracking and "Continue Watching" logic.
+- **Media Proxying**: Handles media source fetching through custom Cloudflare Workers to bypass CORS and improve reliability.
+- **Watchlist & Progress**: User-specific data persistence using Supabase Auth and local synchronization.
+- **Premium UI**: Dark-mode first design with glassmorphism, parallax effects, and smooth layout transitions.
+
+## Running the Scraper
+
+To populate the database with fresh content:
+
+1. Ensure Python 3.x is installed.
+2. Install dependencies: `pip install schedule scraper config` (or as per project requirements).
+3. Run the scraper: `python run_scraper.py`.
+
+It is configured to run every 6 hours by default.
 
 ## How can I deploy this project?
 

@@ -685,6 +685,17 @@
     background: linear-gradient(135deg, hsl(240 30% 12%) 0%, hsl(260 40% 18%) 40%, hsl(280 35% 15%) 70%, hsl(250 30% 10%) 100%);
   }
 
+  .bg-profile-hero-dark {
+    background: radial-gradient(ellipse 120% 80% at 50% 20%, hsl(210 100% 60% / 0.12), transparent 60%), 
+                radial-gradient(ellipse 100% 60% at 80% 30%, hsl(260 70% 55% / 0.08), transparent 50%), 
+                linear-gradient(180deg, hsl(230 18% 8%) 0%, hsl(230 18% 5%) 100%);
+  }
+
+  .bg-profile-hero-light {
+    background: radial-gradient(ellipse 120% 80% at 50% 20%, hsl(210 60% 45% / 0.1), transparent 60%), 
+                linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
+  }
+
   .hero-cinematic-container {
     height: calc(100vh - 7rem);
     min-height: 500px;
