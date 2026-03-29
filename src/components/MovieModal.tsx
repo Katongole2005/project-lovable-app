@@ -507,11 +507,22 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                       >
                         <Share2 className="w-4 h-4" />
                       </button>
-                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
+                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!movie.download_url) && (
                         <button
                           onClick={() => {
-                            const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-                            downloadWithName(movie.download_url!, name, movie.video_page_url || movie.details_url, movie.mobifliks_id);
+                            if (isSeries) {
+                              const firstEp = allEpisodes[0];
+                              if (firstEp?.download_url) {
+                                const name = `${movie.title} - S${firstEp.season_number || 1}E${String(firstEp.episode_number).padStart(2, '0')}`;
+                                downloadWithName(firstEp.download_url, name, undefined, firstEp.mobifliks_id);
+                              } else {
+                                toast.error("No episodes available to download yet.");
+                                episodesSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+                              }
+                            } else {
+                              const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
+                              downloadWithName(movie.download_url!, name, movie.video_page_url || movie.details_url, movie.mobifliks_id);
+                            }
                           }}
                           aria-label="Download"
                           className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
@@ -1442,21 +1453,32 @@ function MobileMovieLayout({
             data-testid="button-play"
             className="flex-1 gap-2 text-white rounded-2xl h-[52px] text-base font-bold relative overflow-hidden border-0 active:scale-[0.97] transition-transform modal-footer-play-btn"
             onClick={() => {
-              if (isSeries && series.episodes && series.episodes.length > 0) {
-                if (resumeEpisode) {
-                  const ep = series.episodes.find(e =>
-                    e.episode_number === resumeEpisode.episode &&
-                    (e.season_number || 1) === resumeEpisode.season
-                  );
-                  if (ep?.download_url) {
-                    onPlay(ep.download_url, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
-                    return;
+              if (isSeries) {
+                if (series.episodes && series.episodes.length > 0) {
+                  if (resumeEpisode) {
+                    const ep = series.episodes.find(e =>
+                      e.episode_number === resumeEpisode.episode &&
+                      (e.season_number || 1) === resumeEpisode.season
+                    );
+                    if (ep?.download_url) {
+                      onPlay(ep.download_url, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
+                      return;
+                    }
                   }
+                  const firstEp = series.episodes[0];
+                  if (firstEp?.download_url) {
+                    onPlay(firstEp.download_url, `${movie.title} - S1:E1`);
+                  } else {
+                    toast.error("The first episode is not currently playable.");
+                  }
+                } else {
+                  toast.error("No episodes available yet. Please refresh later.");
+                  episodesSectionRef.current?.scrollIntoView({ behavior: "smooth" });
                 }
-                const firstEp = series.episodes[0];
-                if (firstEp?.download_url) onPlay(firstEp.download_url, `${movie.title} - S1:E1`);
               } else if (movie.download_url) {
                 onPlay(movie.download_url, movie.title);
+              } else {
+                toast.error("This title is not currently playable.");
               }
             }}
           >

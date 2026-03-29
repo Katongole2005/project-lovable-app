@@ -148,6 +148,148 @@ function EditProfileDialog({
                 className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
               >
                 {uploading ? (
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PushNotificationButton } from "@/components/PushNotificationButton";
+import { SendPushPanel } from "@/components/SendPushPanel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import {
+  ArrowLeft,
+  LogOut,
+  Moon,
+  Sun,
+  Film,
+  Tv,
+  Clock,
+  Eye,
+  ChevronRight,
+  User,
+  Mail,
+  Shield,
+  Settings,
+  Heart,
+  Star,
+  Play,
+  Bookmark,
+  Edit3,
+  Crown,
+  Lock,
+  X,
+  Check,
+  Loader2,
+  Trash2,
+  Zap,
+  TrendingUp,
+  Sparkles,
+  Bell,
+  Camera,
+} from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+function EditProfileDialog({
+  open,
+  onOpenChange,
+  user,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  user: any;
+}) {
+  const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || "");
+  const [lastName, setLastName] = useState(user?.user_metadata?.last_name || "");
+  const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || "");
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setFirstName(user?.user_metadata?.first_name || "");
+      setLastName(user?.user_metadata?.last_name || "");
+      setAvatarUrl(user?.user_metadata?.avatar_url || "");
+    }
+  }, [open, user]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload avatar");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { 
+          first_name: firstName.trim(), 
+          last_name: lastName.trim(),
+          avatar_url: avatarUrl
+        },
+      });
+      if (error) throw error;
+      toast.success("Profile updated!");
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-2xl border-white/[0.06] bg-card/95 backdrop-blur-xl">
+        <DialogHeader>
+          <DialogTitle className="font-display">Edit Profile</DialogTitle>
+          <DialogDescription>Update your display name and photo</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          {/* Avatar preview and upload */}
+          <div className="flex flex-col items-center gap-3 mb-2">
+            <div className="relative group">
+              <Avatar className="w-20 h-20 border-2 border-border/50">
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+                  {firstName?.[0] || user?.email?.[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+              >
+                {uploading ? (
                   <Loader2 className="w-5 h-5 text-white animate-spin" />
                 ) : (
                   <Camera className="w-5 h-5 text-white" />
@@ -160,6 +302,7 @@ function EditProfileDialog({
               onChange={handleAvatarUpload}
               accept="image/*"
               className="hidden"
+              aria-label="Upload avatar"
             />
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Click to update photo</p>
           </div>
@@ -317,7 +460,7 @@ function PreferencesDialog({
               onClick={() => setAutoplay(!autoplay)}
               data-testid="button-toggle-autoplay"
               role="switch"
-              aria-checked={autoplay}
+              aria-checked={autoplay ? "true" : "false"}
               aria-label="Toggle autoplay"
               className={cn(
                 "w-12 h-7 rounded-full transition-colors relative",
@@ -747,7 +890,7 @@ export default function Profile() {
               onClick={() => setActiveTab(tab.id)}
               data-testid={`tab-${tab.id}`}
               role="tab"
-              aria-selected={activeTab === tab.id}
+              aria-selected={activeTab === tab.id ? "true" : "false"}
               aria-controls={`tabpanel-${tab.id}`}
               className={cn(
                 "relative flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-colors",
@@ -896,258 +1039,6 @@ export default function Profile() {
                                 S{item.seasonNumber} E{item.episodeNumber}
                               </p>
                             )}
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </ContentSection>
-              )}
-
-              {/* Recently Viewed */}
-              {recentlyViewed.length > 0 && (
-                <ContentSection
-                  icon={<Clock className="w-4 h-4 text-muted-foreground" />}
-                  title="Recently Viewed"
-                  count={`${recentlyViewed.length} titles`}
-                  action={
-                    <button
-                      onClick={handleClearHistory}
-                      data-testid="button-clear-history"
-                      className="text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Clear
-                    </button>
-                  }
-                >
-                  <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-4 md:-mx-8 px-4 md:px-8 pb-2 snap-x snap-mandatory">
-                    {recentlyViewed.slice(0, 12).map((item, i) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.04 }}
-                        variants={cardHover}
-                        whileHover="hover"
-                        onClick={() => navigateToMovie(item.id, item.title, item.type)}
-                        data-testid={`card-recent-${item.id}`}
-                        className="flex-shrink-0 w-[110px] md:w-[130px] snap-start rounded-2xl overflow-hidden bg-card/80 border border-border/20 cursor-pointer group"
-                      >
-                        <div className="aspect-[2/3] overflow-hidden relative">
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <p className="text-[10px] font-medium text-foreground p-2 truncate">{item.title}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </ContentSection>
-              )}
-
-              {totalWatched === 0 && continueWatching.length === 0 && (
-                <motion.div
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="flex flex-col items-center justify-center py-16 text-center"
-                >
-                  <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
-                    <Film className="w-10 h-10 text-muted-foreground/50" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground font-display mb-1">No activity yet</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs">Start watching movies and series to see your activity here</p>
-                  <Button
-                    onClick={() => navigate("/")}
-                    data-testid="button-explore"
-                    className="mt-4 rounded-2xl gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    Explore Movies
-                  </Button>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === "watchlist" && (
-            <motion.div
-              key="watchlist"
-              role="tabpanel"
-              id="tabpanel-watchlist"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="space-y-6"
-            >
-              {watchlist.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
-                  {/* Type Filter */}
-                  <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/30 border border-border/10 overflow-x-auto no-scrollbar max-w-full">
-                    {[
-                      { id: "all", label: "All" },
-                      { id: "movie", label: "Movies" },
-                      { id: "series", label: "Series" }
-                    ].map((f) => (
-                      <button
-                        key={f.id}
-                        onClick={() => setWatchlistFilter(f.id as any)}
-                        className={cn(
-                          "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap",
-                          watchlistFilter === f.id 
-                            ? "bg-primary text-primary-foreground shadow-sm" 
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        )}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Date Sort */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60 whitespace-nowrap">Sort by</span>
-                    <button
-                      onClick={() => setWatchlistSort(v => v === "newest" ? "oldest" : "newest")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/30 border border-border/10 text-xs font-medium hover:bg-muted/50 transition-colors"
-                    >
-                      <TrendingUp className={cn("w-3.5 h-3.5 text-primary transition-transform", watchlistSort === "oldest" && "rotate-180")} />
-                      {watchlistSort === "newest" ? "Recently Added" : "Oldest first"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {filteredWatchlist.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {filteredWatchlist.map((item, i) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04, duration: 0.4 }}
-                      variants={cardHover}
-                      whileHover="hover"
-                      onClick={() => navigateToMovie(item.id, item.title, item.type)}
-                      data-testid={`card-watchlist-${item.id}`}
-                      className="rounded-2xl overflow-hidden bg-card/80 border border-border/20 cursor-pointer group"
-                    >
-                      <div className="aspect-[2/3] overflow-hidden relative">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <div className="absolute bottom-2 left-2">
-                            <Bookmark className="w-4 h-4 text-amber-400 fill-amber-400" />
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-[10px] md:text-[11px] font-medium text-foreground p-2 truncate">{item.title}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <motion.div
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="flex flex-col items-center justify-center py-16 text-center"
-                >
-                  <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
-                    <Bookmark className="w-10 h-10 text-muted-foreground/50" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground font-display mb-1">Watchlist is empty</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs">Save movies and series to watch later</p>
-                  <Button
-                    onClick={() => navigate("/")}
-                    data-testid="button-browse"
-                    className="mt-4 rounded-2xl gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    Browse Movies
-                  </Button>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === "settings" && (
-            <motion.div
-              key="settings"
-              role="tabpanel"
-              id="tabpanel-settings"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="space-y-4"
-            >
-              <div className="rounded-2xl bg-card/60 backdrop-blur border border-border/20 overflow-hidden divide-y divide-border/10">
-                {settingsItems.map((item, i) => {
-                  const Tag = item.customContent ? motion.div : motion.button;
-                  return (
-                    <Tag
-                      key={item.label}
-                      onClick={item.customContent ? undefined : item.onClick}
-                      initial={{ opacity: 0, x: -15 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.06 }}
-                      whileHover={item.customContent ? undefined : { x: 4 }}
-                      data-testid={`button-settings-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                      className={cn(
-                        "w-full flex items-center gap-3.5 px-4 py-4 transition-all text-left",
-                        item.customContent ? "" : "hover:bg-accent/30 active:bg-accent/50 cursor-pointer"
-                      )}
-                    >
-                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", item.color)}>
-                        <item.icon className={cn("w-4.5 h-4.5", item.iconColor)} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                        <p className="text-[11px] text-muted-foreground">{item.desc}</p>
-                      </div>
-                      {item.customContent || <ChevronRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />}
-                    </Tag>
-                  );
-                })}
-              </div>
-
-              {/* Theme card */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="rounded-2xl bg-card/60 backdrop-blur border border-border/20 p-4 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                    {isDark ? <Moon className="w-4.5 h-4.5 text-indigo-400" /> : <Sun className="w-4.5 h-4.5 text-amber-400" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Appearance</p>
-                    <p className="text-[11px] text-muted-foreground">{isDark ? "Dark" : "Light"} mode</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setTheme(isDark ? "light" : "dark")}
-                  data-testid="button-theme-switch"
-                  role="switch"
-                  aria-checked={isDark}
-                  aria-label="Toggle dark mode"
-                  className={cn(
-                    "w-14 h-8 rounded-full transition-colors relative",
-                    isDark ? "bg-primary" : "bg-muted"
-                  )}
-                >
                   <motion.div
                     className="absolute top-1 w-6 h-6 rounded-full bg-background shadow flex items-center justify-center"
                     animate={{ x: isDark ? 28 : 2 }}
