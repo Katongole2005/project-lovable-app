@@ -120,6 +120,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   const [userRating, setUserRatingState] = React.useState<number | null>(null);
   const [inWatchlist, setInWatchlist] = React.useState(false);
   const [entranceVisible, setEntranceVisible] = React.useState(false);
+  const episodesSectionRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch missing TMDB data (especially for series)
   React.useEffect(() => {
@@ -220,6 +221,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
 
   const isSeries = movie.type === "series";
   const series = movie as Series;
+  const allEpisodes = isSeries && series.episodes ? series.episodes : [];
   const cast: CastMember[] = tmdbCast && tmdbCast.length > 0
     ? tmdbCast
     : movie.cast && movie.cast.length > 0
@@ -521,7 +523,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
                               }
                             } else {
                               const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-                              downloadWithName(movie.download_url!, name, movie.video_page_url || movie.details_url, movie.mobifliks_id);
+                              downloadWithName(movie.download_url!, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
                             }
                           }}
                           aria-label="Download"
@@ -1059,7 +1061,7 @@ function MobileMovieLayout({
                   onClick={() => {
                     if (movie.download_url) {
                       const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-                      downloadWithName(movie.download_url, name, movie.video_page_url || movie.details_url, movie.mobifliks_id);
+                      downloadWithName(movie.download_url, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
                     }
                   }}
                   data-testid="button-download"
