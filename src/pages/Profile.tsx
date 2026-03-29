@@ -311,23 +311,27 @@ function PreferencesDialog({
               <p className="text-sm font-medium text-foreground">Autoplay Next</p>
               <p className="text-[11px] text-muted-foreground">Auto-play next episode</p>
             </div>
-            <button
-              onClick={() => setAutoplay(!autoplay)}
-              role="switch"
-              aria-checked={autoplay}
-              aria-label="Toggle autoplay"
-              className={cn(
-                "w-12 h-7 rounded-full transition-colors relative",
-                autoplay ? "bg-primary" : "bg-muted"
-              )}
-            >
-              <div
-                className={cn(
-                  "absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform",
-                  autoplay ? "translate-x-5" : "translate-x-0.5"
-                )}
-              />
-            </button>
+            {autoplay ? (
+              <button
+                onClick={() => setAutoplay(false)}
+                role="switch"
+                aria-checked="true"
+                aria-label="Toggle autoplay"
+                className="w-12 h-7 rounded-full transition-colors relative bg-primary"
+              >
+                <div className="absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform translate-x-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setAutoplay(true)}
+                role="switch"
+                aria-checked="false"
+                aria-label="Toggle autoplay"
+                className="w-12 h-7 rounded-full transition-colors relative bg-muted"
+              >
+                <div className="absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform translate-x-0.5" />
+              </button>
+            )}
           </div>
           <Button onClick={save} className="w-full h-11 rounded-xl gap-2">
             <Check className="w-4 h-4" />
@@ -586,23 +590,80 @@ export default function Profile() {
       {/* === TABBED CONTENT === */}
       <div className="max-w-3xl mx-auto px-4 md:px-8 mt-6">
         <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/50 border border-border/20 mb-6 backdrop-blur-lg" role="tablist">
-          {tabs.map((tab) => (
+          {activeTab === "activity" ? (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab("activity")}
               role="tab"
-              aria-selected={activeTab === tab.id}
-              className={cn(
-                "relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all",
-                activeTab === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground/70"
-              )}
+              aria-selected="true"
+              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground"
             >
-              {activeTab === tab.id && <motion.div layoutId="profile-tab" className="absolute inset-0 rounded-xl bg-card border border-border/30 shadow-sm" />}
+              <motion.div layoutId="profile-tab" className="absolute inset-0 rounded-xl bg-card border border-border/30 shadow-sm" />
               <span className="relative z-10 flex items-center gap-2">
-                <tab.icon className="w-4 h-4" /> <span className="hidden sm:inline">{tab.label}</span>
+                <TrendingUp className="w-4 h-4" /> <span className="hidden sm:inline">Activity</span>
               </span>
             </button>
-          ))}
+          ) : (
+            <button
+              onClick={() => setActiveTab("activity")}
+              role="tab"
+              aria-selected="false"
+              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground/70"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" /> <span className="hidden sm:inline">Activity</span>
+              </span>
+            </button>
+          )}
+
+          {activeTab === "watchlist" ? (
+            <button
+              onClick={() => setActiveTab("watchlist")}
+              role="tab"
+              aria-selected="true"
+              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground"
+            >
+              <motion.div layoutId="profile-tab" className="absolute inset-0 rounded-xl bg-card border border-border/30 shadow-sm" />
+              <span className="relative z-10 flex items-center gap-2">
+                <Bookmark className="w-4 h-4" /> <span className="hidden sm:inline">Watchlist</span>
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveTab("watchlist")}
+              role="tab"
+              aria-selected="false"
+              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground/70"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <Bookmark className="w-4 h-4" /> <span className="hidden sm:inline">Watchlist</span>
+              </span>
+            </button>
+          )}
+
+          {activeTab === "settings" ? (
+            <button
+              onClick={() => setActiveTab("settings")}
+              role="tab"
+              aria-selected="true"
+              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground"
+            >
+              <motion.div layoutId="profile-tab" className="absolute inset-0 rounded-xl bg-card border border-border/30 shadow-sm" />
+              <span className="relative z-10 flex items-center gap-2">
+                <Settings className="w-4 h-4" /> <span className="hidden sm:inline">Settings</span>
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveTab("settings")}
+              role="tab"
+              aria-selected="false"
+              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground/70"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <Settings className="w-4 h-4" /> <span className="hidden sm:inline">Settings</span>
+              </span>
+            </button>
+          )}
         </div>
 
         <AnimatePresence mode="wait">

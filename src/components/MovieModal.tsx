@@ -1552,8 +1552,8 @@ interface MobileTimelineEpisodeProps {
 function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, accentHue, isResumeTarget, progressPct = 0 }: MobileTimelineEpisodeProps) {
   const hasVideo = episode.download_url &&
     (episode.download_url.includes(".mp4") ||
-      episode.download_url.includes("downloadmp4.php") ||
-      episode.download_url.includes("downloadserie.php"));
+      episode.download_url.includes("downloadmp4") ||
+      episode.download_url.includes("downloadserie"));
 
   const epNum = episode.episode_number.toString().padStart(2, '0');
 
@@ -1830,8 +1830,8 @@ interface DesktopEpisodeCardProps {
 function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: DesktopEpisodeCardProps) {
   const hasVideo = episode.download_url &&
     (episode.download_url.includes(".mp4") ||
-      episode.download_url.includes("downloadmp4.php") ||
-      episode.download_url.includes("downloadserie.php"));
+      episode.download_url.includes("downloadmp4") ||
+      episode.download_url.includes("downloadserie"));
 
   return (
     <div
