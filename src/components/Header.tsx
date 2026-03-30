@@ -108,23 +108,12 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
   };
 
   return (
-    <>
-      <div 
-        className="fixed top-0 left-0 right-0 pointer-events-none z-30"
-        style={{
-          height: "calc(7rem + env(safe-area-inset-top))",
-          background: 'linear-gradient(to bottom, hsl(var(--background)) 0%, hsl(var(--background) / 0.95) 30%, hsl(var(--background) / 0.7) 50%, hsl(var(--background) / 0.3) 75%, transparent 100%)',
-          maskImage: 'linear-gradient(to bottom, black 0%, black 40%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 40%, transparent 100%)',
-        }}
-      />
       <header 
         className={cn(
-          "sticky top-0 z-40 pb-4 transition-all duration-300",
+          "sticky top-0 z-40 py-4 transition-all duration-300",
           isScrolled && "bg-background/40 backdrop-blur-md",
           isHidden && "-translate-y-full"
         )}
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between gap-4">
@@ -257,6 +246,5 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
         </div>
       </div>
     </header>
-    </>
   );
 }
