@@ -29,6 +29,7 @@ export function BlurImage({ src, alt, className, loading = "lazy", style }: Blur
       <img
         src={src}
         alt={alt}
+        decoding="async"
         className={cn(
           "w-full h-full object-cover transition-all duration-500",
           loaded ? "opacity-100 blur-0 scale-100" : "opacity-0 blur-lg scale-105",

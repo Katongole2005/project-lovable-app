@@ -16,7 +16,7 @@ export function ContinueWatchingRow({ items, onResume, onRemove, className }: Co
   if (items.length === 0) return null;
 
   return (
-    <section className={cn("py-6", className)}>
+    <section className={cn("py-6 content-visibility-auto", className)}>
       <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight mb-6" data-testid="text-section-continue-watching">
         Continue Watching
       </h2>
@@ -28,7 +28,6 @@ export function ContinueWatchingRow({ items, onResume, onRemove, className }: Co
             item={item}
             onResume={onResume}
             onRemove={onRemove}
-            index={index}
           />
         ))}
       </div>
@@ -40,12 +39,10 @@ function ContinueWatchingCard({
   item,
   onResume,
   onRemove,
-  index,
 }: {
   item: ContinueWatching;
   onResume: (item: ContinueWatching) => void;
   onRemove: (id: string) => void;
-  index: number;
 }) {
   const progressPercent = item.duration > 0 ? Math.round((item.progress / item.duration) * 100) : 0;
   const remainingMin = Math.max(1, Math.round((item.duration - item.progress) / 60));
@@ -61,9 +58,7 @@ function ContinueWatchingCard({
   return (
     <div
       className={cn(
-        "group relative flex-shrink-0 w-[260px] sm:w-[280px] cursor-pointer snap-start press-effect",
-        "opacity-0 animate-scale-in",
-        `stagger-${Math.min(index + 1, 8)}`
+        "group relative flex-shrink-0 w-[260px] sm:w-[280px] cursor-pointer snap-start press-effect"
       )}
       onClick={() => onResume(item)}
       data-testid={`card-continue-${item.id}`}

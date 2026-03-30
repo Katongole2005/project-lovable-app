@@ -2,6 +2,7 @@ import type { Movie, ContinueWatching } from "@/types/movie";
 import { MovieCard } from "./MovieCard";
 import { cn } from "@/lib/utils";
 import { useMemo, forwardRef } from "react";
+import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 
 interface RecommendationRowProps {
   continueWatching: ContinueWatching[];
@@ -15,6 +16,7 @@ interface RecommendationRowProps {
  * matches its genres against the full movie list, and shows up to 12 results.
  */
 export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>(function RecommendationRow({ continueWatching, allMovies, onMovieClick, className }, ref) {
+  const deviceProfile = useDeviceProfile();
   const { sourceTitle, recommendations } = useMemo(() => {
     if (continueWatching.length === 0 || allMovies.length === 0) {
       return { sourceTitle: "", recommendations: [] };
@@ -41,16 +43,16 @@ export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>
       })
       .filter(s => s.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 12)
+      .slice(0, deviceProfile.recommendationItems)
       .map(s => s.movie);
 
     return { sourceTitle: sourceItem.title, recommendations: scored };
-  }, [continueWatching, allMovies]);
+  }, [allMovies, continueWatching, deviceProfile.recommendationItems]);
 
   if (recommendations.length < 3) return null;
 
   return (
-    <section ref={ref} className={cn("py-6", className)}>
+    <section ref={ref} className={cn("py-6 content-visibility-auto", className)}>
       <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight mb-6" data-testid="text-section-recommendations">
         Because You Watched <span className="text-primary">{sourceTitle}</span>
       </h2>
@@ -60,11 +62,7 @@ export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>
             key={movie.mobifliks_id}
             movie={movie}
             onClick={onMovieClick}
-            className={cn(
-              "w-full",
-              "opacity-0 animate-scale-in",
-              `stagger-${Math.min((index % 8) + 1, 8)}`
-            )}
+            className="w-full"
             priority={index < 4}
           />
         ))}

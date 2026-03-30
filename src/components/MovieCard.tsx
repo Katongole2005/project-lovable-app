@@ -2,10 +2,9 @@ import { Play, Star, Heart, TrendingUp, Sparkles } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import { getImageUrl, preloadMovieBackdrop } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useCallback, useState, useEffect, forwardRef, useRef } from "react";
+import { useCallback, useState, useEffect, forwardRef, memo } from "react";
 import { isInWatchlist, toggleWatchlist } from "@/lib/storage";
 import { BlurImage } from "./BlurImage";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface MovieCardProps {
   movie: Movie;
@@ -27,21 +26,31 @@ function isTrending(movie: Movie): boolean {
   return (movie.views ?? 0) >= 5000;
 }
 
-export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, onWatchlistChange }, ref) {
-  const rating = movie.views
-    ? Math.min(8.5, Math.max(6.0, (movie.views / 10000) + 6)).toFixed(1)
-    : (6.0 + Math.random() * 2.5).toFixed(1);
+function getStableRating(movie: Movie): string {
+  if (movie.views) {
+    return Math.min(8.5, Math.max(6.0, (movie.views / 10000) + 6)).toFixed(1);
+  }
+
+  const hash = movie.mobifliks_id.split("").reduce((acc, char) => {
+    acc = (acc << 5) - acc + char.charCodeAt(0);
+    return acc & acc;
+  }, 0);
+
+  return (6 + (Math.abs(hash) % 26) / 10).toFixed(1);
+}
+
+const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, onWatchlistChange }, ref) {
+  const rating = getStableRating(movie);
 
   const [inWatchlist, setInWatchlist] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [ripple, setRipple] = useState<{ x: number; y: number } | null>(null);
-  const tiltRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setInWatchlist(isInWatchlist(movie.mobifliks_id));
   }, [movie.mobifliks_id]);
 
   const handleMouseEnter = useCallback(() => {
+    if (typeof window === "undefined" || window.innerWidth < 768) return;
     preloadMovieBackdrop(movie);
     setHovered(true);
   }, [movie]);
@@ -61,35 +70,6 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
     onWatchlistChange?.();
   }, [movie, onWatchlistChange]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
-    setRipple({ x, y });
-    setTimeout(() => setRipple(null), 650);
-  }, []);
-
-  const handleTiltMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const el = tiltRef.current;
-    if (!el || window.innerWidth < 768) return;
-    const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    const tiltX = (y - 0.5) * -8;
-    const tiltY = (x - 0.5) * 8;
-    el.style.transform = `perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.04,1.04,1.04)`;
-    el.style.setProperty("--gloss-x", `${x * 100}%`);
-    el.style.setProperty("--gloss-y", `${y * 100}%`);
-  }, []);
-
-  const handleTiltLeave = useCallback(() => {
-    const el = tiltRef.current;
-    if (!el) return;
-    el.style.transform = "";
-    el.style.setProperty("--gloss-x", "50%");
-    el.style.setProperty("--gloss-y", "50%");
-  }, []);
-
   const isNew = isNewRelease(movie);
   const trending = isTrending(movie);
 
@@ -97,31 +77,21 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
     <div
       ref={ref}
       className={cn(
-        "group relative flex-shrink-0 cursor-pointer overflow-visible",
+        "group relative flex-shrink-0 cursor-pointer overflow-visible touch-manipulation",
         className
       )}
       onClick={() => onClick(movie)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
       data-testid={`card-movie-${movie.mobifliks_id}`}
     >
-      <motion.div
-        ref={tiltRef}
-        whileHover={{
-          y: -8,
-          scale: 1.04,
-          transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
-        }}
-        whileTap={{ scale: 0.96 }}
-        className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/80 backdrop-blur-sm border border-white/[0.06] shadow-card card-rim-light card-premium-shadow"
+      <div
+        className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/80 backdrop-blur-sm border border-white/[0.06] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02]"
         style={{
-          willChange: "transform",
+          willChange: typeof window !== "undefined" && window.innerWidth >= 768 ? "transform" : "auto",
           ["--gloss-x" as string]: "50%",
           ["--gloss-y" as string]: "50%",
         }}
-        onMouseMove={handleTiltMove}
-        onMouseLeave={handleTiltLeave}
       >
         <BlurImage
           src={getImageUrl(movie.image_url)}
@@ -130,59 +100,33 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
           loading={priority ? "eager" : "lazy"}
         />
 
-        <motion.div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        <div
+          className="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none md:group-hover:opacity-100"
           style={{
             background: "radial-gradient(circle at var(--gloss-x) var(--gloss-y), hsl(0 0% 100% / 0.18) 0%, transparent 55%)",
           }}
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 md:group-hover:opacity-100" />
 
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-          <div className="play-ring-pulse w-12 h-12 rounded-full bg-white/95 dark:bg-white/90 backdrop-blur-md flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300 shadow-[0_0_24px_hsl(210_100%_60%/0.4)]">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 md:group-hover:opacity-100">
+          <div className="play-ring-pulse w-12 h-12 rounded-full bg-white/95 dark:bg-white/90 backdrop-blur-md flex items-center justify-center scale-75 transition-transform duration-300 shadow-[0_0_24px_hsl(210_100%_60%/0.4)] md:group-hover:scale-100">
             <Play className="w-5 h-5 text-primary fill-current ml-0.5" data-testid="icon-play" />
           </div>
         </div>
 
-        <AnimatePresence>
-          {hovered && movie.genres && movie.genres.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="absolute bottom-2 left-0 right-0 hidden md:flex flex-wrap justify-center gap-1 px-2 pointer-events-none"
-            >
-              {movie.genres.slice(0, 2).map(g => (
-                <span
-                  key={g}
-                  className="px-2.5 py-0.5 text-[9px] font-semibold rounded-full bg-black/70 backdrop-blur-sm text-white/90 border border-white/10 tracking-wide uppercase"
-                >
-                  {g}
-                </span>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {ripple && (
-            <motion.div
-              className="absolute pointer-events-none rounded-full bg-white/25"
-              style={{
-                left: ripple.x - 50,
-                top: ripple.y - 50,
-                width: 100,
-                height: 100,
-              }}
-              initial={{ scale: 0, opacity: 0.7 }}
-              animate={{ scale: 4.5, opacity: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            />
-          )}
-        </AnimatePresence>
+        {hovered && movie.genres && movie.genres.length > 0 && (
+          <div className="absolute bottom-2 left-0 right-0 hidden md:flex flex-wrap justify-center gap-1 px-2 pointer-events-none animate-fade-in">
+            {movie.genres.slice(0, 2).map(g => (
+              <span
+                key={g}
+                className="px-2.5 py-0.5 text-[9px] font-semibold rounded-full bg-black/70 backdrop-blur-sm text-white/90 border border-white/10 tracking-wide uppercase"
+              >
+                {g}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="absolute top-2 left-2 flex flex-wrap gap-1">
           {isNew && (
@@ -212,30 +156,21 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
             "absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-10",
             inWatchlist
               ? "bg-primary/90 text-primary-foreground scale-100 shadow-[0_0_12px_hsl(210_100%_60%/0.4)]"
-              : "bg-black/40 backdrop-blur-sm text-white/80 opacity-0 group-hover:opacity-100 hover:bg-black/60",
+              : "bg-black/40 backdrop-blur-sm text-white/80 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/60",
             heartFlip && "animate-heart-flip"
           )}
         >
           <Heart className={cn("w-4 h-4 transition-transform", inWatchlist && "fill-current")} />
         </button>
 
-        <style>{`
-          @keyframes heartFlip {
-            0% { transform: scale(1) rotateY(0deg); }
-            50% { transform: scale(1.3) rotateY(180deg); }
-            100% { transform: scale(1) rotateY(360deg); }
-          }
-          .animate-heart-flip { animation: heartFlip 0.4s ease-out; }
-        `}</style>
-
         {showProgress !== undefined && showProgress > 0 && (
           <div className="absolute bottom-0 left-0 right-0 p-2">
             <div className="progress-bar">
-              <motion.div className="progress-bar-fill" style={{ width: `${showProgress}%` }} />
+              <div className="progress-bar-fill" style={{ width: `${showProgress}%` }} />
             </div>
           </div>
         )}
-      </motion.div>
+      </div>
 
       <div className="mt-3 space-y-1.5">
         <h3 className="font-display font-medium text-sm leading-snug text-foreground line-clamp-1 group-hover:text-primary transition-colors tracking-normal" data-testid={`text-title-${movie.mobifliks_id}`}>
@@ -257,6 +192,8 @@ export const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(function Mov
     </div>
   );
 });
+
+export const MovieCard = memo(MovieCardBase);
 
 export function MovieCardSkeleton({ className }: { className?: string }) {
   return (

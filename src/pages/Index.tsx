@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, startTransition } from "react";
 import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
@@ -259,17 +259,17 @@ export default function Index() {
           : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, 5);
 
         const newTrending = [...heroMovies, ...heroSeries].slice(0, 25);
-        setTrending(newTrending);
-        
-        // Strategy: Preload the first hero's backdrop immediately
+        startTransition(() => {
+          setTrending(newTrending);
+          setRecentMovies(sortedTrending.length > 0 ? sortedTrending : sortByYearDesc(mData));
+
+          if (seriesQueryData) {
+            setRecentSeries(sortByYearDesc(seriesQueryData));
+          }
+        });
+
         if (newTrending.length > 0) {
           preloadMovieBackdrop(newTrending[0]);
-        }
-
-        setRecentMovies(sortedTrending.length > 0 ? sortedTrending : sortByYearDesc(mData));
-
-        if (seriesQueryData) {
-          setRecentSeries(sortByYearDesc(seriesQueryData));
         }
       }
 
@@ -295,18 +295,20 @@ export default function Index() {
           .sort((a, b) => a.localeCompare(b))
           .map(vj => ({ id: vj, label: `VJ ${vj}` }));
 
-        if (vjList.length > 0) {
-          setAllVJs(vjList);
-        }
+        startTransition(() => {
+          if (vjList.length > 0) {
+            setAllVJs(vjList);
+          }
 
-        if (statsRes) {
-          setPopularSearches(
-            statsRes.popular_searches
-              .map((s: string) => s.replace(/\s*\(\d+ searches\)\s*$/g, "").trim())
-              .filter(Boolean)
-              .slice(0, 8)
-          );
-        }
+          if (statsRes) {
+            setPopularSearches(
+              statsRes.popular_searches
+                .map((s: string) => s.replace(/\s*\(\d+ searches\)\s*$/g, "").trim())
+                .filter(Boolean)
+                .slice(0, 8)
+            );
+          }
+        });
       } catch (error) {
         console.error("Error loading extra data:", error);
       }
@@ -557,7 +559,7 @@ export default function Index() {
     }
   }, []);
 
-  const handleTabChange = useCallback(async (tab: string) => {
+  const handleTabChange = useCallback((tab: string) => {
     const viewToPath: Record<string, string> = {
       home: "/",
       movies: "/movies",
@@ -568,41 +570,19 @@ export default function Index() {
     };
     const path = viewToPath[tab];
     if (!path) return;
-    navigateTo(path);
     window.scrollTo({ top: 0, behavior: "instant" });
 
-    setActiveFilters({ category: null, vj: null, year: null, contentType: tab === "movies" ? "movies" : tab === "series" ? "series" : null });
-    setActiveVJ(null);
-    setActiveCategory("trending");
-
-    if (tab === "home") {
-      setSearchQuery("");
-    } else if (tab === "movies") {
-      setIsLoading(true);
-      try {
-        const movies = await fetchMoviesSorted("movie", 40, 1);
-        setCategoryMovies(sortByYearDesc(movies));
-      } finally {
-        setIsLoading(false);
-      }
-    } else if (tab === "series") {
-      setIsLoading(true);
-      try {
-        const series = await fetchSeries(40);
-        setCategoryMovies(sortByYearDesc(series));
-      } finally {
-        setIsLoading(false);
-      }
-    } else if (tab === "originals") {
-      setIsLoading(true);
+    startTransition(() => {
+      navigateTo(path);
+      setActiveFilters({ category: null, vj: null, year: null, contentType: tab === "movies" ? "movies" : tab === "series" ? "series" : null });
+      setActiveVJ(null);
+      setActiveCategory("trending");
       setOriginalsPage(1);
-      try {
-        const originals = await fetchOriginals(60, 1);
-        setCategoryMovies(sortByYearDesc(originals));
-      } finally {
-        setIsLoading(false);
+
+      if (tab === "home") {
+        setSearchQuery("");
       }
-    }
+    });
   }, [navigateTo]);
 
   // Handle category change
@@ -615,11 +595,15 @@ export default function Index() {
     try {
       if (category === "trending") {
         const data = await fetchTrending(dbFilters);
-        setRecentMovies(sortByYearDesc(data));
+        startTransition(() => {
+          setRecentMovies(sortByYearDesc(data));
+        });
       } else {
         const genre = CATEGORY_TO_GENRE[category] || category;
         const data = await fetchByGenre(genre, "movie", 40, dbFilters);
-        setRecentMovies(sortByYearDesc(data));
+        startTransition(() => {
+          setRecentMovies(sortByYearDesc(data));
+        });
       }
     } catch (error) {
       console.error("Error loading category:", error);
@@ -659,9 +643,11 @@ export default function Index() {
           }
         }
 
-        setCategoryMovies(sortByYearDesc(data));
-        setActiveVJ(filters.vj);
-        setActiveFilters(filters);
+        startTransition(() => {
+          setCategoryMovies(sortByYearDesc(data));
+          setActiveVJ(filters.vj);
+          setActiveFilters(filters);
+        });
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         let data: Movie[] = [];
@@ -675,12 +661,14 @@ export default function Index() {
           data = await fetchMoviesSorted("movie", 100, 1, dbFilters);
         }
 
-        if (filters.category) {
-          setActiveCategory(filters.category);
-        }
-        setActiveVJ(filters.vj);
-        setActiveFilters(filters);
-        setRecentMovies(sortByYearDesc(data));
+        startTransition(() => {
+          if (filters.category) {
+            setActiveCategory(filters.category);
+          }
+          setActiveVJ(filters.vj);
+          setActiveFilters(filters);
+          setRecentMovies(sortByYearDesc(data));
+        });
       }
     } catch (error) {
       console.error("Error applying filters:", error);
@@ -722,7 +710,9 @@ export default function Index() {
 
       const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
       const newMovies = more.filter(m => !existingIds.has(m.mobifliks_id));
-      setCategoryMovies(prev => sortByYearDesc([...prev, ...newMovies]));
+      startTransition(() => {
+        setCategoryMovies(prev => sortByYearDesc([...prev, ...newMovies]));
+      });
     } finally {
       setIsLoadingMore(false);
     }
@@ -1046,41 +1036,44 @@ export default function Index() {
         {/* Lazy Loaded Heavy Modals */}
         <Suspense fallback={null}>
           {/* Movie Details Modal */}
-          <MovieModal
-            movie={selectedMovie}
-            isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-              // Go back to the previous route when closing modal securely 
-              if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
-                const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
-                navigateTo(targetPath, { replace: true });
-              }
-            }}
-            onPlay={handlePlayVideo}
-          />
+          {isModalOpen && selectedMovie && (
+            <MovieModal
+              movie={selectedMovie}
+              isOpen={isModalOpen}
+              onClose={() => {
+                setIsModalOpen(false);
+                if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
+                  const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
+                  navigateTo(targetPath, { replace: true });
+                }
+              }}
+              onPlay={handlePlayVideo}
+            />
+          )}
 
           {/* Cinematic Video Player */}
-          <CinematicVideoPlayer
-            isOpen={isVideoOpen}
-            onClose={() => {
-              setIsVideoOpen(false);
-              setActivePlaybackItem(null);
-            }}
-            videoUrl={videoUrl}
-            title={videoTitle}
-            movie={selectedMovie}
-            onTimeUpdate={handleVideoTimeUpdate}
-            startTime={videoStartTime}
-            subtitles={selectedMovie?.subtitles || [
-              { id: "en", label: "English", language: "en", url: "" },
-              { id: "lug", label: "Luganda", language: "lug", url: "" },
-            ]}
-            skipSegments={selectedMovie?.skip_segments || [
-              { label: "Intro", startTime: 2, endTime: 12 },
-              { label: "Recap", startTime: 60, endTime: 90 },
-            ]}
-          />
+          {isVideoOpen && (
+            <CinematicVideoPlayer
+              isOpen={isVideoOpen}
+              onClose={() => {
+                setIsVideoOpen(false);
+                setActivePlaybackItem(null);
+              }}
+              videoUrl={videoUrl}
+              title={videoTitle}
+              movie={selectedMovie}
+              onTimeUpdate={handleVideoTimeUpdate}
+              startTime={videoStartTime}
+              subtitles={selectedMovie?.subtitles || [
+                { id: "en", label: "English", language: "en", url: "" },
+                { id: "lug", label: "Luganda", language: "lug", url: "" },
+              ]}
+              skipSegments={selectedMovie?.skip_segments || [
+                { label: "Intro", startTime: 2, endTime: 12 },
+                { label: "Recap", startTime: 60, endTime: 90 },
+              ]}
+            />
+          )}
 
           {/* Filter Modal */}
           {isFilterOpen && (

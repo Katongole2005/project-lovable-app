@@ -17,7 +17,7 @@ export const Top10Row = forwardRef<HTMLElement, Top10RowProps>(function Top10Row
   if (top10.length < 3) return null;
 
   return (
-    <section ref={ref} className={cn("py-6", className)}>
+    <section ref={ref} className={cn("py-6 content-visibility-auto", className)}>
       <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight mb-6" data-testid="text-section-top10">
         Top 10 Today
       </h2>
@@ -54,13 +54,10 @@ function Top10Card({
   return (
     <div
       className={cn(
-        "group relative flex-shrink-0 cursor-pointer snap-start press-effect",
-        "opacity-0 animate-scale-in",
-        `stagger-${Math.min(index + 1, 8)}`
+        "group relative flex-shrink-0 cursor-pointer snap-start press-effect"
       )}
       onClick={() => onClick(movie)}
       onMouseEnter={handleMouseEnter}
-      onTouchStart={handleMouseEnter}
       data-testid={`card-top10-${rank}`}
     >
       <div className="flex items-end gap-0">

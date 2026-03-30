@@ -23,8 +23,11 @@ export interface DeviceProfile {
   lowCpu: boolean;
   isWeakDevice: boolean;
   allowAmbientEffects: boolean;
+  allowComplexAnimations: boolean;
   allowHighResImages: boolean;
   autoplayDelayMs: number;
+  homeGridItems: number;
+  recommendationItems: number;
 }
 
 const DEFAULT_PROFILE: DeviceProfile = {
@@ -36,8 +39,11 @@ const DEFAULT_PROFILE: DeviceProfile = {
   lowCpu: false,
   isWeakDevice: false,
   allowAmbientEffects: true,
+  allowComplexAnimations: true,
   allowHighResImages: true,
   autoplayDelayMs: 5000,
+  homeGridItems: 24,
+  recommendationItems: 12,
 };
 
 function getConnection() {
@@ -64,6 +70,7 @@ function readProfile(): DeviceProfile {
   const lowCpu = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4;
   const slowNetwork = connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g";
   const isWeakDevice = prefersReducedMotion || saveData || lowMemory || lowCpu || slowNetwork;
+  const allowComplexAnimations = !isWeakDevice && !isMobile;
 
   return {
     isMobile,
@@ -73,9 +80,12 @@ function readProfile(): DeviceProfile {
     lowMemory,
     lowCpu,
     isWeakDevice,
-    allowAmbientEffects: !isWeakDevice && !isMobile,
-    allowHighResImages: !saveData && !lowMemory,
-    autoplayDelayMs: isMobile || isWeakDevice ? 3200 : 5000,
+    allowAmbientEffects: !isWeakDevice && !isCompact,
+    allowComplexAnimations,
+    allowHighResImages: !saveData && !lowMemory && !isMobile,
+    autoplayDelayMs: allowComplexAnimations ? 5000 : 0,
+    homeGridItems: isMobile ? 8 : isCompact ? 12 : 24,
+    recommendationItems: isMobile ? 6 : isCompact ? 8 : 12,
   };
 }
 

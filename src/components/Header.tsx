@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type MouseEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, ChevronDown, User, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -48,15 +48,31 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
+    let ticking = false;
+    let scrolled = lastScrollY > 20;
+    let hidden = false;
+
     const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
       const currentY = window.scrollY;
-      setIsScrolled(currentY > 20);
-      if (currentY > 80 && currentY > lastScrollY) {
-        setIsHidden(true);
-      } else {
-        setIsHidden(false);
-      }
-      lastScrollY = currentY;
+        const nextScrolled = currentY > 20;
+        const nextHidden = currentY > 80 && currentY > lastScrollY;
+
+        if (nextScrolled !== scrolled) {
+          scrolled = nextScrolled;
+          setIsScrolled(nextScrolled);
+        }
+
+        if (nextHidden !== hidden) {
+          hidden = nextHidden;
+          setIsHidden(nextHidden);
+        }
+
+        lastScrollY = currentY;
+        ticking = false;
+      });
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -74,6 +90,21 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
 
   const toggleTheme = () => {
     setTheme(isDark ? "light" : "dark");
+  };
+
+  const handleTabClick = (tab: string) => {
+    if (onTabChange) {
+      onTabChange(tab);
+      return;
+    }
+
+    navigate(tabToPath[tab] || "/");
+  };
+
+  const handleLogoClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!onTabChange) return;
+    event.preventDefault();
+    onTabChange("home");
   };
 
   return (
@@ -100,7 +131,7 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
           <Link
             to="/"
             className="flex-shrink-0"
-            onClick={() => { navigate("/"); onTabChange?.("home"); }}
+            onClick={handleLogoClick}
             data-testid="link-logo"
           >
             {!logoLoaded && (
@@ -131,7 +162,7 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
               return (
                 <button
                   key={item.id}
-                  onClick={() => { navigate(tabToPath[item.id] || "/"); onTabChange?.(item.id); }}
+                  onClick={() => handleTabClick(item.id)}
                   data-testid={`button-nav-${item.id}`}
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 press-effect",
@@ -144,7 +175,7 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
               );
             })}
             <button
-              onClick={() => { navigate("/search"); onTabChange?.("search"); }}
+              onClick={() => handleTabClick("search")}
               data-testid="button-nav-search"
               className={cn(
                 "p-2 rounded-full transition-all duration-300",
@@ -201,7 +232,7 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
               return (
                 <button
                   key={item.id}
-                  onClick={() => { navigate(tabToPath[item.id] || "/"); onTabChange?.(item.id); }}
+                  onClick={() => handleTabClick(item.id)}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300",
                     isActive ? "text-black shadow-[0_2px_8px_rgba(200,245,71,0.25)]" : "text-[#6b6b6b] hover:text-white"
@@ -213,7 +244,7 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
               );
             })}
             <button
-              onClick={() => { navigate("/search"); onTabChange?.("search"); }}
+              onClick={() => handleTabClick("search")}
               className={cn(
                 "p-1.5 rounded-full transition-all duration-300",
                 activeTab === "search" ? "text-black shadow-[0_2px_8px_rgba(200,245,71,0.25)]" : "text-[#6b6b6b] hover:text-white"

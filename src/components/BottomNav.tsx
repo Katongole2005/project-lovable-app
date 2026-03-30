@@ -1,7 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Film, Tv, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface BottomNavProps {
   activeTab?: string;
@@ -49,6 +48,15 @@ export function BottomNav({ activeTab: activeTabProp, onTabChange }: BottomNavPr
   const location = useLocation();
   const activeTab = activeTabProp ?? pathToTab[location.pathname] ?? "home";
 
+  const handleTabClick = (tabId: string) => {
+    if (onTabChange) {
+      onTabChange(tabId);
+      return;
+    }
+
+    navigate(tabToPath[tabId] || "/");
+  };
+
   return (
     <nav className="fixed left-4 right-4 z-50 md:hidden bottom-4" data-testid="nav-bottom">
       <div className="relative w-full flex items-center justify-between gap-1 p-2 rounded-full bg-black/70 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
@@ -59,30 +67,18 @@ export function BottomNav({ activeTab: activeTabProp, onTabChange }: BottomNavPr
           const isActive = activeTab === tab.id;
 
           return (
-            <motion.button
+            <button
               key={tab.id}
-              layout
-              transition={{ type: "spring", stiffness: 500, damping: 40 }}
-              onClick={() => {
-                const path = tabToPath[tab.id] || "/";
-                navigate(path);
-                onTabChange?.(tab.id);
-              }}
+              onClick={() => handleTabClick(tab.id)}
               data-testid={`button-nav-bottom-${tab.id}`}
               className={cn(
-                "flex items-center gap-2 rounded-full",
+                "flex items-center gap-2 rounded-full transition-all duration-200",
                 isActive
                   ? "flex-[2] pl-1 pr-4 py-1 bg-white/[0.05]"
                   : "flex-1 justify-center p-1"
               )}
             >
-              <motion.div
-                layout
-                animate={
-                  isActive
-                    ? { scale: [1, 1.28, 1], transition: { duration: 0.32, ease: "easeOut" } }
-                    : { scale: 1 }
-                }
+              <div
                 className={cn(
                   "flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 ease-in-out",
                   isActive
@@ -96,22 +92,14 @@ export function BottomNav({ activeTab: activeTabProp, onTabChange }: BottomNavPr
                     isActive ? "text-black" : "text-[#6b6b6b]"
                   )}
                 />
-              </motion.div>
+              </div>
 
-              <AnimatePresence mode="wait">
-                {isActive && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -8 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="text-sm font-semibold whitespace-nowrap text-white"
-                  >
-                    {tab.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
+              {isActive && (
+                <span className="text-sm font-semibold whitespace-nowrap text-white">
+                  {tab.label}
+                </span>
+              )}
+            </button>
           );
         })}
       </div>

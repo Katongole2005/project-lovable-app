@@ -25,24 +25,18 @@ export function HeroCarousel({
 }: HeroCarouselProps) {
   const deviceProfile = useDeviceProfile();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
-  const [isLoaded, setIsLoaded] = React.useState(false);
   const [isTransitioning, setIsTransitioning] = React.useState(false);
-  const [slideProgress, setSlideProgress] = React.useState(0);
   const totalSlides = Math.min(
     movies.length,
     deviceProfile.isWeakDevice ? (deviceProfile.isMobile ? 6 : 12) : 25
   );
   const displayMovies = React.useMemo(() => movies.slice(0, totalSlides), [movies, totalSlides]);
   const mobileDeck = displayMovies;
-  const transitionDuration = deviceProfile.isWeakDevice ? 700 : 1300;
+  const transitionDuration = deviceProfile.allowComplexAnimations ? 1300 : 650;
   const autoplayDelayMs = deviceProfile.autoplayDelayMs;
   const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
+  const shouldAutoplay = totalSlides > 1 && autoplayDelayMs > 0;
   const carouselPerspectiveStyle: React.CSSProperties = { perspective: "1200px" };
-
-  // Removed artificial 100ms delay to ensure instant render
-  React.useEffect(() => {
-    setIsLoaded(true);
-  }, []);
 
   const scrollTo = React.useCallback((index: number) => {
     if (isTransitioning) return;
@@ -66,25 +60,12 @@ export function HeroCarousel({
   }, [totalSlides, isTransitioning, transitionDuration]);
 
   React.useEffect(() => {
-    if (totalSlides <= 1) return;
+    if (!shouldAutoplay) return;
     const timer = window.setInterval(() => {
       scrollNext();
     }, autoplayDelayMs);
     return () => window.clearInterval(timer);
-  }, [autoplayDelayMs, scrollNext, totalSlides]);
-
-  React.useEffect(() => {
-    setSlideProgress(0);
-    if (totalSlides <= 1) return;
-
-    const INTERVAL = 50;
-    const TOTAL_MS = autoplayDelayMs;
-    const step = (INTERVAL / TOTAL_MS) * 100;
-    const id = window.setInterval(() => {
-      setSlideProgress(p => Math.min(p + step, 100));
-    }, INTERVAL);
-    return () => window.clearInterval(id);
-  }, [autoplayDelayMs, selectedIndex, totalSlides]);
+  }, [autoplayDelayMs, scrollNext, shouldAutoplay]);
 
   React.useEffect(() => {
     if (totalSlides > 0 && selectedIndex >= totalSlides) {
@@ -264,11 +245,13 @@ export function HeroCarousel({
               ))}
             </div>
             <div className="w-24 mx-auto h-0.5 rounded-full bg-white/20 overflow-hidden">
-              <motion.div
-                className="h-full bg-white rounded-full"
-                animate={{ width: `${slideProgress}%` }}
-                transition={{ ease: "linear", duration: 0.05 }}
-              />
+              {shouldAutoplay && (
+                <div
+                  key={`mobile-progress-${selectedIndex}`}
+                  className="hero-progress-bar-fill h-full bg-white rounded-full"
+                  style={{ animationDuration: `${autoplayDelayMs}ms` }}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -489,11 +472,13 @@ export function HeroCarousel({
                   }
                 </div>
                 <div className="ml-3 w-20 h-1 rounded-full bg-white/10 overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-white/60 to-white/90"
-                    animate={{ width: `${slideProgress}%` }}
-                    transition={{ duration: 0.1, ease: "linear" }}
-                  />
+                  {shouldAutoplay && (
+                    <div
+                      key={`desktop-progress-${selectedIndex}`}
+                      className="hero-progress-bar-fill h-full rounded-full bg-gradient-to-r from-white/60 to-white/90"
+                      style={{ animationDuration: `${autoplayDelayMs}ms` }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
