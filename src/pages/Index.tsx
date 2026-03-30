@@ -3,23 +3,23 @@ import { useSearchParams, useLocation, useNavigate, useParams } from "react-rout
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
-import { HeroCarousel } from "@/components/HeroCarousel";
 import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
-import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
-import { RecommendationRow } from "@/components/RecommendationRow";
-import { Top10Row } from "@/components/Top10Row";
 import { BottomNav } from "@/components/BottomNav";
-import { SearchBar } from "@/components/SearchBar";
 import { FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
 
+const HeroCarousel = lazy(() => import("@/components/HeroCarousel").then(module => ({ default: module.HeroCarousel })));
+const ContinueWatchingRow = lazy(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
+const RecommendationRow = lazy(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
+const Top10Row = lazy(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
+const SearchBar = lazy(() => import("@/components/SearchBar").then(module => ({ default: module.SearchBar })));
 const MovieModal = lazy(() => import("@/components/MovieModal").then(module => ({ default: module.MovieModal })));
 const CinematicVideoPlayer = lazy(() => import("@/components/CinematicVideoPlayer").then(module => ({ default: module.CinematicVideoPlayer })));
 const FilterModal = lazy(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
-import { AmbientParticles } from "@/components/AmbientParticles";
+const AmbientParticles = lazy(() => import("@/components/AmbientParticles").then(module => ({ default: module.AmbientParticles })));
 import { DynamicBackground } from "@/components/DynamicBackground";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
@@ -48,6 +48,11 @@ import { toSlug, fromSlug } from "@/lib/slug";
 import { toast } from "sonner";
 
 type ViewMode = "home" | "search" | "movies" | "series" | "originals";
+
+type IdleWindow = Window & typeof globalThis & {
+  requestIdleCallback?: (callback: IdleRequestCallback) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
 
 const CATEGORY_TO_GENRE: Record<string, string> = {
   action: "Action",
@@ -146,6 +151,8 @@ export default function Index() {
   const exitToastTimerRef = useRef<number | null>(null);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showDeferredHomeSections, setShowDeferredHomeSections] = useState(false);
+  const [showAmbientEffects, setShowAmbientEffects] = useState(false);
   const [activeFilters, setActiveFilters] = useState<FilterState>({
     category: null,
     vj: null,
@@ -163,6 +170,34 @@ export default function Index() {
   const filterYears = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 25 }, (_, i) => currentYear - i);
+  }, []);
+
+  useEffect(() => {
+    const idleWindow = window as IdleWindow;
+    let timeoutId: number | null = null;
+    let idleId: number | null = null;
+    const revealDeferredUi = () => {
+      startTransition(() => {
+        setShowAmbientEffects(true);
+        setShowDeferredHomeSections(true);
+      });
+    };
+
+    if (idleWindow.requestIdleCallback) {
+      idleId = idleWindow.requestIdleCallback(() => revealDeferredUi());
+    } else {
+      timeoutId = window.setTimeout(revealDeferredUi, 250);
+    }
+
+    return () => {
+      if (idleId !== null && idleWindow.cancelIdleCallback) {
+        idleWindow.cancelIdleCallback(idleId);
+      }
+
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   // React Query for instant tab switching and caching
@@ -735,8 +770,11 @@ export default function Index() {
 
   return (
     <div className="min-h-screen pb-safe relative">
-      {/* Ambient floating particles (desktop only) */}
-      <AmbientParticles />
+      {showAmbientEffects && (
+        <Suspense fallback={null}>
+          <AmbientParticles />
+        </Suspense>
+      )}
 
       {/* Premium Dynamic Mesh Background */}
       <DynamicBackground />
@@ -761,13 +799,15 @@ export default function Index() {
             <PageTransition>
               {shouldShowHero && (
                 trending.length > 0 ? (
-                  <HeroCarousel
-                    movies={trending}
-                    onPlay={handleHeroPlay}
-                    onMovieClick={handleMovieClick}
-                    title="Top Movies"
-                    onViewAll={() => handleTabChange("movies")}
-                  />
+                  <Suspense fallback={<HeroCarouselSkeleton />}>
+                    <HeroCarousel
+                      movies={trending}
+                      onPlay={handleHeroPlay}
+                      onMovieClick={handleMovieClick}
+                      title="Top Movies"
+                      onViewAll={() => handleTabChange("movies")}
+                    />
+                  </Suspense>
                 ) : isHeroLoading ? (
                   <HeroCarouselSkeleton />
                 ) : null
@@ -792,25 +832,27 @@ export default function Index() {
                 <SectionReveal delay={200}>
                   <div className="mt-8">
                     <div className="section-divider mb-2" />
-                    <ContinueWatchingRow
-                      items={continueWatching}
-                      onResume={(item) => {
-                        const resumeTitle = item.episodeInfo
-                          ? `${item.title} - ${item.episodeInfo}`
-                          : item.title;
-                        const mediaUrl = buildMediaUrl({
-                          url: item.url,
-                          title: resumeTitle,
-                          mobifliksId: item.contentId,
-                          play: true,
-                        });
-                        handlePlayVideo(mediaUrl, resumeTitle, Number(item.progress) || 0, {
-                          ...item,
-                          url: mediaUrl,
-                        });
-                      }}
-                      onRemove={(id) => removeContinueWatching(id)}
-                    />
+                    <Suspense fallback={null}>
+                      <ContinueWatchingRow
+                        items={continueWatching}
+                        onResume={(item) => {
+                          const resumeTitle = item.episodeInfo
+                            ? `${item.title} - ${item.episodeInfo}`
+                            : item.title;
+                          const mediaUrl = buildMediaUrl({
+                            url: item.url,
+                            title: resumeTitle,
+                            mobifliksId: item.contentId,
+                            play: true,
+                          });
+                          handlePlayVideo(mediaUrl, resumeTitle, Number(item.progress) || 0, {
+                            ...item,
+                            url: mediaUrl,
+                          });
+                        }}
+                        onRemove={(id) => removeContinueWatching(id)}
+                      />
+                    </Suspense>
                   </div>
                 </SectionReveal>
               )}
@@ -828,37 +870,41 @@ export default function Index() {
                 />
               </div>
 
-              {siteSettings.top10_enabled && (
-                <div className="mt-4">
-                  <div className="section-divider mb-2" />
-                  <Top10Row
-                    movies={recentMovies}
-                    onMovieClick={handleMovieClick}
-                  />
-                </div>
-              )}
+              {showDeferredHomeSections && (
+                <Suspense fallback={null}>
+                  {siteSettings.top10_enabled && (
+                    <div className="mt-4">
+                      <div className="section-divider mb-2" />
+                      <Top10Row
+                        movies={recentMovies}
+                        onMovieClick={handleMovieClick}
+                      />
+                    </div>
+                  )}
 
-              {continueWatching.length > 0 && recentMovies.length > 0 && (
-                <div className="mt-4">
-                  <div className="section-divider mb-2" />
-                  <RecommendationRow
-                    continueWatching={continueWatching}
-                    allMovies={[...recentMovies, ...recentSeries]}
-                    onMovieClick={handleMovieClick}
-                  />
-                </div>
-              )}
+                  {continueWatching.length > 0 && recentMovies.length > 0 && (
+                    <div className="mt-4">
+                      <div className="section-divider mb-2" />
+                      <RecommendationRow
+                        continueWatching={continueWatching}
+                        allMovies={[...recentMovies, ...recentSeries]}
+                        onMovieClick={handleMovieClick}
+                      />
+                    </div>
+                  )}
 
-              <div className="mt-4">
-                <div className="section-divider mb-2" />
-                <MovieRow
-                  title="Popular Series"
-                  movies={recentSeries}
-                  onMovieClick={handleMovieClick}
-                  onViewAll={() => handleTabChange("series")}
-                  isLoading={isLoading && recentSeries.length === 0}
-                />
-              </div>
+                  <div className="mt-4">
+                    <div className="section-divider mb-2" />
+                    <MovieRow
+                      title="Popular Series"
+                      movies={recentSeries}
+                      onMovieClick={handleMovieClick}
+                      onViewAll={() => handleTabChange("series")}
+                      isLoading={isLoading && recentSeries.length === 0}
+                    />
+                  </div>
+                </Suspense>
+              )}
             </PageTransition>
           )}
 
@@ -867,11 +913,13 @@ export default function Index() {
             <PageTransition>
               <div className="space-y-6">
                 <div className="max-w-xl mx-auto">
-                  <SearchBar
-                    onSearch={handleSearch}
-                    onMovieSelect={handleMovieClick}
-                    popularSearches={popularSearches}
-                  />
+                  <Suspense fallback={<div className="h-12 rounded-full bg-card/60 border border-border/30" />}>
+                    <SearchBar
+                      onSearch={handleSearch}
+                      onMovieSelect={handleMovieClick}
+                      popularSearches={popularSearches}
+                    />
+                  </Suspense>
                 </div>
 
                 {searchQuery && (

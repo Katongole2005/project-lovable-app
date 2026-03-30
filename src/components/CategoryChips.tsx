@@ -1,6 +1,5 @@
 import { Flame, Sword, Heart, Clapperboard, Ghost, Star, Film, Compass, Shield, Sparkles, Rocket, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
 interface CategoryChipsProps {
   activeCategory: string;
@@ -38,19 +37,10 @@ export function CategoryChips({ activeCategory, onCategoryChange }: CategoryChip
               className={cn(
                 "relative category-chip flex-shrink-0 whitespace-nowrap font-medium tracking-normal transition-all duration-200 snap-start press-effect overflow-hidden rounded-full px-4 py-2",
                 isActive
-                  ? "text-black shadow-[0_2px_16px_rgba(200,245,71,0.35)]"
+                  ? "bg-[#c8f547] text-black shadow-[0_2px_16px_rgba(200,245,71,0.35)] border-transparent"
                   : "text-white/60 hover:text-white/90 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12]"
               )}
             >
-              {isActive && (
-                <motion.span
-                  layoutId="category-pill"
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: "#c8f547" }}
-                  transition={{ type: "spring", stiffness: 420, damping: 36 }}
-                />
-              )}
-
               <span className="relative z-10 flex items-center gap-1.5">
                 <Icon
                   className={cn(

@@ -1,18 +1,17 @@
-import { lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { CookieConsent } from "@/components/CookieConsent";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SiteSettingsProvider, useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import Maintenance from "./pages/Maintenance";
 import { AppLoader } from "@/components/AppLoader";
 
+const Toaster = lazy(() => import("@/components/ui/toaster").then(module => ({ default: module.Toaster })));
+const CookieConsent = lazy(() => import("@/components/CookieConsent").then(module => ({ default: module.CookieConsent })));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -22,22 +21,34 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const queryClient = new QueryClient();
 
 const App = () => {
+  const [showDeferredUi, setShowDeferredUi] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setShowDeferredUi(true);
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <CookieConsent />
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <AuthProvider>
-                <SiteSettingsProvider>
-                  <AppRoutes />
-                </SiteSettingsProvider>
-              </AuthProvider>
-            </BrowserRouter>
-          </TooltipProvider>
+          {showDeferredUi && (
+            <Suspense fallback={null}>
+              <Toaster />
+              <CookieConsent />
+            </Suspense>
+          )}
+          <Sonner />
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <AuthProvider>
+              <SiteSettingsProvider>
+                <AppRoutes />
+              </SiteSettingsProvider>
+            </AuthProvider>
+          </BrowserRouter>
         </ThemeProvider>
       </ErrorBoundary>
     </QueryClientProvider>

@@ -1,5 +1,3 @@
-import { motion } from "framer-motion";
-
 export function AppLoader() {
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[hsl(230,18%,5%)] overflow-hidden">
@@ -21,12 +19,7 @@ export function AppLoader() {
       </div>
 
       <div className="relative flex flex-col items-center gap-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="relative"
-        >
+        <div className="relative animate-scale-in">
           <div
             className="text-5xl sm:text-6xl font-display font-extrabold tracking-tight select-none"
             style={{
@@ -38,42 +31,21 @@ export function AppLoader() {
           >
             SJ
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="relative w-48 h-[3px] rounded-full overflow-hidden bg-white/8"
-        >
-          <motion.div
-            className="absolute inset-y-0 left-0 rounded-full"
+        <div className="relative w-48 h-[3px] rounded-full overflow-hidden bg-white/8 animate-fade-in">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full animate-loader-bar"
             style={{
               background: "linear-gradient(90deg, hsl(210 80% 60%), hsl(270 60% 60%), hsl(180 50% 55%))",
               boxShadow: "0 0 12px hsl(210 80% 60% / 0.5)",
             }}
-            initial={{ width: "0%", x: "0%" }}
-            animate={{
-              width: ["0%", "40%", "20%", "60%", "30%", "100%"],
-              x: ["0%", "30%", "50%", "20%", "40%", "0%"],
-            }}
-            transition={{
-              duration: 2,
-              ease: "easeInOut",
-              repeat: Infinity,
-              repeatType: "loop",
-            }}
           />
-        </motion.div>
+        </div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.4 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          className="text-xs text-white/40 font-medium tracking-widest uppercase"
-        >
+        <p className="text-xs text-white/40 font-medium tracking-widest uppercase animate-fade-in">
           Loading
-        </motion.p>
+        </p>
       </div>
 
       <style>{`
@@ -81,6 +53,14 @@ export function AppLoader() {
           0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
           50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.25; }
         }
+        @keyframes loaderBar {
+          0% { width: 0%; transform: translateX(0%); }
+          25% { width: 40%; transform: translateX(20%); }
+          50% { width: 20%; transform: translateX(55%); }
+          75% { width: 60%; transform: translateX(25%); }
+          100% { width: 100%; transform: translateX(0%); }
+        }
+        .animate-loader-bar { animation: loaderBar 2s ease-in-out infinite; }
       `}</style>
     </div>
   );
