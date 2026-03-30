@@ -357,7 +357,9 @@ export async function fetchMoviesSorted(
 
 export async function fetchSeries(limit: number = 20, page: number = 1, language?: string, filters?: FilterOptions): Promise<Movie[]> {
   const fetchLimit = Math.min(limit * 2, 200);
-  const offset = (page - 1) * limit;
+  // Series are grouped after fetch, so each page reads a wider raw window.
+  // Use the raw fetch window for offsets to avoid overlapping page ranges.
+  const offset = (page - 1) * fetchLimit;
   let query = supabase
     .from("movies")
     .select("*")
