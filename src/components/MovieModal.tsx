@@ -11,7 +11,7 @@ import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, reso
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
 import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist } from "@/lib/storage";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
@@ -95,11 +95,12 @@ interface MovieModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPlay: (url: string, title: string) => void;
+  onMovieSelect?: (movie: Movie) => void;
 }
 
 const fallbackCastAvatar = "https://placehold.co/160x160/1a1a2e/ffffff?text=Actor";
 
-export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) {
+export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: MovieModalProps) {
   // NOTE: hooks must be called unconditionally; keep all hooks above the null-guard return.
   const deviceProfile = useDeviceProfile();
   const [, setTmdbBackdrop] = React.useState<string | null>(null);
@@ -115,6 +116,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
       ? backdrop.replace("/original/", "/w1280/").replace("/w780/", "/w1280/")
       : getOptimizedBackdropUrl(backdrop);
   }, [backdrop, deviceProfile.allowHighResImages]);
+  const allowDesktopMotion = deviceProfile.allowComplexAnimations && !deviceProfile.prefersReducedMotion;
 
   const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
   const [userRating, setUserRatingState] = React.useState<number | null>(null);
@@ -173,12 +175,16 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
   }, [movie?.mobifliks_id, isOpen]);
 
   React.useEffect(() => {
-    if (isOpen) {
-      setEntranceVisible(false);
-      const t = setTimeout(() => setEntranceVisible(true), 100);
-      return () => clearTimeout(t);
+    if (!isOpen) return;
+    if (!allowDesktopMotion) {
+      setEntranceVisible(true);
+      return;
     }
-  }, [isOpen]);
+
+    setEntranceVisible(false);
+    const t = setTimeout(() => setEntranceVisible(true), 100);
+    return () => clearTimeout(t);
+  }, [allowDesktopMotion, isOpen, movie?.mobifliks_id]);
 
   React.useEffect(() => {
     if (movie) {
@@ -275,13 +281,14 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
           onPlay={handlePlay}
           inWatchlist={inWatchlist}
           onToggleWatchlist={handleToggleWatchlist}
+          onMovieSelect={onMovieSelect}
         />
 
         {/* Desktop/Tablet Layout with glassmorphism */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          initial={allowDesktopMotion ? { opacity: 0, scale: 0.98 } : false}
+          animate={allowDesktopMotion ? { opacity: 1, scale: 1 } : undefined}
+          transition={allowDesktopMotion ? { duration: 0.24, ease: [0.22, 1, 0.36, 1] } : undefined}
           className="hidden md:block relative h-full md:rounded-3xl overflow-hidden"
         >
           {/* Multi-layer background for professional glass effect */}
@@ -370,8 +377,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay }: MovieModalProps) 
               {/* Content area - overlapping backdrop */}
               <motion.div
                 variants={staggerContainer}
-                initial="hidden"
-                animate={entranceVisible ? "visible" : "hidden"}
+                initial={allowDesktopMotion ? "hidden" : false}
+                animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : undefined}
                 className="relative -mt-32 px-10 pb-10 space-y-6"
               >
                 {/* Poster + Title row */}
@@ -627,6 +634,7 @@ interface MobileMovieLayoutProps {
   onPlay: (url: string, title: string) => void;
   inWatchlist: boolean;
   onToggleWatchlist: () => void;
+  onMovieSelect?: (movie: Movie) => void;
 }
 
 function MobileMovieLayout({
@@ -642,18 +650,18 @@ function MobileMovieLayout({
   onPlay,
   inWatchlist,
   onToggleWatchlist,
+  onMovieSelect,
 }: MobileMovieLayoutProps) {
   const deviceProfile = useDeviceProfile();
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [selectedSeason, setSelectedSeason] = React.useState(1);
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
-  const [scrollProgress, setScrollProgress] = React.useState(0);
+  const [showCompactHeader, setShowCompactHeader] = React.useState(false);
   const [backdropLoaded, setBackdropLoaded] = React.useState(false);
   const [relatedMovies, setRelatedMovies] = React.useState<Movie[]>([]);
-  const [entranceReady, setEntranceReady] = React.useState(false);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
-  const heroRef = React.useRef<HTMLDivElement>(null);
+  const scrollFrameRef = React.useRef<number | null>(null);
   const continueWatching = useContinueWatching();
 
   const resumeEpisode = React.useMemo(() => {
@@ -687,12 +695,6 @@ function MobileMovieLayout({
   }, [continueWatching, isSeries, movie.mobifliks_id]);
 
   React.useEffect(() => {
-    setEntranceReady(false);
-    const t = setTimeout(() => setEntranceReady(true), 150);
-    return () => clearTimeout(t);
-  }, [movie.mobifliks_id]);
-
-  React.useEffect(() => {
     const genre = movie.genres?.[0];
     if (!genre) { setRelatedMovies([]); return; }
     let cancelled = false;
@@ -717,14 +719,27 @@ function MobileMovieLayout({
   React.useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return;
-    const handleScroll = () => {
-      const scrollTop = scrollContainer.scrollTop;
-      const heroHeight = 380;
-      const progress = Math.min(Math.max(scrollTop / heroHeight, 0), 1);
-      setScrollProgress(progress);
+
+    const updateHeaderState = () => {
+      scrollFrameRef.current = null;
+      const shouldCollapse = scrollContainer.scrollTop > 160;
+      setShowCompactHeader((current) => current === shouldCollapse ? current : shouldCollapse);
     };
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+
+    const handleScroll = () => {
+      if (scrollFrameRef.current !== null) return;
+      scrollFrameRef.current = requestAnimationFrame(updateHeaderState);
+    };
+
+    updateHeaderState();
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      scrollContainer.removeEventListener("scroll", handleScroll);
+      if (scrollFrameRef.current !== null) {
+        cancelAnimationFrame(scrollFrameRef.current);
+      }
+    };
   }, []);
 
   const scrollToEpisodes = () => {
@@ -801,7 +816,7 @@ function MobileMovieLayout({
             )}
           </>
         )}
-        <div className={cn("absolute inset-0 bg-black/50", deviceProfile.allowAmbientEffects ? "backdrop-blur-2xl" : "backdrop-blur-sm")} />
+        <div className={cn("absolute inset-0 bg-black/55", deviceProfile.allowAmbientEffects && "backdrop-blur-xl")} />
         <div className="absolute inset-0 bg-gradient-to-t from-[hsl(230,18%,5%)] via-transparent to-black/30" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
 
@@ -838,40 +853,32 @@ function MobileMovieLayout({
         )}
       </div>
 
-      <motion.div
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pt-safe transition-all duration-300"
-        animate={{
-          "--scroll-gradient": scrollProgress > 0.3
-            ? `linear-gradient(180deg, hsl(230 18% 5% / ${Math.min(scrollProgress * 1.5, 0.95)}) 0%, transparent 100%)`
-            : "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)",
-          background: "var(--scroll-gradient)",
-        } as any}
-        transition={{ duration: 0 }}
+      <div
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pt-safe transition-colors duration-150",
+          showCompactHeader ? "bg-[hsl(230_18%_5%/0.96)] border-b border-white/6" : "bg-[linear-gradient(180deg,rgba(0,0,0,0.72)_0%,transparent_100%)]"
+        )}
       >
         <button
           onClick={onClose}
           aria-label="Go back"
           data-testid="button-close-modal"
-          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 active:scale-90 transition-transform"
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10 active:scale-90 transition-transform"
         >
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
 
-        <AnimatePresence>
-          {scrollProgress > 0.5 && (
-            <motion.h2
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="text-sm font-semibold text-white truncate max-w-[50vw]"
-            >
-              {movie.title}
-            </motion.h2>
+        <h2
+          className={cn(
+            "text-sm font-semibold text-white truncate max-w-[50vw] transition-opacity duration-150",
+            showCompactHeader ? "opacity-100" : "opacity-0"
           )}
-        </AnimatePresence>
+        >
+          {movie.title}
+        </h2>
 
         <button
-          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 active:scale-90 transition-transform"
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10 active:scale-90 transition-transform"
           aria-label="Share movie"
           data-testid="button-share"
           onClick={async (e) => {
@@ -900,17 +907,9 @@ function MobileMovieLayout({
         >
           <Share2 className="w-4.5 h-4.5 text-white" />
         </button>
-      </motion.div>
+      </div>
 
-      <motion.div
-        ref={heroRef as any}
-        className="absolute top-0 left-0 right-0 z-10 transition-all duration-100 ease-out"
-        animate={{
-          transform: `translateY(${scrollProgress * -80}px) scale(${1 + scrollProgress * 0.08})`,
-          filter: `blur(${scrollProgress * 12}px)`,
-          opacity: 1 - scrollProgress * 0.4,
-        }}
-      >
+      <div className="absolute top-0 left-0 right-0 z-10">
         <div className="relative w-full aspect-[3/4] max-h-[525px] overflow-hidden">
           {!backdropLoaded && (
             <div className="absolute inset-0 bg-gradient-to-br from-[hsl(230,20%,12%)] via-[hsl(240,15%,8%)] to-[hsl(220,18%,6%)]">
@@ -920,14 +919,8 @@ function MobileMovieLayout({
           )}
 
           {backgroundImage && (
-            <motion.div
-              className="w-full h-full"
-              animate={{
-                "--transform-val": `scale(${1.15 + scrollProgress * 0.2}) translateY(${scrollProgress * 30}px)`
-              } as any}
-              transition={{ duration: 0 }}
-            >
-              <motion.img
+            <div className="w-full h-full">
+              <img
                 src={backgroundImage}
                 alt={movie.title}
                 className={cn(
@@ -938,32 +931,18 @@ function MobileMovieLayout({
                   animation: backdropLoaded && deviceProfile.allowAmbientEffects ? "kenBurnsMobile 20s ease-in-out infinite" : "none",
                 }}
               />
-            </motion.div>
+            </div>
           )}
 
           <div className="absolute inset-0 modal-hero-backdrop-gradient" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
 
-          <motion.div
-            className="absolute inset-0 bg-black transition-opacity duration-100"
-            animate={{ opacity: scrollProgress * 0.5 }} transition={{ duration: 0 }}
-          />
+          <div className="absolute inset-0 bg-black/20" />
 
           <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none modal-accent-bottom-gradient" />
 
-          <motion.div
-            className="absolute bottom-0 left-0 right-0 p-5 flex gap-4 items-end transition-all duration-100"
-            style={{
-              transform: `translateY(${scrollProgress * -40}px)`,
-              opacity: 1 - scrollProgress * 0.6,
-            }}
-          >
-            <motion.div
-              className="w-24 h-36 flex-shrink-0 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-transform duration-100 relative"
-              style={{
-                transform: `scale(${1 - scrollProgress * 0.15}) translateY(${scrollProgress * -15}px)`,
-              }}
-            >
+          <div className="absolute bottom-0 left-0 right-0 p-5 flex gap-4 items-end">
+            <div className="w-24 h-36 flex-shrink-0 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative">
               <img
                 src={getImageUrl(movie.image_url)}
                 alt={movie.title}
@@ -971,26 +950,21 @@ function MobileMovieLayout({
               />
               <div className="absolute inset-0 rounded-2xl ring-1 ring-white/20 ring-inset pointer-events-none" />
               <div className="absolute -inset-1 rounded-2xl pointer-events-none modal-accent-box-shadow" />
-            </motion.div>
+            </div>
 
             <div className="flex-1 min-w-0 pb-1">
               <h1 className="text-2xl font-display font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] leading-tight line-clamp-2 tracking-tight" data-testid="text-movie-title">
                 {movie.title}
               </h1>
               {isSeries && allEpisodes.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="flex items-center gap-2 mt-1.5"
-                >
+                <div className="flex items-center gap-2 mt-1.5">
                   <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-gradient-to-r from-primary to-secondary text-white shadow-sm">
                     SERIES
                   </span>
                   <span className="text-[11px] text-white/60 font-medium">
                     {availableSeasons.length > 1 ? `${availableSeasons.length} Seasons` : ""}{availableSeasons.length > 1 ? " · " : ""}{allEpisodes.length} Episodes
                   </span>
-                </motion.div>
+                </div>
               )}
               <div className="flex items-center gap-2 mt-2 flex-wrap text-[13px] text-white/80">
                 {movie.year && <span className="font-semibold">{movie.year}</span>}
@@ -1012,17 +986,14 @@ function MobileMovieLayout({
                 )}
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative z-20">
         <div className="w-full aspect-[3/4] max-h-[525px]" />
 
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          animate={entranceReady ? "visible" : "hidden"}
+        <div
           className="relative min-h-[70vh]"
           style={{
             background: `linear-gradient(180deg, hsl(230 18% 5% / 0.95) 0%, hsl(230 18% 5%) 40px)`,
@@ -1031,12 +1002,9 @@ function MobileMovieLayout({
           }}
         >
           <div className="flex justify-center pt-3 pb-1">
-            <motion.div
+            <div
               className="w-10 h-1 rounded-full"
               style={{ background: `linear-gradient(90deg, transparent, hsl(${accentHue} 40% 60% / 0.5), transparent)` }}
-              initial={{ width: 0 }}
-              animate={{ width: 40 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
             />
           </div>
 
@@ -1046,7 +1014,7 @@ function MobileMovieLayout({
                 <Button
                   size="lg"
                   variant="outline"
-                  className="flex-1 gap-2 rounded-2xl h-11 text-sm font-semibold bg-white/5 border-white/10 text-white/90 hover:bg-white/10 backdrop-blur-sm"
+                  className="flex-1 gap-2 rounded-2xl h-11 text-sm font-semibold bg-white/5 border-white/10 text-white/90 hover:bg-white/10 md:backdrop-blur-sm"
                   onClick={scrollToEpisodes}
                   data-testid="button-episodes"
                 >
@@ -1057,7 +1025,7 @@ function MobileMovieLayout({
               {FEATURE_FLAGS.DOWNLOAD_ENABLED && !isSeries && movie.download_url && (
                 <Button
                   size="lg"
-                  className="flex-1 gap-2 rounded-2xl h-11 text-sm font-semibold bg-white/5 border border-white/10 text-white/90 hover:bg-white/10 backdrop-blur-sm"
+                  className="flex-1 gap-2 rounded-2xl h-11 text-sm font-semibold bg-white/5 border border-white/10 text-white/90 hover:bg-white/10 md:backdrop-blur-sm"
                   onClick={() => {
                     if (movie.download_url) {
                       const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
@@ -1114,7 +1082,7 @@ function MobileMovieLayout({
                     background: `linear-gradient(135deg, hsl(${accentHue} 30% 15% / 0.3) 0%, hsl(230 18% 8% / 0.6) 100%)`,
                   }}
                 >
-                  <div className="absolute inset-0 backdrop-blur-sm" />
+                  <div className="absolute inset-0 md:backdrop-blur-sm" />
                   <div className="relative flex items-center gap-1.5">
                     <Star className="w-5 h-5 fill-[#facc15] text-[#facc15] drop-shadow-[0_0_6px_rgba(250,204,21,0.4)]" />
                     <span className="text-xl font-bold text-white">{rating}</span>
@@ -1124,8 +1092,7 @@ function MobileMovieLayout({
                     <motion.div
                       className="h-full rounded-full rating-progress-gradient"
                       style={{
-                        width: entranceReady ? `${(parseFloat(rating) / 5) * 100}%` : "0%",
-                        transition: "width 1.2s cubic-bezier(0.22, 1, 0.36, 1)",
+                        width: `${(parseFloat(rating) / 5) * 100}%`,
                       }}
                     />
                   </div>
@@ -1161,7 +1128,7 @@ function MobileMovieLayout({
                     {movie.genres.map((genre) => (
                       <span
                         key={genre}
-                        className="px-3.5 py-1.5 text-xs font-medium rounded-full border backdrop-blur-sm modal-genre-chip"
+                        className="px-3.5 py-1.5 text-xs font-medium rounded-full border modal-genre-chip md:backdrop-blur-sm"
                       >
                         {genre}
                       </span>
@@ -1214,19 +1181,17 @@ function MobileMovieLayout({
                     </div>
                     <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
                       {cast.slice(0, 8).map((member, i) => (
-                        <motion.button
-                          variants={fadeInUp}
+                        <button
                           key={member.name}
                           className="flex-none w-[68px] text-center active:scale-95 transition-transform"
                           onClick={() => setActiveTab("casts")}
                         >
-                          <motion.div
+                          <div
                             className="w-[60px] h-[60px] mx-auto rounded-full overflow-hidden shadow-lg p-[2px] modal-cast-member-ring"
-                            animate={{
-                              "--member-hue": (accentHue + i * 30) % 360,
-                              "--member-hue-alt": (accentHue + i * 30 + 60) % 360,
-                            } as any}
-                            transition={{ duration: 0 }}
+                            style={{
+                              ["--member-hue" as string]: (accentHue + i * 30) % 360,
+                              ["--member-hue-alt" as string]: (accentHue + i * 30 + 60) % 360,
+                            }}
                           >
                             <div className="w-full h-full rounded-full overflow-hidden bg-[hsl(230,18%,8%)]">
                               <img
@@ -1238,12 +1203,12 @@ function MobileMovieLayout({
                                 }}
                               />
                             </div>
-                          </motion.div>
+                          </div>
                           <p className="text-[11px] font-medium text-white/80 mt-2 line-clamp-1 leading-tight">{member.name.split(" ")[0]}</p>
                           {member.character && (
                             <p className="text-[9px] text-white/35 line-clamp-1 mt-0.5">{member.character}</p>
                           )}
-                        </motion.button>
+                        </button>
                       ))}
                     </div>
                   </motion.div>
@@ -1321,11 +1286,7 @@ function MobileMovieLayout({
                                   {seasonEps.length}ep
                                 </span>
                                 {isActive && (
-                                  <motion.div
-                                    layoutId="mobile-season-pill"
-                                    className="absolute inset-0 rounded-xl modal-season-btn-active"
-                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                  />
+                                  <span className="absolute inset-0 rounded-xl modal-season-btn-active" />
                                 )}
                               </button>
                             );
@@ -1334,7 +1295,10 @@ function MobileMovieLayout({
                       </div>
                     )}
 
-                    <div className="relative pl-6">
+                    <div
+                      className="relative pl-6"
+                      style={{ contentVisibility: "auto", containIntrinsicSize: "900px" }}
+                    >
                       <div className="absolute left-[11px] top-4 bottom-4 w-[2px] rounded-full modal-timeline-line" />
                       <div className="space-y-0">
                         {currentSeasonEpisodes.map((episode, idx) => (
@@ -1367,18 +1331,16 @@ function MobileMovieLayout({
                 {cast.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3">
                     {cast.map((member, i) => (
-                      <motion.div
-                        variants={fadeInUp}
+                      <div
                         key={member.name}
-                        className="flex flex-col items-center gap-2.5 p-4 rounded-2xl border border-white/6 backdrop-blur-sm modal-stats-card"
+                        className="flex flex-col items-center gap-2.5 p-4 rounded-2xl border border-white/6 modal-stats-card md:backdrop-blur-sm"
                       >
-                        <motion.div
+                        <div
                           className="w-20 h-20 rounded-full overflow-hidden shadow-lg p-[2px] modal-cast-member-ring"
-                          animate={{
-                            "--member-hue": (accentHue + i * 25) % 360,
-                            "--member-hue-alt": (accentHue + i * 25 + 60) % 360,
-                          } as any}
-                          transition={{ duration: 0 }}
+                          style={{
+                            ["--member-hue" as string]: (accentHue + i * 25) % 360,
+                            ["--member-hue-alt" as string]: (accentHue + i * 25 + 60) % 360,
+                          }}
                         >
                           <div className="w-full h-full rounded-full overflow-hidden bg-[hsl(230,18%,8%)]">
                             <img
@@ -1390,12 +1352,12 @@ function MobileMovieLayout({
                               }}
                             />
                           </div>
-                        </motion.div>
+                        </div>
                         <p className="text-sm font-semibold text-white text-center line-clamp-1">{member.name}</p>
                         {member.character && (
                           <p className="text-xs text-white/35 text-center line-clamp-1">as {member.character}</p>
                         )}
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -1409,13 +1371,17 @@ function MobileMovieLayout({
                 {relatedMovies.length > 0 ? (
                   <div className="grid grid-cols-3 gap-3">
                     {relatedMovies.map((m, i) => (
-                      <motion.button
-                        variants={fadeInUp}
+                      <button
                         key={m.mobifliks_id}
                         className="group text-left"
                         onClick={() => {
+                          if (onMovieSelect) {
+                            onMovieSelect(m);
+                            return;
+                          }
+
                           const typeSlug = m.type === "series" ? "series" : "movie";
-                          window.location.href = `/${typeSlug}/${toSlug(m.title, m.mobifliks_id, m.year)}`;
+                          window.location.assign(`/${typeSlug}/${toSlug(m.title, m.mobifliks_id, m.year)}`);
                         }}
                       >
                         <div className="aspect-[2/3] rounded-xl overflow-hidden border border-white/8 bg-white/5 shadow-lg group-active:scale-95 transition-transform duration-200 relative">
@@ -1428,7 +1394,7 @@ function MobileMovieLayout({
                         </div>
                         <p className="text-xs font-medium text-white/80 mt-2 line-clamp-2 leading-tight">{m.title}</p>
                         {m.year && <p className="text-[10px] text-white/35 mt-0.5">{m.year}</p>}
-                      </motion.button>
+                      </button>
                     ))}
                   </div>
                 ) : (
@@ -1439,8 +1405,8 @@ function MobileMovieLayout({
               </div>
             )}
           </div>
-        </motion.div >
-      </div >
+        </div>
+      </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <div className="h-8 bg-gradient-to-t from-[hsl(230,18%,5%)] to-transparent pointer-events-none" />
@@ -1494,25 +1460,24 @@ function MobileMovieLayout({
                   : "Play"}
             </span>
           </Button>
-          <motion.button
+          <button
             onClick={onToggleWatchlist}
             aria-label={inWatchlist ? "Remove from My List" : "Add to My List"}
             data-testid="button-watchlist"
             className={cn(
               "w-[52px] h-[52px] rounded-2xl flex items-center justify-center border transition-all duration-200 active:scale-90",
               inWatchlist
-                ? "border-transparent"
+                ? "border-transparent text-white"
                 : "bg-white/5 border-white/10 text-white/60"
             )}
-            animate={inWatchlist ? {
-              "--btn-bg": `hsl(${accentHue} 40% 20% / 0.5)`,
-              "--btn-border": `hsl(${accentHue} 50% 50% / 0.3)`,
-              "--btn-text": `hsl(${accentHue} 60% 65%)`,
-            } as any : {}}
-            transition={{ duration: 0 }}
+            style={inWatchlist ? {
+              background: `hsl(${accentHue} 40% 20% / 0.5)`,
+              borderColor: `hsl(${accentHue} 50% 50% / 0.3)`,
+              color: `hsl(${accentHue} 60% 65%)`,
+            } : undefined}
           >
             <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
-          </motion.button>
+          </button>
           <button
             aria-label="Share movie link"
             data-testid="button-share-bottom"
@@ -1535,7 +1500,7 @@ function MobileMovieLayout({
         </div>
       </div>
 
-    </div >
+    </div>
   );
 }
 
@@ -1557,67 +1522,63 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
       episode.download_url.includes("downloadmp4") ||
       episode.download_url.includes("downloadserie"));
 
-  const epNum = episode.episode_number.toString().padStart(2, '0');
+  const epNum = episode.episode_number.toString().padStart(2, "0");
+  const markerStyle: React.CSSProperties = isResumeTarget
+    ? {
+        background: `linear-gradient(135deg, hsl(${accentHue} 65% 50%), hsl(${(accentHue + 40) % 360} 55% 45%))`,
+        boxShadow: `0 0 10px hsl(${accentHue} 60% 50% / 0.4)`,
+      }
+    : progressPct > 0
+      ? {
+          background: `linear-gradient(135deg, hsl(${accentHue} 50% 45% / 0.6), hsl(${accentHue} 40% 35% / 0.4))`,
+        }
+      : {
+          background: "hsl(230 15% 18%)",
+          border: "2px solid hsl(230 15% 25%)",
+        };
+
+  const cardStyle: React.CSSProperties = isResumeTarget
+    ? {
+        background: `linear-gradient(135deg, hsl(${accentHue} 25% 12% / 0.6), hsl(230 18% 8% / 0.8))`,
+        boxShadow: `0 4px 20px hsl(${accentHue} 50% 30% / 0.15), inset 0 1px 0 rgba(255,255,255,0.05)`,
+        borderColor: `hsl(${accentHue} 50% 50% / 0.2)`,
+      }
+    : {
+        background: "linear-gradient(135deg, hsl(230 18% 11% / 0.5), hsl(230 18% 7% / 0.4))",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)",
+        borderColor: "hsl(230 15% 20% / 0.4)",
+      };
+
+  const progressStyle: React.CSSProperties = {
+    width: `${progressPct}%`,
+    background: `linear-gradient(90deg, hsl(${accentHue} 65% 55%), hsl(${(accentHue + 40) % 360} 55% 50%))`,
+    boxShadow: `0 0 8px hsl(${accentHue} 60% 55% / 0.5)`,
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="relative pb-1"
-    >
+    <div className="relative pb-1">
       <div className="absolute -left-6 top-4 flex flex-col items-center w-[22px]">
-        <motion.div
+        <div
           className={cn(
-            "w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all duration-300 relative",
-            isResumeTarget ? "scale-110" : ""
+            "w-[22px] h-[22px] rounded-full flex items-center justify-center relative",
+            isResumeTarget && "scale-110"
           )}
-          animate={isResumeTarget ? {
-            "--circle-bg": `linear-gradient(135deg, hsl(${accentHue} 65% 50%), hsl(${(accentHue + 40) % 360} 55% 45%))`,
-            "--circle-shadow": `0 0 12px hsl(${accentHue} 60% 50% / 0.5), 0 0 4px hsl(${accentHue} 60% 50% / 0.3)`,
-          } as any : {
-            "--circle-bg": progressPct > 0
-              ? `linear-gradient(135deg, hsl(${accentHue} 50% 45% / 0.6), hsl(${accentHue} 40% 35% / 0.4))`
-              : "hsl(230 15% 18%)",
-            "--circle-border": progressPct > 0 ? "none" : "2px solid hsl(230 15% 25%)",
-          } as any}
-          transition={{ duration: 0 }}
+          style={markerStyle}
         >
           {isResumeTarget ? (
             <Play className="w-2.5 h-2.5 text-white fill-white ml-[1px]" />
           ) : (
-            <span className={cn(
-              "text-[8px] font-bold",
-              progressPct > 0 ? "text-white" : "text-white/40"
-            )}>{epNum}</span>
+            <span className={cn("text-[8px] font-bold", progressPct > 0 ? "text-white" : "text-white/40")}>{epNum}</span>
           )}
-          {isResumeTarget && (
-            <motion.div
-              className="absolute inset-[-3px] rounded-full"
-              style={{ "--ring-border": `2px solid hsl(${accentHue} 60% 55% / 0.4)` } as React.CSSProperties}
-              animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0, 0.6] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            />
-          )}
-        </motion.div>
+        </div>
       </div>
 
-      <motion.div
+      <div
         className={cn(
-          "rounded-2xl overflow-hidden transition-all duration-200 active:scale-[0.98]",
-          isResumeTarget ? "ring-1" : ""
+          "rounded-2xl overflow-hidden border transition-transform duration-200 active:scale-[0.98]",
+          isResumeTarget && "ring-1"
         )}
-        animate={{
-          "--ep-bg": isResumeTarget
-            ? `linear-gradient(135deg, hsl(${accentHue} 25% 12% / 0.6), hsl(230 18% 8% / 0.8))`
-            : "linear-gradient(135deg, hsl(230 18% 11% / 0.5), hsl(230 18% 7% / 0.4))",
-          "--ep-border": isResumeTarget ? "none" : "1px solid hsl(230 15% 20% / 0.4)",
-          ...(isResumeTarget ? { "--ep-ring": `hsl(${accentHue} 50% 50% / 0.2)` } : {}),
-          "--ep-shadow": isResumeTarget
-            ? `0 4px 20px hsl(${accentHue} 50% 30% / 0.15), inset 0 1px 0 rgba(255,255,255,0.05)`
-            : "0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)",
-        } as any}
-        transition={{ duration: 0 }}
+        style={cardStyle}
         onClick={() => {
           if (hasVideo && episode.download_url) {
             onPlay(episode.download_url, `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`);
@@ -1625,36 +1586,33 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
         }}
       >
         <div className="relative w-full aspect-[2.4/1] overflow-hidden">
-          <motion.img
+          <img
             src={getImageUrl(seriesImage)}
             alt={`Episode ${episode.episode_number}`}
-            className="w-full h-full object-cover custom-obj-pos"
-            animate={{ "--obj-pos": `center ${30 + (index * 5) % 40}%` } as any}
-            transition={{ duration: 0 }}
+            className="w-full h-full object-cover"
+            style={{ objectPosition: `center ${30 + (index * 5) % 40}%` }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
 
           {isResumeTarget && (
             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-              <motion.div
+              <div
                 className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider text-white flex items-center gap-1"
                 style={{
                   background: `linear-gradient(135deg, hsl(${accentHue} 65% 50%), hsl(${(accentHue + 40) % 360} 55% 45%))`,
                   boxShadow: `0 2px 8px hsl(${accentHue} 60% 50% / 0.4)`,
                 }}
-                animate={{ opacity: [0.85, 1, 0.85] }}
-                transition={{ duration: 2, repeat: Infinity }}
               >
                 <Play className="w-2.5 h-2.5 fill-current" />
                 Continue
-              </motion.div>
+              </div>
             </div>
           )}
 
           <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
             {episode.file_size && (
-              <span className="px-2 py-0.5 text-[9px] font-semibold text-white/80 bg-black/50 backdrop-blur-sm rounded-md">
+              <span className="px-2 py-0.5 text-[9px] font-semibold text-white/80 bg-black/50 rounded-md">
                 {episode.file_size}
               </span>
             )}
@@ -1662,7 +1620,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
 
           {hasVideo && !isResumeTarget && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 active:scale-90 transition-transform">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 border border-white/20 active:scale-90 transition-transform">
                 <Play className="w-4 h-4 text-white fill-white ml-0.5" />
               </div>
             </div>
@@ -1670,16 +1628,15 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
 
           {isResumeTarget && hasVideo && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div
-                className="w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border-2 border-white/30"
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center border-2 border-white/30 active:scale-90 transition-transform"
                 style={{
                   background: `linear-gradient(135deg, hsl(${accentHue} 60% 45% / 0.8), hsl(${(accentHue + 40) % 360} 50% 40% / 0.6))`,
                   boxShadow: `0 4px 20px hsl(${accentHue} 60% 50% / 0.4)`,
                 }}
-                whileTap={{ scale: 0.9 }}
               >
                 <Play className="w-5 h-5 text-white fill-white ml-0.5" />
-              </motion.div>
+              </div>
             </div>
           )}
 
@@ -1703,16 +1660,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
 
             {progressPct > 0 && (
               <div className="w-full h-[3px] bg-white/10">
-                <motion.div
-                  className="h-full rounded-r-full"
-                  style={{
-                    background: `linear-gradient(90deg, hsl(${accentHue} 65% 55%), hsl(${(accentHue + 40) % 360} 55% 50%))`,
-                    boxShadow: `0 0 8px hsl(${accentHue} 60% 55% / 0.5)`,
-                  }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ delay: 0.3 + index * 0.05, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                />
+                <div className="h-full rounded-r-full" style={progressStyle} />
               </div>
             )}
           </div>
@@ -1726,26 +1674,25 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
               </p>
             )}
             {FEATURE_FLAGS.DOWNLOAD_ENABLED && hasVideo && (
-              <motion.button
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   if (episode.download_url) {
-                    const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, '0')}`;
+                    const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, "0")}`;
                     downloadWithName(episode.download_url, epName, undefined, episode.mobifliks_id);
                   }
                 }}
                 className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold active:scale-95 transition-transform"
-                animate={{ color: `hsl(${accentHue} 50% 65%)` } as any}
-                transition={{ duration: 0 }}
+                style={{ color: `hsl(${accentHue} 50% 65%)` }}
               >
                 <Download className="w-3.5 h-3.5" />
                 Download
-              </motion.button>
+              </button>
             )}
           </div>
         )}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 

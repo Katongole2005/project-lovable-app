@@ -6,6 +6,13 @@ const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "ht
 export const API_BASE = (import.meta.env.VITE_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, "");
 export const CLOUDFLARE_WORKER_URL = "https://cdn.s-u.in";
 
+const movieDetailsCache = new Map<string, Movie | null>();
+const movieDetailsRequests = new Map<string, Promise<Movie | null>>();
+const seriesDetailsCache = new Map<string, Series | null>();
+const seriesDetailsRequests = new Map<string, Promise<Series | null>>();
+const genreQueryCache = new Map<string, Movie[]>();
+const genreQueryRequests = new Map<string, Promise<Movie[]>>();
+
 export const getImageUrl = (url?: string) => {
   if (!url) return fallbackPoster;
   return url.replace('/original/', '/w500/');
@@ -415,88 +422,138 @@ export async function searchAll(query: string, page: number = 1, limit: number =
 }
 
 export async function fetchMovieDetails(id: string): Promise<Movie | null> {
-  const { data, error } = await supabase
-    .from("movies")
-    .select("*")
-    .eq("mobifliks_id", id)
-    .single();
-  if (error) { console.error("fetchMovieDetails error:", error); return null; }
-  return data as Movie;
+  if (movieDetailsCache.has(id)) {
+    return movieDetailsCache.get(id) ?? null;
+  }
+
+  const inFlight = movieDetailsRequests.get(id);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const request = (async () => {
+    const { data, error } = await supabase
+      .from("movies")
+      .select("*")
+      .eq("mobifliks_id", id)
+      .single();
+    if (error) {
+      console.error("fetchMovieDetails error:", error);
+      return null;
+    }
+
+    const movie = data as Movie;
+    movieDetailsCache.set(id, movie);
+    return movie;
+  })();
+
+  movieDetailsRequests.set(id, request);
+
+  try {
+    return await request;
+  } finally {
+    movieDetailsRequests.delete(id);
+  }
 }
 
 export async function fetchSeriesDetails(id: string): Promise<Series | null> {
-  const { data: series, error } = await supabase
-    .from("movies")
-    .select("*")
-    .eq("mobifliks_id", id)
-    .eq("type", "series")
-    .single();
-  if (error || !series) { console.error("fetchSeriesDetails error:", error); return null; }
-
-  const baseName = getSeriesBaseName(series.title);
-
-  const { data: allRelated } = await supabase
-    .from("movies")
-    .select("mobifliks_id, title")
-    .eq("type", "series")
-    .ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`)
-    .order("title", { ascending: true });
-
-  const seasonEntries = (allRelated ?? [])
-    .filter((r) => getSeriesBaseName(r.title) === baseName)
-    .sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
-
-  const seasonIds = seasonEntries.length > 1
-    ? seasonEntries.map((s) => s.mobifliks_id)
-    : [id];
-
-  const assignedSeasons = new Set<number>();
-  const seasonNumbers: number[] = [];
-  for (const entry of seasonEntries) {
-    let sNum = extractSeasonNumber(entry.title);
-    while (assignedSeasons.has(sNum)) sNum++;
-    assignedSeasons.add(sNum);
-    seasonNumbers.push(sNum);
+  if (seriesDetailsCache.has(id)) {
+    return seriesDetailsCache.get(id) ?? null;
   }
 
-  const allEpisodes: Episode[] = [];
-  let maxSeasonUsed = 0;
+  const inFlight = seriesDetailsRequests.get(id);
+  if (inFlight) {
+    return inFlight;
+  }
 
-  for (let i = 0; i < seasonIds.length; i++) {
-    const baseSeason = seasonEntries.length > 1
-      ? seasonNumbers[i]
-      : 1;
-
-    const { data: eps } = await supabase
+  const request = (async () => {
+    const { data: series, error } = await supabase
       .from("movies")
       .select("*")
-      .eq("series_id", seasonIds[i])
-      .eq("type", "episode")
-      .order("episode_number", { ascending: true });
-
-    if (eps?.length) {
-      const chunks = splitEpisodesByGap(eps);
-      for (let c = 0; c < chunks.length; c++) {
-        const seasonNum = c === 0 ? baseSeason : maxSeasonUsed + 1 + c;
-        chunks[c].forEach((ep: any, idx: number) => {
-          allEpisodes.push({
-            ...ep,
-            season_number: seasonNum,
-            episode_number: idx + 1,
-          } as Episode);
-        });
-      }
-      maxSeasonUsed = Math.max(maxSeasonUsed, baseSeason + chunks.length - 1);
+      .eq("mobifliks_id", id)
+      .eq("type", "series")
+      .single();
+    if (error || !series) {
+      console.error("fetchSeriesDetails error:", error);
+      return null;
     }
-  }
 
-  return {
-    ...series,
-    title: baseName,
-    episodes: allEpisodes,
-    total_episodes: allEpisodes.length,
-    relatedSeasonIds: seasonIds.length > 1 ? seasonIds : undefined,
-  } as Series;
+    const baseName = getSeriesBaseName(series.title);
+
+    const { data: allRelated } = await supabase
+      .from("movies")
+      .select("mobifliks_id, title")
+      .eq("type", "series")
+      .ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`)
+      .order("title", { ascending: true });
+
+    const seasonEntries = (allRelated ?? [])
+      .filter((r) => getSeriesBaseName(r.title) === baseName)
+      .sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
+
+    const seasonIds = seasonEntries.length > 1
+      ? seasonEntries.map((s) => s.mobifliks_id)
+      : [id];
+
+    const assignedSeasons = new Set<number>();
+    const seasonNumbers: number[] = [];
+    for (const entry of seasonEntries) {
+      let sNum = extractSeasonNumber(entry.title);
+      while (assignedSeasons.has(sNum)) sNum++;
+      assignedSeasons.add(sNum);
+      seasonNumbers.push(sNum);
+    }
+
+    const allEpisodes: Episode[] = [];
+    let maxSeasonUsed = 0;
+
+    for (let i = 0; i < seasonIds.length; i++) {
+      const baseSeason = seasonEntries.length > 1
+        ? seasonNumbers[i]
+        : 1;
+
+      const { data: eps } = await supabase
+        .from("movies")
+        .select("*")
+        .eq("series_id", seasonIds[i])
+        .eq("type", "episode")
+        .order("episode_number", { ascending: true });
+
+      if (eps?.length) {
+        const chunks = splitEpisodesByGap(eps);
+        for (let c = 0; c < chunks.length; c++) {
+          const seasonNum = c === 0 ? baseSeason : maxSeasonUsed + 1 + c;
+          chunks[c].forEach((ep: any, idx: number) => {
+            allEpisodes.push({
+              ...ep,
+              season_number: seasonNum,
+              episode_number: idx + 1,
+            } as Episode);
+          });
+        }
+        maxSeasonUsed = Math.max(maxSeasonUsed, baseSeason + chunks.length - 1);
+      }
+    }
+
+    const details = {
+      ...series,
+      title: baseName,
+      episodes: allEpisodes,
+      total_episodes: allEpisodes.length,
+      relatedSeasonIds: seasonIds.length > 1 ? seasonIds : undefined,
+    } as Series;
+
+    seriesDetailsCache.set(id, details);
+    return details;
+  })();
+
+  seriesDetailsRequests.set(id, request);
+
+  try {
+    return await request;
+  } finally {
+    seriesDetailsRequests.delete(id);
+  }
 }
 
 export async function fetchSuggestions(query: string): Promise<Movie[]> {
@@ -543,26 +600,60 @@ export async function fetchByGenre(
   filters?: FilterOptions,
   page: number = 1
 ): Promise<Movie[]> {
-  const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
-  const offset = (page - 1) * fetchLimit;
-  let query = supabase
-    .from("movies")
-    .select("*")
-    .contains("genres", [genre])
-    .order("release_date", { ascending: false, nullsFirst: false })
-    .order("views", { ascending: false, nullsFirst: false })
-    .order("year", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
-    .range(offset, offset + fetchLimit - 1);
+  const cacheKey = JSON.stringify({
+    genre,
+    contentType,
+    limit,
+    page,
+    vj: filters?.vj ?? null,
+    year: filters?.year ?? null,
+  });
 
-  if (contentType !== "all") {
-    query = query.eq("type", contentType);
+  if (genreQueryCache.has(cacheKey)) {
+    return genreQueryCache.get(cacheKey) ?? [];
   }
 
-  query = applyFilters(query, { vj: filters?.vj, year: filters?.year });
+  const inFlight = genreQueryRequests.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
 
-  const { data, error } = await query;
-  if (error) { console.error("fetchByGenre error:", error); return []; }
-  const results = normalize(data ?? []);
-  return contentType === "series" ? groupSeriesList(results).slice(0, limit) : groupSeriesList(results);
+  const request = (async () => {
+    const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+    const offset = (page - 1) * fetchLimit;
+    let query = supabase
+      .from("movies")
+      .select("*")
+      .contains("genres", [genre])
+      .order("release_date", { ascending: false, nullsFirst: false })
+      .order("views", { ascending: false, nullsFirst: false })
+      .order("year", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + fetchLimit - 1);
+
+    if (contentType !== "all") {
+      query = query.eq("type", contentType);
+    }
+
+    query = applyFilters(query, { vj: filters?.vj, year: filters?.year });
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("fetchByGenre error:", error);
+      return [];
+    }
+
+    const results = normalize(data ?? []);
+    const groupedResults = contentType === "series" ? groupSeriesList(results).slice(0, limit) : groupSeriesList(results);
+    genreQueryCache.set(cacheKey, groupedResults);
+    return groupedResults;
+  })();
+
+  genreQueryRequests.set(cacheKey, request);
+
+  try {
+    return await request;
+  } finally {
+    genreQueryRequests.delete(cacheKey);
+  }
 }

@@ -86,7 +86,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
       data-testid={`card-movie-${movie.mobifliks_id}`}
     >
       <div
-        className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/80 backdrop-blur-sm border border-white/[0.06] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02]"
+        className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/95 md:bg-card/80 border border-white/[0.06] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm"
         style={{
           willChange: typeof window !== "undefined" && window.innerWidth >= 768 ? "transform" : "auto",
           ["--gloss-x" as string]: "50%",
@@ -110,7 +110,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 md:group-hover:opacity-100" />
 
         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 md:group-hover:opacity-100">
-          <div className="play-ring-pulse w-12 h-12 rounded-full bg-white/95 dark:bg-white/90 backdrop-blur-md flex items-center justify-center scale-75 transition-transform duration-300 shadow-[0_0_24px_hsl(210_100%_60%/0.4)] md:group-hover:scale-100">
+          <div className="play-ring-pulse w-12 h-12 rounded-full bg-white/95 dark:bg-white/90 flex items-center justify-center scale-75 transition-transform duration-300 shadow-[0_0_24px_hsl(210_100%_60%/0.4)] md:group-hover:scale-100 md:backdrop-blur-md">
             <Play className="w-5 h-5 text-primary fill-current ml-0.5" data-testid="icon-play" />
           </div>
         </div>
@@ -120,7 +120,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
             {movie.genres.slice(0, 2).map(g => (
               <span
                 key={g}
-                className="px-2.5 py-0.5 text-[9px] font-semibold rounded-full bg-black/70 backdrop-blur-sm text-white/90 border border-white/10 tracking-wide uppercase"
+                className="px-2.5 py-0.5 text-[9px] font-semibold rounded-full bg-black/70 text-white/90 border border-white/10 tracking-wide uppercase md:backdrop-blur-sm"
               >
                 {g}
               </span>
@@ -142,7 +142,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
             </span>
           )}
           {movie.type === "series" && (
-            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/90 text-primary-foreground backdrop-blur-sm shadow-[0_2px_8px_hsl(210_100%_60%/0.3)]">
+            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/90 text-primary-foreground shadow-[0_2px_8px_hsl(210_100%_60%/0.3)] md:backdrop-blur-sm">
               SERIES
             </span>
           )}
@@ -156,7 +156,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
             "absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-10",
             inWatchlist
               ? "bg-primary/90 text-primary-foreground scale-100 shadow-[0_0_12px_hsl(210_100%_60%/0.4)]"
-              : "bg-black/40 backdrop-blur-sm text-white/80 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/60",
+              : "bg-black/40 text-white/80 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/60 md:backdrop-blur-sm",
             heartFlip && "animate-heart-flip"
           )}
         >
@@ -198,7 +198,7 @@ export const MovieCard = memo(MovieCardBase);
 export function MovieCardSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn("flex-shrink-0", className)}>
-      <div className="aspect-[2/3] rounded-2xl bg-card/80 backdrop-blur-sm border border-white/[0.06] overflow-hidden relative card-premium-shadow">
+      <div className="aspect-[2/3] rounded-2xl bg-card/95 md:bg-card/80 border border-white/[0.06] overflow-hidden relative card-premium-shadow md:backdrop-blur-sm">
         <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40 animate-pulse" />
         <div className="absolute inset-0 shimmer opacity-50" />
         <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">

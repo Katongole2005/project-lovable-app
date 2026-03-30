@@ -54,6 +54,21 @@ type IdleWindow = Window & typeof globalThis & {
   cancelIdleCallback?: (handle: number) => void;
 };
 
+function scheduleLowPriorityTask(task: () => void): void {
+  if (typeof window === "undefined") {
+    task();
+    return;
+  }
+
+  const typedWindow = window as IdleWindow;
+  if (typeof typedWindow.requestIdleCallback === "function") {
+    typedWindow.requestIdleCallback(() => task());
+    return;
+  }
+
+  window.setTimeout(task, 32);
+}
+
 const CATEGORY_TO_GENRE: Record<string, string> = {
   action: "Action",
   romance: "Romance",
@@ -413,32 +428,39 @@ export default function Index() {
   }, []);
 
   // Handle movie click - show modal immediately, load details in background
-  const handleMovieClick = useCallback(async (movie: Movie) => {
+  const handleMovieClick = useCallback((movie: Movie) => {
     // Show modal immediately with existing data
     setSelectedMovie(movie as Movie | Series);
     setIsModalOpen(true);
-    addToRecent(movie);
 
     // Push shareable URL with SEO-friendly slug
     const typeSlug = movie.type === "series" ? "series" : "movie";
     const urlSlug = toSlug(movie.title, movie.mobifliks_id, movie.year);
-    navigateTo(`/${typeSlug}/${urlSlug}`, {
-      replace: false,
-      state: { backgroundView: viewMode }
+    requestAnimationFrame(() => {
+      navigateTo(`/${typeSlug}/${urlSlug}`, {
+        replace: false,
+        state: { backgroundView: viewMode }
+      });
     });
 
-    // Fetch full details in background (for episodes, cast, etc.)
-    try {
-      const details = movie.type === "series"
-        ? await fetchSeriesDetails(movie.mobifliks_id)
-        : await fetchMovieDetails(movie.mobifliks_id);
+    scheduleLowPriorityTask(() => addToRecent(movie));
 
-      if (details) {
-        setSelectedMovie(details);
+    // Fetch full details in background (for episodes, cast, etc.)
+    scheduleLowPriorityTask(async () => {
+      try {
+        const details = movie.type === "series"
+          ? await fetchSeriesDetails(movie.mobifliks_id)
+          : await fetchMovieDetails(movie.mobifliks_id);
+
+        if (details) {
+          startTransition(() => {
+            setSelectedMovie(details);
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching details:", error);
       }
-    } catch (error) {
-      console.error("Error fetching details:", error);
-    }
+    });
   }, [navigateTo, viewMode]);
 
   selectedMovieRef.current = selectedMovie;
@@ -1096,6 +1118,7 @@ export default function Index() {
                 }
               }}
               onPlay={handlePlayVideo}
+              onMovieSelect={handleMovieClick}
             />
           )}
 
