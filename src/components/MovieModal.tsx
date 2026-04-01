@@ -97,8 +97,9 @@ const MOBILE_LAYOUT_STYLE = {
   ["--accent-hue-alt" as string]: MOBILE_MODAL_ACCENT_ALT_HUE,
 } as React.CSSProperties;
 const MOBILE_PRIMARY_PLAY_SURFACE_STYLE = {
-  background: "linear-gradient(135deg, #b83b3b 0%, #8f232a 52%, #5a111b 100%)",
-  boxShadow: "0 8px 24px rgba(90,17,27,0.34), 0 0 28px rgba(184,59,59,0.14)",
+  background: "linear-gradient(135deg, #d1a24a 0%, #b6792c 55%, #7f4d18 100%)",
+  boxShadow: "0 8px 24px rgba(127,77,24,0.28), 0 0 28px rgba(182,121,44,0.12)",
+<<<<<<< ours
 } as const;
 const MOBILE_TAB_SURFACE_STYLE = {
   background: "linear-gradient(135deg, rgba(184,59,59,0.18) 0%, rgba(90,17,27,0.9) 100%)",
@@ -116,6 +117,8 @@ const MOBILE_ACTIVE_UTILITY_STYLE = {
   background: "linear-gradient(135deg, rgba(184,59,59,0.18) 0%, rgba(90,17,27,0.62) 100%)",
   borderColor: "rgba(184,59,59,0.32)",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+=======
+>>>>>>> theirs
 } as const;
 
 
@@ -1542,20 +1545,36 @@ function MobileMovieLayout({
             <Button
               size="lg"
               data-testid="button-play"
+<<<<<<< ours
+<<<<<<< ours
               className="h-auto min-h-[58px] w-full items-center justify-between gap-3 overflow-hidden rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-footer-play-btn"
+=======
+              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 rounded-[24px] border-0 px-4 py-3 text-left text-black active:scale-[0.985] transition-transform modal-footer-play-btn"
+>>>>>>> theirs
+=======
+              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 rounded-[24px] border-0 px-4 py-3 text-left text-black active:scale-[0.985] transition-transform modal-footer-play-btn"
+>>>>>>> theirs
               style={MOBILE_PRIMARY_PLAY_SURFACE_STYLE}
               onClick={handlePrimaryAction}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/18 via-transparent to-black/5 pointer-events-none" />
               <div className="relative flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-black/10">
                   <Play className="h-5 w-5 fill-current" />
                 </div>
                 <div>
                   <p className="text-[15px] font-bold tracking-[-0.02em]">{primaryActionLabel}</p>
-                  <p className="mt-0.5 text-[11px] font-medium text-white/72">{primaryActionHint}</p>
+                  <p className="mt-0.5 text-[11px] font-medium text-black/60">{primaryActionHint}</p>
                 </div>
               </div>
+<<<<<<< ours
+<<<<<<< ours
+=======
+              <Maximize2 className="relative h-4 w-4 text-black/55" />
+>>>>>>> theirs
+=======
+              <Maximize2 className="relative h-4 w-4 text-black/55" />
+>>>>>>> theirs
             </Button>
 
             <div className={cn("grid gap-2.5", utilityGridClass)}>
