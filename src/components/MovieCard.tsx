@@ -1,4 +1,5 @@
 import { Play, Star, Heart, TrendingUp, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 import type { Movie } from "@/types/movie";
 import { getImageUrl, preloadMovieBackdrop } from "@/lib/api";
 import { cn } from "@/lib/utils";
