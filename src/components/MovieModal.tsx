@@ -331,6 +331,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
           onPlay={handlePlay}
           inWatchlist={inWatchlist}
           onToggleWatchlist={handleToggleWatchlist}
+          showEpisodesEmptyState={showEpisodesEmptyState}
           onMovieSelect={onMovieSelect}
         />
 
@@ -693,6 +694,7 @@ interface MobileMovieLayoutProps {
   onPlay: (url: string, title: string) => void;
   inWatchlist: boolean;
   onToggleWatchlist: () => void;
+  showEpisodesEmptyState: boolean;
   onMovieSelect?: (movie: Movie) => void;
 }
 
@@ -709,6 +711,7 @@ function MobileMovieLayout({
   onPlay,
   inWatchlist,
   onToggleWatchlist,
+  showEpisodesEmptyState,
   onMovieSelect,
 }: MobileMovieLayoutProps) {
   const deviceProfile = useDeviceProfile();
