@@ -238,7 +238,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
     setShowEpisodesEmptyState(false);
     const timer = window.setTimeout(() => {
       setShowEpisodesEmptyState(true);
-    }, 1200);
+    }, 400);
 
     return () => window.clearTimeout(timer);
   }, [isOpen, movie?.mobifliks_id, movie?.type, seriesEpisodeCount]);
@@ -961,7 +961,7 @@ function MobileMovieLayout({
       active?: boolean;
     }> = [];
 
-    if (isSeries && allEpisodes.length > 0) {
+    if (isSeries) {
       actions.push({
         key: "episodes",
         label: "Episodes",
@@ -1363,7 +1363,7 @@ function MobileMovieLayout({
                   </motion.div>
                 )}
 
-                {isSeries && allEpisodes.length > 0 && (
+                {isSeries && (
                   <div ref={episodesSectionRef} className="space-y-0 pt-2">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2.5">
@@ -1372,7 +1372,11 @@ function MobileMovieLayout({
                         </div>
                         <div>
                           <h3 className="text-sm font-bold text-white tracking-tight">Episodes</h3>
-                          <p className="text-[10px] text-white/35 mt-0.5">{currentSeasonEpisodes.length} episode{currentSeasonEpisodes.length !== 1 ? "s" : ""} available</p>
+                          <p className="text-[10px] text-white/35 mt-0.5">
+                            {allEpisodes.length > 0
+                              ? `${currentSeasonEpisodes.length} episode${currentSeasonEpisodes.length !== 1 ? "s" : ""} available`
+                              : "Loading episodes…"}
+                          </p>
                         </div>
                       </div>
                       {FEATURE_FLAGS.DOWNLOAD_ENABLED && currentSeasonEpisodes.some(ep => ep.download_url) && (
@@ -1395,7 +1399,7 @@ function MobileMovieLayout({
                       )}
                     </div>
 
-                    {availableSeasons.length > 1 && (
+                    {allEpisodes.length > 0 && availableSeasons.length > 1 && (
                       <div className="mb-5 -mx-4 px-4">
                         <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
                           {availableSeasons.map((seasonNum) => {
@@ -1425,31 +1429,37 @@ function MobileMovieLayout({
                       </div>
                     )}
 
-                    <div
-                      className="relative pl-6"
-                      style={{ contentVisibility: "auto", containIntrinsicSize: "900px" }}
-                    >
-                      <div className="absolute left-[11px] top-4 bottom-4 w-[2px] rounded-full modal-timeline-line" />
-                      <div className="space-y-0">
-                        {currentSeasonEpisodes.map((episode, idx) => (
-                          <MobileTimelineEpisode
-                            key={episode.mobifliks_id || `${selectedSeason}-${episode.episode_number}`}
-                            episode={episode}
-                            seriesTitle={movie.title}
-                            seriesImage={movie.image_url}
-                            seasonNumber={selectedSeason}
-                            onPlay={onPlay}
-                            index={idx}
-                            isResumeTarget={
-                              resumeEpisode
-                                ? resumeEpisode.season === selectedSeason && resumeEpisode.episode === episode.episode_number
-                                : idx === 0
-                            }
-                            progressPct={cwProgressMap.get(`${selectedSeason}-${episode.episode_number}`) || 0}
-                          />
-                        ))}
+                    {allEpisodes.length > 0 ? (
+                      <div
+                        className="relative pl-6"
+                        style={{ contentVisibility: "auto", containIntrinsicSize: "900px" }}
+                      >
+                        <div className="absolute left-[11px] top-4 bottom-4 w-[2px] rounded-full modal-timeline-line" />
+                        <div className="space-y-0">
+                          {currentSeasonEpisodes.map((episode, idx) => (
+                            <MobileTimelineEpisode
+                              key={episode.mobifliks_id || `${selectedSeason}-${episode.episode_number}`}
+                              episode={episode}
+                              seriesTitle={movie.title}
+                              seriesImage={movie.image_url}
+                              seasonNumber={selectedSeason}
+                              onPlay={onPlay}
+                              index={idx}
+                              isResumeTarget={
+                                resumeEpisode
+                                  ? resumeEpisode.season === selectedSeason && resumeEpisode.episode === episode.episode_number
+                                  : idx === 0
+                              }
+                              progressPct={cwProgressMap.get(`${selectedSeason}-${episode.episode_number}`) || 0}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="rounded-[22px] border border-white/8 px-4 py-5 text-sm text-white/58" style={MOBILE_PANEL_SURFACE_STYLE}>
+                        {showEpisodesEmptyState ? "No episodes available yet." : "Loading episodes…"}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
