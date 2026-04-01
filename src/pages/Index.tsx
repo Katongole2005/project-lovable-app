@@ -142,6 +142,7 @@ export default function Index() {
   const [recentMovies, setRecentMovies] = useState<Movie[]>([]);
   const [recentSeries, setRecentSeries] = useState<Movie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | Series | null>(null);
+  const [selectedMovieDetailsLoading, setSelectedMovieDetailsLoading] = useState(false);
 
   // UI states
   const [activeCategory, setActiveCategory] = useState("trending");
@@ -429,8 +430,11 @@ export default function Index() {
 
   // Handle movie click - show modal immediately, load details in background
   const handleMovieClick = useCallback((movie: Movie) => {
+    const needsSeriesDetails = movie.type === "series" && (!("episodes" in movie) || !(movie as Series).episodes?.length);
+
     // Show modal immediately with existing data
     setSelectedMovie(movie as Movie | Series);
+    setSelectedMovieDetailsLoading(needsSeriesDetails);
     setIsModalOpen(true);
 
     // Push shareable URL with SEO-friendly slug
@@ -459,6 +463,10 @@ export default function Index() {
         }
       } catch (error) {
         console.error("Error fetching details:", error);
+      } finally {
+        if (selectedMovieRef.current?.mobifliks_id === movie.mobifliks_id) {
+          setSelectedMovieDetailsLoading(false);
+        }
       }
     });
   }, [navigateTo, viewMode]);
@@ -1112,12 +1120,14 @@ export default function Index() {
               isOpen={isModalOpen}
               onClose={() => {
                 setIsModalOpen(false);
+                setSelectedMovieDetailsLoading(false);
                 if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
                   const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
                   navigateTo(targetPath, { replace: true });
                 }
               }}
               onPlay={handlePlayVideo}
+              detailsLoading={selectedMovieDetailsLoading}
               onMovieSelect={handleMovieClick}
             />
           )}

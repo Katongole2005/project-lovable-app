@@ -124,12 +124,13 @@ interface MovieModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPlay: (url: string, title: string) => void;
+  detailsLoading?: boolean;
   onMovieSelect?: (movie: Movie) => void;
 }
 
 const fallbackCastAvatar = "https://placehold.co/160x160/1a1a2e/ffffff?text=Actor";
 
-export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: MovieModalProps) {
+export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = false, onMovieSelect }: MovieModalProps) {
   // NOTE: hooks must be called unconditionally; keep all hooks above the null-guard return.
   const deviceProfile = useDeviceProfile();
   const [, setTmdbBackdrop] = React.useState<string | null>(null);
@@ -146,13 +147,11 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
       : getOptimizedBackdropUrl(backdrop);
   }, [backdrop, deviceProfile.allowHighResImages]);
   const allowDesktopMotion = deviceProfile.allowComplexAnimations && !deviceProfile.prefersReducedMotion;
-  const seriesEpisodeCount = movie?.type === "series" ? ((movie as Series).episodes?.length ?? 0) : 0;
 
   const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
   const [userRating, setUserRatingState] = React.useState<number | null>(null);
   const [inWatchlist, setInWatchlist] = React.useState(false);
   const [entranceVisible, setEntranceVisible] = React.useState(false);
-  const [showEpisodesEmptyState, setShowEpisodesEmptyState] = React.useState(false);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch missing TMDB data (especially for series)
@@ -223,25 +222,6 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
       setInWatchlist(isInWatchlist(movie.mobifliks_id));
     }
   }, [movie?.mobifliks_id]);
-
-  React.useEffect(() => {
-    if (!movie || !isOpen || movie.type !== "series") {
-      setShowEpisodesEmptyState(false);
-      return;
-    }
-
-    if (seriesEpisodeCount > 0) {
-      setShowEpisodesEmptyState(false);
-      return;
-    }
-
-    setShowEpisodesEmptyState(false);
-    const timer = window.setTimeout(() => {
-      setShowEpisodesEmptyState(true);
-    }, 400);
-
-    return () => window.clearTimeout(timer);
-  }, [isOpen, movie?.mobifliks_id, movie?.type, seriesEpisodeCount]);
 
   React.useEffect(() => {
     setDesktopBackdropLoaded(false);
@@ -331,7 +311,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
           onPlay={handlePlay}
           inWatchlist={inWatchlist}
           onToggleWatchlist={handleToggleWatchlist}
-          showEpisodesEmptyState={showEpisodesEmptyState}
+          detailsLoading={detailsLoading}
           onMovieSelect={onMovieSelect}
         />
 
@@ -667,7 +647,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
 
                 {isSeries && (!series.episodes || series.episodes.length === 0) && (
                   <motion.div variants={fadeInUp} className="pt-4 text-center py-8 text-white/60 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
-                    {showEpisodesEmptyState ? "No episodes available yet." : "Loading episodes…"}
+                    {detailsLoading ? "Loading episodes..." : "No episodes available yet."}
                   </motion.div>
                 )}
               </motion.div>
@@ -694,7 +674,7 @@ interface MobileMovieLayoutProps {
   onPlay: (url: string, title: string) => void;
   inWatchlist: boolean;
   onToggleWatchlist: () => void;
-  showEpisodesEmptyState: boolean;
+  detailsLoading: boolean;
   onMovieSelect?: (movie: Movie) => void;
 }
 
@@ -711,7 +691,7 @@ function MobileMovieLayout({
   onPlay,
   inWatchlist,
   onToggleWatchlist,
-  showEpisodesEmptyState,
+  detailsLoading,
   onMovieSelect,
 }: MobileMovieLayoutProps) {
   const deviceProfile = useDeviceProfile();
@@ -1460,7 +1440,7 @@ function MobileMovieLayout({
                       </div>
                     ) : (
                       <div className="rounded-[22px] border border-white/8 px-4 py-5 text-sm text-white/58" style={MOBILE_PANEL_SURFACE_STYLE}>
-                        {showEpisodesEmptyState ? "No episodes available yet." : "Loading episodes…"}
+                        {detailsLoading ? "Loading episodes..." : "No episodes available yet."}
                       </div>
                     )}
                   </div>
