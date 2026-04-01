@@ -89,6 +89,12 @@ const fadeInUp = {
   }
 };
 
+const TRENDING_ACCENT_BUTTON_CLASS = "bg-[#c8f547] hover:bg-[#d7f86d] text-black shadow-[0_4px_20px_rgba(200,245,71,0.35),0_0_34px_rgba(200,245,71,0.14)]";
+const TRENDING_ACCENT_SURFACE_STYLE = {
+  background: "linear-gradient(135deg, #e3ff83 0%, #c8f547 58%, #b6df2c 100%)",
+  boxShadow: "0 4px 20px rgba(200,245,71,0.35), 0 0 34px rgba(200,245,71,0.14)",
+} as const;
+
 
 interface MovieModalProps {
   movie: Movie | Series | null;
@@ -449,7 +455,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
                       {!isSeries && movie.download_url && (
                         <Button
                           size="lg"
-                          className="gap-2 bg-white hover:bg-white/90 text-black rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]"
+                          className={cn(
+                            "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                            TRENDING_ACCENT_BUTTON_CLASS
+                          )}
                           onClick={() => onPlay(movie.download_url!, movie.title)}
                         >
                           <Play className="w-5 h-5 fill-current" />
@@ -459,7 +468,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
                       {isSeries && series.episodes && series.episodes.length > 0 && (
                         <Button
                           size="lg"
-                          className="gap-2 bg-white hover:bg-white/90 text-black rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]"
+                          className={cn(
+                            "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                            TRENDING_ACCENT_BUTTON_CLASS
+                          )}
                           onClick={() => {
                             const firstEp = series.episodes?.[0];
                             if (firstEp?.download_url) {
@@ -534,7 +546,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
                             }
                           }}
                           aria-label="Download"
-                          className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
+                          className={cn(
+                            "w-11 h-11 rounded-full border-2 border-transparent flex items-center justify-center backdrop-blur-sm transition-all duration-200",
+                            TRENDING_ACCENT_BUTTON_CLASS
+                          )}
                         >
                           <Download className="w-4 h-4" />
                         </button>
@@ -1152,7 +1167,7 @@ function MobileMovieLayout({
                   className={cn(
                     "relative rounded-2xl px-3 py-3 text-sm font-medium capitalize transition-colors duration-200",
                     activeTab === tab
-                      ? "text-white"
+                      ? "text-black"
                       : "text-white/45"
                   )}
                 >
@@ -1160,10 +1175,7 @@ function MobileMovieLayout({
                     <motion.div
                       layoutId="mobile-tab-indicator"
                       className="absolute inset-0 rounded-2xl"
-                      style={{
-                        background: `linear-gradient(135deg, hsl(${accentHue} 64% 54% / 0.22), hsl(${accentAltHue} 58% 48% / 0.12))`,
-                        boxShadow: `inset 0 0 0 1px hsl(${accentHue} 54% 60% / 0.22)`,
-                      }}
+                      style={TRENDING_ACCENT_SURFACE_STYLE}
                       transition={{ type: "spring", stiffness: 360, damping: 34 }}
                     />
                   )}
@@ -1502,20 +1514,21 @@ function MobileMovieLayout({
             <Button
               size="lg"
               data-testid="button-play"
-              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-footer-play-btn"
+              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 rounded-[24px] border-0 px-4 py-3 text-left text-black active:scale-[0.985] transition-transform modal-footer-play-btn"
+              style={TRENDING_ACCENT_SURFACE_STYLE}
               onClick={handlePrimaryAction}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/5 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-r from-white/18 via-transparent to-black/5 pointer-events-none" />
               <div className="relative flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-black/18">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-black/10">
                   <Play className="h-5 w-5 fill-current" />
                 </div>
                 <div>
                   <p className="text-[15px] font-bold tracking-[-0.02em]">{primaryActionLabel}</p>
-                  <p className="mt-0.5 text-[11px] font-medium text-white/72">{primaryActionHint}</p>
+                  <p className="mt-0.5 text-[11px] font-medium text-black/60">{primaryActionHint}</p>
                 </div>
               </div>
-              <Maximize2 className="relative h-4 w-4 text-white/55" />
+              <Maximize2 className="relative h-4 w-4 text-black/55" />
             </Button>
 
             <div className={cn("grid gap-2.5", utilityGridClass)}>
@@ -1532,12 +1545,19 @@ function MobileMovieLayout({
                       "flex min-h-[52px] items-center justify-center gap-2 rounded-[20px] border px-3 py-3 text-[12px] font-semibold transition-transform active:scale-[0.97]",
                       action.active
                         ? "border-transparent text-white"
-                        : "border-white/10 bg-white/[0.05] text-white/70"
+                        : "border-white/10 bg-white/[0.05] text-white/70",
+                      action.key === "download" && "border-transparent text-black shadow-[0_4px_20px_rgba(200,245,71,0.25),0_0_24px_rgba(200,245,71,0.12)]"
                     )}
-                    style={action.active ? {
-                      background: `linear-gradient(135deg, hsl(${accentHue} 44% 20% / 0.72), hsl(${accentAltHue} 36% 18% / 0.56))`,
-                      boxShadow: `inset 0 0 0 1px hsl(${accentHue} 50% 58% / 0.18)`,
-                    } : undefined}
+                    style={
+                      action.key === "download"
+                        ? TRENDING_ACCENT_SURFACE_STYLE
+                        : action.active
+                          ? {
+                              background: `linear-gradient(135deg, hsl(${accentHue} 44% 20% / 0.72), hsl(${accentAltHue} 36% 18% / 0.56))`,
+                              boxShadow: `inset 0 0 0 1px hsl(${accentHue} 50% 58% / 0.18)`,
+                            }
+                          : undefined
+                    }
                   >
                     <Icon className={cn("h-4 w-4", action.active && "fill-current")} />
                     <span>{action.label}</span>
