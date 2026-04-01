@@ -556,6 +556,14 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
   }
 }
 
+export function getCachedSeriesDetails(id: string): Series | null {
+  return seriesDetailsCache.get(id) ?? null;
+}
+
+export function hasPendingSeriesDetailsRequest(id: string): boolean {
+  return seriesDetailsRequests.has(id);
+}
+
 export async function fetchSuggestions(query: string): Promise<Movie[]> {
   const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
   const { data, error } = await supabase

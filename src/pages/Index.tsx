@@ -31,6 +31,8 @@ import {
   searchMovies,
   fetchMovieDetails,
   fetchSeriesDetails,
+  getCachedSeriesDetails,
+  hasPendingSeriesDetailsRequest,
   fetchStats,
   fetchByGenre,
   fetchOriginals,
@@ -159,6 +161,7 @@ export default function Index() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [originalsPage, setOriginalsPage] = useState(1);
   const selectedMovieRef = useRef<Movie | Series | null>(null);
+  const prefetchedSeriesDetailsRef = useRef<Set<string>>(new Set());
   const modalHistoryRef = useRef(false);
   const videoHistoryRef = useRef(false);
   const moviesHistoryRef = useRef(false);
@@ -292,6 +295,25 @@ export default function Index() {
     });
   }, []);
 
+  const prefetchSeriesDetailsFor = useCallback((items: Array<Movie | Series>, limit = 8) => {
+    const candidates = items
+      .filter((item): item is Movie => item.type === "series")
+      .filter((item) => !prefetchedSeriesDetailsRef.current.has(item.mobifliks_id))
+      .slice(0, limit);
+
+    if (candidates.length === 0) return;
+
+    void Promise.all(candidates.map(async (item) => {
+      prefetchedSeriesDetailsRef.current.add(item.mobifliks_id);
+      try {
+        await fetchSeriesDetails(item.mobifliks_id);
+      } catch (error) {
+        console.error("Error prefetching series details:", error);
+        prefetchedSeriesDetailsRef.current.delete(item.mobifliks_id);
+      }
+    }));
+  }, []);
+
   // Load initial data
   useEffect(() => {
     async function loadData() {
@@ -367,6 +389,19 @@ export default function Index() {
     loadData();
   }, [trendingData, moviesQueryData, seriesQueryData]);
 
+  useEffect(() => {
+    const combinedSeries: Movie[] = [];
+    const seen = new Set<string>();
+
+    for (const item of [...recentSeries, ...trending, ...categoryMovies]) {
+      if (item.type !== "series" || seen.has(item.mobifliks_id)) continue;
+      seen.add(item.mobifliks_id);
+      combinedSeries.push(item);
+    }
+
+    prefetchSeriesDetailsFor(combinedSeries, viewMode === "series" ? 24 : 16);
+  }, [categoryMovies, prefetchSeriesDetailsFor, recentSeries, trending, viewMode]);
+
   // Deep-link: open movie/series modal when visiting /movie/:id or /series/:id directly
   useEffect(() => {
     const match = location.pathname.match(/^\/(movie|series)\/(.+)$/);
@@ -428,13 +463,42 @@ export default function Index() {
     }
   }, []);
 
-  // Handle movie click - show modal immediately, load details in background
-  const handleMovieClick = useCallback((movie: Movie) => {
+  // Handle movie click - prefer cached/prefetched series details before opening
+  const handleMovieClick = useCallback(async (movie: Movie) => {
+    let resolvedMovie: Movie | Series = movie;
     const needsSeriesDetails = movie.type === "series" && (!("episodes" in movie) || !(movie as Series).episodes?.length);
 
-    // Show modal immediately with existing data
-    setSelectedMovie(movie as Movie | Series);
-    setSelectedMovieDetailsLoading(needsSeriesDetails);
+    if (needsSeriesDetails) {
+      const cachedDetails = getCachedSeriesDetails(movie.mobifliks_id);
+      if (cachedDetails?.episodes?.length) {
+        resolvedMovie = cachedDetails;
+      }
+
+      try {
+        if (resolvedMovie === movie) {
+          const fastDetails = await Promise.race<Series | null>([
+            fetchSeriesDetails(movie.mobifliks_id),
+            new Promise<null>((resolve) =>
+              window.setTimeout(
+                () => resolve(null),
+                hasPendingSeriesDetailsRequest(movie.mobifliks_id) ? 260 : 180
+              )
+            ),
+          ]);
+
+          if (fastDetails?.episodes?.length) {
+            resolvedMovie = fastDetails;
+          }
+        }
+      } catch (error) {
+        console.error("Error getting fast series details:", error);
+      }
+    }
+
+    setSelectedMovie(resolvedMovie);
+    setSelectedMovieDetailsLoading(
+      resolvedMovie.type === "series" && (!("episodes" in resolvedMovie) || !(resolvedMovie as Series).episodes?.length)
+    );
     setIsModalOpen(true);
 
     // Push shareable URL with SEO-friendly slug
@@ -447,10 +511,10 @@ export default function Index() {
       });
     });
 
-    scheduleLowPriorityTask(() => addToRecent(movie));
+    scheduleLowPriorityTask(() => addToRecent(resolvedMovie));
 
     // Fetch full details in background (for episodes, cast, etc.)
-    scheduleLowPriorityTask(async () => {
+    void (async () => {
       try {
         const details = movie.type === "series"
           ? await fetchSeriesDetails(movie.mobifliks_id)
@@ -468,7 +532,7 @@ export default function Index() {
           setSelectedMovieDetailsLoading(false);
         }
       }
-    });
+    })();
   }, [navigateTo, viewMode]);
 
   selectedMovieRef.current = selectedMovie;
