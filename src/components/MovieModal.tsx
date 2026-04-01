@@ -146,11 +146,13 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
       : getOptimizedBackdropUrl(backdrop);
   }, [backdrop, deviceProfile.allowHighResImages]);
   const allowDesktopMotion = deviceProfile.allowComplexAnimations && !deviceProfile.prefersReducedMotion;
+  const seriesEpisodeCount = movie?.type === "series" ? ((movie as Series).episodes?.length ?? 0) : 0;
 
   const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
   const [userRating, setUserRatingState] = React.useState<number | null>(null);
   const [inWatchlist, setInWatchlist] = React.useState(false);
   const [entranceVisible, setEntranceVisible] = React.useState(false);
+  const [showEpisodesEmptyState, setShowEpisodesEmptyState] = React.useState(false);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch missing TMDB data (especially for series)
@@ -221,6 +223,25 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
       setInWatchlist(isInWatchlist(movie.mobifliks_id));
     }
   }, [movie?.mobifliks_id]);
+
+  React.useEffect(() => {
+    if (!movie || !isOpen || movie.type !== "series") {
+      setShowEpisodesEmptyState(false);
+      return;
+    }
+
+    if (seriesEpisodeCount > 0) {
+      setShowEpisodesEmptyState(false);
+      return;
+    }
+
+    setShowEpisodesEmptyState(false);
+    const timer = window.setTimeout(() => {
+      setShowEpisodesEmptyState(true);
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+  }, [isOpen, movie?.mobifliks_id, movie?.type, seriesEpisodeCount]);
 
   React.useEffect(() => {
     setDesktopBackdropLoaded(false);
@@ -645,7 +666,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, onMovieSelect }: Mo
 
                 {isSeries && (!series.episodes || series.episodes.length === 0) && (
                   <motion.div variants={fadeInUp} className="pt-4 text-center py-8 text-white/60 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
-                    No episodes available yet.
+                    {showEpisodesEmptyState ? "No episodes available yet." : "Loading episodes…"}
                   </motion.div>
                 )}
               </motion.div>
