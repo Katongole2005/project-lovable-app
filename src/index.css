@@ -727,13 +727,14 @@
   }
 
   .modal-genre-chip {
-    background: hsl(var(--accent-hue) 30% 20% / 0.3);
-    border-color: hsl(var(--accent-hue) 40% 50% / 0.2);
-    color: hsl(var(--accent-hue) 50% 75%);
+    background: hsl(var(--accent-hue) 34% 18% / 0.32);
+    border-color: hsl(var(--accent-hue) 44% 42% / 0.18);
+    color: hsl(var(--accent-hue) 58% 78%);
   }
 
   .modal-stats-card {
-    background: linear-gradient(160deg, hsl(230 20% 12% / 0.8), hsl(230 18% 8% / 0.6));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.02) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .modal-cast-member-ring {
@@ -741,27 +742,27 @@
   }
 
   .modal-episode-section-icon {
-    background: linear-gradient(135deg, hsl(var(--accent-hue) 60% 50% / 0.2), hsl(var(--accent-hue-alt) 50% 45% / 0.1));
+    background: linear-gradient(135deg, hsl(var(--accent-hue) 42% 26% / 0.45), hsl(var(--accent-hue-alt) 34% 18% / 0.16));
   }
 
   .modal-season-btn-active {
-    background: linear-gradient(135deg, hsl(var(--accent-hue) 55% 45%), hsl(var(--accent-hue-alt) 45% 40%));
-    box-shadow: 0 4px 16px hsl(var(--accent-hue) 60% 50% / 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, hsl(var(--accent-hue) 50% 36%), hsl(var(--accent-hue-alt) 42% 24%));
+    box-shadow: 0 8px 20px hsl(var(--accent-hue) 52% 22% / 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
   .modal-timeline-line {
-    background: linear-gradient(180deg, hsl(var(--accent-hue) 50% 50% / 0.4), hsl(var(--accent-hue) 40% 40% / 0.08));
+    background: linear-gradient(180deg, hsl(var(--accent-hue) 42% 42% / 0.28), hsl(var(--accent-hue) 36% 20% / 0.06));
   }
 
   .modal-footer-container {
     background: hsl(230 18% 5% / 0.95);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
-    border-top: 1px solid hsl(var(--accent-hue) 30% 30% / 0.15);
+    border-top: 1px solid hsl(var(--accent-hue) 26% 28% / 0.18);
   }
 
   .modal-footer-glow {
-    background: linear-gradient(90deg, transparent 10%, hsl(var(--accent-hue) 60% 55% / 0.3) 50%, transparent 90%);
+    background: linear-gradient(90deg, transparent 10%, hsl(var(--accent-hue) 48% 44% / 0.18) 50%, transparent 90%);
   }
 
   .modal-footer-play-btn {
@@ -770,38 +771,38 @@
   }
 
   .modal-footer-watchlist-active {
-    background: hsl(var(--accent-hue) 40% 20% / 0.5);
-    border-color: hsl(var(--accent-hue) 50% 50% / 0.3);
-    color: hsl(var(--accent-hue) 60% 65%);
+    background: linear-gradient(135deg, hsl(var(--accent-hue) 34% 20% / 0.5), hsl(var(--accent-hue-alt) 30% 18% / 0.36));
+    border-color: hsl(var(--accent-hue) 44% 40% / 0.25);
+    color: hsl(var(--accent-hue) 60% 74%);
   }
 
   .episode-timeline-indicator-active {
-    background: linear-gradient(135deg, hsl(var(--accent-hue) 65% 50%), hsl(var(--accent-hue-alt) 55% 45%));
-    box-shadow: 0 0 12px hsl(var(--accent-hue) 60% 50% / 0.5), 0 0 4px hsl(var(--accent-hue) 60% 50% / 0.3);
+    background: linear-gradient(135deg, hsl(var(--accent-hue) 54% 42%), hsl(var(--accent-hue-alt) 48% 30%));
+    box-shadow: 0 0 10px hsl(var(--accent-hue) 46% 24% / 0.3);
   }
 
   .episode-timeline-indicator-progress {
-    background: linear-gradient(135deg, hsl(var(--accent-hue) 50% 45% / 0.6), hsl(var(--accent-hue) 40% 35% / 0.4));
+    background: linear-gradient(135deg, hsl(var(--accent-hue) 38% 32% / 0.72), hsl(var(--accent-hue-alt) 26% 20% / 0.5));
   }
 
   .episode-card-active {
-    background: linear-gradient(135deg, hsl(var(--accent-hue) 25% 12% / 0.6), hsl(230 18% 8% / 0.8));
-    box-shadow: 0 4px 20px hsl(var(--accent-hue) 50% 30% / 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    background: linear-gradient(135deg, hsl(var(--accent-hue) 28% 14% / 0.62), hsl(230 18% 8% / 0.82));
+    box-shadow: 0 6px 18px hsl(var(--accent-hue) 42% 16% / 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .episode-continue-badge {
-    background: linear-gradient(135deg, hsl(var(--accent-hue) 65% 50%), hsl(var(--accent-hue-alt) 55% 45%));
-    box-shadow: 0 2px 8px hsl(var(--accent-hue) 60% 50% / 0.4);
+    background: linear-gradient(135deg, hsl(var(--accent-hue) 52% 40%), hsl(var(--accent-hue-alt) 44% 28%));
+    box-shadow: 0 6px 16px hsl(var(--accent-hue) 46% 20% / 0.22);
   }
 
   .episode-play-btn-overlay {
-    background: linear-gradient(135deg, hsl(var(--accent-hue) 60% 45% / 0.8), hsl(var(--accent-hue-alt) 50% 40% / 0.6));
-    box-shadow: 0 4px 20px hsl(var(--accent-hue) 60% 50% / 0.4);
+    background: linear-gradient(135deg, hsl(var(--accent-hue) 52% 38% / 0.9), hsl(var(--accent-hue-alt) 44% 28% / 0.72));
+    box-shadow: 0 10px 24px hsl(var(--accent-hue) 48% 18% / 0.24);
   }
 
   .episode-progress-fill {
-    background: linear-gradient(90deg, hsl(var(--accent-hue) 65% 55%), hsl(var(--accent-hue-alt) 55% 50%));
-    box-shadow: 0 0 8px hsl(var(--accent-hue) 60% 55% / 0.5);
+    background: linear-gradient(90deg, hsl(var(--accent-hue) 56% 42%), hsl(var(--accent-hue-alt) 46% 32%));
+    box-shadow: 0 0 8px hsl(var(--accent-hue) 44% 22% / 0.28);
   }
 
   /* Animation keyframes */
@@ -890,15 +891,15 @@
   }
 
   .modal-accent-bottom-gradient {
-    background: linear-gradient(180deg, transparent 0%, hsl(var(--accent-hue) 40% 30% / 0.15) 50%, hsl(230 18% 5%) 100%);
+    background: linear-gradient(180deg, transparent 0%, hsl(var(--accent-hue) 34% 22% / 0.14) 50%, hsl(230 18% 5%) 100%);
   }
 
   .modal-accent-box-shadow {
-    box-shadow: 0 0 30px hsl(var(--accent-hue) 50% 50% / 0.2);
+    box-shadow: 0 0 26px hsl(var(--accent-hue) 46% 24% / 0.18);
   }
 
   .modal-accent-text {
-    color: hsl(var(--accent-hue) 60% 65%);
+    color: hsl(var(--accent-hue) 62% 74%);
   }
 
   @keyframes scale-in {

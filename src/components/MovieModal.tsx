@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Maximize2, Heart, List, Share2, Layers } from "lucide-react";
+import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Heart, List, Share2, Layers } from "lucide-react";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { toSlug } from "@/lib/slug";
 import { toast } from "sonner";
@@ -90,13 +90,32 @@ const fadeInUp = {
 };
 
 const TRENDING_ACCENT_BUTTON_CLASS = "bg-[#c8f547] hover:bg-[#d7f86d] text-black shadow-[0_4px_20px_rgba(200,245,71,0.35),0_0_34px_rgba(200,245,71,0.14)]";
-const TRENDING_ACCENT_SURFACE_STYLE = {
-  background: "linear-gradient(135deg, #e3ff83 0%, #c8f547 58%, #b6df2c 100%)",
-  boxShadow: "0 4px 20px rgba(200,245,71,0.35), 0 0 34px rgba(200,245,71,0.14)",
-} as const;
+const MOBILE_MODAL_ACCENT_HUE = 6;
+const MOBILE_MODAL_ACCENT_ALT_HUE = 18;
+const MOBILE_LAYOUT_STYLE = {
+  ["--accent-hue" as string]: MOBILE_MODAL_ACCENT_HUE,
+  ["--accent-hue-alt" as string]: MOBILE_MODAL_ACCENT_ALT_HUE,
+} as React.CSSProperties;
 const MOBILE_PRIMARY_PLAY_SURFACE_STYLE = {
   background: "linear-gradient(135deg, #b83b3b 0%, #8f232a 52%, #5a111b 100%)",
   boxShadow: "0 8px 24px rgba(90,17,27,0.34), 0 0 28px rgba(184,59,59,0.14)",
+} as const;
+const MOBILE_TAB_SURFACE_STYLE = {
+  background: "linear-gradient(135deg, rgba(184,59,59,0.18) 0%, rgba(90,17,27,0.9) 100%)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(90,17,27,0.16)",
+} as const;
+const MOBILE_PANEL_SURFACE_STYLE = {
+  background: "linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+} as const;
+const MOBILE_TINTED_PANEL_SURFACE_STYLE = {
+  background: "linear-gradient(180deg, rgba(120,24,33,0.22) 0%, rgba(255,255,255,0.025) 100%)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+} as const;
+const MOBILE_ACTIVE_UTILITY_STYLE = {
+  background: "linear-gradient(135deg, rgba(184,59,59,0.18) 0%, rgba(90,17,27,0.62) 100%)",
+  borderColor: "rgba(184,59,59,0.32)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
 } as const;
 
 
@@ -799,12 +818,8 @@ function MobileMovieLayout({
     ? new Date(movie.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
     : null;
 
-  const accentHue = React.useMemo(() => {
-    const palette = [28, 42, 188, 202, 332];
-    const hash = movie.mobifliks_id.split('').reduce((a, b) => { a = (a << 5) - a + b.charCodeAt(0); return a & a; }, 0);
-    return palette[Math.abs(hash) % palette.length];
-  }, [movie.mobifliks_id]);
-  const accentAltHue = (accentHue + 28) % 360;
+  const accentHue = MOBILE_MODAL_ACCENT_HUE;
+  const accentAltHue = MOBILE_MODAL_ACCENT_ALT_HUE;
   const viewsLabel = React.useMemo(() => {
     if (movie.views === undefined || movie.views <= 0) return null;
     if (movie.views >= 1000000) return `${(movie.views / 1000000).toFixed(1)}M`;
@@ -960,7 +975,11 @@ function MobileMovieLayout({
   const utilityGridClass = utilityActions.length === 3 ? "grid-cols-3" : "grid-cols-2";
 
   return (
-    <div className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark" data-testid="mobile-movie-layout">
+    <div
+      className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark"
+      data-testid="mobile-movie-layout"
+      style={MOBILE_LAYOUT_STYLE}
+    >
       <div className="absolute inset-0 z-0">
         {(!backgroundImage || !backdropLoaded) && (
           <div className="absolute inset-0 bg-gradient-to-br from-[hsl(230,20%,8%)] via-[hsl(240,15%,6%)] to-[hsl(220,18%,5%)]">
@@ -1008,14 +1027,14 @@ function MobileMovieLayout({
               <motion.div
                 className="absolute top-1/3 -left-24 w-48 h-48 rounded-full blur-[60px]"
                 style={{
-                  background: `hsl(${(accentHue + 120) % 360} 50% 45% / 0.08)`,
+                  background: `hsl(${accentAltHue} 48% 34% / 0.1)`,
                   animation: "liquidFloat 12s ease-in-out infinite reverse",
                 }}
               />
               <motion.div
                 className="absolute -bottom-24 right-1/4 w-56 h-56 rounded-full blur-[70px]"
                 style={{
-                  background: `hsl(${(accentHue + 240) % 360} 40% 40% / 0.06)`,
+                  background: `hsl(${accentAltHue + 10} 56% 42% / 0.08)`,
                   animation: "liquidFloat 15s ease-in-out infinite",
                   animationDelay: "3s",
                 }}
@@ -1105,7 +1124,7 @@ function MobileMovieLayout({
               <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">
                 {heroSupportLabel}
               </p>
-              <h1 className="mt-2 text-[31px] font-display font-bold text-white drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)] leading-[1.02] line-clamp-2 tracking-[-0.03em]" data-testid="text-movie-title">
+              <h1 className="mt-2 text-[31px] font-display font-bold text-white text-pretty drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)] leading-[1.02] line-clamp-2 tracking-[-0.03em]" data-testid="text-movie-title">
                 {movie.title}
               </h1>
               <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -1162,7 +1181,7 @@ function MobileMovieLayout({
           </div>
 
           <motion.div variants={fadeInUp} className="px-4 border-b border-white/8">
-            <div className="grid grid-cols-3 gap-2 rounded-[20px] border border-white/8 bg-white/[0.035] p-1.5">
+            <div className="grid grid-cols-3 gap-2 rounded-[20px] border border-white/6 bg-white/[0.025] p-1">
               {(["overview", "casts", "related"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -1171,15 +1190,15 @@ function MobileMovieLayout({
                   className={cn(
                     "relative rounded-2xl px-3 py-3 text-sm font-medium capitalize transition-colors duration-200",
                     activeTab === tab
-                      ? "text-black"
-                      : "text-white/45"
+                      ? "text-white"
+                      : "text-white/55"
                   )}
                 >
                   {activeTab === tab && (
                     <motion.div
                       layoutId="mobile-tab-indicator"
                       className="absolute inset-0 rounded-2xl"
-                      style={TRENDING_ACCENT_SURFACE_STYLE}
+                      style={MOBILE_TAB_SURFACE_STYLE}
                       transition={{ type: "spring", stiffness: 360, damping: 34 }}
                     />
                   )}
@@ -1203,9 +1222,7 @@ function MobileMovieLayout({
                       <div
                         key={fact.label}
                         className="rounded-[22px] border border-white/8 px-3.5 py-3.5"
-                        style={{
-                          background: `linear-gradient(180deg, hsl(${accentHue} 30% 12% / 0.34) 0%, hsl(230 18% 8% / 0.72) 100%)`,
-                        }}
+                        style={MOBILE_TINTED_PANEL_SURFACE_STYLE}
                       >
                         <div className="flex items-center gap-2 text-white/40">
                           <Icon className="h-3.5 w-3.5" />
@@ -1221,9 +1238,7 @@ function MobileMovieLayout({
                   <motion.div
                     variants={fadeInUp}
                     className="rounded-[24px] border border-white/8 px-4 py-4"
-                    style={{
-                      background: "linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%)",
-                    }}
+                    style={MOBILE_PANEL_SURFACE_STYLE}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/38">Story</p>
@@ -1255,7 +1270,7 @@ function MobileMovieLayout({
                       {movie.genres.map((genre) => (
                         <span
                           key={genre}
-                          className="rounded-full border border-white/10 bg-white/[0.045] px-3.5 py-2 text-[11px] font-medium text-white/74"
+                          className="modal-genre-chip rounded-full border px-3.5 py-2 text-[11px] font-medium"
                         >
                           {genre}
                         </span>
@@ -1287,9 +1302,7 @@ function MobileMovieLayout({
                         >
                           <div
                             className="h-[88px] w-[74px] overflow-hidden rounded-[22px] border border-white/10"
-                            style={{
-                              background: `linear-gradient(180deg, hsl(${accentHue} 26% 16% / 0.24) 0%, rgba(255,255,255,0.02) 100%)`,
-                            }}
+                            style={MOBILE_PANEL_SURFACE_STYLE}
                           >
                             <img
                               src={member.profile_url || `https://placehold.co/160x200/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
@@ -1314,9 +1327,7 @@ function MobileMovieLayout({
                   <motion.div
                     variants={fadeInUp}
                     className="flex items-center justify-between gap-3 rounded-[22px] border border-white/8 px-4 py-3.5"
-                    style={{
-                      background: `linear-gradient(90deg, hsl(${accentHue} 36% 14% / 0.36), rgba(255,255,255,0.025))`,
-                    }}
+                    style={MOBILE_PANEL_SURFACE_STYLE}
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/6 text-xs font-bold text-white">
@@ -1355,7 +1366,7 @@ function MobileMovieLayout({
                               }
                             });
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full active:scale-95 transition-transform modal-footer-watchlist-active"
+                          className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold text-white/76 active:scale-95 transition-transform"
                         >
                           <Download className="w-3 h-3" />
                           All
@@ -1376,7 +1387,7 @@ function MobileMovieLayout({
                                 data-testid={`button-season-${seasonNum}`}
                                 className={cn(
                                   "relative flex-none px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 active:scale-95 whitespace-nowrap",
-                                  isActive ? "text-white modal-season-btn-active" : "text-white/45 bg-white/5 border border-white/10"
+                                  isActive ? "text-white modal-season-btn-active" : "text-white/55 bg-white/[0.035] border border-white/8"
                                 )}
                               >
                                 <span className="relative z-10">S{seasonNum}</span>
@@ -1408,7 +1419,6 @@ function MobileMovieLayout({
                             seasonNumber={selectedSeason}
                             onPlay={onPlay}
                             index={idx}
-                            accentHue={accentHue}
                             isResumeTarget={
                               resumeEpisode
                                 ? resumeEpisode.season === selectedSeason && resumeEpisode.episode === episode.episode_number
@@ -1518,7 +1528,7 @@ function MobileMovieLayout({
             <Button
               size="lg"
               data-testid="button-play"
-              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-footer-play-btn"
+              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 overflow-hidden rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-footer-play-btn"
               style={MOBILE_PRIMARY_PLAY_SURFACE_STYLE}
               onClick={handlePrimaryAction}
             >
@@ -1532,7 +1542,6 @@ function MobileMovieLayout({
                   <p className="mt-0.5 text-[11px] font-medium text-white/72">{primaryActionHint}</p>
                 </div>
               </div>
-              <Maximize2 className="relative h-4 w-4 text-white/70" />
             </Button>
 
             <div className={cn("grid gap-2.5", utilityGridClass)}>
@@ -1549,18 +1558,12 @@ function MobileMovieLayout({
                       "flex min-h-[52px] items-center justify-center gap-2 rounded-[20px] border px-3 py-3 text-[12px] font-semibold transition-transform active:scale-[0.97]",
                       action.active
                         ? "border-transparent text-white"
-                        : "border-white/10 bg-white/[0.05] text-white/70",
-                      action.key === "download" && "border-transparent text-black shadow-[0_4px_20px_rgba(200,245,71,0.25),0_0_24px_rgba(200,245,71,0.12)]"
+                        : "border-white/8 bg-white/[0.035] text-white/72"
                     )}
                     style={
-                      action.key === "download"
-                        ? TRENDING_ACCENT_SURFACE_STYLE
-                        : action.active
-                          ? {
-                              background: `linear-gradient(135deg, hsl(${accentHue} 44% 20% / 0.72), hsl(${accentAltHue} 36% 18% / 0.56))`,
-                              boxShadow: `inset 0 0 0 1px hsl(${accentHue} 50% 58% / 0.18)`,
-                            }
-                          : undefined
+                      action.active
+                        ? MOBILE_ACTIVE_UTILITY_STYLE
+                        : undefined
                     }
                   >
                     <Icon className={cn("h-4 w-4", action.active && "fill-current")} />
@@ -1584,48 +1587,19 @@ interface MobileTimelineEpisodeProps {
   seasonNumber?: number;
   onPlay: (url: string, title: string) => void;
   index: number;
-  accentHue: number;
   isResumeTarget: boolean;
   progressPct?: number;
 }
 
-function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, accentHue, isResumeTarget, progressPct = 0 }: MobileTimelineEpisodeProps) {
+function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, isResumeTarget, progressPct = 0 }: MobileTimelineEpisodeProps) {
   const hasVideo = episode.download_url &&
     (episode.download_url.includes(".mp4") ||
       episode.download_url.includes("downloadmp4") ||
       episode.download_url.includes("downloadserie"));
 
   const epNum = episode.episode_number.toString().padStart(2, "0");
-  const markerStyle: React.CSSProperties = isResumeTarget
-    ? {
-        background: `linear-gradient(135deg, hsl(${accentHue} 65% 50%), hsl(${(accentHue + 40) % 360} 55% 45%))`,
-        boxShadow: `0 0 10px hsl(${accentHue} 60% 50% / 0.4)`,
-      }
-    : progressPct > 0
-      ? {
-          background: `linear-gradient(135deg, hsl(${accentHue} 50% 45% / 0.6), hsl(${accentHue} 40% 35% / 0.4))`,
-        }
-      : {
-          background: "hsl(230 15% 18%)",
-          border: "2px solid hsl(230 15% 25%)",
-        };
-
-  const cardStyle: React.CSSProperties = isResumeTarget
-    ? {
-        background: `linear-gradient(135deg, hsl(${accentHue} 25% 12% / 0.6), hsl(230 18% 8% / 0.8))`,
-        boxShadow: `0 4px 20px hsl(${accentHue} 50% 30% / 0.15), inset 0 1px 0 rgba(255,255,255,0.05)`,
-        borderColor: `hsl(${accentHue} 50% 50% / 0.2)`,
-      }
-    : {
-        background: "linear-gradient(135deg, hsl(230 18% 11% / 0.5), hsl(230 18% 7% / 0.4))",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)",
-        borderColor: "hsl(230 15% 20% / 0.4)",
-      };
-
   const progressStyle: React.CSSProperties = {
     width: `${progressPct}%`,
-    background: `linear-gradient(90deg, hsl(${accentHue} 65% 55%), hsl(${(accentHue + 40) % 360} 55% 50%))`,
-    boxShadow: `0 0 8px hsl(${accentHue} 60% 55% / 0.5)`,
   };
 
   return (
@@ -1634,9 +1608,12 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
         <div
           className={cn(
             "w-[22px] h-[22px] rounded-full flex items-center justify-center relative",
-            isResumeTarget && "scale-110"
+            isResumeTarget
+              ? "episode-timeline-indicator-active scale-110"
+              : progressPct > 0
+                ? "episode-timeline-indicator-progress"
+                : "border-2 border-[hsl(230_15%_25%)] bg-[hsl(230_15%_18%)]"
           )}
-          style={markerStyle}
         >
           {isResumeTarget ? (
             <Play className="w-2.5 h-2.5 text-white fill-white ml-[1px]" />
@@ -1649,9 +1626,10 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
       <div
         className={cn(
           "rounded-2xl overflow-hidden border transition-transform duration-200 active:scale-[0.98]",
-          isResumeTarget && "ring-1"
+          isResumeTarget
+            ? "episode-card-active ring-1 ring-white/10"
+            : "border-[hsl(230_15%_20%_/_0.4)] bg-[linear-gradient(135deg,hsl(230_18%_11%_/_0.5),hsl(230_18%_7%_/_0.4))] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)]"
         )}
-        style={cardStyle}
         onClick={() => {
           if (hasVideo && episode.download_url) {
             onPlay(episode.download_url, `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`);
@@ -1671,11 +1649,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
           {isResumeTarget && (
             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
               <div
-                className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider text-white flex items-center gap-1"
-                style={{
-                  background: `linear-gradient(135deg, hsl(${accentHue} 65% 50%), hsl(${(accentHue + 40) % 360} 55% 45%))`,
-                  boxShadow: `0 2px 8px hsl(${accentHue} 60% 50% / 0.4)`,
-                }}
+                className="episode-continue-badge flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-white"
               >
                 <Play className="w-2.5 h-2.5 fill-current" />
                 Continue
@@ -1693,7 +1667,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
 
           {hasVideo && !isResumeTarget && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 border border-white/20 active:scale-90 transition-transform">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-black/35 backdrop-blur-sm active:scale-90 transition-transform">
                 <Play className="w-4 h-4 text-white fill-white ml-0.5" />
               </div>
             </div>
@@ -1702,11 +1676,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
           {isResumeTarget && hasVideo && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center border-2 border-white/30 active:scale-90 transition-transform"
-                style={{
-                  background: `linear-gradient(135deg, hsl(${accentHue} 60% 45% / 0.8), hsl(${(accentHue + 40) % 360} 50% 40% / 0.6))`,
-                  boxShadow: `0 4px 20px hsl(${accentHue} 60% 50% / 0.4)`,
-                }}
+                className="episode-play-btn-overlay flex h-11 w-11 items-center justify-center rounded-full border border-white/20 active:scale-90 transition-transform"
               >
                 <Play className="w-5 h-5 text-white fill-white ml-0.5" />
               </div>
@@ -1733,7 +1703,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
 
             {progressPct > 0 && (
               <div className="w-full h-[3px] bg-white/10">
-                <div className="h-full rounded-r-full" style={progressStyle} />
+                <div className="episode-progress-fill h-full rounded-r-full" style={progressStyle} />
               </div>
             )}
           </div>
@@ -1755,8 +1725,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
                     downloadWithName(episode.download_url, epName, undefined, episode.mobifliks_id);
                   }
                 }}
-                className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold active:scale-95 transition-transform"
-                style={{ color: `hsl(${accentHue} 50% 65%)` }}
+                className="modal-accent-text mt-2 flex items-center gap-1.5 text-[11px] font-semibold active:scale-95 transition-transform"
               >
                 <Download className="w-3.5 h-3.5" />
                 Download
