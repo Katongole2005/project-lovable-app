@@ -94,6 +94,10 @@ const TRENDING_ACCENT_SURFACE_STYLE = {
   background: "linear-gradient(135deg, #e3ff83 0%, #c8f547 58%, #b6df2c 100%)",
   boxShadow: "0 4px 20px rgba(200,245,71,0.35), 0 0 34px rgba(200,245,71,0.14)",
 } as const;
+const MOBILE_PRIMARY_PLAY_SURFACE_STYLE = {
+  background: "linear-gradient(135deg, #d1a24a 0%, #b6792c 55%, #7f4d18 100%)",
+  boxShadow: "0 8px 24px rgba(127,77,24,0.28), 0 0 28px rgba(182,121,44,0.12)",
+} as const;
 
 
 interface MovieModalProps {
@@ -1515,7 +1519,7 @@ function MobileMovieLayout({
               size="lg"
               data-testid="button-play"
               className="h-auto min-h-[58px] w-full items-center justify-between gap-3 rounded-[24px] border-0 px-4 py-3 text-left text-black active:scale-[0.985] transition-transform modal-footer-play-btn"
-              style={TRENDING_ACCENT_SURFACE_STYLE}
+              style={MOBILE_PRIMARY_PLAY_SURFACE_STYLE}
               onClick={handlePrimaryAction}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/18 via-transparent to-black/5 pointer-events-none" />
