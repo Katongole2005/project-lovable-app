@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+﻿import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Play,
   Pause,
@@ -10,12 +10,9 @@ import {
   RotateCw,
   X,
   ScreenShare,
-  SkipForward,
   PictureInPicture2,
-  Settings,
   Gauge,
   ChevronDown,
-  Airplay,
   Keyboard,
   Captions,
   FastForward,
@@ -197,6 +194,27 @@ export function CinematicVideoPlayer({
     if (videoRef.current) videoRef.current.playbackRate = playbackSpeed;
   }, [playbackSpeed]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const applySubtitleSelection = () => {
+      const tracks = Array.from(video.textTracks ?? []);
+      tracks.forEach((textTrack, index) => {
+        const sourceTrack = subtitles[index];
+        const isActive = selectedSubtitleId !== "off" && sourceTrack?.id === selectedSubtitleId;
+        textTrack.mode = isActive ? "showing" : "disabled";
+      });
+    };
+
+    applySubtitleSelection();
+    video.addEventListener("loadedmetadata", applySubtitleSelection);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", applySubtitleSelection);
+    };
+  }, [selectedSubtitleId, subtitles, videoUrl]);
+
   const persistProgress = useCallback((timeArg?: number, durationArg?: number) => {
     const video = videoRef.current;
     const finalTime = timeArg ?? (video?.currentTime && video.currentTime > 0 ? video.currentTime : (currentTime > 0 ? currentTime : lastReportedTimeRef.current));
@@ -253,6 +271,13 @@ export function CinematicVideoPlayer({
         case "f": e.preventDefault(); toggleFullscreen(); break;
         case ",": e.preventDefault(); cycleSpeed(-1); break;
         case ".": e.preventDefault(); cycleSpeed(1); break;
+        case "c":
+          e.preventDefault();
+          if (subtitles.length > 0) {
+            setSelectedSubtitleId((current) => current === "off" ? subtitles[0].id : "off");
+            resetControlsTimeout();
+          }
+          break;
         case "p": e.preventDefault(); togglePiP(); break;
         case "?": e.preventDefault(); setShowKeyboardShortcuts(v => !v); break;
         case "Escape":
@@ -584,11 +609,15 @@ export function CinematicVideoPlayer({
   const description = movie?.description;
   const genres = movie?.genres || [];
   const cast = movie?.cast || (movie?.stars || []).map((name: string) => ({ name }));
+  const typeLabel = movie?.type === "series" ? "Series" : "Movie";
+  const isSubtitleActive = selectedSubtitleId !== "off";
+  const quickMeta = [typeLabel, year ? String(year) : null, genres[0] ?? null].filter(Boolean) as string[];
+  const accentGradient = "from-[#ff7a18] via-[#ff5b2e] to-[#ff4d6d]";
 
   // Volume icon
   const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume2 : Volume2;
 
-  // ── Imperatively set CSS custom properties on the container so no style={} props are needed in JSX ──
+  // â”€â”€ Imperatively set CSS custom properties on the container so no style={} props are needed in JSX â”€â”€
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -601,21 +630,21 @@ export function CinematicVideoPlayer({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-full w-full h-[100dvh] max-h-[100dvh] p-0 bg-black border-none overflow-hidden left-0 top-0 translate-x-0 translate-y-0 rounded-none">
+      <DialogContent className="left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-hidden rounded-none border-none bg-[#040404] p-0">
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <DialogDescription className="sr-only">Video player for {title}</DialogDescription>
 
         <div
           ref={containerRef}
-          className="relative w-full h-full flex flex-col bg-black select-none"
+          className="relative flex h-full w-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(255,122,24,0.16),transparent_28%),radial-gradient(circle_at_80%_18%,rgba(255,77,109,0.12),transparent_24%),linear-gradient(180deg,#090909_0%,#050505_100%)] text-white select-none"
           onMouseMove={resetControlsTimeout}
           onMouseLeave={() => isPlaying && setShowControls(false)}
         >
-          {/* ══════════════════════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           {/* VIDEO AREA */}
-          {/* ══════════════════════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <div
-            className="relative flex-1 flex items-center justify-center bg-black min-h-0"
+            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black"
             onClick={(e) => {
               if ((e as any).nativeEvent?.pointerType === "touch" || "ontouchstart" in window) return;
               handleVideoAreaTap(e);
@@ -627,6 +656,19 @@ export function CinematicVideoPlayer({
             onTouchMove={(e) => { handleSwipeTouchMove(e); if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; } }}
             onTouchCancel={() => { handleLongPressEnd(); handleSwipeTouchEnd(); }}
           >
+            {posterUrl && (
+              <>
+                <img
+                  src={posterUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full scale-110 object-cover opacity-22 blur-3xl"
+                />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.38)_56%,rgba(0,0,0,0.84)_100%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,6,0.52)_0%,rgba(6,6,6,0.06)_22%,rgba(6,6,6,0.12)_72%,rgba(6,6,6,0.74)_100%)]" />
+              </>
+            )}
+
             {/* Brightness overlay */}
             {brightness < 1 && (
               <div className="absolute inset-0 bg-black pointer-events-none z-[5] [opacity:var(--brightness-opacity)]" />
@@ -635,7 +677,7 @@ export function CinematicVideoPlayer({
             <video
               ref={videoRef}
               src={videoUrl}
-              className="w-full h-full object-contain"
+              className="relative z-[2] h-full w-full object-contain"
               autoPlay
               playsInline
               onPlay={() => {
@@ -666,31 +708,34 @@ export function CinematicVideoPlayer({
               ))}
             </video>
 
-            {/* ─── BUFFERING INDICATOR ─── */}
+            {/* â”€â”€â”€ BUFFERING INDICATOR â”€â”€â”€ */}
             {isBuffering && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                <div className="relative w-16 h-16">
-                  {/* Outer ring */}
-                  <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-                  {/* Spinning arc */}
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#c8f547] animate-spin" />
-                  {/* Inner glowing dot */}
-                  <div className="absolute inset-[22%] rounded-full bg-[#c8f547]/20 backdrop-blur-sm flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-[#c8f547] animate-pulse shadow-[0_0_8px_#c8f547]" />
+                <div className="flex items-center gap-4 rounded-full border border-white/12 bg-black/52 px-5 py-4 shadow-[0_24px_80px_rgba(0,0,0,0.48)] backdrop-blur-2xl">
+                  <div className="relative h-14 w-14">
+                    <div className="absolute inset-0 rounded-full border border-white/10" />
+                    <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-[#ff7a18] border-r-[#ff4d6d]" />
+                    <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-white/6">
+                      <div className="h-2.5 w-2.5 rounded-full bg-[#ff8a3d] shadow-[0_0_18px_rgba(255,122,24,0.95)]" />
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/38">Streaming</p>
+                    <p className="mt-1 text-sm font-semibold text-white/88">Buffering playback</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ─── SWIPE INDICATOR ─── */}
+            {/* â”€â”€â”€ SWIPE INDICATOR â”€â”€â”€ */}
             {swipeIndicator && (
               <div className={cn(
-                "absolute top-1/2 -translate-y-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 animate-in fade-in duration-150",
+                "absolute top-1/2 z-50 flex -translate-y-1/2 flex-col items-center gap-2 pointer-events-none animate-in fade-in duration-150",
                 swipeIndicator.side === "left" ? "left-5" : "right-5"
               )}>
-                <div className="flex flex-col items-center gap-2 px-3.5 py-3 rounded-2xl bg-black/70 backdrop-blur-2xl border border-white/10 shadow-2xl">
+                <div className="flex flex-col items-center gap-2 rounded-[26px] border border-white/12 bg-black/58 px-4 py-3.5 shadow-[0_18px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
                   {swipeIndicator.side === "left" ? (
-                    <svg className="w-5 h-5 text-[#c8f547]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="h-5 w-5 text-[#ff8a3d]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="5" />
                       <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
                       <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
@@ -698,28 +743,27 @@ export function CinematicVideoPlayer({
                       <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                     </svg>
                   ) : (
-                    <VolumeIcon className={cn("w-5 h-5", swipeIndicator.value === 0 ? "text-white/40" : "text-[#c8f547]")} />
+                    <VolumeIcon className={cn("h-5 w-5", swipeIndicator.value === 0 ? "text-white/40" : "text-[#ff8a3d]")} />
                   )}
-                  {/* Vertical track */}
-                  <div className="relative w-1.5 h-20 rounded-full bg-white/10 overflow-hidden">
-                    <div className="absolute bottom-0 left-0 right-0 rounded-full bg-[#c8f547] transition-all duration-75 shadow-[0_0_6px_#c8f547] [height:var(--fill-h)]" />
+                  <div className="relative h-24 w-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="absolute bottom-0 left-0 right-0 rounded-full bg-gradient-to-t from-[#ff4d6d] to-[#ff8a3d] transition-all duration-75 shadow-[0_0_16px_rgba(255,122,24,0.45)] [height:var(--fill-h)]" />
                   </div>
-                  <span className="text-white text-[10px] font-bold tabular-nums">{Math.round(swipeIndicator.value * 100)}%</span>
+                  <span className="text-[10px] font-bold tabular-nums text-white">{Math.round(swipeIndicator.value * 100)}%</span>
                 </div>
               </div>
             )}
 
-            {/* ─── LONG PRESS 2× INDICATOR ─── */}
+            {/* â”€â”€â”€ LONG PRESS 2Ã— INDICATOR â”€â”€â”€ */}
             {isLongPressing && (
               <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-in zoom-in-90 duration-200">
-                <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-black/70 backdrop-blur-2xl border border-[#c8f547]/30 shadow-[0_0_20px_rgba(200,245,71,0.2)]">
-                  <Gauge className="w-4 h-4 text-[#c8f547]" />
-                  <span className="text-[#c8f547] text-sm font-bold tracking-widest">2× FAST</span>
+                <div className="flex items-center gap-2.5 rounded-full border border-[#ff8a3d]/25 bg-black/58 px-5 py-2.5 shadow-[0_18px_40px_rgba(0,0,0,0.4)] backdrop-blur-2xl">
+                  <Gauge className="h-4 w-4 text-[#ff8a3d]" />
+                  <span className="text-[#ffd1b0] text-sm font-bold tracking-[0.28em]">2X FAST</span>
                 </div>
               </div>
             )}
 
-            {/* ─── DOUBLE TAP SKIP ANIMATION ─── */}
+            {/* â”€â”€â”€ DOUBLE TAP SKIP ANIMATION â”€â”€â”€ */}
             {skipAnimation && (
               <DoubleTapRipple
                 key={skipAnimation.key}
@@ -729,7 +773,7 @@ export function CinematicVideoPlayer({
               />
             )}
 
-            {/* ─── GESTURE HINTS ─── */}
+            {/* â”€â”€â”€ GESTURE HINTS â”€â”€â”€ */}
             {showGestureHints && (
               <div className="absolute inset-0 z-40 pointer-events-none animate-in fade-in duration-500">
                 {[
@@ -744,23 +788,23 @@ export function CinematicVideoPlayer({
                     )}
                   >
                     <div className="flex gap-1 mb-1">
-                      <div className="w-7 h-7 rounded-full border-2 border-[#c8f547]/50 animate-ping [animation-duration:1.5s]" />
-                      <div className="w-7 h-7 rounded-full border-2 border-[#c8f547]/50 animate-ping [animation-duration:1.5s] delay-200" />
+                      <div className="w-7 h-7 rounded-full border-2 border-[#ff8a3d]/50 animate-ping [animation-duration:1.5s]" />
+                      <div className="w-7 h-7 rounded-full border-2 border-[#ff8a3d]/50 animate-ping [animation-duration:1.5s] delay-200" />
                     </div>
                     <HintPill label="Double tap" sub={tap} />
-                    <HintPill label="Swipe ↕" sub={swipe} />
+                    <HintPill label="Swipe Up/Down" sub={swipe} />
                   </div>
                 ))}
                 <div className="absolute left-1/2 -translate-x-1/2 bottom-[28%] flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 rounded-full border-2 border-[#c8f547]/30 flex items-center justify-center">
-                    <div className="w-5 h-5 rounded-full bg-[#c8f547]/20 animate-pulse" />
+                  <div className="w-10 h-10 rounded-full border-2 border-[#ff8a3d]/30 flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-[#ff8a3d]/20 animate-pulse" />
                   </div>
-                  <HintPill label="Hold" sub="2× speed" />
+                  <HintPill label="Hold" sub="2X speed" />
                 </div>
               </div>
             )}
 
-            {/* ─── CENTER PLAY BUTTON ─── */}
+            {/* â”€â”€â”€ CENTER PLAY BUTTON â”€â”€â”€ */}
             <div className={cn(
               "absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-300",
               showControls && !isPlaying && !isBuffering ? "opacity-100 scale-100" : "opacity-0 scale-75"
@@ -771,76 +815,92 @@ export function CinematicVideoPlayer({
                 onTouchEnd={(e) => e.stopPropagation()}
                 aria-label="Play"
                 title="Play"
-                className="w-20 h-20 rounded-full border-2 border-[#c8f547]/60 bg-black/40 backdrop-blur-xl flex items-center justify-center pointer-events-auto hover:bg-[#c8f547]/10 hover:border-[#c8f547] hover:scale-110 active:scale-95 transition-all duration-200 shadow-[0_0_40px_rgba(200,245,71,0.2),inset_0_0_20px_rgba(200,245,71,0.05)]"
+                className="w-20 h-20 rounded-full border-2 border-[#ff8a3d]/60 bg-black/40 backdrop-blur-xl flex items-center justify-center pointer-events-auto hover:bg-[#ff8a3d]/10 hover:border-[#ff8a3d] hover:scale-110 active:scale-95 transition-all duration-200 shadow-[0_0_40px_rgba(200,245,71,0.2),inset_0_0_20px_rgba(200,245,71,0.05)]"
               >
-                <Play className="w-9 h-9 text-[#c8f547] fill-[#c8f547] ml-1 drop-shadow-lg" />
+                <Play className="w-9 h-9 text-[#ff8a3d] fill-[#ff8a3d] ml-1 drop-shadow-lg" />
               </button>
             </div>
 
-            {/* ══════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {/* TOP BAR */}
-            {/* ══════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             <div className={cn(
-              "absolute top-0 left-0 right-0 z-50 transition-all duration-400",
-              showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3 pointer-events-none"
+              "absolute inset-x-0 top-0 z-50 transition-all duration-300",
+              showControls ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0 pointer-events-none"
             )}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchEnd={(e) => e.stopPropagation()}
             >
-              {/* Top gradient */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none" />
-              <div className="relative flex items-center gap-3 px-3 py-3 md:px-5 md:py-4">
-                {/* Back */}
+              <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black via-black/55 to-transparent pointer-events-none" />
+              <div className="relative flex items-start justify-between gap-3 px-3 py-3 md:px-6 md:py-5">
                 <button
                   onClick={(e) => { e.stopPropagation(); handleClose(); }}
                   aria-label="Go back"
                   title="Back"
                   data-testid="button-player-back"
-                  className="flex-shrink-0 p-2 rounded-full hover:bg-white/10 active:scale-90 transition-all duration-200 pointer-events-auto group"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-white/12 bg-black/45 text-white shadow-[0_12px_30px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-transform duration-150 hover:scale-[1.03] active:scale-95"
                 >
-                  <ChevronDown className="w-6 h-6 text-white group-hover:text-[#c8f547] transition-colors" />
+                  <ChevronDown className="h-5 w-5" />
                 </button>
 
-                {/* Title */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-semibold truncate leading-tight">{title}</p>
-                  {year && <p className="text-white/40 text-xs">{year}</p>}
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                      Now playing
+                    </span>
+                    {playbackSpeed !== 1 && (
+                      <span className="rounded-full border border-[#ffb076]/18 bg-[linear-gradient(135deg,rgba(255,138,61,0.18),rgba(255,77,109,0.18))] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#ffd1b0]">
+                        {playbackSpeed}X
+                      </span>
+                    )}
+                    {selectedSubtitleId !== "off" && (
+                      <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                        Subtitles on
+                      </span>
+                    )}
+                  </div>
+                  <p className="truncate text-base font-semibold tracking-[-0.02em] text-white md:text-lg">{title}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] md:text-xs">
+                    <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-white/48">{movie?.type === "series" ? "Series" : "Movie"}</span>
+                    {year && <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-white/48">{year}</span>}
+                    {genres[0] && <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-white/48">{genres[0]}</span>}
+                  </div>
                 </div>
 
                 {/* Top-right badges + actions */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center gap-2">
                   {playbackSpeed !== 1 && (
-                    <span className="px-2.5 py-1 rounded-md bg-[#c8f547]/15 text-[#c8f547] text-xs font-bold border border-[#c8f547]/30 tracking-wider shadow-[0_0_10px_rgba(200,245,71,0.15)]">
-                      {playbackSpeed}×
+                    <span className="px-2.5 py-1 rounded-md bg-[#ff8a3d]/15 text-[#ff8a3d] text-xs font-bold border border-[#ff8a3d]/30 tracking-wider shadow-[0_0_10px_rgba(200,245,71,0.15)]">
+                      {playbackSpeed}X
                     </span>
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); togglePiP(); }}
-                    className="hidden md:flex p-2 rounded-full hover:bg-white/10 transition-all pointer-events-auto group"
+                    className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-black/45 text-white/78 shadow-[0_12px_30px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-transform duration-150 hover:scale-[1.03] md:flex"
                     title="Picture in Picture (P)"
                   >
-                    <PictureInPicture2 className="w-4 h-4 text-white/60 group-hover:text-white transition-colors" />
+                    <PictureInPicture2 className="h-4.5 w-4.5" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowKeyboardShortcuts(v => !v); }}
-                    className="hidden md:flex p-2 rounded-full hover:bg-white/10 transition-all pointer-events-auto group"
+                    className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-black/45 text-white/78 shadow-[0_12px_30px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-transform duration-150 hover:scale-[1.03] md:flex"
                     title="Keyboard shortcuts (?)"
                   >
-                    <Keyboard className="w-4 h-4 text-white/60 group-hover:text-white transition-colors" />
+                    <Keyboard className="h-4.5 w-4.5" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleClose(); }}
                     aria-label="Close player"
                     title="Close"
-                    className="p-2 rounded-full hover:bg-white/10 transition-all pointer-events-auto group"
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-black/45 text-white/78 shadow-[0_12px_30px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-transform duration-150 hover:scale-[1.03] active:scale-95"
                   >
-                    <X className="w-4 h-4 text-white/60 group-hover:text-white transition-colors" />
+                    <X className="h-4.5 w-4.5" />
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* ─── SKIP INTRO / AD / RECAP ─── */}
+            {/* â”€â”€â”€ SKIP INTRO / AD / RECAP â”€â”€â”€ */}
             <AnimatePresence>
               {activeSkipSegment && (
                 <motion.button
@@ -851,17 +911,17 @@ export function CinematicVideoPlayer({
                   onClick={(e) => { e.stopPropagation(); skipToTime(activeSkipSegment.endTime); }}
                   onTouchStart={(e) => e.stopPropagation()}
                   onTouchEnd={(e) => e.stopPropagation()}
-                  className="absolute bottom-24 right-6 md:right-10 z-30 px-5 md:px-7 py-3 md:py-4 rounded-2xl bg-[#c8f547] text-black font-black text-xs md:text-sm uppercase tracking-widest shadow-[0_0_30px_rgba(200,245,71,0.3)] flex items-center gap-2.5 hover:scale-105 active:scale-95 transition-all group"
+                  className="absolute bottom-24 right-4 md:right-8 z-30 flex items-center gap-2.5 rounded-full border border-[#ffb076]/25 bg-black/58 px-4 py-2.5 text-left shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] md:bottom-36 md:px-5 md:py-3 group"
                 >
-                  <FastForward className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                  Skip {activeSkipSegment.label}
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#ff8a3d] via-[#ff6a2d] to-[#ff4d6d]"><FastForward className="h-4 w-4 text-white transition-transform group-hover:translate-x-0.5" /></div>
+                  <span className="text-sm font-semibold text-white">Skip {activeSkipSegment.label}</span>
                 </motion.button>
               )}
             </AnimatePresence>
 
-            {/* ══════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {/* KEYBOARD SHORTCUTS PANEL */}
-            {/* ══════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {showKeyboardShortcuts && (
               <div
                 className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
@@ -880,9 +940,9 @@ export function CinematicVideoPlayer({
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
                     {[
                       ["Space / K", "Play / Pause"],
-                      ["← / J", "Rewind 10s"],
-                      ["→ / L", "Skip 10s"],
-                      ["↑ / ↓", "Volume ±10%"],
+                      ["Left / J", "Rewind 10s"],
+                      ["Right / L", "Skip 10s"],
+                      ["Up / Down", "Volume +/-10%"],
                       ["M", "Mute"],
                       ["F", "Fullscreen"],
                       ["< / >", "Speed down/up"],
@@ -891,7 +951,7 @@ export function CinematicVideoPlayer({
                       ["Esc", "Close"],
                     ].map(([key, label]) => (
                       <div key={key} className="flex items-center gap-3">
-                        <kbd className="px-2 py-1 rounded-md bg-white/10 border border-white/15 text-[#c8f547] text-xs font-mono font-bold min-w-[48px] text-center shadow-inner">
+                        <kbd className="px-2 py-1 rounded-md bg-white/10 border border-white/15 text-[#ff8a3d] text-xs font-mono font-bold min-w-[48px] text-center shadow-inner">
                           {key}
                         </kbd>
                         <span className="text-white/60 text-xs">{label}</span>
@@ -902,9 +962,9 @@ export function CinematicVideoPlayer({
               </div>
             )}
 
-            {/* ══════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {/* SPEED MENU */}
-            {/* ══════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {showSpeedMenu && (
               <div
                 className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -923,13 +983,13 @@ export function CinematicVideoPlayer({
                         className={cn(
                           "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                           speed === playbackSpeed
-                            ? "bg-[#c8f547]/15 text-[#c8f547]"
+                            ? "bg-[linear-gradient(135deg,rgba(255,138,61,0.2),rgba(255,77,109,0.18))] text-white"
                             : "text-white/70 hover:bg-white/8 hover:text-white"
                         )}
                       >
-                        <span>{speed === 1 ? "Normal" : `${speed}×`}</span>
+                        <span>{speed === 1 ? "Normal" : `${speed}X`}</span>
                         {speed === playbackSpeed && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#c8f547] shadow-[0_0_6px_#c8f547]" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#ff8a3d] shadow-[0_0_12px_rgba(255,138,61,0.9)]" />
                         )}
                       </button>
                     ))}
@@ -938,9 +998,9 @@ export function CinematicVideoPlayer({
               </div>
             )}
 
-            {/* ══════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {/* SUBTITLES MENU */}
-            {/* ══════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {showSubtitlesMenu && subtitles.length > 0 && (
               <div
                 className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -957,13 +1017,13 @@ export function CinematicVideoPlayer({
                       className={cn(
                         "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                         selectedSubtitleId === "off"
-                          ? "bg-[#c8f547]/15 text-[#c8f547]"
+                          ? "bg-[linear-gradient(135deg,rgba(255,138,61,0.2),rgba(255,77,109,0.18))] text-white"
                           : "text-white/70 hover:bg-white/8 hover:text-white"
                       )}
                     >
                       <span>Off</span>
                       {selectedSubtitleId === "off" && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#c8f547] shadow-[0_0_6px_#c8f547]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#ff8a3d] shadow-[0_0_12px_rgba(255,138,61,0.9)]" />
                       )}
                     </button>
                     {subtitles.map((track) => (
@@ -973,13 +1033,13 @@ export function CinematicVideoPlayer({
                         className={cn(
                           "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                           track.id === selectedSubtitleId
-                            ? "bg-[#c8f547]/15 text-[#c8f547]"
+                            ? "bg-[linear-gradient(135deg,rgba(255,138,61,0.2),rgba(255,77,109,0.18))] text-white"
                             : "text-white/70 hover:bg-white/8 hover:text-white"
                         )}
                       >
                         <span>{track.label}</span>
                         {track.id === selectedSubtitleId && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#c8f547] shadow-[0_0_6px_#c8f547]" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#ff8a3d] shadow-[0_0_12px_rgba(255,138,61,0.9)]" />
                         )}
                       </button>
                     ))}
@@ -989,22 +1049,22 @@ export function CinematicVideoPlayer({
             )}
             <div
               className={cn(
-                "absolute bottom-0 left-0 right-0 z-30 transition-all duration-400 pointer-events-auto",
-                showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+                "absolute inset-x-0 bottom-0 z-30 transition-all duration-300 pointer-events-auto",
+                showControls ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
               )}
               onClick={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchEnd={(e) => e.stopPropagation()}
             >
               {/* Bottom gradient scrim */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black via-black/68 to-transparent pointer-events-none" />
 
-              <div className="relative px-3 md:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-6 pt-12">
+              <div className="relative px-3 md:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-6 pt-10">
 
-                {/* ── PROGRESS BAR ── */}
+                {/* â”€â”€ PROGRESS BAR â”€â”€ */}
                 <div
                   ref={progressBarRef}
-                  className="relative mb-3 group/progress cursor-pointer"
+                  className="relative mb-3 group/progress cursor-pointer rounded-[26px] border border-white/8 bg-black/54 px-3 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
                   onMouseMove={handleProgressHover}
                   onMouseLeave={handleProgressLeave}
                   onClick={(e) => {
@@ -1021,8 +1081,8 @@ export function CinematicVideoPlayer({
 
                   {/* Time preview bubble */}
                   {previewTime !== null && (
-                    <div className="absolute bottom-7 pointer-events-none z-10 -translate-x-1/2 animate-in fade-in duration-100 [left:var(--preview-left)]">
-                      <div className="px-3 py-1.5 rounded-lg bg-[#0d0d0d]/90 border border-white/10 backdrop-blur-xl shadow-xl">
+                    <div className="absolute bottom-10 pointer-events-none z-10 -translate-x-1/2 animate-in fade-in duration-100 [left:var(--preview-left)]">
+                      <div className="px-3 py-1.5 rounded-xl bg-[#0d0d0d]/92 border border-white/10 backdrop-blur-xl shadow-[0_12px_30px_rgba(0,0,0,0.42)]">
                         <span className="text-white text-xs font-bold tabular-nums tracking-wider">{formatTime(previewTime)}</span>
                       </div>
                       <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-white/10" />
@@ -1032,8 +1092,8 @@ export function CinematicVideoPlayer({
                   {/* Scrub time preview for mobile */}
                   {isScrubbing && duration > 0 && (
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 pointer-events-none z-10 md:hidden">
-                      <div className="px-4 py-2 rounded-xl bg-black/90 border border-[#c8f547]/30 backdrop-blur-xl shadow-xl">
-                        <span className="text-[#c8f547] text-sm font-bold tabular-nums">{formatTime(currentTime)}</span>
+                      <div className="px-4 py-2 rounded-xl bg-black/92 border border-[#ffb076]/20 backdrop-blur-xl shadow-[0_12px_30px_rgba(0,0,0,0.42)]">
+                        <span className="text-[#ffd1b0] text-sm font-bold tabular-nums">{formatTime(currentTime)}</span>
                         <span className="text-white/30 mx-1">/</span>
                         <span className="text-white/50 text-sm tabular-nums">{formatTime(duration)}</span>
                       </div>
@@ -1043,36 +1103,36 @@ export function CinematicVideoPlayer({
                   {/* Track */}
                   <div className={cn(
                     "relative w-full rounded-full transition-[height] duration-200",
-                    isScrubbing ? "h-[6px]" : "h-[3px] md:h-[3px] group-hover/progress:h-[5px]"
+                    isScrubbing ? "h-[8px]" : "h-[5px] md:group-hover/progress:h-[7px]"
                   )}>
-                    <div className="absolute inset-0 rounded-full bg-white/15" />
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-white/20 transition-[width] duration-300 [width:var(--buffered-w)]" />
-                    <div className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-100 bg-gradient-to-r from-[#a8d40a] to-[#c8f547] shadow-[0_0_8px_rgba(200,245,71,0.4)] [width:var(--progress-w)]" />
-                    {/* Thumb — always visible on mobile, hover-only on desktop */}
+                    <div className="absolute inset-0 rounded-full bg-white/10" />
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-white/16 transition-[width] duration-300 [width:var(--buffered-w)]" />
+                    <div className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-100 bg-gradient-to-r from-[#ff8a3d] via-[#ff6a2d] to-[#ff4d6d] shadow-[0_0_18px_rgba(255,122,24,0.42)] [width:var(--progress-w)]" />
+                    {/* Thumb â€” always visible on mobile, hover-only on desktop */}
                     <div className={cn(
-                      "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full bg-[#c8f547] border-2 border-[#0d0d0d] shadow-[0_0_10px_rgba(200,245,71,0.6)] transition-all duration-200 z-10 [left:var(--progress-w)]",
+                      "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full bg-white border-2 border-[#120d0a] shadow-[0_0_24px_rgba(255,138,61,0.55)] transition-all duration-200 z-10 [left:var(--progress-w)]",
                       isScrubbing
                         ? "w-[18px] h-[18px]"
-                        : "w-[12px] h-[12px] md:w-0 md:h-0 md:group-hover/progress:w-[14px] md:group-hover/progress:h-[14px]"
+                        : "w-[12px] h-[12px] md:w-0 md:h-0 md:group-hover/progress:w-[16px] md:group-hover/progress:h-[16px]"
                     )} />
                   </div>
                 </div>
 
-                {/* ── CONTROLS ROW ── */}
-                <div className="flex items-center gap-1">
+                {/* â”€â”€ CONTROLS ROW â”€â”€ */}
+                <div className="flex items-center gap-2">
 
                   {/* LEFT controls */}
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-2">
                     {/* Play/Pause */}
-                    <CtrlBtn onClick={togglePlay} title={isPlaying ? "Pause (K)" : "Play (K)"}>
+                    <CtrlBtn onClick={togglePlay} title={isPlaying ? "Pause (K)" : "Play (K)"} className="h-12 w-12 bg-gradient-to-br from-[#ff8a3d] via-[#ff6a2d] to-[#ff4d6d] text-white shadow-[0_0_26px_rgba(255,122,24,0.32)]">
                       {isPlaying
                         ? <Pause className="w-5 h-5 text-white" />
-                        : <Play className="w-5 h-5 text-[#c8f547] fill-[#c8f547]" />
+                        : <Play className="w-5 h-5 text-white fill-white ml-0.5" />
                       }
                     </CtrlBtn>
 
                     {/* Skip -10 */}
-                    <CtrlBtn onClick={() => skip(-10)} title="Rewind 10s (J)">
+                    <CtrlBtn onClick={() => skip(-10)} title="Rewind 10s (J)" className="h-11 w-11">
                       <div className="relative">
                         <RotateCcw className="w-4.5 h-4.5 text-white/80" />
                         <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white mt-[1px] pointer-events-none">10</span>
@@ -1080,20 +1140,20 @@ export function CinematicVideoPlayer({
                     </CtrlBtn>
 
                     {/* Skip +10 */}
-                    <CtrlBtn onClick={() => skip(10)} title="Skip 10s (L)">
+                    <CtrlBtn onClick={() => skip(10)} title="Skip 10s (L)" className="h-11 w-11">
                       <div className="relative">
                         <RotateCw className="w-4.5 h-4.5 text-white/80" />
                         <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white mt-[1px] pointer-events-none">10</span>
                       </div>
                     </CtrlBtn>
 
-                    {/* Volume group — desktop */}
-                    <div className="hidden md:flex items-center gap-1 group/vol">
-                      <CtrlBtn onClick={toggleMute} title="Mute (M)">
+                    {/* Volume group â€” desktop */}
+                    <div className="hidden md:flex items-center gap-2 group/vol">
+                      <CtrlBtn onClick={toggleMute} title="Mute (M)" className="h-11 w-11">
                         <VolumeIcon className={cn("w-4.5 h-4.5", isMuted || volume === 0 ? "text-white/40" : "text-white/80")} />
                       </CtrlBtn>
-                      {/* Volume slider — expands on hover */}
-                      <div className="w-0 overflow-hidden group-hover/vol:w-20 transition-[width] duration-300 ease-out flex items-center">
+                      {/* Volume slider â€” expands on hover */}
+                      <div className="flex items-center rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
                         <input
                           type="range"
                           min={0} max={1} step={0.01}
@@ -1101,14 +1161,15 @@ export function CinematicVideoPlayer({
                           onChange={e => handleVolumeChange(parseFloat(e.target.value))}
                           aria-label="Volume"
                           title="Volume"
-                          className="w-20 h-1 cursor-pointer accent-[#c8f547]"
+                          className="w-24 h-1.5 cursor-pointer accent-[#ff8a3d]"
                         />
+                        <span className="ml-3 w-9 text-right text-[11px] font-semibold tabular-nums text-white/54">{Math.round((isMuted ? 0 : volume) * 100)}%</span>
                       </div>
                     </div>
 
                     {/* Time */}
                     <button
-                      className="ml-1 text-[11px] md:text-xs tabular-nums font-medium hover:text-[#c8f547] transition-colors whitespace-nowrap"
+                      className="ml-1 whitespace-nowrap rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] md:text-xs tabular-nums font-medium text-white/86 transition-colors hover:bg-white/[0.08]"
                       onClick={() => setShowRemainingTime(!showRemainingTime)}
                     >
                       <span className="text-white/90">{timeDisplay}</span>
@@ -1121,39 +1182,39 @@ export function CinematicVideoPlayer({
                   <div className="flex-1" />
 
                   {/* RIGHT controls */}
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-2">
                     {/* Speed */}
-                    <CtrlBtn onClick={() => setShowSpeedMenu(true)} title="Speed (< >)">
+                    <CtrlBtn onClick={() => setShowSpeedMenu(true)} title="Speed (< >)" className="h-11 rounded-2xl px-3">
                       <div className="flex items-center gap-1">
                         <Gauge className="w-4 h-4 text-white/70" />
                         <span className={cn(
                           "text-[10px] font-bold tabular-nums hidden md:block",
-                          playbackSpeed !== 1 ? "text-[#c8f547]" : "text-white/50"
+                          playbackSpeed !== 1 ? "text-[#ffd1b0]" : "text-white/50"
                         )}>
-                          {playbackSpeed}×
+                          {playbackSpeed}X
                         </span>
                       </div>
                     </CtrlBtn>
 
                     {/* Subtitles */}
                     {subtitles.length > 0 && (
-                      <CtrlBtn onClick={() => setShowSubtitlesMenu(true)} title="Subtitles (C)">
-                        <Captions className={cn("w-4.5 h-4.5", selectedSubtitleId !== "off" ? "text-[#c8f547]" : "text-white/70")} />
+                      <CtrlBtn onClick={() => setShowSubtitlesMenu(true)} title="Subtitles (C)" className="h-11 w-11">
+                        <Captions className={cn("w-4.5 h-4.5", selectedSubtitleId !== "off" ? "text-[#ffd1b0]" : "text-white/70")} />
                       </CtrlBtn>
                     )}
 
-                    {/* Airplay — desktop */}
-                    <CtrlBtn className="hidden md:flex" onClick={() => { }} title="Cast">
-                      <Airplay className="w-4 h-4 text-white/60" />
+                    {/* Airplay â€” desktop */}
+                    <CtrlBtn className="hidden md:flex h-11 w-11" onClick={() => togglePiP()} title="Picture in Picture (P)">
+                      <PictureInPicture2 className="w-4 h-4 text-white/72" />
                     </CtrlBtn>
 
-                    {/* Orientation — mobile */}
-                    <CtrlBtn className="md:hidden" onClick={toggleOrientation} title="Rotate">
+                    {/* Orientation â€” mobile */}
+                    <CtrlBtn className="md:hidden h-11 w-11" onClick={toggleOrientation} title="Rotate">
                       <ScreenShare className={cn("w-4 h-4 text-white/70 transition-transform duration-300", isLandscape ? "rotate-0" : "rotate-90")} />
                     </CtrlBtn>
 
                     {/* Fullscreen */}
-                    <CtrlBtn onClick={toggleFullscreen} title="Fullscreen (F)">
+                    <CtrlBtn onClick={toggleFullscreen} title="Fullscreen (F)" className="h-11 w-11">
                       {isFullscreen
                         ? <Minimize className="w-4.5 h-4.5 text-white/80" />
                         : <Maximize className="w-4.5 h-4.5 text-white/80" />
@@ -1166,42 +1227,46 @@ export function CinematicVideoPlayer({
 
           </div>{/* end video area */}
 
-          {/* ══════════════════════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           {/* MOVIE INFO PANEL (below player, non-fullscreen) */}
-          {/* ══════════════════════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           {!isFullscreen && movie && (
-            <div className="hidden md:block flex-shrink-0 bg-[#0a0a0a] border-t border-white/5 px-4 py-4 md:px-6 md:py-5">
-              <div className="flex gap-4 md:gap-5 max-w-5xl mx-auto">
+            <div className="hidden md:block flex-shrink-0 border-t border-white/6 bg-[#080809]/92 px-4 py-4 backdrop-blur-2xl md:px-6 md:py-5">
+              <div className="mx-auto flex max-w-6xl items-start gap-5">
                 {posterUrl && (
-                  <div className="hidden sm:block w-14 md:w-20 flex-shrink-0 rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
+                  <div className="hidden w-20 flex-shrink-0 overflow-hidden rounded-[22px] border border-white/10 shadow-[0_18px_50px_rgba(0,0,0,0.38)] lg:block">
                     <img src={posterUrl} alt={title} className="w-full aspect-[2/3] object-cover" />
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div>
-                      <h3 className="text-white font-bold text-base md:text-lg leading-tight">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-3 flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                          {movie.type === "series" ? "Series" : "Movie"}
+                        </span>
+                        {year && (
+                          <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                            {year}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-white font-semibold text-xl tracking-[-0.03em]">
                         {title}
-                        {year && <span className="text-white/30 font-normal ml-2 text-sm">{year}</span>}
                       </h3>
                       {description && (
-                        <p className="text-white/40 text-xs mt-1.5 line-clamp-2 leading-relaxed max-w-2xl">{description}</p>
+                        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/56 line-clamp-2">{description}</p>
                       )}
                     </div>
-                    {genres.length > 0 && (
-                      <div className="hidden md:flex flex-wrap gap-1.5 flex-shrink-0">
-                        {genres.slice(0, 3).map((genre) => (
-                          <span key={genre} className="px-2.5 py-1 text-[9px] font-bold rounded-full bg-[#c8f547]/10 text-[#c8f547]/70 border border-[#c8f547]/20 uppercase tracking-widest">
-                            {genre}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <div className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/30">Session</p>
+                      <p className="mt-1 text-sm font-semibold text-white/86">{formatTime(currentTime)} watched</p>
+                    </div>
                   </div>
                   {cast.length > 0 && (
-                    <p className="hidden md:block text-xs">
-                      <span className="text-white/25 uppercase tracking-widest text-[9px] mr-2">Stars</span>
-                      <span className="text-white/50">{(cast as CastMember[]).slice(0, 4).map(c => c.name).join(", ")}</span>
+                    <p className="text-sm text-white/46">
+                      <span className="mr-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-white/28">Cast</span>
+                      {(cast as CastMember[]).slice(0, 5).map(c => c.name).join(", ")}
                     </p>
                   )}
                 </div>
@@ -1215,7 +1280,7 @@ export function CinematicVideoPlayer({
   );
 }
 
-// ─── Small reusable control button ────────────────────────────────────────────
+// â”€â”€â”€ Small reusable control button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CtrlBtn({
   onClick,
   children,
@@ -1233,8 +1298,8 @@ function CtrlBtn({
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
       title={title}
-      className={cn(
-        "flex items-center justify-center p-2 md:p-2.5 rounded-full hover:bg-white/10 active:scale-90 active:bg-white/15 transition-all duration-150 text-white",
+        className={cn(
+        "flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white shadow-[0_10px_30px_rgba(0,0,0,0.24)] backdrop-blur-xl transition-transform duration-150 hover:scale-[1.03] hover:bg-white/[0.08] active:scale-95",
         className
       )}
     >
@@ -1243,10 +1308,10 @@ function CtrlBtn({
   );
 }
 
-// ─── Gesture hint pill ────────────────────────────────────────────────────────
+// â”€â”€â”€ Gesture hint pill â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HintPill({ label, sub }: { label: string; sub: string }) {
   return (
-    <div className="px-3 py-1.5 rounded-xl bg-black/70 backdrop-blur-xl border border-white/10">
+    <div className="rounded-2xl border border-white/10 bg-black/62 px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.28)] backdrop-blur-xl">
       <p className="text-white text-[10px] font-semibold text-center">
         {label}<br />
         <span className="text-white/50 font-normal">{sub}</span>
@@ -1255,7 +1320,7 @@ function HintPill({ label, sub }: { label: string; sub: string }) {
   );
 }
 
-// ─── Double-tap ripple ────────────────────────────────────────────────────────
+// â”€â”€â”€ Double-tap ripple â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function DoubleTapRipple({ side, seconds, onDone }: { side: "left" | "right"; seconds: number; onDone: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDone, 700);
@@ -1270,18 +1335,20 @@ function DoubleTapRipple({ side, seconds, onDone }: { side: "left" | "right"; se
       {/* Ripple glow */}
       <div
         className={cn(
-          "absolute inset-0 animate-in fade-in-0 duration-150 bg-[radial-gradient(ellipse_at_center,rgba(200,245,71,0.12)_0%,transparent_70%)]",
+          "absolute inset-0 animate-in fade-in-0 duration-150 bg-[radial-gradient(ellipse_at_center,rgba(255,138,61,0.2)_0%,transparent_70%)]",
           side === "left" ? "rounded-r-[60%]" : "rounded-l-[60%]"
         )}
       />
-      {/* Icon + label */}
-      <div className="flex flex-col items-center gap-1 animate-in zoom-in-75 duration-150">
+      <div className="flex flex-col items-center gap-1.5 animate-in zoom-in-75 duration-150">
         {side === "left"
-          ? <RotateCcw className="w-7 h-7 text-[#c8f547] drop-shadow-[0_0_8px_rgba(200,245,71,0.8)]" />
-          : <RotateCw className="w-7 h-7 text-[#c8f547] drop-shadow-[0_0_8px_rgba(200,245,71,0.8)]" />
+          ? <RotateCcw className="w-7 h-7 text-[#ffd1b0] drop-shadow-[0_0_8px_rgba(255,138,61,0.75)]" />
+          : <RotateCw className="w-7 h-7 text-[#ffd1b0] drop-shadow-[0_0_8px_rgba(255,138,61,0.75)]" />
         }
-        <span className="text-[#c8f547] text-xs font-bold tracking-wider drop-shadow-lg">{seconds}s</span>
+        <span className="text-[#ffd1b0] text-xs font-bold tracking-[0.22em] drop-shadow-lg">{seconds}s</span>
       </div>
     </div>
   );
 }
+
+
+
