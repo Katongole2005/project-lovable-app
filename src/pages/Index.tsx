@@ -5,13 +5,14 @@ import { Header } from "@/components/Header";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
-import { HeroCarousel } from "@/components/HeroCarousel";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { BottomNav } from "@/components/BottomNav";
 import { FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
 
+const loadHeroCarousel = () => import("@/components/HeroCarousel").then(module => ({ default: module.HeroCarousel }));
+const HeroCarousel = lazy(loadHeroCarousel);
 const ContinueWatchingRow = lazy(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
 const RecommendationRow = lazy(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
 const Top10Row = lazy(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
@@ -204,6 +205,11 @@ export default function Index() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!shouldShowHero || viewMode !== "home") return;
+    void loadHeroCarousel();
+  }, [shouldShowHero, viewMode]);
 
   // React Query for instant tab switching and caching
   const { data: trendingData, isLoading: isTrendingLoading } = useQuery({
@@ -891,13 +897,15 @@ export default function Index() {
             <PageTransition>
               {shouldShowHero && (
                 trending.length > 0 ? (
-                  <HeroCarousel
-                    movies={trending}
-                    onPlay={handleHeroPlay}
-                    onMovieClick={handleMovieClick}
-                    title="Top Movies"
-                    onViewAll={() => handleTabChange("movies")}
-                  />
+                  <Suspense fallback={null}>
+                    <HeroCarousel
+                      movies={trending}
+                      onPlay={handleHeroPlay}
+                      onMovieClick={handleMovieClick}
+                      title="Top Movies"
+                      onViewAll={() => handleTabChange("movies")}
+                    />
+                  </Suspense>
                 ) : isHeroLoading ? (
                   null
                 ) : null
