@@ -5,13 +5,13 @@ import { Header } from "@/components/Header";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
+import { HeroCarousel } from "@/components/HeroCarousel";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { BottomNav } from "@/components/BottomNav";
 import { FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
 
-const HeroCarousel = lazy(() => import("@/components/HeroCarousel").then(module => ({ default: module.HeroCarousel })));
 const ContinueWatchingRow = lazy(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
 const RecommendationRow = lazy(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
 const Top10Row = lazy(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
@@ -38,6 +38,9 @@ import {
   fetchOriginals,
   fetchMoviesSorted,
   preloadMovieBackdrop,
+  preloadImage,
+  getImageUrl,
+  getOptimizedBackdropUrl,
   buildMediaUrl,
   resolveMediaAvailability
 } from "@/lib/api";
@@ -79,23 +82,6 @@ const CATEGORY_TO_GENRE: Record<string, string> = {
   special: "Special",
   drama: "Drama",
 };
-
-function HeroCarouselSkeleton() {
-  return (
-    <div className="rounded-3xl overflow-hidden relative min-h-[320px] md:min-h-[460px] bg-[linear-gradient(135deg,hsl(230_18%_9%)_0%,hsl(230_16%_6%)_100%)] border border-white/5">
-      <div className="absolute inset-0 opacity-60 loading-gradient-complex" />
-      <div className="relative z-10 flex h-full flex-col justify-end p-6 md:p-10">
-        <div className="h-4 w-24 rounded-full bg-white/8 shimmer mb-4" />
-        <div className="h-10 w-2/3 rounded-xl bg-white/10 shimmer mb-3" />
-        <div className="h-4 w-1/2 rounded-lg bg-white/8 shimmer mb-8" />
-        <div className="flex gap-3">
-          <div className="h-11 w-32 rounded-full bg-white/12 shimmer" />
-          <div className="h-11 w-24 rounded-full bg-white/8 shimmer" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function parseEpisodeInfoFromTitle(title: string): {
   seasonNumber?: number;
@@ -295,6 +281,17 @@ export default function Index() {
     });
   }, []);
 
+  const preloadHeroAssets = useCallback((items: Movie[]) => {
+    for (const [index, item] of items.slice(0, 3).entries()) {
+      if (item.backdrop_url) {
+        preloadImage(getOptimizedBackdropUrl(item.backdrop_url)).catch(() => { });
+      }
+      if (item.image_url && index < 2) {
+        preloadImage(getImageUrl(item.image_url)).catch(() => { });
+      }
+    }
+  }, []);
+
   const prefetchSeriesDetailsFor = useCallback((items: Array<Movie | Series>, limit = 8) => {
     const candidates = items
       .filter((item): item is Movie => item.type === "series")
@@ -332,6 +329,7 @@ export default function Index() {
           : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, 5);
 
         const newTrending = [...heroMovies, ...heroSeries].slice(0, 25);
+        preloadHeroAssets(newTrending);
         startTransition(() => {
           setTrending(newTrending);
           setRecentMovies(sortedTrending.length > 0 ? sortedTrending : sortByYearDesc(mData));
@@ -387,7 +385,7 @@ export default function Index() {
       }
     }
     loadData();
-  }, [trendingData, moviesQueryData, seriesQueryData]);
+  }, [moviesQueryData, preloadHeroAssets, seriesQueryData, sortByYearDesc, trendingData]);
 
   useEffect(() => {
     const combinedSeries: Movie[] = [];
@@ -893,17 +891,15 @@ export default function Index() {
             <PageTransition>
               {shouldShowHero && (
                 trending.length > 0 ? (
-                  <Suspense fallback={<HeroCarouselSkeleton />}>
-                    <HeroCarousel
-                      movies={trending}
-                      onPlay={handleHeroPlay}
-                      onMovieClick={handleMovieClick}
-                      title="Top Movies"
-                      onViewAll={() => handleTabChange("movies")}
-                    />
-                  </Suspense>
+                  <HeroCarousel
+                    movies={trending}
+                    onPlay={handleHeroPlay}
+                    onMovieClick={handleMovieClick}
+                    title="Top Movies"
+                    onViewAll={() => handleTabChange("movies")}
+                  />
                 ) : isHeroLoading ? (
-                  <HeroCarouselSkeleton />
+                  null
                 ) : null
               )}
 
