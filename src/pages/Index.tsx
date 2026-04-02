@@ -206,11 +206,6 @@ export default function Index() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!shouldShowHero || viewMode !== "home") return;
-    void loadHeroCarousel();
-  }, [shouldShowHero, viewMode]);
-
   // React Query for instant tab switching and caching
   const { data: trendingData, isLoading: isTrendingLoading } = useQuery({
     queryKey: ["trending"],
@@ -241,6 +236,12 @@ export default function Index() {
 
   const shouldShowHero = siteSettings.hero_carousel_enabled;
   const isHeroLoading = shouldShowHero && trending.length === 0 && (isTrendingLoading || isMoviesLoading || isSeriesLoading);
+
+  useEffect(() => {
+    if (!shouldShowHero || viewMode !== "home") return;
+    void loadHeroCarousel();
+  }, [shouldShowHero, viewMode]);
+
   // Dynamic SEO per view/modal
   const seoTitleMap: Record<ViewMode, string> = {
     home: "",
