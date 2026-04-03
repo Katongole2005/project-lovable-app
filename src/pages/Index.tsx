@@ -7,7 +7,6 @@ import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
-import { BottomNav } from "@/components/BottomNav";
 import { FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
 
@@ -1260,9 +1259,6 @@ export default function Index() {
             </PageTransition>
           )}
         </main>
-
-        {/* Bottom Navigation - Mobile */}
-        <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
         {showExitToast && (
           <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-card/90 backdrop-blur border border-border/50 text-sm text-foreground shadow-lg">
