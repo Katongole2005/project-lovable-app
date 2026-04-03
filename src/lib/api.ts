@@ -2,7 +2,7 @@ import type { Movie, Series, Episode, SearchResult } from "@/types/movie";
 import { supabase } from "@/integrations/supabase/client";
 
 const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
-const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "https://api.s-u.in/api";
+const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "";
 export const API_BASE = (import.meta.env.VITE_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, "");
 export const CLOUDFLARE_WORKER_URL = "https://cdn.s-u.in";
 
@@ -15,6 +15,7 @@ const genreQueryRequests = new Map<string, Promise<Movie[]>>();
 const mediaAvailabilityCache = new Map<string, MediaAvailability>();
 const mediaAvailabilityRequests = new Map<string, Promise<MediaAvailability>>();
 const preconnectedOrigins = new Set<string>();
+const warmedMediaUrls = new Set<string>();
 
 export const getImageUrl = (url?: string) => {
   if (!url) return fallbackPoster;
@@ -59,6 +60,41 @@ function preconnectOrigin(url?: string | null): void {
     preconnectedOrigins.add(origin);
   } catch {
     // Ignore malformed URLs.
+  }
+}
+
+function warmMediaElement(url?: string | null): void {
+  if (!url || typeof document === "undefined" || warmedMediaUrls.has(url)) return;
+
+  try {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+    video.crossOrigin = "anonymous";
+    video.style.display = "none";
+
+    const cleanup = () => {
+      window.clearTimeout(timeoutId);
+      video.removeEventListener("loadedmetadata", cleanup);
+      video.removeEventListener("canplay", cleanup);
+      video.removeEventListener("error", cleanup);
+      video.removeAttribute("src");
+      video.load();
+      video.remove();
+    };
+
+    const timeoutId = window.setTimeout(cleanup, 8000);
+    video.addEventListener("loadedmetadata", cleanup, { once: true });
+    video.addEventListener("canplay", cleanup, { once: true });
+    video.addEventListener("error", cleanup, { once: true });
+
+    document.body.appendChild(video);
+    warmedMediaUrls.add(url);
+    video.load();
+  } catch {
+    // Ignore warmup failures.
   }
 }
 
@@ -108,6 +144,11 @@ export function buildMediaUrl({
     return endpoint.toString();
   }
 
+  if (!API_BASE) {
+    preconnectOrigin(normalizedUrl);
+    return normalizedUrl;
+  }
+
   preconnectOrigin(API_BASE);
   const endpoint = new URL(`${API_BASE}/media`);
   endpoint.searchParams.set("url", normalizedUrl);
@@ -132,6 +173,10 @@ export interface MediaAvailability {
 }
 
 export function buildResolveMediaUrl(mediaUrl: string): string | null {
+  if (!API_BASE) {
+    return null;
+  }
+
   try {
     const parsed = new URL(mediaUrl);
     
@@ -238,7 +283,16 @@ export function getCachedMediaAvailability(mediaUrl?: string | null): MediaAvail
 export function primeMediaAvailability(mediaUrl?: string | null): void {
   if (!mediaUrl) return;
   preconnectOrigin(mediaUrl);
+  warmMediaElement(mediaUrl);
   if (mediaAvailabilityCache.has(mediaUrl) || mediaAvailabilityRequests.has(mediaUrl)) {
+    return;
+  }
+  if (!API_BASE) {
+    mediaAvailabilityCache.set(mediaUrl, {
+      available: true,
+      resolved_url: mediaUrl,
+      candidate_urls: [mediaUrl],
+    });
     return;
   }
   void resolveMediaAvailability(mediaUrl);
