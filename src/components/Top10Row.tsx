@@ -1,5 +1,5 @@
 import type { Movie } from "@/types/movie";
-import { getImageUrl, preloadMovieBackdrop } from "@/lib/api";
+import { buildMediaUrl, getImageUrl, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Play, Crown } from "lucide-react";
 import { BlurImage } from "./BlurImage";
@@ -49,6 +49,15 @@ function Top10Card({
 }) {
   const handleMouseEnter = useCallback(() => {
     preloadMovieBackdrop(movie);
+    if (!movie.download_url) return;
+    const mediaUrl = buildMediaUrl({
+      url: movie.download_url,
+      title: movie.title,
+      detailsUrl: movie.video_page_url || movie.details_url,
+      mobifliksId: movie.mobifliks_id,
+      play: true,
+    });
+    primeMediaAvailability(mediaUrl);
   }, [movie]);
 
   return (
@@ -58,6 +67,7 @@ function Top10Card({
       )}
       onClick={() => onClick(movie)}
       onMouseEnter={handleMouseEnter}
+      onTouchStart={handleMouseEnter}
       data-testid={`card-top10-${rank}`}
     >
       <div className="flex items-end gap-0">

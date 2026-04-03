@@ -1,7 +1,7 @@
 import { Play, Star, Heart, TrendingUp, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Movie } from "@/types/movie";
-import { getImageUrl, preloadMovieBackdrop } from "@/lib/api";
+import { buildMediaUrl, getImageUrl, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useCallback, useState, useEffect, forwardRef, memo } from "react";
 import { isInWatchlist, toggleWatchlist } from "@/lib/storage";
@@ -50,11 +50,24 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
     setInWatchlist(isInWatchlist(movie.mobifliks_id));
   }, [movie.mobifliks_id]);
 
+  const primePlayback = useCallback(() => {
+    if (!movie.download_url) return;
+    const mediaUrl = buildMediaUrl({
+      url: movie.download_url,
+      title: movie.title,
+      detailsUrl: movie.video_page_url || movie.details_url,
+      mobifliksId: movie.mobifliks_id,
+      play: true,
+    });
+    primeMediaAvailability(mediaUrl);
+  }, [movie]);
+
   const handleMouseEnter = useCallback(() => {
     if (typeof window === "undefined" || window.innerWidth < 768) return;
     preloadMovieBackdrop(movie);
+    primePlayback();
     setHovered(true);
-  }, [movie]);
+  }, [movie, primePlayback]);
 
   const handleMouseLeave = useCallback(() => {
     setHovered(false);
@@ -83,6 +96,8 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
       )}
       onClick={() => onClick(movie)}
       onMouseEnter={handleMouseEnter}
+      onTouchStart={primePlayback}
+      onFocus={primePlayback}
       onMouseLeave={handleMouseLeave}
       data-testid={`card-movie-${movie.mobifliks_id}`}
     >

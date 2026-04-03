@@ -84,6 +84,7 @@ export function CinematicVideoPlayer({
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [selectedSubtitleId, setSelectedSubtitleId] = useState<string>("off");
   const [showSubtitlesMenu, setShowSubtitlesMenu] = useState(false);
+  const [startupUiReady, setStartupUiReady] = useState(false);
 
   // Swipe gesture state
   const [brightness, setBrightness] = useState(1);
@@ -188,6 +189,20 @@ export function CinematicVideoPlayer({
       savedSpeedRef.current = 1;
       setShowSubtitlesMenu(false);
     }
+  }, [isOpen, videoUrl]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setStartupUiReady(false);
+      return;
+    }
+
+    setStartupUiReady(false);
+    const timer = window.setTimeout(() => {
+      setStartupUiReady(true);
+    }, 420);
+
+    return () => window.clearTimeout(timer);
   }, [isOpen, videoUrl]);
 
   useEffect(() => {
@@ -493,6 +508,7 @@ export function CinematicVideoPlayer({
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) setDuration(videoRef.current.duration);
+    setStartupUiReady(true);
   };
 
   const handleSeek = (pct: number) => {
@@ -683,6 +699,7 @@ export function CinematicVideoPlayer({
               playsInline
               onPlay={() => {
                 setIsPlaying(true);
+                setStartupUiReady(true);
                 if (!gestureHintsShownRef.current && !localStorage.getItem("sp_gesture_hints_seen")) {
                   gestureHintsShownRef.current = true;
                   setShowGestureHints(true);
@@ -694,7 +711,10 @@ export function CinematicVideoPlayer({
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
               onWaiting={() => setIsBuffering(true)}
-              onPlaying={() => setIsBuffering(false)}
+              onPlaying={() => {
+                setIsBuffering(false);
+                setStartupUiReady(true);
+              }}
               onEnded={handleEnded}
             >
               {subtitles.map(track => (
@@ -727,6 +747,27 @@ export function CinematicVideoPlayer({
                 </div>
               </div>
             )}
+
+            {!startupUiReady && (
+              <div className="absolute left-3 top-3 z-30 flex items-center gap-3">
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                  aria-label="Go back"
+                  title="Back"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-black/45 text-white shadow-[0_12px_30px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-transform duration-150 active:scale-95"
+                >
+                  <ChevronDown className="h-5 w-5" />
+                </button>
+                {isBuffering && (
+                  <div className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/58 backdrop-blur-xl">
+                    Loading
+                  </div>
+                )}
+              </div>
+            )}
+
+            {startupUiReady && (
+              <>
 
             {/* â”€â”€â”€ SWIPE INDICATOR â”€â”€â”€ */}
             {swipeIndicator && (
@@ -1226,12 +1267,14 @@ export function CinematicVideoPlayer({
               </div>
             </div>
 
+              </>
+            )}
           </div>{/* end video area */}
 
           {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           {/* MOVIE INFO PANEL (below player, non-fullscreen) */}
           {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-          {!isFullscreen && movie && (
+          {startupUiReady && !isFullscreen && movie && (
             <div className="hidden md:block flex-shrink-0 border-t border-white/6 bg-[#080809]/92 px-4 py-4 backdrop-blur-2xl md:px-6 md:py-5">
               <div className="mx-auto flex max-w-6xl items-start gap-5">
                 {posterUrl && (
