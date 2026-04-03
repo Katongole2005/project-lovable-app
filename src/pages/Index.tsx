@@ -43,7 +43,9 @@ import {
   preloadImage,
   getImageUrl,
   getOptimizedBackdropUrl,
-  buildMediaUrl
+  buildMediaUrl,
+  getCachedMediaAvailability,
+  primeMediaAvailability
 } from "@/lib/api";
 import type { FilterOptions } from "@/lib/api";
 import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
@@ -94,6 +96,32 @@ function parseEpisodeInfoFromTitle(title: string): {
     seasonNumber: parseInt(match[1], 10),
     episodeNumber: parseInt(match[2], 10),
   };
+}
+
+function buildPrimaryPlaybackUrl(item: Movie | Series): string | null {
+  if (item.type === "movie" && item.download_url) {
+    return buildMediaUrl({
+      url: item.download_url,
+      title: item.title,
+      detailsUrl: item.video_page_url || item.details_url,
+      mobifliksId: item.mobifliks_id,
+      play: true,
+    });
+  }
+
+  const firstEpisode = (item as Series).episodes?.find((episode) => episode.download_url);
+  if (!firstEpisode?.download_url) {
+    return null;
+  }
+
+  const seasonNumber = firstEpisode.season_number || 1;
+  return buildMediaUrl({
+    url: firstEpisode.download_url,
+    title: `${item.title} - S${seasonNumber}:E${firstEpisode.episode_number}`,
+    detailsUrl: firstEpisode.video_page_url || item.video_page_url || item.details_url,
+    mobifliksId: firstEpisode.mobifliks_id || item.mobifliks_id,
+    play: true,
+  });
 }
 
 export default function Index() {
@@ -259,6 +287,33 @@ export default function Index() {
       cancelled = true;
     };
   }, [isModalOpen, viewMode]);
+
+  useEffect(() => {
+    if (!isModalOpen || !selectedMovie) return;
+
+    const mediaUrl = buildPrimaryPlaybackUrl(selectedMovie);
+    if (!mediaUrl) return;
+
+    scheduleLowPriorityTask(() => {
+      primeMediaAvailability(mediaUrl);
+    });
+  }, [isModalOpen, selectedMovie]);
+
+  useEffect(() => {
+    if (continueWatching.length === 0) return;
+
+    scheduleLowPriorityTask(() => {
+      continueWatching.slice(0, 3).forEach((item) => {
+        const mediaUrl = buildMediaUrl({
+          url: item.url,
+          title: item.episodeInfo ? `${item.title} - ${item.episodeInfo}` : item.title,
+          mobifliksId: item.contentId,
+          play: true,
+        });
+        primeMediaAvailability(mediaUrl);
+      });
+    });
+  }, [continueWatching]);
 
   // Dynamic SEO per view/modal
   const seoTitleMap: Record<ViewMode, string> = {
@@ -561,6 +616,9 @@ export default function Index() {
   selectedMovieRef.current = selectedMovie;
 
   const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
+    const cachedMedia = getCachedMediaAvailability(url);
+    const playbackUrl = cachedMedia?.resolved_url || url;
+
     const movie = selectedMovieRef.current;
     const parsedEpisode = parseEpisodeInfoFromTitle(title);
     const selectedSeries = movie?.type === "series" ? movie as Series : null;
@@ -582,7 +640,7 @@ export default function Index() {
         type: movie.type,
         progress: startAt,
         duration: 0,
-        url,
+        url: playbackUrl,
         seriesId: movie.type === "series" ? movie.mobifliks_id : undefined,
         episodeId: matchedEpisode?.mobifliks_id,
         episodeTitle: matchedEpisode?.title,
@@ -594,7 +652,8 @@ export default function Index() {
       }
       : null;
 
-    setVideoUrl(url);
+    primeMediaAvailability(url);
+    setVideoUrl(playbackUrl);
     setVideoTitle(title);
     setVideoStartTime(startAt);
     setActivePlaybackItem(playbackItem ?? fallbackItem);

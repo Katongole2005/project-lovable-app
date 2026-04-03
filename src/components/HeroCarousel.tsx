@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
-import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
+import { buildMediaUrl, getImageUrl, getOptimizedBackdropUrl, primeMediaAvailability } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
@@ -137,6 +137,26 @@ export function HeroCarousel({
 
   const currentMovie = displayMovies[selectedIndex];
   const backdropSrc = getBackdrop(currentMovie);
+
+  React.useEffect(() => {
+    const primeMoviePlayback = (movie?: Movie) => {
+      if (!movie?.download_url) return;
+      const mediaUrl = buildMediaUrl({
+        url: movie.download_url,
+        title: movie.title,
+        detailsUrl: movie.video_page_url || movie.details_url,
+        mobifliksId: movie.mobifliks_id,
+        play: true,
+      });
+      primeMediaAvailability(mediaUrl);
+    };
+
+    primeMoviePlayback(currentMovie);
+
+    if (totalSlides > 1) {
+      primeMoviePlayback(displayMovies[(selectedIndex + 1) % totalSlides]);
+    }
+  }, [currentMovie, displayMovies, selectedIndex, totalSlides]);
 
   const getSideCards = () => {
     if (totalSlides <= 1) return [];

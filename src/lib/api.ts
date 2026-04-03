@@ -12,6 +12,9 @@ const seriesDetailsCache = new Map<string, Series | null>();
 const seriesDetailsRequests = new Map<string, Promise<Series | null>>();
 const genreQueryCache = new Map<string, Movie[]>();
 const genreQueryRequests = new Map<string, Promise<Movie[]>>();
+const mediaAvailabilityCache = new Map<string, MediaAvailability>();
+const mediaAvailabilityRequests = new Map<string, Promise<MediaAvailability>>();
+const preconnectedOrigins = new Set<string>();
 
 export const getImageUrl = (url?: string) => {
   if (!url) return fallbackPoster;
@@ -40,6 +43,24 @@ export const preloadMovieBackdrop = (movie: { backdrop_url?: string | null; imag
     preloadImage(optimizedUrl).catch(() => { });
   }
 };
+
+function preconnectOrigin(url?: string | null): void {
+  if (!url || typeof document === "undefined") return;
+
+  try {
+    const origin = new URL(url).origin;
+    if (preconnectedOrigins.has(origin)) return;
+
+    const link = document.createElement("link");
+    link.rel = "preconnect";
+    link.href = origin;
+    link.crossOrigin = "anonymous";
+    document.head.appendChild(link);
+    preconnectedOrigins.add(origin);
+  } catch {
+    // Ignore malformed URLs.
+  }
+}
 
 function unwrapLegacyWorkerUrl(url: string): string {
   try {
@@ -72,10 +93,12 @@ export function buildMediaUrl({
 }): string {
   const normalizedUrl = unwrapLegacyWorkerUrl(url);
   if (!shouldProxyMediaUrl(normalizedUrl)) {
+    preconnectOrigin(normalizedUrl);
     return normalizedUrl;
   }
 
   if (CLOUDFLARE_WORKER_URL) {
+    preconnectOrigin(CLOUDFLARE_WORKER_URL);
     const endpoint = new URL(CLOUDFLARE_WORKER_URL);
     endpoint.searchParams.set("url", normalizedUrl);
     endpoint.searchParams.set("name", title || "video");
@@ -85,6 +108,7 @@ export function buildMediaUrl({
     return endpoint.toString();
   }
 
+  preconnectOrigin(API_BASE);
   const endpoint = new URL(`${API_BASE}/media`);
   endpoint.searchParams.set("url", normalizedUrl);
   endpoint.searchParams.set("title", title || "video");
@@ -133,42 +157,91 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
 }
 
 export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaAvailability> {
-  const resolveUrl = buildResolveMediaUrl(mediaUrl);
-  if (!resolveUrl) {
-    return {
-      available: true,
-      resolved_url: mediaUrl,
-      candidate_urls: [mediaUrl],
-    };
+  const cached = mediaAvailabilityCache.get(mediaUrl);
+  if (cached) {
+    return cached;
   }
 
-  try {
-    const response = await fetch(resolveUrl, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      return {
+  const inFlight = mediaAvailabilityRequests.get(mediaUrl);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const resolveUrl = buildResolveMediaUrl(mediaUrl);
+  const request = (async (): Promise<MediaAvailability> => {
+    if (!resolveUrl) {
+      const fallback = {
         available: true,
         resolved_url: mediaUrl,
         candidate_urls: [mediaUrl],
       };
+      mediaAvailabilityCache.set(mediaUrl, fallback);
+      preconnectOrigin(mediaUrl);
+      return fallback;
     }
 
-    const data = await response.json() as Partial<MediaAvailability>;
-    return {
-      available: Boolean(data.available),
-      resolved_url: data.resolved_url ?? null,
-      candidate_urls: Array.isArray(data.candidate_urls) ? data.candidate_urls : [mediaUrl],
-    };
-  } catch {
-    return {
-      available: true,
-      resolved_url: mediaUrl,
-      candidate_urls: [mediaUrl],
-    };
+    preconnectOrigin(resolveUrl);
+
+    try {
+      const response = await fetch(resolveUrl, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        const fallback = {
+          available: true,
+          resolved_url: mediaUrl,
+          candidate_urls: [mediaUrl],
+        };
+        mediaAvailabilityCache.set(mediaUrl, fallback);
+        preconnectOrigin(mediaUrl);
+        return fallback;
+      }
+
+      const data = await response.json() as Partial<MediaAvailability>;
+      const resolved = {
+        available: Boolean(data.available),
+        resolved_url: data.resolved_url ?? null,
+        candidate_urls: Array.isArray(data.candidate_urls) ? data.candidate_urls : [mediaUrl],
+      };
+      mediaAvailabilityCache.set(mediaUrl, resolved);
+      preconnectOrigin(resolved.resolved_url ?? mediaUrl);
+      resolved.candidate_urls.forEach((candidate) => preconnectOrigin(candidate));
+      return resolved;
+    } catch {
+      const fallback = {
+        available: true,
+        resolved_url: mediaUrl,
+        candidate_urls: [mediaUrl],
+      };
+      mediaAvailabilityCache.set(mediaUrl, fallback);
+      preconnectOrigin(mediaUrl);
+      return fallback;
+    }
+  })();
+
+  mediaAvailabilityRequests.set(mediaUrl, request);
+
+  try {
+    return await request;
+  } finally {
+    mediaAvailabilityRequests.delete(mediaUrl);
   }
+}
+
+export function getCachedMediaAvailability(mediaUrl?: string | null): MediaAvailability | null {
+  if (!mediaUrl) return null;
+  return mediaAvailabilityCache.get(mediaUrl) ?? null;
+}
+
+export function primeMediaAvailability(mediaUrl?: string | null): void {
+  if (!mediaUrl) return;
+  preconnectOrigin(mediaUrl);
+  if (mediaAvailabilityCache.has(mediaUrl) || mediaAvailabilityRequests.has(mediaUrl)) {
+    return;
+  }
+  void resolveMediaAvailability(mediaUrl);
 }
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
