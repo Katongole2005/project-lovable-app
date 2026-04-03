@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Movie, Series, Episode, CastMember } from "@/types/movie";
-import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, resolveMediaAvailability } from "@/lib/api";
+import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, resolveMediaAvailability, warmMediaElement } from "@/lib/api";
+
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
 import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist } from "@/lib/storage";

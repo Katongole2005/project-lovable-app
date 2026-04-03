@@ -69,6 +69,15 @@ function warmMediaElement(url?: string | null): void {
   if (!url || typeof document === "undefined" || warmedMediaUrls.has(url)) return;
 
   try {
+    // Aggressively preconnect to the origin first
+    preconnectOrigin(url);
+
+    // If it's a proxy link, also preconnect to the base API/Worker
+    if (shouldProxyMediaUrl(url)) {
+      preconnectOrigin(CLOUDFLARE_WORKER_URL);
+    }
+
+    // Reuse or create a hidden warming video element
     if (activeWarmVideoEl && activeWarmVideoUrl && activeWarmVideoUrl !== url) {
       activeWarmVideoEl.removeAttribute("src");
       activeWarmVideoEl.load();
@@ -78,29 +87,40 @@ function warmMediaElement(url?: string | null): void {
     }
 
     const video = document.createElement("video");
-    video.preload = "metadata";
+    // 'auto' tells the browser it can download the full video even if not played yet.
+    // However, some mobile browsers ignore this for cellular connections.
+    video.preload = "auto";
     video.muted = true;
     video.playsInline = true;
     video.src = url;
     video.crossOrigin = "anonymous";
     video.style.display = "none";
+    video.style.position = "fixed";
+    video.style.pointerEvents = "none";
+    video.style.opacity = "0";
 
     const cleanup = () => {
       window.clearTimeout(timeoutId);
       video.removeEventListener("loadedmetadata", cleanup);
       video.removeEventListener("canplay", cleanup);
       video.removeEventListener("error", cleanup);
-      video.removeAttribute("src");
-      video.load();
-      video.remove();
-      if (activeWarmVideoEl === video) {
-        activeWarmVideoEl = null;
-        activeWarmVideoUrl = null;
-      }
+      
+      // Instead of removal, keep it for a few seconds to preserve buffer 
+      // but ensure it's not wasting bandwidth infinitely
+      setTimeout(() => {
+        if (activeWarmVideoEl === video) {
+          video.removeAttribute("src");
+          video.load();
+          video.remove();
+          activeWarmVideoEl = null;
+          activeWarmVideoUrl = null;
+        }
+      }, 5000);
     };
 
-    const timeoutId = window.setTimeout(cleanup, 8000);
+    const timeoutId = window.setTimeout(cleanup, 10000);
     video.addEventListener("loadedmetadata", cleanup, { once: true });
+    // 'canplay' is the best indicator that we have enough to start
     video.addEventListener("canplay", cleanup, { once: true });
     video.addEventListener("error", cleanup, { once: true });
 

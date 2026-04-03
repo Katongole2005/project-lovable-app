@@ -1,4 +1,4 @@
-﻿import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Play,
   Pause,
@@ -33,6 +33,9 @@ interface CinematicVideoPlayerProps {
   startTime?: number;
   subtitles?: SubtitleTrack[];
   skipSegments?: SkipSegment[];
+  onPlayNext?: () => void;
+  hasNextEpisode?: boolean;
+
 }
 
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -47,6 +50,9 @@ export function CinematicVideoPlayer({
   startTime = 0,
   subtitles = [],
   skipSegments = [],
+  onPlayNext,
+  hasNextEpisode = false,
+
 }: CinematicVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -642,7 +648,23 @@ export function CinematicVideoPlayer({
     el.style.setProperty("--preview-left", previewTime !== null ? `${previewPosition}px` : "0px");
     el.style.setProperty("--buffered-w", `${bufferedPercent}%`);
     el.style.setProperty("--progress-w", `${progressPercent}%`);
+    el.style.setProperty("--player-accent", "#ff8a3d");
+    el.style.setProperty("--player-accent-glow", "rgba(255, 138, 61, 0.4)");
   }, [brightness, swipeIndicator, previewPosition, previewTime, bufferedPercent, progressPercent]);
+
+  const handleNextEpisode = useCallback(() => {
+    if (onPlayNext) {
+      onPlayNext();
+    }
+  }, [onPlayNext]);
+
+
+
+
+
+
+
+
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -732,17 +754,26 @@ export function CinematicVideoPlayer({
             {/* â”€â”€â”€ BUFFERING INDICATOR â”€â”€â”€ */}
             {isBuffering && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                <div className="flex items-center gap-4 rounded-full border border-white/12 bg-black/52 px-5 py-4 shadow-[0_24px_80px_rgba(0,0,0,0.48)] backdrop-blur-2xl">
-                  <div className="relative h-14 w-14">
-                    <div className="absolute inset-0 rounded-full border border-white/10" />
-                    <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-[#ff7a18] border-r-[#ff4d6d]" />
-                    <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-white/6">
-                      <div className="h-2.5 w-2.5 rounded-full bg-[#ff8a3d] shadow-[0_0_18px_rgba(255,122,24,0.95)]" />
+                <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="relative h-20 w-20">
+                    <svg className="h-full w-full animate-spin text-[#ff8a3d]" viewBox="0 0 100 100">
+                      <circle className="opacity-10" cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="3" fill="none" />
+                      <path
+                        className="opacity-90"
+                        fill="currentColor"
+                        d="M50 5A45 45 0 0 1 95 50"
+                        strokeLinecap="round"
+                        strokeWidth="3"
+                        stroke="currentColor"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-3 w-3 rounded-full bg-[#ff8a3d] shadow-[0_0_20px_#ff8a3d]" />
                     </div>
                   </div>
-                  <div className="text-left">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/38">Streaming</p>
-                    <p className="mt-1 text-sm font-semibold text-white/88">Buffering playback</p>
+                  <div className="flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-black/40 px-6 py-3 backdrop-blur-xl shadow-2xl">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#ff8a3d]/80">Loading</p>
+                    <p className="text-xs font-semibold text-white/90">Optimizing Stream</p>
                   </div>
                 </div>
               </div>
@@ -963,6 +994,29 @@ export function CinematicVideoPlayer({
                   <span className="text-sm font-semibold text-white">Skip {activeSkipSegment.label}</span>
                 </motion.button>
               )}
+
+              {/* Next Episode Button */}
+              {hasNextEpisode && duration > 0 && currentTime > duration * 0.5 && (
+                <motion.button
+                  key="next-ep-btn"
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  onClick={(e) => { e.stopPropagation(); handleNextEpisode(); }}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => e.stopPropagation()}
+                  className="absolute bottom-24 right-4 md:right-8 z-30 flex items-center gap-4 rounded-[28px] border border-white/10 bg-black/50 p-1.5 pr-6 text-left shadow-[0_24px_60px_rgba(0,0,0,0.6)] backdrop-blur-3xl transition-all hover:bg-black/70 active:scale-95 group md:bottom-36"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff8a3d] text-white shadow-[0_0_20px_rgba(255,138,61,0.4)] group-hover:scale-105 group-hover:rotate-6 transition-transform">
+                    <FastForward className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ff8a3d]/90">Up Next</span>
+                    <span className="text-sm font-bold text-white/95">Next Episode</span>
+                  </div>
+                </motion.button>
+              )}
+
             </AnimatePresence>
 
             {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
@@ -1347,7 +1401,7 @@ function CtrlBtn({
       onTouchEnd={(e) => e.stopPropagation()}
       title={title}
         className={cn(
-        "flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white shadow-[0_10px_30px_rgba(0,0,0,0.24)] backdrop-blur-xl transition-transform duration-150 hover:scale-[1.03] hover:bg-white/[0.08] active:scale-95",
+        "flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white shadow-[0_4px_24px_rgba(0,0,0,0.25)] backdrop-blur-3xl transition-all duration-200 hover:scale-[1.05] hover:bg-white/[0.08] hover:border-white/20 active:scale-95 group",
         className
       )}
     >
@@ -1383,16 +1437,18 @@ function DoubleTapRipple({ side, seconds, onDone }: { side: "left" | "right"; se
       {/* Ripple glow */}
       <div
         className={cn(
-          "absolute inset-0 animate-in fade-in-0 duration-150 bg-[radial-gradient(ellipse_at_center,rgba(255,138,61,0.2)_0%,transparent_70%)]",
-          side === "left" ? "rounded-r-[60%]" : "rounded-l-[60%]"
+          "absolute inset-0 animate-in fade-in-0 duration-200 bg-[radial-gradient(ellipse_at_center,var(--player-accent-glow)_0%,transparent_75%)]",
+          side === "left" ? "rounded-r-[70%]" : "rounded-l-[70%]"
         )}
       />
-      <div className="flex flex-col items-center gap-1.5 animate-in zoom-in-75 duration-150">
-        {side === "left"
-          ? <RotateCcw className="w-7 h-7 text-[#ffd1b0] drop-shadow-[0_0_8px_rgba(255,138,61,0.75)]" />
-          : <RotateCw className="w-7 h-7 text-[#ffd1b0] drop-shadow-[0_0_8px_rgba(255,138,61,0.75)]" />
-        }
-        <span className="text-[#ffd1b0] text-xs font-bold tracking-[0.22em] drop-shadow-lg">{seconds}s</span>
+      <div className="flex flex-col items-center gap-2 animate-in zoom-in-50 duration-200">
+        <div className="p-4 rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
+          {side === "left"
+            ? <RotateCcw className="w-8 h-8 text-[#ffd1b0] drop-shadow-[0_0_12px_var(--player-accent-glow)]" />
+            : <RotateCw className="w-8 h-8 text-[#ffd1b0] drop-shadow-[0_0_12px_var(--player-accent-glow)]" />
+          }
+        </div>
+        <span className="text-[#ffd1b0] text-sm font-black tracking-[0.25em] drop-shadow-2xl">{seconds}s</span>
       </div>
     </div>
   );
