@@ -2,7 +2,6 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
 import { buildMediaUrl, getImageUrl, getOptimizedBackdropUrl, primeMediaAvailability } from "@/lib/api";
-import { motion, AnimatePresence } from "framer-motion";
 import { Star, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 
@@ -182,7 +181,7 @@ export function HeroCarousel({
           {showViewAll && <button onClick={onViewAll} className="text-sm font-medium text-white/70 hover:text-white transition-colors">View all</button>}
         </div>
 
-        <motion.div className="relative flex items-center justify-center py-2" style={carouselPerspectiveStyle} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div className="relative flex items-center justify-center py-2" style={carouselPerspectiveStyle} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <div className="relative w-[160px] h-[240px]">
             {mobileDeck.map((movie, index) => {
               const offset = index - selectedIndex;
@@ -200,7 +199,7 @@ export function HeroCarousel({
               const zIndex = 20 - Math.abs(adjustedOffset) * 5;
               if (!isVisible) return null;
               return (
-                <motion.div
+                <div
                   key={movie.mobifliks_id}
                   className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out"
                   style={{
@@ -212,7 +211,7 @@ export function HeroCarousel({
                   onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}
                 >
                   <div className={cn("w-full h-full rounded-xl overflow-hidden shadow-2xl transition-shadow duration-500", isSelected && "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]")}>
-                    <motion.img
+                    <img
                       src={getImageUrl(movie.image_url)}
                       alt={movie.title}
                       className={cn("w-full h-full object-cover", isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns")}
@@ -221,31 +220,22 @@ export function HeroCarousel({
                     />
                     <div className={cn("absolute inset-0 bg-gradient-to-t from-black/40 to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-50")} />
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
-        </motion.div>
+        </div>
 
-        <AnimatePresence mode="wait">
-          {currentMovie && (
-            <motion.div
-              key={currentMovie.mobifliks_id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="relative z-10 mt-3 text-center"
-            >
+        {currentMovie && (
+            <div key={currentMovie.mobifliks_id} className="relative z-10 mt-3 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <h3 className="text-lg font-display font-bold text-white tracking-tight drop-shadow-lg">{currentMovie.title}</h3>
                 <span className="px-2.5 py-1 text-[10px] font-bold rounded-md text-black bg-gradient-to-r from-[hsl(45,100%,55%)] to-[hsl(35,100%,50%)] shadow-[0_0_12px_hsl(45_100%_50%/0.3)]">
                   IMDB {getImdbRating(currentMovie)}
                 </span>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+        )}
 
         <div className="relative z-10 mt-3">
           <div className="flex flex-col items-center gap-2">
@@ -293,35 +283,21 @@ export function HeroCarousel({
 
           <div className="absolute inset-0 bg-[#0a0a0f]" />
 
-          <AnimatePresence initial={false}>
-            {backdropSrc && (
-              <motion.div
-                key={`backdrop-${selectedIndex}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute inset-0"
-              >
-                <motion.img
+          {backdropSrc && (
+              <div key={`backdrop-${selectedIndex}`} className="absolute inset-0">
+                <img
                   src={backdropSrc}
                   alt=""
                   className="w-full h-full object-cover will-change-transform"
                   loading="eager"
                   fetchPriority="high"
-                  initial={deviceProfile.allowAmbientEffects ? { scale: 1.08, x: "-1%" } : false}
-                  animate={deviceProfile.allowAmbientEffects ? { scale: 1, x: "0%" } : undefined}
-                  transition={deviceProfile.allowAmbientEffects ? { duration: 10, ease: [0.25, 0.1, 0.25, 1] } : undefined}
+                  style={deviceProfile.allowAmbientEffects ? { transform: "scale(1.02)" } : undefined}
                 />
-              </motion.div>
-            )}
-            {!backdropSrc && (
-              <motion.div
+              </div>
+          )}
+          {!backdropSrc && (
+              <div
                 key={`backdrop-fallback-${selectedIndex}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
                 className="absolute inset-0 opacity-40 blur-[80px] pointer-events-none"
                 style={{
                   backgroundImage: `url(${getImageUrl(currentMovie.image_url)})`,
@@ -329,8 +305,7 @@ export function HeroCarousel({
                   backgroundPosition: 'center'
                 }}
               />
-            )}
-          </AnimatePresence>
+          )}
 
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/40" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
@@ -342,14 +317,7 @@ export function HeroCarousel({
           <div className="relative z-10 h-full flex hero-cinematic-container">
 
             <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 pb-8 lg:pb-12">
-              <AnimatePresence initial={false}>
-                <motion.div
-                  key={`info-${selectedIndex}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, position: "absolute" as const }}
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                >
+                <div key={`info-${selectedIndex}`}>
                   <div className="flex items-end gap-4 lg:gap-6 mb-4 lg:mb-5">
                     <span
                       className="text-6xl lg:text-8xl xl:text-9xl font-black text-white/10 leading-none font-display select-none hero-info-track-number"
@@ -426,8 +394,7 @@ export function HeroCarousel({
                       More
                     </button>
                   </div>
-                </motion.div>
-              </AnimatePresence>
+                </div>
 
               <div className="flex items-center gap-3 mt-6 lg:mt-8">
                 <button
@@ -504,26 +471,12 @@ export function HeroCarousel({
             </div>
 
             <div className="hidden lg:flex items-end pb-8 pr-6 xl:pr-10 min-w-[380px]">
-              <AnimatePresence initial={false}>
-                <motion.div
-                  key={`cards-${selectedIndex}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, position: "absolute" as const }}
-                  transition={{ duration: 0.5 }}
-                  className="flex items-end gap-4 xl:gap-5"
-                >
+                <div key={`cards-${selectedIndex}`} className="flex items-end gap-4 xl:gap-5">
                   {getSideCards().map(({ movie, originalIndex }, cardIdx) => (
-                    <motion.button
+                    <button
                       key={movie.mobifliks_id}
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        delay: 0.15 + cardIdx * 0.08,
-                        duration: 0.5,
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
                       className="relative flex flex-col items-center cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-xl hover:-translate-y-1 hover:scale-105 active:scale-95 transition-transform duration-300"
+                      style={{ transitionDelay: `${150 + cardIdx * 80}ms` }}
                       onClick={() => scrollTo(originalIndex)}
                       data-testid={`button-hero-side-card-${originalIndex}`}
                       aria-label={`Go to ${movie.title}`}
@@ -540,10 +493,9 @@ export function HeroCarousel({
                       <p className="mt-2.5 text-xs text-white/60 text-center font-medium max-w-[100px] xl:max-w-[120px] truncate group-hover:text-white/90 transition-colors">
                         {movie.title}
                       </p>
-                    </motion.button>
+                    </button>
                   ))}
-                </motion.div>
-              </AnimatePresence>
+                </div>
             </div>
           </div>
 

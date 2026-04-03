@@ -1,5 +1,4 @@
 import { Play, Star, Heart, TrendingUp, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
 import type { Movie } from "@/types/movie";
 import { buildMediaUrl, getImageUrl, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -219,15 +218,15 @@ export function MovieCardSkeleton({ className }: { className?: string }) {
         <div className="absolute inset-0 shimmer opacity-50" />
         <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">
           <div className="h-3 bg-muted/40 rounded-full w-2/3 shimmer" />
-          <motion.div className="h-2 bg-muted/30 rounded-full w-1/3 shimmer" style={{ animationDelay: "0.3s" }} />
+          <div className="h-2 bg-muted/30 rounded-full w-1/3 shimmer" style={{ animationDelay: "0.3s" }} />
         </div>
-        <motion.div className="absolute top-2 left-2 h-4 w-10 rounded-full bg-muted/30 shimmer" style={{ animationDelay: "0.15s" }} />
+        <div className="absolute top-2 left-2 h-4 w-10 rounded-full bg-muted/30 shimmer" style={{ animationDelay: "0.15s" }} />
       </div>
       <div className="mt-3 space-y-2">
         <div className="h-4 bg-muted/30 rounded-lg shimmer w-4/5" />
         <div className="flex gap-2">
-          <motion.div className="h-3 bg-muted/20 rounded-lg shimmer w-10" style={{ animationDelay: "0.1s" }} />
-          <motion.div className="h-3 bg-muted/20 rounded-lg shimmer w-8" style={{ animationDelay: "0.2s" }} />
+          <div className="h-3 bg-muted/20 rounded-lg shimmer w-10" style={{ animationDelay: "0.1s" }} />
+          <div className="h-3 bg-muted/20 rounded-lg shimmer w-8" style={{ animationDelay: "0.2s" }} />
         </div>
       </div>
     </div>

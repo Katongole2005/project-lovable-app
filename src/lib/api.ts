@@ -16,6 +16,8 @@ const mediaAvailabilityCache = new Map<string, MediaAvailability>();
 const mediaAvailabilityRequests = new Map<string, Promise<MediaAvailability>>();
 const preconnectedOrigins = new Set<string>();
 const warmedMediaUrls = new Set<string>();
+let activeWarmVideoEl: HTMLVideoElement | null = null;
+let activeWarmVideoUrl: string | null = null;
 
 export const getImageUrl = (url?: string) => {
   if (!url) return fallbackPoster;
@@ -67,6 +69,14 @@ function warmMediaElement(url?: string | null): void {
   if (!url || typeof document === "undefined" || warmedMediaUrls.has(url)) return;
 
   try {
+    if (activeWarmVideoEl && activeWarmVideoUrl && activeWarmVideoUrl !== url) {
+      activeWarmVideoEl.removeAttribute("src");
+      activeWarmVideoEl.load();
+      activeWarmVideoEl.remove();
+      activeWarmVideoEl = null;
+      activeWarmVideoUrl = null;
+    }
+
     const video = document.createElement("video");
     video.preload = "metadata";
     video.muted = true;
@@ -83,6 +93,10 @@ function warmMediaElement(url?: string | null): void {
       video.removeAttribute("src");
       video.load();
       video.remove();
+      if (activeWarmVideoEl === video) {
+        activeWarmVideoEl = null;
+        activeWarmVideoUrl = null;
+      }
     };
 
     const timeoutId = window.setTimeout(cleanup, 8000);
@@ -92,6 +106,8 @@ function warmMediaElement(url?: string | null): void {
 
     document.body.appendChild(video);
     warmedMediaUrls.add(url);
+    activeWarmVideoEl = video;
+    activeWarmVideoUrl = url;
     video.load();
   } catch {
     // Ignore warmup failures.

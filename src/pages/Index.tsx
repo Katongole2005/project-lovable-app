@@ -23,6 +23,7 @@ const CinematicVideoPlayer = lazy(loadCinematicVideoPlayer);
 const FilterModal = lazy(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
 const AmbientParticles = lazy(() => import("@/components/AmbientParticles").then(module => ({ default: module.AmbientParticles })));
 import { DynamicBackground } from "@/components/DynamicBackground";
+import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { Button } from "@/components/ui/button";
@@ -146,6 +147,11 @@ export default function Index() {
     : (pathToView[location.pathname] ?? "home");
 
   const activeTab = viewMode === "home" ? "home" : viewMode;
+  const deviceProfile = useDeviceProfile();
+  const homeFeedLimit = deviceProfile.isMobile ? 16 : deviceProfile.isCompact ? 24 : 32;
+  const originalsInitialLimit = deviceProfile.isMobile ? 24 : 36;
+  const heroMovieLimit = deviceProfile.isMobile ? 8 : 12;
+  const heroSeriesLimit = deviceProfile.isMobile ? 2 : 4;
 
 
   // Data states
@@ -242,22 +248,22 @@ export default function Index() {
   });
 
   const { data: moviesQueryData, isLoading: isMoviesLoading } = useQuery({
-    queryKey: ["movies", "recent", 1],
-    queryFn: () => fetchMoviesSorted("movie", 40, 1),
+    queryKey: ["movies", "recent", 1, homeFeedLimit],
+    queryFn: () => fetchMoviesSorted("movie", homeFeedLimit, 1),
     staleTime: 1000 * 60 * 10,
     enabled: viewMode === "movies" || viewMode === "home",
   });
 
   const { data: seriesQueryData, isLoading: isSeriesLoading } = useQuery({
-    queryKey: ["series", "recent", 1],
-    queryFn: () => fetchSeries(40, 1),
+    queryKey: ["series", "recent", 1, homeFeedLimit],
+    queryFn: () => fetchSeries(homeFeedLimit, 1),
     staleTime: 1000 * 60 * 10,
     enabled: viewMode === "series" || viewMode === "home",
   });
 
   const { data: originalsQueryData, isLoading: isOriginalsLoading } = useQuery({
-    queryKey: ["movies", "originals", 1],
-    queryFn: () => fetchOriginals(60, 1),
+    queryKey: ["movies", "originals", 1, originalsInitialLimit],
+    queryFn: () => fetchOriginals(originalsInitialLimit, 1),
     staleTime: 1000 * 60 * 10,
     enabled: viewMode === "originals",
   });
@@ -303,7 +309,7 @@ export default function Index() {
     if (continueWatching.length === 0) return;
 
     scheduleLowPriorityTask(() => {
-      continueWatching.slice(0, 3).forEach((item) => {
+      continueWatching.slice(0, 1).forEach((item) => {
         const mediaUrl = buildMediaUrl({
           url: item.url,
           title: item.episodeInfo ? `${item.title} - ${item.episodeInfo}` : item.title,
@@ -372,7 +378,7 @@ export default function Index() {
     }
   }, []);
 
-  const prefetchSeriesDetailsFor = useCallback((items: Array<Movie | Series>, limit = 8) => {
+  const prefetchSeriesDetailsFor = useCallback((items: Array<Movie | Series>, limit = 4) => {
     const candidates = items
       .filter((item): item is Movie => item.type === "series")
       .filter((item) => !prefetchedSeriesDetailsRef.current.has(item.mobifliks_id))
@@ -402,13 +408,13 @@ export default function Index() {
         const baseForTrending = tData.length > 0 ? tData : mData;
         const sortedTrending = sortByYearDesc(baseForTrending);
 
-        // Hero carousel: up to 20 movies + 5 series
-        const heroMovies = sortedTrending.filter((m: Movie) => m.type === 'movie').slice(0, 20);
+        // Hero carousel: keep above-the-fold work small.
+        const heroMovies = sortedTrending.filter((m: Movie) => m.type === 'movie').slice(0, heroMovieLimit);
         const heroSeries = (seriesQueryData && seriesQueryData.length > 0)
-          ? seriesQueryData.slice(0, 5)
-          : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, 5);
+          ? seriesQueryData.slice(0, heroSeriesLimit)
+          : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, heroSeriesLimit);
 
-        const newTrending = [...heroMovies, ...heroSeries].slice(0, 25);
+        const newTrending = [...heroMovies, ...heroSeries].slice(0, heroMovieLimit + heroSeriesLimit);
         preloadHeroAssets(newTrending);
         startTransition(() => {
           setTrending(newTrending);
@@ -424,48 +430,61 @@ export default function Index() {
         }
       }
 
+      const allAvailable = [
+        ...(trendingData || []),
+        ...(moviesQueryData || []),
+        ...(seriesQueryData || []),
+      ];
+
+      const vjSet = new Set<string>();
+      ["Junior", "Jingo", "Ice P", "Emmy", "Kevo"].forEach(vj => vjSet.add(vj));
+      allAvailable.forEach((movie: Movie) => {
+        if (movie.vj_name && movie.vj_name.trim()) {
+          vjSet.add(movie.vj_name.trim());
+        }
+      });
+
+      const vjList = Array.from(vjSet)
+        .filter(vj => vj.toLowerCase() !== "juniorv")
+        .sort((a, b) => a.localeCompare(b))
+        .map(vj => ({ id: vj, label: `VJ ${vj}` }));
+
+      startTransition(() => {
+        if (vjList.length > 0) {
+          setAllVJs(vjList);
+        }
+      });
+    }
+    loadData();
+  }, [heroMovieLimit, heroSeriesLimit, moviesQueryData, preloadHeroAssets, seriesQueryData, sortByYearDesc, trendingData]);
+
+  useEffect(() => {
+    if (!showDeferredHomeSections) return;
+
+    let cancelled = false;
+
+    void (async () => {
       try {
         const statsRes = await fetchStats();
-
-        const allAvailable = [
-          ...(trendingData || []),
-          ...(moviesQueryData || []),
-          ...(seriesQueryData || []),
-        ];
-
-        const vjSet = new Set<string>();
-        ["Junior", "Jingo", "Ice P", "Emmy", "Kevo"].forEach(vj => vjSet.add(vj));
-        allAvailable.forEach((movie: Movie) => {
-          if (movie.vj_name && movie.vj_name.trim()) {
-            vjSet.add(movie.vj_name.trim());
-          }
-        });
-
-        const vjList = Array.from(vjSet)
-          .filter(vj => vj.toLowerCase() !== "juniorv")
-          .sort((a, b) => a.localeCompare(b))
-          .map(vj => ({ id: vj, label: `VJ ${vj}` }));
+        if (!statsRes || cancelled) return;
 
         startTransition(() => {
-          if (vjList.length > 0) {
-            setAllVJs(vjList);
-          }
-
-          if (statsRes) {
-            setPopularSearches(
-              statsRes.popular_searches
-                .map((s: string) => s.replace(/\s*\(\d+ searches\)\s*$/g, "").trim())
-                .filter(Boolean)
-                .slice(0, 8)
-            );
-          }
+          setPopularSearches(
+            statsRes.popular_searches
+              .map((s: string) => s.replace(/\s*\(\d+ searches\)\s*$/g, "").trim())
+              .filter(Boolean)
+              .slice(0, 8)
+          );
         });
       } catch (error) {
         console.error("Error loading extra data:", error);
       }
-    }
-    loadData();
-  }, [moviesQueryData, preloadHeroAssets, seriesQueryData, sortByYearDesc, trendingData]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showDeferredHomeSections]);
 
   useEffect(() => {
     const combinedSeries: Movie[] = [];
@@ -477,7 +496,7 @@ export default function Index() {
       combinedSeries.push(item);
     }
 
-    prefetchSeriesDetailsFor(combinedSeries, viewMode === "series" ? 24 : 16);
+    prefetchSeriesDetailsFor(combinedSeries, viewMode === "series" ? 8 : 4);
   }, [categoryMovies, prefetchSeriesDetailsFor, recentSeries, trending, viewMode]);
 
   // Deep-link: open movie/series modal when visiting /movie/:id or /series/:id directly
