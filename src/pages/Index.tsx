@@ -12,13 +12,14 @@ import { FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
 
 const loadHeroCarousel = () => import("@/components/HeroCarousel").then(module => ({ default: module.HeroCarousel }));
+const loadCinematicVideoPlayer = () => import("@/components/CinematicVideoPlayer").then(module => ({ default: module.CinematicVideoPlayer }));
 const HeroCarousel = lazy(loadHeroCarousel);
 const ContinueWatchingRow = lazy(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
 const RecommendationRow = lazy(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
 const Top10Row = lazy(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
 const SearchBar = lazy(() => import("@/components/SearchBar").then(module => ({ default: module.SearchBar })));
 const MovieModal = lazy(() => import("@/components/MovieModal").then(module => ({ default: module.MovieModal })));
-const CinematicVideoPlayer = lazy(() => import("@/components/CinematicVideoPlayer").then(module => ({ default: module.CinematicVideoPlayer })));
+const CinematicVideoPlayer = lazy(loadCinematicVideoPlayer);
 const FilterModal = lazy(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
 const AmbientParticles = lazy(() => import("@/components/AmbientParticles").then(module => ({ default: module.AmbientParticles })));
 import { DynamicBackground } from "@/components/DynamicBackground";
@@ -42,8 +43,7 @@ import {
   preloadImage,
   getImageUrl,
   getOptimizedBackdropUrl,
-  buildMediaUrl,
-  resolveMediaAvailability
+  buildMediaUrl
 } from "@/lib/api";
 import type { FilterOptions } from "@/lib/api";
 import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
@@ -241,6 +241,24 @@ export default function Index() {
     if (!shouldShowHero || viewMode !== "home") return;
     void loadHeroCarousel();
   }, [shouldShowHero, viewMode]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (viewMode !== "home" && viewMode !== "movies" && viewMode !== "series" && !isModalOpen) {
+      return;
+    }
+
+    scheduleLowPriorityTask(() => {
+      if (!cancelled) {
+        void loadCinematicVideoPlayer();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isModalOpen, viewMode]);
 
   // Dynamic SEO per view/modal
   const seoTitleMap: Record<ViewMode, string> = {
@@ -542,13 +560,7 @@ export default function Index() {
 
   selectedMovieRef.current = selectedMovie;
 
-  const handlePlayVideo = useCallback(async (url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
-    const mediaStatus = await resolveMediaAvailability(url);
-    if (!mediaStatus.available) {
-      toast.error("This title is not currently playable from Mobifliks.");
-      return;
-    }
-
+  const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
     const movie = selectedMovieRef.current;
     const parsedEpisode = parseEpisodeInfoFromTitle(title);
     const selectedSeries = movie?.type === "series" ? movie as Series : null;

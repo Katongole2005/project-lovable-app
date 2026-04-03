@@ -679,6 +679,7 @@ export function CinematicVideoPlayer({
               src={videoUrl}
               className="relative z-[2] h-full w-full object-contain"
               autoPlay
+              preload="auto"
               playsInline
               onPlay={() => {
                 setIsPlaying(true);
