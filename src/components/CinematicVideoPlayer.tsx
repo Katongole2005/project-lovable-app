@@ -849,17 +849,21 @@ export function CinematicVideoPlayer({
             {/* â”€â”€â”€ CENTER PLAY BUTTON â”€â”€â”€ */}
             <div className={cn(
               "absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-300",
-              showControls && !isPlaying && !isBuffering ? "opacity-100 scale-100" : "opacity-0 scale-75"
+              showControls && !isBuffering ? "opacity-100 scale-100" : "opacity-0 scale-75"
             )}>
               <button
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                 onTouchStart={(e) => e.stopPropagation()}
                 onTouchEnd={(e) => e.stopPropagation()}
-                aria-label="Play"
-                title="Play"
+                aria-label={isPlaying ? "Pause" : "Play"}
+                title={isPlaying ? "Pause" : "Play"}
                 className="w-20 h-20 rounded-full border-2 border-[#ff8a3d]/60 bg-black/40 backdrop-blur-xl flex items-center justify-center pointer-events-auto hover:bg-[#ff8a3d]/10 hover:border-[#ff8a3d] hover:scale-110 active:scale-95 transition-all duration-200 shadow-[0_0_40px_rgba(200,245,71,0.2),inset_0_0_20px_rgba(200,245,71,0.05)]"
               >
-                <Play className="w-9 h-9 text-[#ff8a3d] fill-[#ff8a3d] ml-1 drop-shadow-lg" />
+                {isPlaying ? (
+                  <Pause className="h-9 w-9 text-[#ff8a3d] drop-shadow-lg" />
+                ) : (
+                  <Play className="ml-1 h-9 w-9 fill-[#ff8a3d] text-[#ff8a3d] drop-shadow-lg" />
+                )}
               </button>
             </div>
 
