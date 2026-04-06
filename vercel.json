@@ -1,6 +1,20 @@
 {
   "rewrites": [
     {
+      "source": "/movie/:id",
+      "has": [{ "type": "header", "key": "user-agent", "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|facebookexternalhit|Twitterbot|LinkedInBot).*" }],
+      "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/seo-renderer?type=movie&id=:id"
+    },
+    {
+      "source": "/series/:id",
+      "has": [{ "type": "header", "key": "user-agent", "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|facebookexternalhit|Twitterbot|LinkedInBot).*" }],
+      "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/seo-renderer?type=series&id=:id"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/sitemap-generator"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -4,4 +4,4 @@ Disallow: /admin
 Disallow: /auth
 Disallow: /profile
 
-Sitemap: https://premiere-point-web.lovable.app/sitemap.xml
+Sitemap: https://moviebay.ug/sitemap.xml

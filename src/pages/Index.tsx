@@ -51,7 +51,8 @@ import type { FilterOptions } from "@/lib/api";
 import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
 import type { Movie, Series, ContinueWatching } from "@/types/movie";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { useSeo, buildMovieJsonLd } from "@/hooks/useSeo";
+import { useDocumentSEO } from "@/hooks/useDocumentSEO";
+import { buildMovieJsonLd } from "@/hooks/useSeo";
 import { toSlug, fromSlug } from "@/lib/slug";
 import { toast } from "sonner";
 
@@ -335,14 +336,19 @@ export default function Index() {
     ? selectedMovie.description || `Watch ${selectedMovie.title} translated to Luganda by top VJs on Moviebay Uganda`
     : undefined;
 
-  useSeo({
-    title: seoTitle || undefined,
+  useDocumentSEO({
+    title: selectedMovie?.title || seoTitle || undefined,
+    vjName: selectedMovie?.vj_name,
+    year: selectedMovie?.year,
     description: seoDescription,
-    canonical: `/${viewMode === "home" ? "" : viewMode}`,
-    ogImage: selectedMovie?.backdrop_url || selectedMovie?.image_url || undefined,
-    ogType: selectedMovie && isModalOpen ? "video.movie" : "website",
+    imageUrl: selectedMovie?.backdrop_url || selectedMovie?.image_url || undefined,
+    genres: selectedMovie?.genres,
+    canonicalPath: selectedMovie && isModalOpen 
+      ? `/${selectedMovie.type === 'series' ? 'series' : 'movie'}/${selectedMovie.mobifliks_id}`
+      : `/${viewMode === "home" ? "" : viewMode}`,
     jsonLd: selectedMovie && isModalOpen ? buildMovieJsonLd(selectedMovie) : undefined,
   });
+
 
   const sortByYearDesc = useCallback((items: Movie[]) => {
     return [...items].sort((a, b) => {
