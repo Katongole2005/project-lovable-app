@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Play,
   Pause,
+  Volume1,
   Volume2,
   VolumeX,
   Maximize,
@@ -16,6 +17,7 @@ import {
   Keyboard,
   Captions,
   FastForward,
+  SkipForward,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -69,6 +71,7 @@ export function CinematicVideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [hasEnded, setHasEnded] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -264,8 +267,6 @@ export function CinematicVideoPlayer({
   const resetControlsTimeout = useCallback(() => {
     clearControlsTimeout();
     setShowControls(true);
-    setShowSpeedMenu(false);
-    setShowSubtitlesMenu(false);
     if (isPlaying && !isScrubbing) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
@@ -278,6 +279,70 @@ export function CinematicVideoPlayer({
     resetControlsTimeout();
     return () => { if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current); };
   }, [isPlaying, resetControlsTimeout]);
+
+  const togglePlay = useCallback(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        persistProgress(videoRef.current.currentTime, videoRef.current.duration || duration);
+      } else {
+        videoRef.current.play();
+      }
+    }
+  }, [isPlaying, persistProgress, duration]);
+
+  const skip = useCallback((seconds: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
+      resetControlsTimeout();
+    }
+  }, [duration, resetControlsTimeout]);
+
+  const toggleMute = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  }, [isMuted]);
+
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+      videoRef.current.muted = newVolume === 0;
+      setVolume(newVolume);
+      setIsMuted(newVolume === 0);
+    }
+  }, []);
+
+  const exitFullscreen = useCallback(async () => {
+    try { await document.exitFullscreen(); setIsFullscreen(false); } catch { /* */ }
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!containerRef.current) return;
+    if (!isFullscreen) {
+      try { await containerRef.current.requestFullscreen(); setIsFullscreen(true); } catch { /* */ }
+    } else { exitFullscreen(); }
+  }, [isFullscreen, exitFullscreen]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const cycleSpeed = useCallback((direction: number) => {
+    const currentIdx = PLAYBACK_SPEEDS.indexOf(playbackSpeed);
+    setPlaybackSpeed(PLAYBACK_SPEEDS[Math.max(0, Math.min(currentIdx + direction, PLAYBACK_SPEEDS.length - 1))]);
+  }, [playbackSpeed]);
+
+  const togglePiP = useCallback(async () => {
+    if (!videoRef.current) return;
+    try {
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else if (videoRef.current.requestPictureInPicture) await videoRef.current.requestPictureInPicture();
+    } catch { /* not supported */ }
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -304,77 +369,16 @@ export function CinematicVideoPlayer({
         case "Escape":
           if (showKeyboardShortcuts) { setShowKeyboardShortcuts(false); break; }
           if (isFullscreen) exitFullscreen();
-          else handleClose();
+          else onClose();
           break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isFullscreen, isPlaying, playbackSpeed, volume, showKeyboardShortcuts]);
-
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        persistProgress(videoRef.current.currentTime, videoRef.current.duration || duration);
-      } else {
-        videoRef.current.play();
-      }
-    }
-  };
-
-  const skip = (seconds: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
-      resetControlsTimeout();
-    }
-  };
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const handleVolumeChange = (newVolume: number) => {
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-      videoRef.current.muted = newVolume === 0;
-      setVolume(newVolume);
-      setIsMuted(newVolume === 0);
-    }
-  };
-
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-    if (!isFullscreen) {
-      try { await containerRef.current.requestFullscreen(); setIsFullscreen(true); } catch { /* */ }
-    } else { exitFullscreen(); }
-  };
-
-  const exitFullscreen = async () => {
-    try { await document.exitFullscreen(); setIsFullscreen(false); } catch { /* */ }
-  };
-
-  useEffect(() => {
-    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, []);
-
-  const cycleSpeed = (direction: number) => {
-    const currentIdx = PLAYBACK_SPEEDS.indexOf(playbackSpeed);
-    setPlaybackSpeed(PLAYBACK_SPEEDS[Math.max(0, Math.min(currentIdx + direction, PLAYBACK_SPEEDS.length - 1))]);
-  };
-
-  const togglePiP = async () => {
-    if (!videoRef.current) return;
-    try {
-      if (document.pictureInPictureElement) await document.exitPictureInPicture();
-      else if (videoRef.current.requestPictureInPicture) await videoRef.current.requestPictureInPicture();
-    } catch { /* not supported */ }
-  };
+  }, [
+    isOpen, isFullscreen, showKeyboardShortcuts, volume, subtitles,
+    togglePlay, skip, handleVolumeChange, toggleMute, toggleFullscreen, cycleSpeed, togglePiP, resetControlsTimeout, exitFullscreen, onClose
+  ]);
 
   const handleLongPressStart = useCallback(() => {
     longPressTimerRef.current = setTimeout(() => {
@@ -401,8 +405,8 @@ export function CinematicVideoPlayer({
     if (e.touches.length !== 1) return;
     const touch = e.touches[0];
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const relativeX = (touch.clientX - rect.left) / rect.width;
-    const side: "left" | "right" | null = relativeX < 0.35 ? "left" : relativeX > 0.65 ? "right" : null;
+    const zoneWidth = Math.min(rect.width * 0.35, 240);
+    const side: "left" | "right" | null = touch.clientX < rect.left + zoneWidth ? "left" : touch.clientX > rect.right - zoneWidth ? "right" : null;
     swipeRef.current = { startY: touch.clientY, startX: touch.clientX, side, startValue: side === "left" ? brightness : volume, active: false };
   }, [brightness, volume]);
 
@@ -450,8 +454,8 @@ export function CinematicVideoPlayer({
       else if ((e as React.TouchEvent).changedTouches.length > 0) clientX = (e as React.TouchEvent).changedTouches[0].clientX;
       else return;
     } else { clientX = e.clientX; }
-    const relativeX = (clientX - rect.left) / rect.width;
-    const side: "left" | "right" | "center" = relativeX < 0.35 ? "left" : relativeX > 0.65 ? "right" : "center";
+    const zoneWidth = Math.min(rect.width * 0.35, 240);
+    const side: "left" | "right" | "center" = clientX < rect.left + zoneWidth ? "left" : clientX > rect.right - zoneWidth ? "right" : "center";
     const now = Date.now();
     const timeSinceLastTap = now - lastTapRef.current.time;
     const sameSide = lastTapRef.current.side === side;
@@ -622,6 +626,7 @@ export function CinematicVideoPlayer({
     if (!videoRef.current) return;
     persistProgress(videoRef.current.duration || duration, videoRef.current.duration || duration);
     setIsPlaying(false);
+    setHasEnded(true);
   }, [duration, persistProgress]);
 
   const timeDisplay = showRemainingTime && duration > 0 ? `-${formatTime(duration - currentTime)}` : formatTime(currentTime);
@@ -637,7 +642,7 @@ export function CinematicVideoPlayer({
   const accentGradient = "from-[#ff7a18] via-[#ff5b2e] to-[#ff4d6d]";
 
   // Volume icon
-  const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume2 : Volume2;
+  const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
   // â”€â”€ Imperatively set CSS custom properties on the container so no style={} props are needed in JSX â”€â”€
   useEffect(() => {
@@ -721,6 +726,7 @@ export function CinematicVideoPlayer({
               playsInline
               onPlay={() => {
                 setIsPlaying(true);
+                setHasEnded(false);
                 setStartupUiReady(true);
                 if (!gestureHintsShownRef.current && !localStorage.getItem("sp_gesture_hints_seen")) {
                   gestureHintsShownRef.current = true;
@@ -743,7 +749,7 @@ export function CinematicVideoPlayer({
                 <track
                   key={track.id}
                   label={track.label}
-                  srclang={track.language}
+                  srcLang={track.language}
                   src={track.url}
                   kind="subtitles"
                   default={track.id === selectedSubtitleId}
@@ -846,7 +852,42 @@ export function CinematicVideoPlayer({
               />
             )}
 
-            {/* â”€â”€â”€ GESTURE HINTS â”€â”€â”€ */}
+            {/* ─── VIDEO ENDED OVERLAY ─── */}
+            {hasEnded && (
+              <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                <div className="flex flex-col items-center gap-6">
+                  <h3 className="text-xl font-bold text-white tracking-wide">Video Ended</h3>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHasEnded(false);
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = 0;
+                          videoRef.current.play();
+                        }
+                      }}
+                      className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white shadow-xl transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
+                    >
+                      <RotateCcw className="h-4 w-4 text-white/80" /> Replay
+                    </button>
+                    {hasNextEpisode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNextEpisode();
+                        }}
+                        className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ff8a3d] to-[#ff4d6d] px-6 py-3 text-sm font-bold text-white shadow-[0_0_20px_rgba(255,122,24,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,122,24,0.5)] active:scale-95"
+                      >
+                        Play Next <SkipForward className="h-4 w-4 fill-current" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ─── GESTURE HINTS ─── */}
             {showGestureHints && (
               <div className="absolute inset-0 z-40 pointer-events-none animate-in fade-in duration-500">
                 {[
@@ -898,9 +939,9 @@ export function CinematicVideoPlayer({
               </button>
             </div>
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */}
             {/* TOP BAR */}
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */}
             <div className={cn(
               "absolute inset-x-0 top-0 z-50 transition-all duration-300",
               showControls ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0 pointer-events-none"
@@ -996,7 +1037,7 @@ export function CinematicVideoPlayer({
               )}
 
               {/* Next Episode Button */}
-              {hasNextEpisode && duration > 0 && currentTime > duration * 0.5 && (
+              {hasNextEpisode && duration > 0 && currentTime > 0 && (duration - currentTime) < 120 && (
                 <motion.button
                   key="next-ep-btn"
                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1019,9 +1060,9 @@ export function CinematicVideoPlayer({
 
             </AnimatePresence>
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */}
             {/* KEYBOARD SHORTCUTS PANEL */}
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */}
             {showKeyboardShortcuts && (
               <div
                 className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
@@ -1045,6 +1086,7 @@ export function CinematicVideoPlayer({
                       ["Up / Down", "Volume +/-10%"],
                       ["M", "Mute"],
                       ["F", "Fullscreen"],
+                      ["C", "Subtitles"],
                       ["< / >", "Speed down/up"],
                       ["P", "Picture-in-Picture"],
                       ["?", "This panel"],
@@ -1062,9 +1104,9 @@ export function CinematicVideoPlayer({
               </div>
             )}
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */}
             {/* SPEED MENU */}
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */}
             {showSpeedMenu && (
               <div
                 className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -1098,9 +1140,9 @@ export function CinematicVideoPlayer({
               </div>
             )}
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */}
             {/* SUBTITLES MENU */}
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */}
             {showSubtitlesMenu && subtitles.length > 0 && (
               <div
                 className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -1208,7 +1250,7 @@ export function CinematicVideoPlayer({
                     <div className="absolute inset-0 rounded-full bg-white/10" />
                     <div className="absolute inset-y-0 left-0 rounded-full bg-white/16 transition-[width] duration-300 [width:var(--buffered-w)]" />
                     <div className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-100 bg-gradient-to-r from-[#ff8a3d] via-[#ff6a2d] to-[#ff4d6d] shadow-[0_0_18px_rgba(255,122,24,0.42)] [width:var(--progress-w)]" />
-                    {/* Thumb â€” always visible on mobile, hover-only on desktop */}
+                    {/* Thumb — always visible on mobile, hover-only on desktop */}
                     <div className={cn(
                       "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full bg-white border-2 border-[#120d0a] shadow-[0_0_24px_rgba(255,138,61,0.55)] transition-all duration-200 z-10 [left:var(--progress-w)]",
                       isScrubbing
@@ -1218,7 +1260,7 @@ export function CinematicVideoPlayer({
                   </div>
                 </div>
 
-                {/* â”€â”€ CONTROLS ROW â”€â”€ */}
+                {/* — CONTROLS ROW — */}
                 <div className="flex items-center gap-2">
 
                   {/* LEFT controls */}
@@ -1248,6 +1290,11 @@ export function CinematicVideoPlayer({
                     </CtrlBtn>
 
                     {/* Volume group â€” desktop */}
+                    {/* Volume button — mobile */}
+                    <CtrlBtn onClick={toggleMute} title="Mute" className="flex md:hidden h-11 w-11">
+                      <VolumeIcon className={cn("w-4.5 h-4.5", isMuted || volume === 0 ? "text-white/40" : "text-white/80")} />
+                    </CtrlBtn>
+
                     <div className="hidden md:flex items-center gap-2 group/vol">
                       <CtrlBtn onClick={toggleMute} title="Mute (M)" className="h-11 w-11">
                         <VolumeIcon className={cn("w-4.5 h-4.5", isMuted || volume === 0 ? "text-white/40" : "text-white/80")} />
