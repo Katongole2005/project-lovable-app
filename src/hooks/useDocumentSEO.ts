@@ -11,6 +11,8 @@ interface SEOProps {
   jsonLd?: Record<string, any>;
 }
 
+const BASE_URL = "https://s-u.in";
+
 export const useDocumentSEO = ({
   title,
   vjName,
@@ -24,7 +26,6 @@ export const useDocumentSEO = ({
   useEffect(() => {
     if (!title && !jsonLd) return;
 
-    const baseUrl = "https://moviebay.ug";
     const vj = vjName ? `VJ ${vjName.replace(/^VJ\s+/i, "")}` : "";
     const fullTitle = `${title} ${year ? `(${year})` : ""} ${
       vj ? `– ${vj} Luganda Translation` : "– Luganda Translated"
@@ -36,14 +37,23 @@ export const useDocumentSEO = ({
       vjName || "top VJs"
     } on Moviebay. ${description ? description.split(".")[0] + "." : ""} Free streaming, no subscription required.`;
 
-    const metaKeywords = `${title}, ${title} vj ${
-      vjName || ""
-    }, ${title} luganda, ${title} translated, ${title} uganda, vj ${
-      vjName || ""
-    } movies, download ${title} translated, moviebay`;
+    const metaKeywords = [
+      title,
+      `${title} vj ${vjName || ""}`.trim(),
+      `${title} luganda`,
+      `${title} translated`,
+      `${title} uganda`,
+      `vj ${vjName || ""} movies`.trim(),
+      `watch ${title} online`,
+      `download ${title} translated`,
+      `${title} full movie luganda`,
+      ...(genres || []).map(g => `${title} ${g.toLowerCase()}`),
+      "moviebay",
+      "uganda movies",
+    ].filter(Boolean).join(", ");
 
-    const fullImageUrl = imageUrl || `${baseUrl}/icon-512.png`;
-    const fullCanonicalUrl = `${baseUrl}${canonicalPath || ""}`;
+    const fullImageUrl = imageUrl || `${BASE_URL}/icon-512.png`;
+    const fullCanonicalUrl = `${BASE_URL}${canonicalPath || ""}`;
 
     // Store original values to restore on cleanup
     const originalTitle = document.title;
@@ -52,36 +62,37 @@ export const useDocumentSEO = ({
     document.title = fullTitle;
 
     // Update Meta Tags
-    const updateMeta = (selector: string, attr: string, value: string) => {
-      let el = document.querySelector(selector);
+    const updateMeta = (attr: string, key: string, value: string) => {
+      const selector = `meta[${attr}="${key}"]`;
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
       if (!el) {
         el = document.createElement("meta");
-        if (selector.startsWith('meta[name')) {
-            (el as HTMLMetaElement).name = selector.split('"')[1];
-        } else {
-            (el as HTMLMetaElement).setAttribute(selector.split('[')[1].split('=')[0], selector.split('"')[1]);
-        }
+        el.setAttribute(attr, key);
         document.head.appendChild(el);
       }
-      el.setAttribute(attr, value);
+      el.setAttribute("content", value);
     };
 
-    updateMeta('meta[name="description"]', "content", metaDescription);
-    updateMeta('meta[name="keywords"]', "content", metaKeywords);
+    updateMeta("name", "description", metaDescription);
+    updateMeta("name", "keywords", metaKeywords);
     
     // Open Graph
-    updateMeta('meta[property="og:title"]', "content", fullTitle);
-    updateMeta('meta[property="og:description"]', "content", metaDescription);
-    updateMeta('meta[property="og:image"]', "content", fullImageUrl);
-    updateMeta('meta[property="og:url"]', "content", fullCanonicalUrl);
+    updateMeta("property", "og:title", fullTitle);
+    updateMeta("property", "og:description", metaDescription);
+    updateMeta("property", "og:image", fullImageUrl);
+    updateMeta("property", "og:url", fullCanonicalUrl);
+    updateMeta("property", "og:type", "video.movie");
+    updateMeta("property", "og:site_name", "Moviebay");
+    updateMeta("property", "og:locale", "en_UG");
     
     // Twitter
-    updateMeta('meta[name="twitter:title"]', "content", fullTitle);
-    updateMeta('meta[name="twitter:description"]', "content", metaDescription);
-    updateMeta('meta[name="twitter:image"]', "content", fullImageUrl);
+    updateMeta("name", "twitter:card", "summary_large_image");
+    updateMeta("name", "twitter:title", fullTitle);
+    updateMeta("name", "twitter:description", metaDescription);
+    updateMeta("name", "twitter:image", fullImageUrl);
 
     // Canonical
-    let canonical = document.querySelector('link[rel="canonical"]');
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonical) {
       canonical = document.createElement("link");
       canonical.setAttribute("rel", "canonical");

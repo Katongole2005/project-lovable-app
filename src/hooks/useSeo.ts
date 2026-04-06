@@ -9,10 +9,10 @@ interface SeoProps {
   jsonLd?: Record<string, unknown>;
 }
 
-const BASE_TITLE = "Moviebay Uganda";
-const DEFAULT_DESC = "Watch and download the best Uganda translated movies. Stream blockbuster films with Luganda translation by VJ Junior, VJ Jingo, VJ Ice P, and more top VJs.";
-const DEFAULT_OG_IMAGE = "https://premiere-point-web.lovable.app/icon-512.png";
-const SITE_URL = "https://premiere-point-web.lovable.app";
+const BASE_TITLE = "Moviebay";
+const DEFAULT_DESC = "Watch and download the best Uganda translated movies. Stream blockbuster films with Luganda translation by VJ Junior, VJ Jingo, VJ Ice P, and more top VJs. Free streaming, no subscription.";
+const DEFAULT_OG_IMAGE = "https://s-u.in/icon-512.png";
+const SITE_URL = "https://s-u.in";
 
 export function useSeo({
   title,
@@ -43,12 +43,13 @@ export function useSeo({
     setMeta("property", "og:description", description);
     setMeta("property", "og:type", ogType);
     setMeta("property", "og:image", ogImage);
+    setMeta("property", "og:site_name", "Moviebay");
     setMeta("name", "twitter:title", fullTitle);
     setMeta("name", "twitter:description", description);
     setMeta("name", "twitter:image", ogImage);
 
     // OG URL
-    const url = canonical || window.location.href;
+    const url = canonical ? `${SITE_URL}${canonical}` : window.location.href;
     setMeta("property", "og:url", url);
 
     // Canonical link
@@ -58,7 +59,7 @@ export function useSeo({
       link.setAttribute("rel", "canonical");
       document.head.appendChild(link);
     }
-    link.setAttribute("href", canonical ? `${SITE_URL}${canonical}` : url);
+    link.setAttribute("href", url);
 
     // JSON-LD
     const existingLd = document.querySelector('script[data-seo-jsonld]');
@@ -90,17 +91,40 @@ export function buildMovieJsonLd(movie: {
   type: string;
   genres?: string[];
   certification?: string;
+  vj_name?: string;
+  cast?: Array<{ name: string; character?: string | null }>;
 }) {
   return {
     "@context": "https://schema.org",
     "@type": movie.type === "series" ? "TVSeries" : "Movie",
     name: movie.title,
-    description: movie.description || `Watch ${movie.title} translated into Luganda by top VJs on Moviebay Uganda`,
+    description: movie.description || `Watch ${movie.title} translated into Luganda by ${movie.vj_name ? `VJ ${movie.vj_name}` : "top VJs"} on Moviebay`,
     image: movie.image_url,
-    datePublished: movie.year ? `${movie.year}` : undefined,
+    datePublished: movie.year ? `${movie.year}-01-01` : undefined,
     genre: movie.genres,
     contentRating: movie.certification,
-    keywords: "uganda translated movies, luganda translation, vj junior, vj jingo",
     inLanguage: "lg",
+    countryOfOrigin: {
+      "@type": "Country",
+      name: "Uganda",
+    },
+    url: `https://s-u.in/${movie.type === "series" ? "series" : "movie"}/`,
+    provider: {
+      "@type": "Organization",
+      name: "Moviebay",
+      url: "https://s-u.in",
+    },
+    ...(movie.cast && movie.cast.length > 0 ? {
+      actor: movie.cast.slice(0, 5).map(c => ({
+        "@type": "Person",
+        name: c.name,
+      })),
+    } : {}),
+    ...(movie.vj_name ? {
+      translator: {
+        "@type": "Person",
+        name: `VJ ${movie.vj_name.replace(/^VJ\s+/i, "")}`,
+      },
+    } : {}),
   };
 }

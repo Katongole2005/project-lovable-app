@@ -3,5 +3,9 @@ Allow: /
 Disallow: /admin
 Disallow: /auth
 Disallow: /profile
+Disallow: /api/
 
-Sitemap: https://moviebay.ug/sitemap.xml
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+Sitemap: https://s-u.in/sitemap.xml
