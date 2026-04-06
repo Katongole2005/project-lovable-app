@@ -26,6 +26,8 @@ export function HeroSection({ movie, onPlay, onInfo }: HeroSectionProps) {
           src={getImageUrl(movie.image_url)}
           alt={movie.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          loading="eager"
+          fetchPriority="high"
         />
         {/* Gradient overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />

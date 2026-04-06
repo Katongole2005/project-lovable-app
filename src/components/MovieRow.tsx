@@ -47,7 +47,7 @@ export const MovieRow = forwardRef<HTMLElement, MovieRowProps>(function MovieRow
   if (movies.length === 0) return null;
 
   return (
-    <section ref={ref} className={cn("py-6 content-visibility-auto", className)}>
+    <section ref={ref} className={cn("py-6", className)}>
       <div className="flex items-center justify-between mb-6">
         <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight" data-testid={`text-section-${title.toLowerCase().replace(/\s+/g, '-')}`}>
           {title}

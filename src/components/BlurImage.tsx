@@ -22,22 +22,25 @@ export function BlurImage({ src, alt, className, loading = "lazy", style }: Blur
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      {/* Blurred placeholder shimmer */}
-      {!loaded && (
-        <div className="absolute inset-0 bg-muted/40 shimmer" />
-      )}
       <img
         src={src}
         alt={alt}
         decoding="async"
         className={cn(
-          "w-full h-full object-cover transition-all duration-500",
-          loaded ? "opacity-100 blur-0 scale-100" : "opacity-0 blur-lg scale-105",
+          "w-full h-full object-cover transition-[transform,filter] duration-500",
+          loaded ? "blur-0 scale-100" : "blur-lg scale-105",
           className
         )}
         loading={loading}
         onLoad={handleLoad}
         style={style}
+      />
+      {/* Blurred placeholder shimmer overlay - fading out instead of waiting for opacity-0 img */}
+      <div 
+        className={cn(
+          "absolute inset-0 bg-muted/40 shimmer transition-opacity duration-500 pointer-events-none",
+          loaded ? "opacity-0" : "opacity-100"
+        )} 
       />
     </div>
   );
