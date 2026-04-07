@@ -121,16 +121,16 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
     }
   }, [isOpen, videoUrl]);
 
-  // Auto-hide controls
+  // Auto-hide controls — shows for 4s then fades out
   const resetControlsTimeout = useCallback(() => {
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     setShowControls(true);
-    if (isPlaying) {
-      controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3500);
-    }
-  }, [isPlaying]);
+    controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 4000);
+  }, []);
 
+  // When playback begins, show controls briefly so the user sees back/close
   useEffect(() => {
+    if (!isPlaying) return;
     resetControlsTimeout();
     return () => { if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current); };
   }, [isPlaying, resetControlsTimeout]);
@@ -296,30 +296,41 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="absolute inset-0 z-10 flex flex-col bg-black"
+                className="absolute inset-0 z-10 bg-black"
               >
-                {/* Top control bar */}
+                {/* iframe fills the whole area — NO overlay on top of it */}
+                <iframe
+                  ref={iframeRef}
+                  key={iframeSrc}
+                  src={iframeSrc}
+                  title={title}
+                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full border-0 bg-black"
+                />
+
+                {/* Top control bar — floats above iframe, pointer-events only on itself */}
                 <div
                   className={cn(
-                    "absolute inset-x-0 top-0 z-30 transition-all duration-300",
-                    showControls ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0 pointer-events-none"
+                    "absolute inset-x-0 top-0 z-30 transition-all duration-300 pointer-events-none",
+                    showControls ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
                   )}
-                  onClick={(e) => e.stopPropagation()}
-                  onTouchEnd={(e) => e.stopPropagation()}
                 >
-                  <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none" />
-                  <div className="relative flex items-center justify-between gap-3 px-4 py-4 md:px-6">
+                  {/* gradient scrim */}
+                  <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/75 via-black/30 to-transparent pointer-events-none" />
+
+                  <div className="relative flex items-center justify-between gap-3 px-4 py-4 md:px-6 pointer-events-auto">
                     <button
                       onClick={handleClose}
                       aria-label="Go back"
-                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/50 text-white shadow-xl backdrop-blur-xl transition-all hover:bg-white/10 active:scale-95"
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white shadow-xl backdrop-blur-xl transition-all hover:bg-white/10 active:scale-95"
                     >
                       <ChevronDown className="h-5 w-5" />
                     </button>
 
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-white tracking-tight">{title}</p>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-white/50">
+                      <p className="truncate text-sm font-bold text-white tracking-tight drop-shadow-lg">{title}</p>
+                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-white/60">
                         <span className="w-1 h-1 rounded-full bg-[#ff8a3d]" />
                         {movie?.type === "series" ? "Series" : "Movie"}
                         {year && <><span className="w-1 h-1 rounded-full bg-white/20" />{year}</>}
@@ -331,14 +342,14 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
                       <button
                         onClick={toggleFullscreen}
                         aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/50 text-white/70 shadow-lg backdrop-blur-xl transition-all hover:bg-white/10 hover:text-white active:scale-95"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white/80 shadow-lg backdrop-blur-xl transition-all hover:bg-white/10 hover:text-white active:scale-95"
                       >
                         {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
                       </button>
                       <button
                         onClick={handleClose}
                         aria-label="Close player"
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/50 text-white/70 shadow-lg backdrop-blur-xl transition-all hover:bg-white/10 hover:text-white active:scale-95"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white/80 shadow-lg backdrop-blur-xl transition-all hover:bg-white/10 hover:text-white active:scale-95"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -346,27 +357,13 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
                   </div>
                 </div>
 
-                {/* iframe */}
-                <iframe
-                  ref={iframeRef}
-                  key={iframeSrc} // remount when src changes
-                  src={iframeSrc}
-                  title={title}
-                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full border-0"
-                  style={{ background: "#000" }}
-                  onClick={resetControlsTimeout}
-                />
-
-                {/* Tap zone to show controls */}
+                {/* Narrow invisible tap strip at the very top — tapping here toggles the control bar */}
+                {/* This does NOT cover the rest of the screen so the iframe controls remain fully usable */}
                 <div
-                  className="absolute inset-0 z-20 pointer-events-auto"
-                  style={{ background: "transparent" }}
-                  onClick={() => {
-                    if (showControls) setShowControls(false);
-                    else resetControlsTimeout();
-                  }}
+                  className="absolute inset-x-0 top-0 h-16 z-20 cursor-pointer"
+                  aria-label="Show/hide controls"
+                  onClick={resetControlsTimeout}
+                  onTouchEnd={resetControlsTimeout}
                 />
               </motion.div>
             )}
