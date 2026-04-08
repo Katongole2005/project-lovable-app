@@ -637,6 +637,28 @@ export default function Index() {
     })();
   }, [navigateTo, viewMode]);
 
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedMovieDetailsLoading(false);
+    
+    // Synchronize URL: revert to base view if we're on a movie/series route
+    if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
+      const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
+      navigateTo(targetPath, { replace: true });
+    }
+  }, [location.pathname, navigateTo, viewMode]);
+
+  const handleCloseVideo = useCallback(() => {
+    setIsVideoOpen(false);
+    setActivePlaybackItem(null);
+    
+    // Synchronize URL: revert to base view if we're on a movie/series route
+    if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
+      const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
+      navigateTo(targetPath, { replace: true });
+    }
+  }, [location.pathname, navigateTo, viewMode]);
+
   selectedMovieRef.current = selectedMovie;
 
   const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
@@ -1279,14 +1301,7 @@ export default function Index() {
             <MovieModal
               movie={selectedMovie}
               isOpen={isModalOpen}
-              onClose={() => {
-                setIsModalOpen(false);
-                setSelectedMovieDetailsLoading(false);
-                if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
-                  const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
-                  navigateTo(targetPath, { replace: true });
-                }
-              }}
+              onClose={handleCloseModal}
               onPlay={handlePlayVideo}
               detailsLoading={selectedMovieDetailsLoading}
               onMovieSelect={handleMovieClick}
@@ -1297,10 +1312,7 @@ export default function Index() {
           {isVideoOpen && (
             <CinematicVideoPlayer
               isOpen={isVideoOpen}
-              onClose={() => {
-                setIsVideoOpen(false);
-                setActivePlaybackItem(null);
-              }}
+              onClose={handleCloseVideo}
               videoUrl={videoUrl}
               title={videoTitle}
               movie={selectedMovie}

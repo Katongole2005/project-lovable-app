@@ -324,7 +324,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
           className="hidden md:block relative h-full md:rounded-3xl overflow-hidden"
         >
           {/* Multi-layer background for professional glass effect */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 z-behind">
             {(!backgroundImage || !desktopBackdropLoaded) && (
               <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
                 <div className="absolute inset-0 shimmer" />
@@ -372,12 +372,12 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200 hover:scale-105 border border-white/20"
+            className="absolute top-4 right-4 z-critical p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200 hover:scale-105 border border-white/20"
           >
             <X className="w-5 h-5 text-white" />
           </button>
 
-          <ScrollArea className="relative z-10 h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
+          <ScrollArea className="relative z-content h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
             <div className="relative w-full max-w-full">
 
               {/* Backdrop hero section */}

@@ -80,7 +80,7 @@ export function FilterModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-modal flex items-center justify-center p-4">
       {/* Backdrop with blur - deep blur for liquid glass effect */}
       <div
         className={cn(

@@ -110,7 +110,7 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
   return (
       <header 
         className={cn(
-          "sticky top-0 z-40 py-4 transition-all duration-300",
+          "sticky top-0 z-header py-4 transition-all duration-300",
           isScrolled && "bg-background/40 backdrop-blur-md",
           isHidden && "-translate-y-full"
         )}
