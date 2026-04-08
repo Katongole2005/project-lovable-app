@@ -372,9 +372,12 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute top-4 right-4 z-critical p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200 hover:scale-105 border border-white/20"
+            className={cn(
+              "absolute top-4 right-4 z-critical p-2.5 rounded-full transition-all duration-200 hover:scale-110 active:scale-95 border-none shadow-lg",
+              TRENDING_ACCENT_BUTTON_CLASS
+            )}
           >
-            <X className="w-5 h-5 text-white" />
+            <X className="w-5 h-5" />
           </button>
 
           <ScrollArea className="relative z-content h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
@@ -1061,9 +1064,10 @@ function MobileMovieLayout({
           onClick={onClose}
           aria-label="Go back"
           data-testid="button-close-modal"
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10 active:scale-90 transition-transform shadow-[0_10px_30px_rgba(0,0,0,0.2)]"
+          className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-[0_10px_30px_rgba(90,17,27,0.35)] border-none text-white"
+          style={MOBILE_PRIMARY_PLAY_SURFACE_STYLE}
         >
-          <ChevronLeft className="w-5 h-5 text-white" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
 
         <h2
