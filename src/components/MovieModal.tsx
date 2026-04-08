@@ -377,7 +377,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
             <X className="w-5 h-5 text-white" />
           </button>
 
-          <ScrollArea className="h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
+          <ScrollArea className="relative z-10 h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
             <div className="relative w-full max-w-full">
 
               {/* Backdrop hero section */}
@@ -409,8 +409,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
               {/* Content area - overlapping backdrop */}
               <motion.div
                 variants={staggerContainer}
-                initial={allowDesktopMotion ? "hidden" : false}
-                animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : undefined}
+                initial={allowDesktopMotion ? "hidden" : "visible"}
+                animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : "visible"}
                 className="relative -mt-32 px-10 pb-10 space-y-6"
               >
                 {/* Poster + Title row */}
