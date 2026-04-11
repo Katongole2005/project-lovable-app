@@ -592,21 +592,23 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       >
                         <Share2 className="w-4 h-4" />
                       </button>
-                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!movie.download_url) && (
+                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!(movie.download_url || movie.server2_url)) && (
                         <button
                           onClick={() => {
                             if (isSeries) {
                               const firstEp = allEpisodes[0];
-                              if (firstEp?.download_url) {
+                              const firstTargetUrl = firstEp?.download_url || firstEp?.server2_url;
+                              if (firstTargetUrl) {
                                 const name = `${movie.title} - S${firstEp.season_number || 1}E${String(firstEp.episode_number).padStart(2, '0')}`;
-                                downloadWithName(firstEp.download_url, name, undefined, firstEp.mobifliks_id);
+                                downloadWithName(firstTargetUrl, name, undefined, firstEp.mobifliks_id);
                               } else {
                                 toast.error("No episodes available to download yet.");
                                 episodesSectionRef.current?.scrollIntoView({ behavior: "smooth" });
                               }
                             } else {
+                              const targetUrl = movie.download_url || movie.server2_url;
                               const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-                              downloadWithName(movie.download_url!, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
+                              downloadWithName(targetUrl!, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
                             }
                           }}
                           aria-label="Download"
@@ -933,9 +935,10 @@ function MobileMovieLayout({
   }, [movie.mobifliks_id, movie.title, movie.type, movie.year]);
 
   const handleMovieDownload = React.useCallback(() => {
-    if (!movie.download_url) return;
+    const targetUrl = movie.download_url || movie.server2_url;
+    if (!targetUrl) return;
     const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-    downloadWithName(movie.download_url, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
+    downloadWithName(targetUrl, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
   }, [movie]);
 
   const handlePrimaryAction = React.useCallback(() => {
@@ -990,7 +993,7 @@ function MobileMovieLayout({
         icon: List,
         onClick: scrollToEpisodes,
       });
-    } else if (FEATURE_FLAGS.DOWNLOAD_ENABLED && movie.download_url) {
+    } else if (FEATURE_FLAGS.DOWNLOAD_ENABLED && (movie.download_url || movie.server2_url)) {
       actions.push({
         key: "download",
         label: "Download",
@@ -1014,7 +1017,7 @@ function MobileMovieLayout({
     });
 
     return actions;
-  }, [allEpisodes.length, handleMovieDownload, handleShare, inWatchlist, isSeries, movie.download_url, onToggleWatchlist, scrollToEpisodes]);
+  }, [allEpisodes.length, handleMovieDownload, handleShare, inWatchlist, isSeries, movie.download_url, movie.server2_url, onToggleWatchlist, scrollToEpisodes]);
   const utilityGridClass = utilityActions.length === 3 ? "grid-cols-3" : "grid-cols-2";
 
   return (
@@ -1404,15 +1407,17 @@ function MobileMovieLayout({
                           </p>
                         </div>
                       </div>
-                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && currentSeasonEpisodes.some(ep => ep.download_url) && (
+                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && currentSeasonEpisodes.some(ep => ep.download_url || ep.server2_url) && (
                         <button
                           onClick={() => {
-                            toast.info(`Starting ${currentSeasonEpisodes.filter(ep => ep.download_url).length} downloads...`);
+                            const downloadable = currentSeasonEpisodes.filter(ep => ep.download_url || ep.server2_url);
+                            toast.info(`Starting ${downloadable.length} downloads...`);
                             const seasonNum = currentSeasonEpisodes[0]?.season_number ?? 1;
-                            currentSeasonEpisodes.forEach((ep, i) => {
-                              if (ep.download_url) {
+                            downloadable.forEach((ep, i) => {
+                              const targetUrl = ep.download_url || ep.server2_url;
+                              if (targetUrl) {
                                 const epName = `${movie.title} - S${seasonNum}E${String(ep.episode_number).padStart(2, '0')}`;
-                                setTimeout(() => downloadWithName(ep.download_url!, epName, undefined, ep.mobifliks_id), i * 800);
+                                setTimeout(() => downloadWithName(targetUrl!, epName, undefined, ep.mobifliks_id), i * 800);
                               }
                             });
                           }}
@@ -1776,9 +1781,10 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (episode.download_url) {
+                  const tUrl = episode.download_url || episode.server2_url;
+                  if (tUrl) {
                     const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, "0")}`;
-                    downloadWithName(episode.download_url, epName, undefined, episode.mobifliks_id);
+                    downloadWithName(tUrl, epName, undefined, episode.mobifliks_id);
                   }
                 }}
                 className="modal-accent-text mt-2 flex items-center gap-1.5 text-[11px] font-semibold active:scale-95 transition-transform"
@@ -1978,9 +1984,10 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                   className="text-white/70 hover:text-white hover:bg-white/10 h-8 px-3 rounded"
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (episode.download_url) {
+                    const tUrl = episode.download_url || episode.server2_url;
+                    if (tUrl) {
                       const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, '0')}`;
-                      downloadWithName(episode.download_url, epName, undefined, episode.mobifliks_id);
+                      downloadWithName(tUrl, epName, undefined, episode.mobifliks_id);
                     }
                   }}
                 >
