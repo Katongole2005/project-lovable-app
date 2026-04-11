@@ -491,26 +491,61 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                           onClick={() => onPlay(movie.download_url!, movie.title)}
                         >
                           <Play className="w-5 h-5 fill-current" />
-                          Play
+                          {movie.server2_url ? "Server 1" : "Play"}
                         </Button>
                       )}
-                      {isSeries && series.episodes && series.episodes.length > 0 && (
+                      {!isSeries && movie.server2_url && (
                         <Button
                           size="lg"
                           className={cn(
                             "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                            TRENDING_ACCENT_BUTTON_CLASS
+                            !movie.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
                           )}
-                          onClick={() => {
-                            const firstEp = series.episodes?.[0];
-                            if (firstEp?.download_url) {
-                              onPlay(firstEp.download_url, `${movie.title} - S1:E1`);
-                            }
-                          }}
+                          onClick={() => onPlay(movie.server2_url!, movie.title)}
                         >
                           <Play className="w-5 h-5 fill-current" />
-                          Play S1:E1
+                          {movie.download_url ? "Server 2" : "Play"}
                         </Button>
+                      )}
+                      {isSeries && series.episodes && series.episodes.length > 0 && (
+                        <>
+                          {(series.episodes[0]?.download_url || !series.episodes[0]?.server2_url) && (
+                            <Button
+                              size="lg"
+                              className={cn(
+                                "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                                TRENDING_ACCENT_BUTTON_CLASS
+                              )}
+                              onClick={() => {
+                                const firstEp = series.episodes?.[0];
+                                if (firstEp?.download_url) {
+                                  onPlay(firstEp.download_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`);
+                                }
+                              }}
+                            >
+                              <Play className="w-5 h-5 fill-current" />
+                              {series.episodes[0]?.server2_url ? "Ep 1 (Server 1)" : "Play S1:E1"}
+                            </Button>
+                          )}
+                          {series.episodes[0]?.server2_url && (
+                            <Button
+                              size="lg"
+                              className={cn(
+                                "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                                !series.episodes[0]?.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
+                              )}
+                              onClick={() => {
+                                const firstEp = series.episodes?.[0];
+                                if (firstEp?.server2_url) {
+                                  onPlay(firstEp.server2_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`);
+                                }
+                              }}
+                            >
+                              <Play className="w-5 h-5 fill-current" />
+                              {series.episodes[0]?.download_url ? "Ep 1 (Server 2)" : "Play S1:E1"}
+                            </Button>
+                          )}
+                        </>
                       )}
 
                       <button
@@ -1613,10 +1648,10 @@ interface MobileTimelineEpisodeProps {
 }
 
 function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, isResumeTarget, progressPct = 0 }: MobileTimelineEpisodeProps) {
-  const hasVideo = episode.download_url &&
+  const hasVideo = (episode.download_url &&
     (episode.download_url.includes(".mp4") ||
       episode.download_url.includes("downloadmp4") ||
-      episode.download_url.includes("downloadserie"));
+      episode.download_url.includes("downloadserie"))) || !!episode.server2_url;
 
   const epNum = episode.episode_number.toString().padStart(2, "0");
   const progressStyle: React.CSSProperties = {
@@ -1840,20 +1875,23 @@ interface DesktopEpisodeCardProps {
 
 // Desktop episode card - Netflix-style horizontal layout with thumbnail
 function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: DesktopEpisodeCardProps) {
-  const hasVideo = episode.download_url &&
+  const hasVideo = (episode.download_url &&
     (episode.download_url.includes(".mp4") ||
       episode.download_url.includes("downloadmp4") ||
-      episode.download_url.includes("downloadserie"));
+      episode.download_url.includes("downloadserie"))) || !!episode.server2_url;
 
   return (
     <div
       className="flex gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200 group cursor-pointer"
       onClick={() => {
-        if (hasVideo && episode.download_url) {
-          onPlay(
-            episode.download_url,
-            `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
-          );
+        if (hasVideo) {
+          const targetUrl = episode.download_url || episode.server2_url;
+          if (targetUrl) {
+            onPlay(
+              targetUrl,
+              `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
+            );
+          }
         }
       }}
     >
@@ -1901,20 +1939,38 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
         <div className="mt-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           {hasVideo && (
             <>
-              <Button
-                size="sm"
-                className="gap-1.5 bg-white text-black hover:bg-white/90 h-8 px-4 rounded font-medium"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPlay(
-                    episode.download_url!,
-                    `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
-                  );
-                }}
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                Play
-              </Button>
+              {(episode.download_url || !episode.server2_url) && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-white text-black hover:bg-white/90 h-8 px-4 rounded font-medium"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPlay(
+                      episode.download_url!,
+                      `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
+                    );
+                  }}
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  {episode.server2_url ? "S1" : "Play"}
+                </Button>
+              )}
+              {episode.server2_url && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-white/10 text-white hover:bg-white/20 border border-white/20 h-8 px-3 rounded font-medium"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPlay(
+                      episode.server2_url!,
+                      `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
+                    );
+                  }}
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  {episode.download_url ? "S2" : "Play"}
+                </Button>
+              )}
               {FEATURE_FLAGS.DOWNLOAD_ENABLED && (
                 <Button
                   size="sm"

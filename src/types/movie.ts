@@ -32,6 +32,7 @@ export interface Movie {
   certification?: string;
   release_date?: string;
   download_url?: string;
+  server2_url?: string;
   views?: number;
   vj_name?: string;
   file_size?: string;
@@ -47,6 +48,7 @@ export interface Episode {
   season_number?: number;
   title?: string;
   download_url?: string;
+  server2_url?: string;
   file_size?: string;
   views?: number;
   description?: string;
