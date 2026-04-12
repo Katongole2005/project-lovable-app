@@ -104,9 +104,9 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
         className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/95 md:bg-card/80 border border-white/[0.06] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm"
         style={{
           willChange: typeof window !== "undefined" && window.innerWidth >= 768 ? "transform" : "auto",
-          ["--gloss-x" as string]: "50%",
-          ["--gloss-y" as string]: "50%",
-        }}
+          "--gloss-x": "50%",
+          "--gloss-y": "50%",
+        } as React.CSSProperties}
       >
         <BlurImage
           src={getImageUrl(movie.image_url)}
@@ -116,10 +116,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
         />
 
         <div
-          className="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none md:group-hover:opacity-100"
-          style={{
-            background: "radial-gradient(circle at var(--gloss-x) var(--gloss-y), hsl(0 0% 100% / 0.18) 0%, transparent 55%)",
-          }}
+          className="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none md:group-hover:opacity-100 card-gloss-effect"
         />
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 md:group-hover:opacity-100" />
@@ -181,7 +178,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
         {showProgress !== undefined && showProgress > 0 && (
           <div className="absolute bottom-0 left-0 right-0 p-2">
             <div className="progress-bar">
-              <div className="progress-bar-fill" style={{ width: `${showProgress}%` }} />
+              <div className="progress-bar-fill progress-fill-dynamic" style={{ "--progress": `${showProgress}%` } as React.CSSProperties} />
             </div>
           </div>
         )}

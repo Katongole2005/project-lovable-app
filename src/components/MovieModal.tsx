@@ -94,33 +94,7 @@ const fadeInUp = {
 };
 
 const TRENDING_ACCENT_BUTTON_CLASS = "bg-[#c8f547] hover:bg-[#d7f86d] text-black shadow-[0_4px_20px_rgba(200,245,71,0.35),0_0_34px_rgba(200,245,71,0.14)]";
-const MOBILE_MODAL_ACCENT_HUE = 6;
-const MOBILE_MODAL_ACCENT_ALT_HUE = 18;
-const MOBILE_LAYOUT_STYLE = {
-  ["--accent-hue" as string]: MOBILE_MODAL_ACCENT_HUE,
-  ["--accent-hue-alt" as string]: MOBILE_MODAL_ACCENT_ALT_HUE,
-} as React.CSSProperties;
-const MOBILE_PRIMARY_PLAY_SURFACE_STYLE = {
-  background: "linear-gradient(135deg, rgba(184,59,59,0.95) 0%, rgba(130,28,39,0.98) 52%, rgba(76,14,23,1) 100%)",
-  boxShadow: "0 8px 24px rgba(90,17,27,0.28), 0 0 28px rgba(184,59,59,0.14)",
-} as const;
-const MOBILE_TAB_SURFACE_STYLE = {
-  background: "linear-gradient(135deg, rgba(184,59,59,0.18) 0%, rgba(90,17,27,0.9) 100%)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(90,17,27,0.16)",
-} as const;
-const MOBILE_PANEL_SURFACE_STYLE = {
-  background: "linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-} as const;
-const MOBILE_TINTED_PANEL_SURFACE_STYLE = {
-  background: "linear-gradient(180deg, rgba(120,24,33,0.22) 0%, rgba(255,255,255,0.025) 100%)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-} as const;
-const MOBILE_ACTIVE_UTILITY_STYLE = {
-  background: "linear-gradient(135deg, rgba(184,59,59,0.18) 0%, rgba(90,17,27,0.62) 100%)",
-  borderColor: "rgba(184,59,59,0.32)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
-} as const;
+
 
 
 interface MovieModalProps {
@@ -866,8 +840,8 @@ function MobileMovieLayout({
     ? new Date(movie.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
     : null;
 
-  const accentHue = MOBILE_MODAL_ACCENT_HUE;
-  const accentAltHue = MOBILE_MODAL_ACCENT_ALT_HUE;
+  const accentHue = 6;
+  const accentAltHue = 18;
   const viewsLabel = React.useMemo(() => {
     if (movie.views === undefined || movie.views <= 0) return null;
     if (movie.views >= 1000000) return `${(movie.views / 1000000).toFixed(1)}M`;
@@ -1025,9 +999,8 @@ function MobileMovieLayout({
 
   return (
     <div
-      className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark"
+      className="md:hidden flex flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark bg-background/95 backdrop-blur-md"
       data-testid="mobile-movie-layout"
-      style={MOBILE_LAYOUT_STYLE}
     >
       <div className="absolute inset-0 z-0">
         {(!backgroundImage || !backdropLoaded) && (
@@ -1105,8 +1078,7 @@ function MobileMovieLayout({
           onClick={onClose}
           aria-label="Go back"
           data-testid="button-close-modal"
-          className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-[0_10px_30px_rgba(90,17,27,0.35)] border-none text-white"
-          style={MOBILE_PRIMARY_PLAY_SURFACE_STYLE}
+          className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-[0_10px_30px_rgba(90,17,27,0.35)] border-none text-white modal-primary-play-surface"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -1247,8 +1219,7 @@ function MobileMovieLayout({
                   {activeTab === tab && (
                     <motion.div
                       layoutId="mobile-tab-indicator"
-                      className="absolute inset-0 rounded-2xl"
-                      style={MOBILE_TAB_SURFACE_STYLE}
+                      className="absolute inset-0 rounded-2xl modal-tab-surface"
                       transition={{ type: "spring", stiffness: 360, damping: 34 }}
                     />
                   )}
@@ -1271,8 +1242,7 @@ function MobileMovieLayout({
                     return (
                       <div
                         key={fact.label}
-                        className="rounded-[22px] border border-white/8 px-3.5 py-3.5"
-                        style={MOBILE_TINTED_PANEL_SURFACE_STYLE}
+                        className="rounded-[22px] border border-white/8 px-3.5 py-3.5 modal-tinted-panel-surface"
                       >
                         <div className="flex items-center gap-2 text-white/40">
                           <Icon className="h-3.5 w-3.5" />
@@ -1287,8 +1257,7 @@ function MobileMovieLayout({
                 {description && (
                   <motion.div
                     variants={fadeInUp}
-                    className="rounded-[24px] border border-white/8 px-4 py-4"
-                    style={MOBILE_PANEL_SURFACE_STYLE}
+                    className="rounded-[24px] border border-white/8 px-4 py-4 modal-panel-surface"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/38">Story</p>
@@ -1351,8 +1320,7 @@ function MobileMovieLayout({
                           onClick={() => setActiveTab("casts")}
                         >
                           <div
-                            className="h-[88px] w-[74px] overflow-hidden rounded-[22px] border border-white/10"
-                            style={MOBILE_PANEL_SURFACE_STYLE}
+                            className="h-[88px] w-[74px] overflow-hidden rounded-[22px] border border-white/10 modal-panel-surface"
                           >
                             <img
                               src={member.profile_url || `https://placehold.co/160x200/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
@@ -1376,8 +1344,7 @@ function MobileMovieLayout({
                 {movie.vj_name && (
                   <motion.div
                     variants={fadeInUp}
-                    className="flex items-center justify-between gap-3 rounded-[22px] border border-white/8 px-4 py-3.5"
-                    style={MOBILE_PANEL_SURFACE_STYLE}
+                    className="flex items-center justify-between gap-3 rounded-[22px] border border-white/8 px-4 py-3.5 modal-panel-surface"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/6 text-xs font-bold text-white">

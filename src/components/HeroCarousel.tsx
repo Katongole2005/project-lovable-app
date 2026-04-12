@@ -35,7 +35,7 @@ export function HeroCarousel({
   const autoplayDelayMs = deviceProfile.autoplayDelayMs;
   const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
   const shouldAutoplay = totalSlides > 1 && autoplayDelayMs > 0;
-  const carouselPerspectiveStyle: React.CSSProperties = { perspective: "1200px" };
+
 
   const scrollTo = React.useCallback((index: number) => {
     if (isTransitioning) return;
@@ -181,7 +181,7 @@ export function HeroCarousel({
           {showViewAll && <button onClick={onViewAll} className="text-sm font-medium text-white/70 hover:text-white transition-colors">View all</button>}
         </div>
 
-        <div className="relative flex items-center justify-center py-2" style={carouselPerspectiveStyle} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div className="relative flex items-center justify-center py-2 carousel-perspective" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <div className="relative w-[160px] h-[240px]">
             {mobileDeck.map((movie, index) => {
               const offset = index - selectedIndex;
@@ -201,21 +201,22 @@ export function HeroCarousel({
               return (
                 <div
                   key={movie.mobifliks_id}
-                  className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out"
+                  className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out preserve-3d dynamic-card"
                   style={{
-                    transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
-                    opacity,
-                    zIndex,
-                    transformStyle: "preserve-3d"
-                  }}
+                    "--tx": `${translateX}%`,
+                    "--tz": `${translateZ}px`,
+                    "--ry": `${rotateY}deg`,
+                    "--scale": scale,
+                    "--opacity": opacity,
+                    "--zIndex": zIndex,
+                  } as React.CSSProperties}
                   onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}
                 >
                   <div className={cn("w-full h-full rounded-xl overflow-hidden shadow-2xl transition-shadow duration-500", isSelected && "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]")}>
                     <img
                       src={getImageUrl(movie.image_url)}
                       alt={movie.title}
-                      className={cn("w-full h-full object-cover", isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns")}
-                      style={isSelected && deviceProfile.allowAmbientEffects ? { animationDuration: '10s' } : undefined}
+                      className={cn("w-full h-full object-cover", isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns animate-10s")}
                       loading={index < 2 ? "eager" : "lazy"}
                       fetchPriority={index === 0 ? "high" : "auto"}
                     />
@@ -259,8 +260,8 @@ export function HeroCarousel({
               {shouldAutoplay && (
                 <div
                   key={`mobile-progress-${selectedIndex}`}
-                  className="hero-progress-bar-fill h-full bg-white rounded-full"
-                  style={{ animationDuration: `${autoplayDelayMs}ms` }}
+                  className="hero-progress-bar-fill h-full bg-white rounded-full animate-progress"
+                  style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
                 />
               )}
             </div>
@@ -464,7 +465,7 @@ export function HeroCarousel({
                     <div
                       key={`desktop-progress-${selectedIndex}`}
                       className="hero-progress-bar-fill h-full rounded-full bg-gradient-to-r from-white/60 to-white/90"
-                      style={{ animationDuration: `${autoplayDelayMs}ms` }}
+                      style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
                     />
                   )}
                 </div>

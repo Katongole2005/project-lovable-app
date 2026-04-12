@@ -80,7 +80,7 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
   }, []);
 
   const navItems = [
-    { id: "movies", label: "Movie" },
+    { id: "movies", label: "Movies" },
     { id: "series", label: "Series" },
     { id: "originals", label: "Originals" },
   ];
@@ -155,9 +155,9 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
                   data-testid={`button-nav-${item.id}`}
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 press-effect",
-                    isActive ? "text-black shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "text-[#6b6b6b] hover:text-white"
+                    isActive ? "nav-pill-active shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "text-[#6b6b6b] hover:text-white"
                   )}
-                  style={isActive ? { background: "#c8f547" } : undefined}
+
                 >
                   {item.label}
                 </button>
@@ -165,12 +165,14 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
             })}
             <button
               onClick={() => handleTabClick("search")}
+              aria-label="Search"
+              title="Search"
               data-testid="button-nav-search"
               className={cn(
                 "p-2 rounded-full transition-all duration-300",
-                activeTab === "search" ? "text-black shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "text-[#6b6b6b] hover:text-white"
+                activeTab === "search" ? "nav-pill-active shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "text-[#6b6b6b] hover:text-white"
               )}
-              style={activeTab === "search" ? { background: "#c8f547" } : undefined}
+
             >
               <Search className="w-5 h-5" />
             </button>
@@ -180,7 +182,10 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
             {mounted && (
               <button
                 onClick={toggleTheme}
-                className="p-2.5 rounded-full transition-all duration-300 press-effect hover:scale-110"
+                className={cn(
+                  "p-2.5 rounded-full transition-all duration-300 press-effect hover:scale-110",
+                  isDark ? "nav-pill-active shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "bg-[#2c2c2e]"
+                )}
                 style={{
                   background: isDark ? "#c8f547" : "#2c2c2e",
                   boxShadow: isDark ? "0 2px 12px rgba(200,245,71,0.3)" : "none",
@@ -224,9 +229,9 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
                   onClick={() => handleTabClick(item.id)}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300",
-                    isActive ? "text-black shadow-[0_2px_8px_rgba(200,245,71,0.25)]" : "text-[#6b6b6b] hover:text-white"
+                    isActive ? "nav-pill-active shadow-[0_2px_8px_rgba(200,245,71,0.25)]" : "text-[#6b6b6b] hover:text-white"
                   )}
-                  style={isActive ? { background: "#c8f547" } : undefined}
+
                 >
                   {item.label}
                 </button>
@@ -234,11 +239,13 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
             })}
             <button
               onClick={() => handleTabClick("search")}
+              aria-label="Search"
+              title="Search"
               className={cn(
                 "p-1.5 rounded-full transition-all duration-300",
-                activeTab === "search" ? "text-black shadow-[0_2px_8px_rgba(200,245,71,0.25)]" : "text-[#6b6b6b] hover:text-white"
+                activeTab === "search" ? "nav-pill-active shadow-[0_2px_8px_rgba(200,245,71,0.25)]" : "text-[#6b6b6b] hover:text-white"
               )}
-              style={activeTab === "search" ? { background: "#c8f547" } : undefined}
+
             >
               <Search className="w-4 h-4" />
             </button>

@@ -407,8 +407,7 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
                     {hasNextEpisode && onPlayNext && (
                       <button
                         onClick={(e) => { e.stopPropagation(); onPlayNext(); }}
-                        className="flex h-14 items-center gap-3 rounded-2xl px-8 text-sm font-bold text-white shadow-[0_0_30px_rgba(255,138,61,0.35)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,138,61,0.5)] active:scale-95"
-                        style={{ background: "linear-gradient(135deg, #ff8a3d, #ff4d6d)" }}
+                        className="flex h-14 items-center gap-3 rounded-2xl px-8 text-sm font-bold text-white shadow-[0_0_30px_rgba(255,138,61,0.35)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,138,61,0.5)] active:scale-95 btn-gradient-next"
                       >
                         Next Episode <SkipForward className="h-5 w-5 fill-current" />
                       </button>

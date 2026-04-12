@@ -1,3 +1,4 @@
+@import "./custom-components.css";
 /* Google Fonts loaded non-render-blocking via index.html */
 @import "tailwindcss/base";
 @import "tailwindcss/components";
