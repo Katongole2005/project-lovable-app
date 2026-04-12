@@ -1456,7 +1456,7 @@ function MobileMovieLayout({
                         </div>
                       </div>
                     ) : !detailsLoading ? (
-                      <div className="rounded-[22px] border border-white/8 px-4 py-5 text-sm text-white/58" style={MOBILE_PANEL_SURFACE_STYLE}>
+                      <div className="rounded-[22px] border border-white/8 px-4 py-5 text-sm text-white/58 modal-panel-surface">
                         No episodes available yet.
                       </div>
                     ) : null}
@@ -1559,8 +1559,7 @@ function MobileMovieLayout({
             <Button
               size="lg"
               data-testid="button-play"
-              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 overflow-hidden rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-footer-play-btn"
-              style={MOBILE_PRIMARY_PLAY_SURFACE_STYLE}
+              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 overflow-hidden rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-footer-play-btn modal-primary-play-surface"
               onClick={handlePrimaryAction}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/18 via-transparent to-black/5 pointer-events-none" />
@@ -1588,14 +1587,9 @@ function MobileMovieLayout({
                     className={cn(
                       "flex min-h-[52px] items-center justify-center gap-2 rounded-[20px] border px-3 py-3 text-[12px] font-semibold transition-transform active:scale-[0.97]",
                       action.active
-                        ? "border-transparent text-white"
+                        ? "border-transparent text-white modal-active-utility-surface"
                         : "border-white/8 bg-white/[0.035] text-white/72"
                     )}
-                    style={
-                      action.active
-                        ? MOBILE_ACTIVE_UTILITY_STYLE
-                        : undefined
-                    }
                   >
                     <Icon className={cn("h-4 w-4", action.active && "fill-current")} />
                     <span>{action.label}</span>
