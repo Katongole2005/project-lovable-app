@@ -147,7 +147,13 @@ function unwrapLegacyWorkerUrl(url: string): string {
 export function shouldProxyMediaUrl(url?: string): boolean {
   if (!url) return false;
   const normalized = unwrapLegacyWorkerUrl(url);
-  return /mobifliks\.(info|com)/i.test(normalized) || /download(mp4|serie)\.php/i.test(normalized) || /b-cdn\.net/i.test(normalized);
+  return (
+    /mobifliks\.(info|com)/i.test(normalized) ||
+    /download(mp4|serie)\.php/i.test(normalized) ||
+    /b-cdn\.net/i.test(normalized) ||
+    /pearlpix\.xyz/i.test(normalized) ||
+    /bunnycdn\.com/i.test(normalized)
+  );
 }
 
 export function buildMediaUrl({

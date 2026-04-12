@@ -102,3 +102,23 @@
 .top10-card-shadow {
   box-shadow: 0 8px 32px hsl(230 60% 5% / 0.5), 0 2px 8px hsl(230 60% 5% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.05) !important;
 }
+
+/* Cinematic Player UI */
+.btn-cinematic-play {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff5b2e 50%, #ff4d6d 100%) !important;
+}
+
+.ranking-number-offset {
+  font-family: 'Georgia', serif !important;
+  margin-right: -16px !important;
+  z-index: 0 !important;
+}
+
+.crown-float {
+  animation: crown-float 3s ease-in-out infinite !important;
+}
+
+@keyframes crown-float {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -6px); }
+}

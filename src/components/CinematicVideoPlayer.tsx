@@ -261,10 +261,7 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
                   whileTap={{ scale: 0.94 }}
                   onClick={() => setIsPlaying(true)}
                   aria-label="Play"
-                  className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full shadow-[0_0_60px_rgba(255,138,61,0.45),0_0_0_1px_rgba(255,138,61,0.3)] transition-shadow hover:shadow-[0_0_80px_rgba(255,138,61,0.6)]"
-                  style={{
-                    background: "linear-gradient(135deg, #ff8a3d 0%, #ff5b2e 50%, #ff4d6d 100%)",
-                  }}
+                  className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full shadow-[0_0_60px_rgba(255,138,61,0.45),0_0_0_1px_rgba(255,138,61,0.3)] transition-shadow hover:shadow-[0_0_80px_rgba(255,138,61,0.6)] btn-cinematic-play"
                 >
                   <Play className="ml-1.5 h-9 w-9 fill-white text-white drop-shadow-lg" />
 
