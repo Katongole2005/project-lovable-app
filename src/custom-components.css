@@ -18,6 +18,7 @@
 }
 
 .blur-image-low-res {
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
 }
 
@@ -121,4 +122,38 @@
 @keyframes crown-float {
   0%, 100% { transform: translate(-50%, 0); }
   50% { transform: translate(-50%, -6px); }
+}
+
+/* Performance & Animation Utilities */
+.will-change-transform {
+  will-change: transform !important;
+}
+
+.animate-delay-100 { animation-delay: 0.1s !important; }
+.animate-delay-150 { animation-delay: 0.15s !important; }
+.animate-delay-200 { animation-delay: 0.2s !important; }
+.animate-delay-300 { animation-delay: 0.3s !important; }
+
+/* Modal & Layout Utilities */
+.modal-surface-main {
+  background: linear-gradient(180deg, hsl(230 18% 5% / 0.95) 0%, hsl(230 18% 5%) 40px) !important;
+  border-radius: 28px 28px 0 0 !important;
+}
+
+.modal-drag-indicator {
+  background: linear-gradient(90deg, transparent, hsl(var(--accent-hue, 210) 40% 60% / 0.5), transparent) !important;
+}
+
+.content-visibility-auto {
+  content-visibility: auto !important;
+}
+
+.animate-ken-burns-mobile {
+  animation: kenBurnsMobile 20s ease-in-out infinite !important;
+}
+
+@keyframes kenBurnsMobile {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1) translate(-2%, -1%); }
+  100% { transform: scale(1); }
 }

@@ -258,11 +258,11 @@ export function HeroCarousel({
             </div>
             <div className="w-24 mx-auto h-0.5 rounded-full bg-white/20 overflow-hidden">
               {shouldAutoplay && (
-                <div
-                  key={`mobile-progress-${selectedIndex}`}
-                  className="hero-progress-bar-fill h-full bg-white rounded-full animate-progress"
-                  style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
-                />
+                  <div
+                    key={`mobile-progress-${selectedIndex}`}
+                    className="hero-progress-bar-fill h-full bg-white rounded-full animate-progress"
+                    style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
+                  />
               )}
             </div>
           </div>
@@ -290,22 +290,17 @@ export function HeroCarousel({
                 <img
                   src={backdropSrc}
                   alt=""
-                  className="w-full h-full object-cover will-change-transform"
+                  className={cn("w-full h-full object-cover will-change-transform transition-transform duration-700", deviceProfile.allowAmbientEffects && "scale-102")}
                   loading="eager"
                   fetchPriority="high"
-                  style={deviceProfile.allowAmbientEffects ? { transform: "scale(1.02)" } : undefined}
                 />
               </div>
           )}
           {!backdropSrc && (
               <div
                 key={`backdrop-fallback-${selectedIndex}`}
-                className="absolute inset-0 opacity-40 blur-[80px] pointer-events-none"
-                style={{
-                  backgroundImage: `url(${getImageUrl(currentMovie.image_url)})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}
+                className="absolute inset-0 opacity-40 blur-[80px] pointer-events-none bg-cover bg-center"
+                style={{ backgroundImage: `url(${getImageUrl(currentMovie.image_url)})` }}
               />
           )}
 

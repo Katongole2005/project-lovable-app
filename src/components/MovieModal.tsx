@@ -1115,11 +1115,9 @@ function MobileMovieLayout({
                 alt={movie.title}
                 className={cn(
                   "w-full h-full object-cover object-top transition-opacity duration-700",
-                  backdropLoaded ? "opacity-100" : "opacity-0"
+                  backdropLoaded ? "opacity-100" : "opacity-0",
+                  backdropLoaded && deviceProfile.allowAmbientEffects && "animate-ken-burns-mobile"
                 )}
-                style={{
-                  animation: backdropLoaded && deviceProfile.allowAmbientEffects ? "kenBurnsMobile 20s ease-in-out infinite" : "none",
-                }}
               />
             </div>
           )}
@@ -1188,17 +1186,15 @@ function MobileMovieLayout({
         <div className="w-full aspect-[3/4] max-h-[525px]" />
 
         <div
-          className="relative min-h-[70vh]"
+          className="relative min-h-[70vh] modal-surface-main"
           style={{
-            background: `linear-gradient(180deg, hsl(230 18% 5% / 0.95) 0%, hsl(230 18% 5%) 40px)`,
-            borderRadius: "28px 28px 0 0",
             boxShadow: `0 -20px 60px hsl(230 18% 5% / 0.5), 0 -2px 0 hsl(${accentHue} 40% 40% / 0.15)`,
           }}
         >
           <div className="flex justify-center pt-3 pb-1">
             <div
-              className="w-10 h-1 rounded-full"
-              style={{ background: `linear-gradient(90deg, transparent, hsl(${accentHue} 40% 60% / 0.5), transparent)` }}
+              className="w-10 h-1 rounded-full modal-drag-indicator"
+              style={{ "--accent-hue": accentHue } as React.CSSProperties}
             />
           </div>
 
@@ -1234,8 +1230,7 @@ function MobileMovieLayout({
               <>
                 <motion.div
                   variants={fadeInUp}
-                  className="grid grid-cols-2 gap-2.5"
-                  style={{ contentVisibility: "auto", containIntrinsicSize: "220px" }}
+                  className="grid grid-cols-2 gap-2.5 content-visibility-auto"
                 >
                   {overviewFacts.map((fact) => {
                     const Icon = fact.icon;
@@ -1431,8 +1426,7 @@ function MobileMovieLayout({
 
                     {allEpisodes.length > 0 ? (
                       <div
-                        className="relative pl-6"
-                        style={{ contentVisibility: "auto", containIntrinsicSize: "900px" }}
+                        className="relative pl-6 content-visibility-auto"
                       >
                         <div className="absolute left-[11px] top-4 bottom-4 w-[2px] rounded-full modal-timeline-line" />
                         <div className="space-y-0">
@@ -1726,11 +1720,11 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
               )}
             </div>
 
-            {progressPct > 0 && (
-              <div className="w-full h-[3px] bg-white/10">
-                <div className="episode-progress-fill h-full rounded-r-full" style={progressStyle} />
-              </div>
-            )}
+              {progressPct > 0 && (
+                <div className="w-full h-[3px] bg-white/10">
+                  <div className="episode-progress-fill h-full rounded-r-full" style={{ width: `${progressPct}%` }} />
+                </div>
+              )}
           </div>
         </div>
 

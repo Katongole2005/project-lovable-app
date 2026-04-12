@@ -6,14 +6,13 @@ interface BlurImageProps {
   alt: string;
   className?: string;
   loading?: "eager" | "lazy";
-  style?: React.CSSProperties;
 }
 
 /**
  * Progressive blur-up image: shows a blurred low-opacity placeholder,
  * then fades in the full image once loaded.
  */
-export function BlurImage({ src, alt, className, loading = "lazy", style }: BlurImageProps) {
+export function BlurImage({ src, alt, className, loading = "lazy" }: BlurImageProps) {
   const [loaded, setLoaded] = useState(false);
 
   const handleLoad = useCallback(() => {
@@ -33,7 +32,6 @@ export function BlurImage({ src, alt, className, loading = "lazy", style }: Blur
         )}
         loading={loading}
         onLoad={handleLoad}
-        style={style}
       />
       {/* Blurred placeholder shimmer overlay - fading out instead of waiting for opacity-0 img */}
       <div 

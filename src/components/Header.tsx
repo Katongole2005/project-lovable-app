@@ -1,45 +1,22 @@
-import { useState, useEffect, type MouseEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ChevronDown, User, Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Search, User, ChevronDown, Moon, Sun, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import logoLight from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
-import type { Movie } from "@/types/movie";
+import { useTheme } from "@/components/theme-provider";
 
-interface HeaderProps {
-  onSearch: (query: string) => void;
-  onMovieSelect: (movie: Movie) => void;
-  popularSearches?: string[];
-  activeTab?: string;
-  onTabChange?: (tab: string) => void;
-}
+const navItems = [
+  { id: "movies", label: "Movies", path: "/movies" },
+  { id: "series", label: "Series", path: "/series" },
+  { id: "trending", label: "Trending", path: "/trending" },
+  { id: "bookmarks", label: "My List", path: "/bookmarks" },
+];
 
-const pathToTab: Record<string, string> = {
-  "/": "home",
-  "/movies": "movies",
-  "/series": "series",
-  "/search": "search",
-  "/originals": "originals",
-};
-
-const tabToPath: Record<string, string> = {
-  home: "/",
-  movies: "/movies",
-  series: "/series",
-  search: "/search",
-  originals: "/originals",
-};
-
-export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
+export function Header() {
+  const [activeTab, setActiveTab] = useState("movies");
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
-  const navigate = useNavigate();
-  const activeTab = activeTabProp ?? pathToTab[location.pathname] ?? "home";
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
-  const [logoLoaded, setLogoLoaded] = useState(false);
-  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -47,136 +24,102 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
   }, []);
 
   useEffect(() => {
-    let lastScrollY = window.scrollY;
-    let ticking = false;
-    let scrolled = lastScrollY > 20;
-    let hidden = false;
-
     const handleScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      window.requestAnimationFrame(() => {
-      const currentY = window.scrollY;
-        const nextScrolled = currentY > 20;
-        const nextHidden = currentY > 80 && currentY > lastScrollY;
-
-        if (nextScrolled !== scrolled) {
-          scrolled = nextScrolled;
-          setIsScrolled(nextScrolled);
-        }
-
-        if (nextHidden !== hidden) {
-          hidden = nextHidden;
-          setIsHidden(nextHidden);
-        }
-
-        lastScrollY = currentY;
-        ticking = false;
-      });
+      setScrolled(window.scrollY > 20);
     };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navItems = [
-    { id: "movies", label: "Movies" },
-    { id: "series", label: "Series" },
-    { id: "originals", label: "Originals" },
-  ];
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === "/series") setActiveTab("series");
+    else if (path === "/trending") setActiveTab("trending");
+    else if (path === "/bookmarks") setActiveTab("bookmarks");
+    else if (path === "/search") setActiveTab("search");
+    else setActiveTab("movies");
+    
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
-  const isDark = resolvedTheme === "dark";
-  const currentLogo = isDark ? logoDark : logoLight;
+  const handleTabClick = (id: string) => {
+    setActiveTab(id);
+    setMobileMenuOpen(false);
+  };
 
   const toggleTheme = () => {
-    setTheme(isDark ? "light" : "dark");
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  const handleTabClick = (tab: string) => {
-    if (onTabChange) {
-      onTabChange(tab);
-      return;
-    }
-
-    navigate(tabToPath[tab] || "/");
-  };
-
-  const handleLogoClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (!onTabChange) return;
-    event.preventDefault();
-    onTabChange("home");
-  };
+  const isDark = theme === "dark";
 
   return (
-      <header 
-        className={cn(
-          "sticky top-0 z-header py-4 transition-all duration-300",
-          isScrolled && "bg-background/40 backdrop-blur-md",
-          isHidden && "-translate-y-full"
-        )}
-      >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between gap-4">
-          <Link
-            to="/"
-            className="flex-shrink-0"
-            onClick={handleLogoClick}
-            data-testid="link-logo"
-          >
-            {!logoLoaded && (
-              <Skeleton className="h-8 md:h-10 w-16 md:w-20 rounded" />
-            )}
-            <img 
-              src={currentLogo} 
-              alt="Logo" 
-              width={104}
-              height={32}
-              className={cn(
-                "h-8 md:h-10 w-auto transition-opacity duration-300",
-                logoLoaded ? "opacity-100" : "opacity-0 absolute"
-              )}
-              fetchPriority="high"
-              onLoad={() => setLogoLoaded(true)}
-            />
-          </Link>
-
-          <nav className={cn(
-            "hidden md:flex items-center gap-1 p-1.5 rounded-full border-beam",
-            isDark 
-              ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]" 
-              : ""
-          )} style={!isDark ? { background: "#1c1c1e" } : undefined}>
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabClick(item.id)}
-                  data-testid={`button-nav-${item.id}`}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 press-effect",
-                    isActive ? "nav-pill-active shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "text-[#6b6b6b] hover:text-white"
-                  )}
-
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => handleTabClick("search")}
-              aria-label="Search"
-              title="Search"
-              data-testid="button-nav-search"
-              className={cn(
-                "p-2 rounded-full transition-all duration-300",
-                activeTab === "search" ? "nav-pill-active shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "text-[#6b6b6b] hover:text-white"
-              )}
-
+    <header 
+      className={cn(
+        "fixed top-0 left-0 right-0 z-[100] transition-all duration-500",
+        scrolled 
+          ? "py-3 bg-background/80 backdrop-blur-2xl border-b border-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.3)]" 
+          : "py-6 bg-transparent"
+      )}
+    >
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-8 xl:gap-12">
+            <Link 
+              to="/" 
+              className="flex items-center gap-2 group"
+              onClick={() => handleTabClick("movies")}
+              data-testid="link-logo"
             >
-              <Search className="w-5 h-5" />
-            </button>
-          </nav>
+              <div className="relative w-10 h-10 flex items-center justify-center">
+                <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full group-hover:bg-primary/30 transition-colors" />
+                <div className="relative w-8 h-8 bg-gradient-to-br from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg transform group-hover:rotate-12 transition-transform duration-300">
+                  <span className="text-primary-foreground font-bold text-lg">M</span>
+                </div>
+              </div>
+              <span className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                MOVIE<span className="text-primary">BAY</span>
+              </span>
+            </Link>
+
+            <nav className={cn(
+              "hidden md:flex items-center gap-1 p-1.5 rounded-full border-beam",
+              isDark 
+                ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]" 
+                : "bg-[#1c1c1e]"
+            )}>
+              {navItems.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.path}
+                    onClick={() => handleTabClick(item.id)}
+                    data-testid={`button-nav-${item.id}`}
+                    className={cn(
+                      "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 press-effect",
+                      isActive ? "nav-pill-active shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "text-[#6b6b6b] hover:text-white"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <Link
+                to="/search"
+                onClick={() => handleTabClick("search")}
+                aria-label="Search"
+                title="Search"
+                data-testid="button-nav-search"
+                className={cn(
+                  "p-2 rounded-full transition-all duration-300",
+                  activeTab === "search" ? "nav-pill-active shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "text-[#6b6b6b] hover:text-white"
+                )}
+              >
+                <Search className="w-5 h-5" />
+              </Link>
+            </nav>
+          </div>
 
           <div className="flex items-center gap-3">
             {mounted && (
@@ -186,10 +129,6 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
                   "p-2.5 rounded-full transition-all duration-300 press-effect hover:scale-110",
                   isDark ? "nav-pill-active shadow-[0_2px_12px_rgba(200,245,71,0.3)]" : "bg-[#2c2c2e]"
                 )}
-                style={{
-                  background: isDark ? "#c8f547" : "#2c2c2e",
-                  boxShadow: isDark ? "0 2px 12px rgba(200,245,71,0.3)" : "none",
-                }}
                 aria-label="Toggle theme"
                 data-testid="button-theme-toggle"
               >
@@ -211,46 +150,46 @@ export function Header({ activeTab: activeTabProp, onTabChange }: HeaderProps) {
               </div>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </Link>
+
+            <button 
+              className="md:hidden p-2 rounded-full bg-white/[0.06] border border-white/[0.1]"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
 
-        <div className="md:hidden mt-4 flex justify-center">
-          <nav className={cn(
-            "flex items-center gap-1 p-1.5 rounded-full",
-            isDark 
-              ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]" 
-              : ""
-          )} style={!isDark ? { background: "#1c1c1e" } : undefined}>
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabClick(item.id)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300",
-                    isActive ? "nav-pill-active shadow-[0_2px_8px_rgba(200,245,71,0.25)]" : "text-[#6b6b6b] hover:text-white"
-                  )}
-
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => handleTabClick("search")}
-              aria-label="Search"
-              title="Search"
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-4 py-4 px-2 space-y-2 glass-card-premium rounded-2xl animate-in slide-in-from-top duration-300">
+            {navItems.map((item) => (
+              <Link
+                key={item.id}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                  activeTab === item.id ? "bg-primary text-primary-foreground" : "hover:bg-white/5"
+                )}
+                onClick={() => handleTabClick(item.id)}
+              >
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            ))}
+            <Link
+              to="/search"
               className={cn(
-                "p-1.5 rounded-full transition-all duration-300",
-                activeTab === "search" ? "nav-pill-active shadow-[0_2px_8px_rgba(200,245,71,0.25)]" : "text-[#6b6b6b] hover:text-white"
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                activeTab === "search" ? "bg-primary text-primary-foreground" : "hover:bg-white/5"
               )}
-
+              onClick={() => handleTabClick("search")}
             >
-              <Search className="w-4 h-4" />
-            </button>
-          </nav>
-        </div>
+              <Search className="w-5 h-5" />
+              <span className="font-medium">Search</span>
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );

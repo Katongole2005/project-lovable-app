@@ -101,12 +101,10 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
       data-testid={`card-movie-${movie.mobifliks_id}`}
     >
       <div
-        className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/95 md:bg-card/80 border border-white/[0.06] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm"
-        style={{
-          willChange: typeof window !== "undefined" && window.innerWidth >= 768 ? "transform" : "auto",
-          "--gloss-x": "50%",
-          "--gloss-y": "50%",
-        } as React.CSSProperties}
+        className={cn(
+          "relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/95 md:bg-card/80 border border-white/[0.06] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm",
+          typeof window !== "undefined" && window.innerWidth >= 768 && "will-change-transform"
+        )}
       >
         <BlurImage
           src={getImageUrl(movie.image_url)}
@@ -178,7 +176,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
         {showProgress !== undefined && showProgress > 0 && (
           <div className="absolute bottom-0 left-0 right-0 p-2">
             <div className="progress-bar">
-              <div className="progress-bar-fill progress-fill-dynamic" style={{ "--progress": `${showProgress}%` } as React.CSSProperties} />
+              <div className="progress-bar-fill progress-fill-dynamic" style={{ width: `${showProgress}%` } as React.CSSProperties} />
             </div>
           </div>
         )}
@@ -215,15 +213,15 @@ export function MovieCardSkeleton({ className }: { className?: string }) {
         <div className="absolute inset-0 shimmer opacity-50" />
         <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">
           <div className="h-3 bg-muted/40 rounded-full w-2/3 shimmer" />
-          <div className="h-2 bg-muted/30 rounded-full w-1/3 shimmer" style={{ animationDelay: "0.3s" }} />
+          <div className="h-2 bg-muted/30 rounded-full w-1/3 shimmer animate-delay-300" />
         </div>
-        <div className="absolute top-2 left-2 h-4 w-10 rounded-full bg-muted/30 shimmer" style={{ animationDelay: "0.15s" }} />
+        <div className="absolute top-2 left-2 h-4 w-10 rounded-full bg-muted/30 shimmer animate-delay-150" />
       </div>
       <div className="mt-3 space-y-2">
         <div className="h-4 bg-muted/30 rounded-lg shimmer w-4/5" />
         <div className="flex gap-2">
-          <div className="h-3 bg-muted/20 rounded-lg shimmer w-10" style={{ animationDelay: "0.1s" }} />
-          <div className="h-3 bg-muted/20 rounded-lg shimmer w-8" style={{ animationDelay: "0.2s" }} />
+          <div className="h-3 bg-muted/20 rounded-lg shimmer w-10 animate-delay-100" />
+          <div className="h-3 bg-muted/20 rounded-lg shimmer w-8 animate-delay-200" />
         </div>
       </div>
     </div>

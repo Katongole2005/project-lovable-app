@@ -40,6 +40,7 @@ export interface Movie {
   details_url?: string;
   subtitles?: SubtitleTrack[];
   skip_segments?: SkipSegment[];
+  video_page_url?: string;
 }
 
 export interface Episode {
