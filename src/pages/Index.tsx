@@ -100,24 +100,28 @@ function parseEpisodeInfoFromTitle(title: string): {
 }
 
 function buildPrimaryPlaybackUrl(item: Movie | Series): string | null {
-  if (item.type === "movie" && item.download_url) {
-    return buildMediaUrl({
-      url: item.download_url,
-      title: item.title,
-      detailsUrl: item.video_page_url || item.details_url,
-      mobifliksId: item.mobifliks_id,
-      play: true,
-    });
+  if (item.type === "movie") {
+    const targetUrl = item.download_url || item.server2_url;
+    if (targetUrl) {
+      return buildMediaUrl({
+        url: targetUrl,
+        title: item.title,
+        detailsUrl: item.video_page_url || item.details_url,
+        mobifliksId: item.mobifliks_id,
+        play: true,
+      });
+    }
   }
 
-  const firstEpisode = (item as Series).episodes?.find((episode) => episode.download_url);
-  if (!firstEpisode?.download_url) {
+  const firstEpisode = (item as Series).episodes?.find((episode) => episode.download_url || episode.server2_url);
+  const targetUrl = firstEpisode?.download_url || firstEpisode?.server2_url;
+  if (!targetUrl) {
     return null;
   }
 
   const seasonNumber = firstEpisode.season_number || 1;
   return buildMediaUrl({
-    url: firstEpisode.download_url,
+    url: targetUrl,
     title: `${item.title} - S${seasonNumber}:E${firstEpisode.episode_number}`,
     detailsUrl: firstEpisode.video_page_url || item.video_page_url || item.details_url,
     mobifliksId: firstEpisode.mobifliks_id || item.mobifliks_id,
@@ -662,8 +666,9 @@ export default function Index() {
   selectedMovieRef.current = selectedMovie;
 
   const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
-    const cachedMedia = getCachedMediaAvailability(url);
-    const playbackUrl = cachedMedia?.resolved_url || url;
+    const proxiedUrl = buildMediaUrl({ url, title, play: true });
+    const cachedMedia = getCachedMediaAvailability(proxiedUrl);
+    const playbackUrl = cachedMedia?.resolved_url || proxiedUrl;
 
     const movie = selectedMovieRef.current;
     const parsedEpisode = parseEpisodeInfoFromTitle(title);
@@ -770,9 +775,10 @@ export default function Index() {
 
   // Handle play from hero
   const handleHeroPlay = useCallback((movie: Movie) => {
-    if (movie.download_url) {
+    const targetUrl = movie.download_url || movie.server2_url;
+    if (targetUrl) {
       const mediaUrl = buildMediaUrl({
-        url: movie.download_url,
+        url: targetUrl,
         title: movie.title,
         detailsUrl: movie.video_page_url || movie.details_url,
         mobifliksId: movie.mobifliks_id,
