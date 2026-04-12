@@ -59,9 +59,12 @@ async function downloadWithName(url: string, filename: string, detailsUrl?: stri
   }
   
   toast.success(`Downloading "${safeName}"`, { id: "dl-toast" });
+  console.log(`[Download] Initializing download for: ${safeName} (${ext})`);
   const anchor = document.createElement("a");
   anchor.href = mediaUrl;
   anchor.download = fullName;
+  anchor.target = "_blank";
+  anchor.rel = "noopener noreferrer";
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);

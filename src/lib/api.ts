@@ -176,6 +176,8 @@ export function buildMediaUrl({
     endpoint.searchParams.set("name", title || "video");
     if (play) {
       endpoint.searchParams.set("play", "1");
+    } else {
+      endpoint.searchParams.set("download", "1");
     }
     return endpoint.toString();
   }
