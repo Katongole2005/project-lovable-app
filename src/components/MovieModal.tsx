@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Movie, Series, Episode, CastMember } from "@/types/movie";
-import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, resolveMediaAvailability, warmMediaElement } from "@/lib/api";
+import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, resolveMediaAvailability, warmMediaElement, fetchMediaSize } from "@/lib/api";
 
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
@@ -130,6 +130,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
   const [userRating, setUserRatingState] = React.useState<number | null>(null);
   const [inWatchlist, setInWatchlist] = React.useState(false);
   const [entranceVisible, setEntranceVisible] = React.useState(false);
+  const [movieS1Size, setMovieS1Size] = React.useState<string | null>(null);
+  const [movieS2Size, setMovieS2Size] = React.useState<string | null>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch missing TMDB data (especially for series)
@@ -194,12 +196,24 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     return () => clearTimeout(t);
   }, [allowDesktopMotion, isOpen, movie?.mobifliks_id]);
 
-  React.useEffect(() => {
     if (movie) {
       setUserRatingState(getUserRating(movie.mobifliks_id));
       setInWatchlist(isInWatchlist(movie.mobifliks_id));
+      
+      // Fetch sizes for non-series movies OR first episode of series
+      if (movie.type !== "series") {
+        if (movie.download_url) fetchMediaSize(movie.download_url, movie.title).then(setMovieS1Size);
+        if (movie.server2_url) fetchMediaSize(movie.server2_url, movie.title).then(setMovieS2Size);
+      } else {
+        const series = movie as Series;
+        if (series.episodes && series.episodes.length > 0) {
+          const ep1 = series.episodes[0];
+          if (ep1.download_url) fetchMediaSize(ep1.download_url, movie.title).then(setMovieS1Size);
+          if (ep1.server2_url) fetchMediaSize(ep1.server2_url, movie.title).then(setMovieS2Size);
+        }
+      }
     }
-  }, [movie?.mobifliks_id]);
+  }, [movie?.mobifliks_id, isOpen, (movie as Series).episodes?.length]);
 
   React.useEffect(() => {
     setDesktopBackdropLoaded(false);
@@ -291,6 +305,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
           onToggleWatchlist={handleToggleWatchlist}
           detailsLoading={detailsLoading}
           onMovieSelect={onMovieSelect}
+          movieS1Size={movieS1Size}
+          movieS2Size={movieS2Size}
         />
 
         {/* Desktop/Tablet Layout with glassmorphism */}
@@ -469,6 +485,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                         >
                           <Play className="w-5 h-5 fill-current" />
                           {movie.server2_url ? "Server 1" : "Play"}
+                          {movieS1Size && <span className="text-sm opacity-70 ml-1.5">({movieS1Size})</span>}
                         </Button>
                       )}
                       {!isSeries && movie.server2_url && (
@@ -482,6 +499,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                         >
                           <Play className="w-5 h-5 fill-current" />
                           {movie.download_url ? "Server 2" : "Play"}
+                          {movieS2Size && <span className="text-sm opacity-70 ml-1.5">({movieS2Size})</span>}
                         </Button>
                       )}
                       {isSeries && series.episodes && series.episodes.length > 0 && (
@@ -502,6 +520,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                             >
                               <Play className="w-5 h-5 fill-current" />
                               {series.episodes[0]?.server2_url ? "Ep 1 (Server 1)" : "Play S1:E1"}
+                              {movieS1Size && <span className="text-sm opacity-70 ml-1.5">({movieS1Size})</span>}
                             </Button>
                           )}
                           {series.episodes[0]?.server2_url && (
@@ -520,6 +539,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                             >
                               <Play className="w-5 h-5 fill-current" />
                               {series.episodes[0]?.download_url ? "Ep 1 (Server 2)" : "Play S1:E1"}
+                              {movieS2Size && <span className="text-sm opacity-70 ml-1.5">({movieS2Size})</span>}
                             </Button>
                           )}
                         </>
@@ -694,6 +714,8 @@ interface MobileMovieLayoutProps {
   onToggleWatchlist: () => void;
   detailsLoading: boolean;
   onMovieSelect?: (movie: Movie) => void;
+  movieS1Size?: string | null;
+  movieS2Size?: string | null;
 }
 
 function MobileMovieLayout({
@@ -880,9 +902,13 @@ function MobileMovieLayout({
     : isSeries
       ? "Start Season 1"
       : "Play Now";
-  const primaryActionHint = isSeries
-    ? `${allEpisodes.length} episode${allEpisodes.length === 1 ? "" : "s"} ready`
-    : movie.file_size || runtimeLabel || "Ready to stream";
+  const primaryActionHint = React.useMemo(() => {
+    if (isSeries) {
+      return `${allEpisodes.length} episode${allEpisodes.length === 1 ? "" : "s"} ready`;
+    }
+    const sizes = [movieS1Size, movieS2Size].filter(Boolean).join(" / ");
+    return sizes || movie.file_size || runtimeLabel || "Ready to stream";
+  }, [isSeries, allEpisodes.length, movieS1Size, movieS2Size, movie.file_size, runtimeLabel]);
 
   const handleShare = React.useCallback(async () => {
     const typeSlug = movie.type === "series" ? "series" : "movie";
@@ -1611,6 +1637,18 @@ interface MobileTimelineEpisodeProps {
 }
 
 function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, isResumeTarget, progressPct = 0 }: MobileTimelineEpisodeProps) {
+  const [s1Size, setS1Size] = React.useState<string | null>(null);
+  const [s2Size, setS2Size] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (episode.download_url) {
+      fetchMediaSize(episode.download_url, seriesTitle).then(setS1Size);
+    }
+    if (episode.server2_url) {
+      fetchMediaSize(episode.server2_url, seriesTitle).then(setS2Size);
+    }
+  }, [episode.download_url, episode.server2_url, seriesTitle]);
+
   const hasVideo = (episode.download_url &&
     (episode.download_url.includes(".mp4") ||
       episode.download_url.includes("downloadmp4") ||
@@ -1677,9 +1715,9 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
           )}
 
           <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-            {episode.file_size && (
+            {(s1Size || s2Size || episode.file_size) && (
               <span className="px-2 py-0.5 text-[9px] font-semibold text-white/80 bg-black/50 rounded-md">
-                {episode.file_size}
+                {s1Size || s2Size || episode.file_size}
               </span>
             )}
           </div>
@@ -1839,6 +1877,18 @@ interface DesktopEpisodeCardProps {
 
 // Desktop episode card - Netflix-style horizontal layout with thumbnail
 function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: DesktopEpisodeCardProps) {
+  const [s1Size, setS1Size] = React.useState<string | null>(null);
+  const [s2Size, setS2Size] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (episode.download_url) {
+      fetchMediaSize(episode.download_url, seriesTitle).then(setS1Size);
+    }
+    if (episode.server2_url) {
+      fetchMediaSize(episode.server2_url, seriesTitle).then(setS2Size);
+    }
+  }, [episode.download_url, episode.server2_url, seriesTitle]);
+
   const hasVideo = (episode.download_url &&
     (episode.download_url.includes(".mp4") ||
       episode.download_url.includes("downloadmp4") ||
@@ -1873,9 +1923,9 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
           </div>
         </div>
         {/* Watch progress indicator */}
-        {episode.file_size && (
+        {(s1Size || s2Size || episode.file_size) && (
           <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/70 text-xs text-white/90 backdrop-blur-sm">
-            {episode.file_size}
+            {s1Size || s2Size || episode.file_size}
           </div>
         )}
       </div>
@@ -1888,7 +1938,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
             {episode.episode_number}. {episode.title || `Episode ${episode.episode_number}`}
           </h5>
           <div className="flex items-center gap-3 text-sm text-white/60 flex-shrink-0">
-            {episode.file_size && <span>{episode.file_size}</span>}
+            {(s1Size || s2Size || episode.file_size) && <span>{s1Size || s2Size || episode.file_size}</span>}
           </div>
         </div>
 
@@ -1917,6 +1967,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   {episode.server2_url ? "S1" : "Play"}
+                  {s1Size && <span className="text-[10px] opacity-70 ml-1">({s1Size})</span>}
                 </Button>
               )}
               {episode.server2_url && (
@@ -1933,6 +1984,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   {episode.download_url ? "S2" : "Play"}
+                  {s2Size && <span className="text-[10px] opacity-70 ml-1">({s2Size})</span>}
                 </Button>
               )}
               {FEATURE_FLAGS.DOWNLOAD_ENABLED && (

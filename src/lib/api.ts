@@ -156,6 +156,37 @@ export function shouldProxyMediaUrl(url?: string): boolean {
   );
 }
 
+export async function fetchMediaSize(url: string, title?: string): Promise<string | null> {
+  if (!CLOUDFLARE_WORKER_URL) return null;
+  
+  try {
+    const workerUrl = new URL(CLOUDFLARE_WORKER_URL);
+    workerUrl.searchParams.set("url", url);
+    workerUrl.searchParams.set("size", "1");
+    if (title) workerUrl.searchParams.set("name", title);
+
+    const response = await fetch(workerUrl.toString());
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    if (data.size && data.size !== "unknown") {
+      const bytes = parseInt(data.size);
+      if (isNaN(bytes)) return null;
+      
+      if (bytes < 1024) return `${bytes} B`;
+      const kb = bytes / 1024;
+      if (kb < 1024) return `${kb.toFixed(1)} KB`;
+      const mb = kb / 1024;
+      if (mb < 1024) return `${mb.toFixed(1)} MB`;
+      const gb = mb / 1024;
+      return `${gb.toFixed(2)} GB`;
+    }
+  } catch (e) {
+    console.error("Failed to fetch media size:", e);
+  }
+  return null;
+}
+
 export function buildMediaUrl({
   url,
   title,
