@@ -1591,27 +1591,36 @@ function MobileMovieLayout({
           />
           <div className="space-y-3">
             <div className="flex flex-col gap-3">
-              {/* Server Selection */}
-              {(movie.download_url && movie.server2_url || (isSeries && series.episodes?.[0]?.download_url && series.episodes?.[0]?.server2_url)) && (
-                <div className="flex items-center justify-center p-1 rounded-2xl bg-white/[0.04] border border-white/8">
-                  <button
-                    onClick={() => setSelectedServer(1)}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-bold transition-all",
-                      selectedServer === 1 ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white/60"
-                    )}
-                  >
-                    Server 1
-                  </button>
-                  <button
-                    onClick={() => setSelectedServer(2)}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-bold transition-all",
-                      selectedServer === 2 ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white/60"
-                    )}
-                  >
-                    Server 2
-                  </button>
+              {(movie.server2_url || (isSeries && series.episodes?.some(ep => ep.server2_url))) && (
+                <div className="space-y-3 pt-4 border-t border-white/5">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Playback Server</h3>
+                  <div className="flex items-center justify-center p-1 rounded-2xl bg-white/[0.04] border border-white/8 shadow-2xl">
+                    <button
+                      onClick={() => setSelectedServer(1)}
+                      className={cn(
+                        "flex-1 px-4 py-3 rounded-xl text-xs font-bold transition-all",
+                        selectedServer === 1 
+                          ? "bg-white text-black shadow-[0_4px_12px_rgba(255,255,255,0.3)] scale-[1.02]" 
+                          : "text-white/60 hover:text-white"
+                      )}
+                    >
+                      Server 1 (High Quality)
+                    </button>
+                    <button
+                      onClick={() => setSelectedServer(2)}
+                      className={cn(
+                        "flex-1 px-4 py-3 rounded-xl text-xs font-bold transition-all",
+                        selectedServer === 2 
+                          ? "bg-white text-black shadow-[0_4px_12px_rgba(255,255,255,0.3)] scale-[1.02]" 
+                          : "text-white/60 hover:text-white"
+                      )}
+                    >
+                      Server 2 (Backup)
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-center text-white/20 px-4">
+                    Switch server if playback is slow or not working.
+                  </p>
                 </div>
               )}
 

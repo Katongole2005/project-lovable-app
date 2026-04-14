@@ -149,7 +149,9 @@ export function shouldProxyMediaUrl(url?: string): boolean {
   const normalized = unwrapLegacyWorkerUrl(url);
   return (
     /mobifliks\.(info|com)/i.test(normalized) ||
-    /download(mp4|serie)\.php/i.test(normalized) ||
+    /zflix\.(click|com)/i.test(normalized) ||
+    /download(mp4|serie|video|mp3)\.php/i.test(normalized) ||
+    /\/download\/(mp4|serie|video|file)\//i.test(normalized) ||
     /b-cdn\.net/i.test(normalized) ||
     /pearlpix\.xyz/i.test(normalized) ||
     /bunnycdn\.com/i.test(normalized)
