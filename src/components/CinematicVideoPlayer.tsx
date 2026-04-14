@@ -352,6 +352,17 @@ video::-webkit-media-controls { display:none !important; }
             )}
           </AnimatePresence>
 
+          {/* ── IFRAME PLAYER ── */}
+          <AnimatePresence>
+            {isPlaying && (
+              <motion.div
+                key="player"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 z-10 bg-black"
+              >
                 {/* iframe fills the whole area */}
                 <iframe
                   ref={iframeRef}
@@ -410,10 +421,6 @@ video::-webkit-media-controls { display:none !important; }
                         onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
                         className="pointer-events-auto w-24 h-24 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group shadow-2xl"
                        >
-                         {/* This button is tricky because isPlaying is already true if we see this overlay. 
-                             We need a way to track internal play state or just assume toggling works.
-                             Actually, we'll use a local state for actual playback if needed, but for now, 
-                             standard controls include this. */}
                          <Play className="w-10 h-10 text-white fill-white ml-1.5" />
                        </button>
                     </div>
@@ -459,7 +466,7 @@ video::-webkit-media-controls { display:none !important; }
                           </button>
                         </div>
 
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center justify-between gap-6">
                           <div className="flex items-center gap-3 group">
                             <button onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); sendCommand('muted', !isMuted); }} className="text-white/70 hover:text-white transition-colors">
                               {isMuted || volume === 0 ? <VolumeX className="h-6 w-6 text-red-400" /> : <Volume2 className="h-6 w-6" />}
