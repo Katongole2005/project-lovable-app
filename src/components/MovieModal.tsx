@@ -740,6 +740,7 @@ function MobileMovieLayout({
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
   const [showCompactHeader, setShowCompactHeader] = React.useState(false);
   const [backdropLoaded, setBackdropLoaded] = React.useState(false);
+  const [selectedServer, setSelectedServer] = React.useState<1 | 2>(1);
   const [relatedMovies, setRelatedMovies] = React.useState<Movie[]>([]);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
@@ -906,9 +907,9 @@ function MobileMovieLayout({
     if (isSeries) {
       return `${allEpisodes.length} episode${allEpisodes.length === 1 ? "" : "s"} ready`;
     }
-    const sizes = [movieS1Size, movieS2Size].filter(Boolean).join(" / ");
-    return sizes || movie.file_size || runtimeLabel || "Ready to stream";
-  }, [isSeries, allEpisodes.length, movieS1Size, movieS2Size, movie.file_size, runtimeLabel]);
+    const currentSize = selectedServer === 1 ? movieS1Size : movieS2Size;
+    return currentSize || movie.file_size || runtimeLabel || "Ready to stream";
+  }, [isSeries, allEpisodes.length, movieS1Size, movieS2Size, movie.file_size, runtimeLabel, selectedServer]);
 
   const handleShare = React.useCallback(async () => {
     const typeSlug = movie.type === "series" ? "series" : "movie";
@@ -938,11 +939,13 @@ function MobileMovieLayout({
   }, [movie.mobifliks_id, movie.title, movie.type, movie.year]);
 
   const handleMovieDownload = React.useCallback(() => {
-    const targetUrl = movie.download_url || movie.server2_url;
+    const targetUrl = selectedServer === 1 
+      ? (movie.download_url || movie.server2_url) 
+      : (movie.server2_url || movie.download_url);
     if (!targetUrl) return;
     const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
     downloadWithName(targetUrl, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
-  }, [movie]);
+  }, [movie, selectedServer]);
 
   const handlePrimaryAction = React.useCallback(() => {
     if (isSeries) {
@@ -959,8 +962,12 @@ function MobileMovieLayout({
         }
 
         const firstEpisode = series.episodes[0];
-        if (firstEpisode?.download_url) {
-          onPlay(firstEpisode.download_url, `${movie.title} - S1:E1`);
+        const targetUrl = selectedServer === 1
+          ? (firstEpisode?.download_url || firstEpisode?.server2_url)
+          : (firstEpisode?.server2_url || firstEpisode?.download_url);
+
+        if (targetUrl) {
+          onPlay(targetUrl, `${movie.title} - S1:E1`);
         } else {
           toast.error("The first episode is not currently playable.");
         }
@@ -972,13 +979,17 @@ function MobileMovieLayout({
       return;
     }
 
-    if (movie.download_url) {
-      onPlay(movie.download_url, movie.title);
+    const targetUrl = selectedServer === 1 
+      ? (movie.download_url || movie.server2_url) 
+      : (movie.server2_url || movie.download_url);
+
+    if (targetUrl) {
+      onPlay(targetUrl, movie.title);
       return;
     }
 
     toast.error("This title is not currently playable.");
-  }, [isSeries, movie.download_url, movie.title, onPlay, resumeEpisode, series.episodes]);
+  }, [isSeries, movie.download_url, movie.server2_url, movie.title, onPlay, resumeEpisode, series.episodes, selectedServer]);
 
   const utilityActions = React.useMemo(() => {
     const actions: Array<{
@@ -1405,7 +1416,9 @@ function MobileMovieLayout({
                             toast.info(`Starting ${downloadable.length} downloads...`);
                             const seasonNum = currentSeasonEpisodes[0]?.season_number ?? 1;
                             downloadable.forEach((ep, i) => {
-                              const targetUrl = ep.download_url || ep.server2_url;
+                              const targetUrl = selectedServer === 1 
+                                ? (ep.download_url || ep.server2_url) 
+                                : (ep.server2_url || ep.download_url);
                               if (targetUrl) {
                                 const epName = `${movie.title} - S${seasonNum}E${String(ep.episode_number).padStart(2, '0')}`;
                                 setTimeout(() => downloadWithName(targetUrl!, epName, undefined, ep.mobifliks_id), i * 800);
@@ -1471,6 +1484,7 @@ function MobileMovieLayout({
                                   : idx === 0
                               }
                               progressPct={cwProgressMap.get(`${selectedSeason}-${episode.episode_number}`) || 0}
+                              selectedServer={selectedServer}
                             />
                           ))}
                         </div>
@@ -1576,23 +1590,53 @@ function MobileMovieLayout({
             className="absolute top-0 left-0 right-0 h-px modal-footer-glow"
           />
           <div className="space-y-3">
-            <Button
-              size="lg"
-              data-testid="button-play"
-              className="h-auto min-h-[58px] w-full items-center justify-between gap-3 overflow-hidden rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-footer-play-btn modal-primary-play-surface"
-              onClick={handlePrimaryAction}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/18 via-transparent to-black/5 pointer-events-none" />
-              <div className="relative flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-                  <Play className="h-5 w-5 fill-current" />
+            <div className="flex flex-col gap-3">
+              {/* Server Selection */}
+              {(movie.download_url && movie.server2_url || (isSeries && series.episodes?.[0]?.download_url && series.episodes?.[0]?.server2_url)) && (
+                <div className="flex items-center justify-center p-1 rounded-2xl bg-white/[0.04] border border-white/8">
+                  <button
+                    onClick={() => setSelectedServer(1)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-bold transition-all",
+                      selectedServer === 1 ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white/60"
+                    )}
+                  >
+                    Server 1
+                  </button>
+                  <button
+                    onClick={() => setSelectedServer(2)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-bold transition-all",
+                      selectedServer === 2 ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white/60"
+                    )}
+                  >
+                    Server 2
+                  </button>
                 </div>
-                <div>
-                  <p className="text-[15px] font-bold tracking-[-0.02em]">{primaryActionLabel}</p>
-                  <p className="mt-0.5 text-[11px] font-medium text-white/68">{primaryActionHint}</p>
+              )}
+
+              <Button
+                size="lg"
+                data-testid="button-play"
+                className="h-auto min-h-[58px] w-full items-center justify-between gap-3 overflow-hidden rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-footer-play-btn modal-primary-play-surface"
+                onClick={handlePrimaryAction}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/18 via-transparent to-black/5 pointer-events-none" />
+                <div className="relative flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
+                    <Play className="h-5 w-5 fill-current" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold tracking-[-0.02em]">{primaryActionLabel}</p>
+                    <p className="mt-0.5 text-[11px] font-medium text-white/68">{primaryActionHint}</p>
+                  </div>
                 </div>
-              </div>
-            </Button>
+                {/* Optional server badge on the button */}
+                <span className="relative flex items-center justify-center h-8 px-3 rounded-full bg-black/20 border border-white/10 text-[9px] font-black uppercase tracking-wider text-white/60">
+                  SRV {selectedServer}
+                </span>
+              </Button>
+            </div>
 
             <div className={cn("grid gap-2.5", utilityGridClass)}>
               {utilityActions.map((action) => {
@@ -1634,9 +1678,10 @@ interface MobileTimelineEpisodeProps {
   index: number;
   isResumeTarget: boolean;
   progressPct?: number;
+  selectedServer?: 1 | 2;
 }
 
-function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, isResumeTarget, progressPct = 0 }: MobileTimelineEpisodeProps) {
+function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, isResumeTarget, progressPct = 0, selectedServer = 1 }: MobileTimelineEpisodeProps) {
   const [s1Size, setS1Size] = React.useState<string | null>(null);
   const [s2Size, setS2Size] = React.useState<string | null>(null);
 
@@ -1688,8 +1733,14 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
             : "border-[hsl(230_15%_20%_/_0.4)] bg-[linear-gradient(135deg,hsl(230_18%_11%_/_0.5),hsl(230_18%_7%_/_0.4))] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)]"
         )}
         onClick={() => {
-          if (hasVideo && episode.download_url) {
-            onPlay(episode.download_url, `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`);
+          if (hasVideo) {
+            const targetUrl = selectedServer === 1
+              ? (episode.download_url || episode.server2_url)
+              : (episode.server2_url || episode.download_url);
+            
+            if (targetUrl) {
+              onPlay(targetUrl, `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`);
+            }
           }
         }}
       >
@@ -1715,11 +1766,16 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
           )}
 
           <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-            {(s1Size || s2Size || episode.file_size) && (
-              <span className="px-2 py-0.5 text-[9px] font-semibold text-white/80 bg-black/50 rounded-md">
-                {s1Size || s2Size || episode.file_size}
-              </span>
-            )}
+            {(() => {
+              const currentSize = selectedServer === 1 ? s1Size : s2Size;
+              const displaySize = currentSize || episode.file_size || s1Size || s2Size;
+              if (!displaySize) return null;
+              return (
+                <span className="px-2 py-0.5 text-[9px] font-semibold text-white/80 bg-black/50 rounded-md">
+                  {displaySize}
+                </span>
+              );
+            })()}
           </div>
 
           {hasVideo && !isResumeTarget && (
@@ -1777,7 +1833,9 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const tUrl = episode.download_url || episode.server2_url;
+                  const tUrl = selectedServer === 1 
+                    ? (episode.download_url || episode.server2_url) 
+                    : (episode.server2_url || episode.download_url);
                   if (tUrl) {
                     const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, "0")}`;
                     downloadWithName(tUrl, epName, undefined, episode.mobifliks_id);
