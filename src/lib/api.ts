@@ -151,10 +151,12 @@ export function shouldProxyMediaUrl(url?: string): boolean {
     /mobifliks\.(info|com)/i.test(normalized) ||
     /zflix\.(click|com)/i.test(normalized) ||
     /download(mp4|serie|video|mp3)\.php/i.test(normalized) ||
+    /\/watch\/(mp4|serie|video|file)\//i.test(normalized) ||
     /\/download\/(mp4|serie|video|file)\//i.test(normalized) ||
     /b-cdn\.net/i.test(normalized) ||
     /pearlpix\.xyz/i.test(normalized) ||
-    /bunnycdn\.com/i.test(normalized)
+    /bunnycdn\.com/i.test(normalized) ||
+    /storage\.googleapis\.com/i.test(normalized)
   );
 }
 

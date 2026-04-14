@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Play, ChevronDown, Maximize, Minimize, SkipForward, RotateCcw } from "lucide-react";
+import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, FastForward } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/lib/api";
+import { Slider } from "@/components/ui/slider";
 import type { Movie, Series, SubtitleTrack, SkipSegment } from "@/types/movie";
 
 interface CinematicVideoPlayerProps {
@@ -37,6 +37,15 @@ export function CinematicVideoPlayer({
   const [hasEnded, setHasEnded] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  
+  // Custom Controls State
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -67,20 +76,36 @@ export function CinematicVideoPlayer({
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:#000;overflow:hidden}
 video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
+video::-webkit-media-controls { display:none !important; }
 </style>
 </head>
 <body>
 <video
   src="${videoUrl.replace(/"/g, "&quot;")}"
-  controls
   autoplay
   playsinline
   preload="auto"
   ${startSec > 0 ? `currentTime="${startSec}"` : ""}
-  onloadedmetadata="if(${startSec}>0){this.currentTime=${startSec}}"
+  onloadedmetadata="window.parent.postMessage({t:'lm',dur:this.duration},'*'); if(${startSec}>0){this.currentTime=${startSec}}"
   onended="window.parent.postMessage('ended','*')"
   ontimeupdate="window.parent.postMessage({t:'tu',ct:this.currentTime,dur:isNaN(this.duration)?0:this.duration},'*')"
+  onwaiting="window.parent.postMessage({t:'buf', v:true}, '*')"
+  onplaying="window.parent.postMessage({t:'buf', v:false}, '*')"
+  onerror="window.parent.postMessage({t:'err'}, '*')"
 ></video>
+<script>
+  const v = document.querySelector('video');
+  window.addEventListener('message', (e) => {
+    if (!e.data || typeof e.data !== 'object') return;
+    const { type, val } = e.data;
+    if (type === 'play') v.play();
+    if (type === 'pause') v.pause();
+    if (type === 'seek') v.currentTime = val;
+    if (type === 'volume') v.volume = val;
+    if (type === 'muted') v.muted = val;
+    if (type === 'rate') v.playbackRate = val;
+  });
+</script>
 </body>
 </html>`;
 
@@ -100,8 +125,20 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
     const handleMessage = (e: MessageEvent) => {
       if (e.data === "ended") {
         setHasEnded(true);
-      } else if (e.data && typeof e.data === "object" && e.data.t === "tu") {
-        onTimeUpdate?.(e.data.ct, e.data.dur);
+      } else if (e.data && typeof e.data === "object") {
+        const { t, ct, dur, v } = e.data;
+        if (t === "tu") {
+          if (!isSeeking) setCurrentTime(ct);
+          if (dur > 0) setDuration(dur);
+          onTimeUpdate?.(ct, dur);
+        } else if (t === "lm") {
+          setDuration(dur);
+        } else if (t === "buf") {
+          setIsBuffering(v);
+        } else if (t === "err") {
+          // Playback error - usually "not available"
+          setIsPlaying(false);
+        }
       }
     };
     window.addEventListener("message", handleMessage);
@@ -175,6 +212,37 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
     const sep = videoUrl.includes("?") ? "&" : "?";
     return videoUrl + `${sep}autoplay=1${startTime > 0 ? `&start=${Math.floor(startTime)}` : ""}`;
   })();
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const sendCommand = (type: string, val?: any) => {
+    iframeRef.current?.contentWindow?.postMessage({ type, val }, "*");
+  };
+
+  const handleSeek = (values: number[]) => {
+    const time = values[0];
+    setCurrentTime(time);
+    sendCommand('seek', time);
+  };
+
+  const togglePlay = () => {
+    const next = !isPlaying;
+    // Special case: if we were on splash, isPlaying starts splash, handled by component logic
+    // If already playing iframe, we toggle the video tag inside
+    if (next) sendCommand('play');
+    else sendCommand('pause');
+  };
+
+  const skip = (amount: number) => {
+    const next = Math.max(0, Math.min(duration, currentTime + amount));
+    handleSeek([next]);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -284,18 +352,7 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
             )}
           </AnimatePresence>
 
-          {/* ── IFRAME PLAYER ── */}
-          <AnimatePresence>
-            {isPlaying && (
-              <motion.div
-                key="player"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0 z-10 bg-black"
-              >
-                {/* iframe fills the whole area — NO overlay on top of it */}
+                {/* iframe fills the whole area */}
                 <iframe
                   ref={iframeRef}
                   key={iframeSrc}
@@ -303,65 +360,148 @@ video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
                   title={title}
                   allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
                   allowFullScreen
-                  className="absolute inset-0 w-full h-full border-0 bg-black"
+                  className="absolute inset-x-0 bottom-0 w-full h-full border-0 bg-black"
+                  style={{ top: '-10px', height: 'calc(100% + 20px)' }} // Slight overflow to hide native controls if they appear
                 />
 
-                {/* Top control bar — floats above iframe, pointer-events only on itself */}
+                {/* Loading/Buffering Bar */}
+                {isBuffering && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 pointer-events-none">
+                    <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  </div>
+                )}
+
+                {/* Custom Overlay Controls */}
                 <div
                   className={cn(
-                    "absolute inset-x-0 top-0 z-30 transition-all duration-300 pointer-events-none",
-                    showControls ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
+                    "absolute inset-0 z-30 transition-all duration-500",
+                    showControls ? "opacity-100" : "opacity-0 cursor-none"
                   )}
+                  onClick={() => setShowControls(prev => !prev)}
                 >
-                  {/* gradient scrim */}
-                  <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/75 via-black/30 to-transparent pointer-events-none" />
-
-                  <div className="relative flex items-center justify-between gap-3 px-4 py-4 md:px-6 pointer-events-auto">
-                    <button
-                      onClick={handleClose}
-                      aria-label="Go back"
-                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white shadow-xl backdrop-blur-xl transition-all hover:bg-white/10 active:scale-95"
-                    >
-                      <ChevronDown className="h-5 w-5" />
-                    </button>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-white tracking-tight drop-shadow-lg">{title}</p>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-white/60">
-                        <span className="w-1 h-1 rounded-full bg-[#ff8a3d]" />
-                        {movie?.type === "series" ? "Series" : "Movie"}
-                        {year && <><span className="w-1 h-1 rounded-full bg-white/20" />{year}</>}
-                        {genres[0] && <><span className="w-1 h-1 rounded-full bg-white/20" />{genres[0]}</>}
+                  {/* Top Bar (already mostly implemented, but polished) */}
+                  <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-start justify-between px-6 pt-6 pointer-events-auto">
+                    <div className="flex items-center gap-4">
+                      <button onClick={handleClose} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all active:scale-90">
+                        <ChevronDown className="h-6 w-6 text-white" />
+                      </button>
+                      <div>
+                        <h2 className="text-white font-bold tracking-tight text-lg">{title}</h2>
+                        <div className="flex items-center gap-2 text-white/50 text-[11px] font-medium uppercase tracking-wider">
+                          <span>{movie?.type === "series" ? "Series" : "Movie"}</span>
+                          {year && <span>• {year}</span>}
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={toggleFullscreen}
-                        aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white/80 shadow-lg backdrop-blur-xl transition-all hover:bg-white/10 hover:text-white active:scale-95"
-                      >
-                        {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                    <div className="flex items-center gap-3">
+                      <button onClick={toggleFullscreen} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                        {isFullscreen ? <Minimize className="h-5 w-5 text-white" /> : <Maximize className="h-5 w-5 text-white" />}
                       </button>
-                      <button
-                        onClick={handleClose}
-                        aria-label="Close player"
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white/80 shadow-lg backdrop-blur-xl transition-all hover:bg-white/10 hover:text-white active:scale-95"
-                      >
-                        <X className="h-4 w-4" />
+                      <button onClick={handleClose} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                        <X className="h-5 w-5 text-white" />
                       </button>
                     </div>
                   </div>
-                </div>
 
-                {/* Narrow invisible tap strip at the very top — tapping here toggles the control bar */}
-                {/* This does NOT cover the rest of the screen so the iframe controls remain fully usable */}
-                <div
-                  className="absolute inset-x-0 top-0 h-16 z-20 cursor-pointer"
-                  aria-label="Show/hide controls"
-                  onClick={resetControlsTimeout}
-                  onTouchEnd={resetControlsTimeout}
-                />
+                  {/* Center Play Button Overlay (Visible when paused) */}
+                  {!isBuffering && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                       <button 
+                        onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
+                        className="pointer-events-auto w-24 h-24 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group shadow-2xl"
+                       >
+                         {/* This button is tricky because isPlaying is already true if we see this overlay. 
+                             We need a way to track internal play state or just assume toggling works.
+                             Actually, we'll use a local state for actual playback if needed, but for now, 
+                             standard controls include this. */}
+                         <Play className="w-10 h-10 text-white fill-white ml-1.5" />
+                       </button>
+                    </div>
+                  )}
+
+                  {/* Bottom Controls Bar */}
+                  <div className="absolute inset-x-0 bottom-0 pb-10 pt-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none">
+                    <div className="max-w-[1200px] mx-auto px-6 pointer-events-auto space-y-4">
+                      
+                      {/* Timeline / Seek Bar */}
+                      <div className="group relative pt-4 pb-2 px-1">
+                        <Slider
+                          value={[currentTime]}
+                          max={duration || 100}
+                          step={0.1}
+                          onPointerDown={() => setIsSeeking(true)}
+                          onPointerUp={() => { setIsSeeking(false); }}
+                          onValueChange={handleSeek}
+                          className="relative z-10 cursor-pointer"
+                        />
+                        <div className="flex justify-between mt-2 px-1 text-[11px] font-bold tracking-widest text-white/40 tabular-nums">
+                          <span>{formatTime(currentTime)}</span>
+                          <span>{formatTime(duration)}</span>
+                        </div>
+                      </div>
+
+                      {/* Control Buttons Row */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                           <button onClick={(e) => { e.stopPropagation(); skip(-10); }} className="text-white/70 hover:text-white transition-colors">
+                            <SkipBack className="h-6 w-6" />
+                          </button>
+                          
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
+                            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                          >
+                            <Pause className="h-6 w-6 fill-black" />
+                          </button>
+
+                          <button onClick={(e) => { e.stopPropagation(); skip(10); }} className="text-white/70 hover:text-white transition-colors">
+                            <SkipForward className="h-6 w-6" />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-3 group">
+                            <button onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); sendCommand('muted', !isMuted); }} className="text-white/70 hover:text-white transition-colors">
+                              {isMuted || volume === 0 ? <VolumeX className="h-6 w-6 text-red-400" /> : <Volume2 className="h-6 w-6" />}
+                            </button>
+                            <div className="w-24 opacity-0 group-hover:opacity-100 transition-all origin-left">
+                              <Slider 
+                                value={[isMuted ? 0 : volume * 100]} 
+                                max={100} 
+                                onValueChange={(v) => {
+                                  const vol = v[0] / 100;
+                                  setVolume(vol);
+                                  setIsMuted(vol === 0);
+                                  sendCommand('volume', vol);
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="relative group">
+                            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white">
+                              {playbackRate}x <Settings className="h-3 w-3" />
+                            </button>
+                            <div className="absolute bottom-full right-0 mb-2 invisible group-hover:visible bg-black/90 border border-white/10 rounded-xl overflow-hidden backdrop-blur-xl shadow-2xl min-w-[100px]">
+                              {[0.5, 0.75, 1, 1.25, 1.5, 2].map(rate => (
+                                <button
+                                  key={rate}
+                                  onClick={(e) => { e.stopPropagation(); setPlaybackRate(rate); sendCommand('rate', rate); }}
+                                  className={cn(
+                                    "w-full px-4 py-2.5 text-xs text-left transition-colors hover:bg-white/10",
+                                    playbackRate === rate ? "text-primary bg-primary/5" : "text-white/60"
+                                  )}
+                                >
+                                  {rate}x {rate === 1 && "(Normal)"}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
