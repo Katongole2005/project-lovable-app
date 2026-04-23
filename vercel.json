@@ -1,0 +1,67 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm --prefix templates ci",
+  "buildCommand": "npm --prefix templates run build",
+  "outputDirectory": "templates/dist",
+  "rewrites": [
+    {
+      "source": "/movie/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*"
+        }
+      ],
+      "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/seo-renderer?type=movie&id=:id"
+    },
+    {
+      "source": "/series/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*"
+        }
+      ],
+      "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/seo-renderer?type=series&id=:id"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/sitemap-generator"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    }
+  ]
+}
