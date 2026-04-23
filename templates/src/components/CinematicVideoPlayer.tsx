@@ -57,6 +57,7 @@ export function CinematicVideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastSessionKeyRef = useRef("");
   const pauseRequestedRef = useRef(false);
+  const lastTimeUpdateRef = useRef(0);
 
   const activeTitle = sessionTitle || title;
   const activeMovie = sessionMovie ?? movie ?? null;
@@ -288,11 +289,20 @@ export function CinematicVideoPlayer({
   const handleDirectTimeUpdate = () => {
     const video = videoRef.current;
     if (!video) return;
-    if (!isSeeking) {
-      setCurrentTime(video.currentTime);
+    // Throttle state updates to once per second.
+    // timeupdate fires ~4x/second; each setCurrentTime() re-renders the full
+    // player component. Over 6 min that's ~1440 re-renders of complex overlay
+    // UI, compounding memory pressure that causes the Chrome OOM crash.
+    const now = Date.now();
+    const shouldUpdate = now - lastTimeUpdateRef.current >= 1000;
+    if (shouldUpdate) {
+      lastTimeUpdateRef.current = now;
+      if (!isSeeking) {
+        setCurrentTime(video.currentTime);
+      }
+      setDuration(video.duration || 0);
+      onTimeUpdate?.(video.currentTime, video.duration || 0);
     }
-    setDuration(video.duration || 0);
-    onTimeUpdate?.(video.currentTime, video.duration || 0);
   };
 
   const handleDirectPlay = () => {

@@ -833,10 +833,19 @@ export default function Index() {
   const videoUrlRef = useRef(videoUrl);
   videoUrlRef.current = videoUrl;
   activePlaybackItemRef.current = activePlaybackItem;
+  const lastContinueWatchingWriteRef = useRef(0);
 
   const handleVideoTimeUpdate = useCallback((currentTime: number, duration: number) => {
     const item = activePlaybackItemRef.current;
     if (duration > 0 && item) {
+      // Throttle: only write to localStorage every 5 seconds.
+      // updateContinueWatching dispatches a custom event that triggers
+      // useSyncExternalStore to re-render the entire Index tree. Without
+      // throttling this fires ~4x/second (~1440 full re-renders in 6 min),
+      // accumulating memory until Chrome crashes (STATUS_BREAKPOINT).
+      const now = Date.now();
+      if (now - lastContinueWatchingWriteRef.current < 5000) return;
+      lastContinueWatchingWriteRef.current = now;
       updateContinueWatching({
         ...item,
         progress: currentTime,
