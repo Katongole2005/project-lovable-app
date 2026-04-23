@@ -500,7 +500,7 @@ export function CinematicVideoPlayer({
                     autoPlay
                     controls={useNativeVideoControls}
                     playsInline
-                    preload="auto"
+                    preload="metadata"
                     poster={posterUrl ?? undefined}
                     className="absolute inset-0 h-full w-full bg-black object-contain"
                     onLoadedMetadata={handleDirectLoadedMetadata}
