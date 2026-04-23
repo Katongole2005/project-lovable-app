@@ -1,96 +1,202 @@
-# Welcome to your Lovable project
 
-## Project info
+# Mobifliks Mirror – Deploy Guide (Backend + Frontend split)
 
-**URL**: <https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID>
+This repo now ships ready-to-deploy pieces for a split setup:
 
-## How can I edit this code?
+- **Backend** (FastAPI + SQLite) on a VPS
+- **Frontend** (Vite/React static build) on GitHub Pages or any static host
 
-There are several ways of editing your application.
+Follow the steps below end-to-end.
 
-### Use Lovable
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 1) Backend deployment (cPanel / Passenger)
 
-Changes made via Lovable will be committed automatically to this repo.
+If your cPanel supports Python apps, it's typically running **Phusion Passenger (WSGI)**.
 
-### Use your preferred IDE
+This project includes `passenger_wsgi.py` that wraps the FastAPI app via `a2wsgi`.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Important routing note
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- This API already uses an `/api/...` route prefix inside the app.
 
-Follow these steps:
+- Recommended: deploy the backend at the **root of a subdomain**, e.g. `https://api.yourdomain.com/`.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Then endpoints are `https://api.yourdomain.com/api/health`, `/api/movie/{id}`, etc.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Avoid mounting the Python app at `/api` on the same domain, otherwise you'd end up with `/api/api/...`.
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Steps
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1) Upload the backend folder (the one containing `passenger_wsgi.py`, `api_server.py`, `requirements.txt`) to your cPanel account (ideally outside `public_html`).
+
+2) In cPanel → **Setup Python App**:
+
+   - Python version: **3.10+**
+
+   - Application root: the uploaded backend folder
+   - Application URL: your API subdomain (recommended)
+   - Application startup file: `passenger_wsgi.py`
+   - Application entry point: `application`
+3) Install deps in the app venv:
+   - `pip install -r requirements.txt`
+4) Set environment variables in cPanel (recommended) or create a `.env` in the app root:
+   - `MOBIFLIKS_USERNAME`, `MOBIFLIKS_PHONE`, `MOBIFLIKS_COUNTRY_CODE`
+   - `TMDB_API_KEY` (optional, for posters/backdrops/cast)
+   - `ALLOWED_ORIGINS` (optional, comma-separated)
+   - `DB_PATH` (optional, absolute path to your sqlite file)
+   - `SQLITE_JOURNAL_MODE` (optional; use `DELETE` if your host has issues with WAL)
+5) Restart the Python app in cPanel.
+
+### Health check
+
+- Open `https://api.yourdomain.com/api/health`
+- Open `https://api.yourdomain.com/docs`
+
+---
+
+## 1) Backend deployment (VPS)
+
+### Prereqs
+
+- Python 3.10+ on the VPS
+- Nginx (reverse proxy) recommended
+- API domain: `api.app.shelvin-joel.dev`
+
+### Setup
+
+```bash
+# On the VPS
+git clone <your repo> scraper
+cd scraper
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Configure env
+cp .env.example .env
+# edit .env with your Mobifliks login, API_HOST=0.0.0.0, API_PORT=8000
+# optional: ALLOWED_ORIGINS=https://app.shelvin-joel.dev (comma-separated)
 ```
 
-### Edit a file directly in GitHub
+### Run the API
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+source .venv/bin/activate
+nohup .venv/bin/python -m uvicorn api_server:app --host 0.0.0.0 --port 8000 --workers 2 > api.log 2>&1 &
+```
 
-### Use GitHub Codespaces
+### Nginx (reverse proxy)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```nginx
+server {
+    server_name api.app.shelvin-joel.dev;
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+}
+```
 
-## What technologies are used for this project?
+Then `sudo nginx -t && sudo systemctl reload nginx`.
 
-This project is built with:
+### API Health check
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- framer-motion (Animations)
-- Supabase (Auth, Database, Storage)
-- Cloudflare Workers (Media Proxy)
+```bash
+curl -I http://127.0.0.1:8000/api/health
+```
 
-## Architecture & Features
+---
 
-This project is a high-performance movie/series discovery and streaming platform.
+## 2) Frontend build & deploy (GitHub Pages or any static host)
 
-- **Automated Scraper**: Python-based scraper (`run_scraper.py`) that synchronizes movie and series metadata to Supabase.
-- **Series Management**: Full support for seasons and episodes, including progress tracking and "Continue Watching" logic.
-- **Media Proxying**: Handles media source fetching through custom Cloudflare Workers to bypass CORS and improve reliability.
-- **Watchlist & Progress**: User-specific data persistence using Supabase Auth and local synchronization.
-- **Premium UI**: Dark-mode first design with glassmorphism, parallax effects, and smooth layout transitions.
+### Frontend Prereqs
 
-## Running the Scraper
+- Node 18+
+- Your API already reachable at `https://api.app.shelvin-joel.dev/api` (or adjust)
 
-To populate the database with fresh content:
+### Configure frontend env
 
-1. Ensure Python 3.x is installed.
-2. Install dependencies: `pip install schedule scraper config` (or as per project requirements).
-3. Run the scraper: `python run_scraper.py`.
+```bash
+cd templates
+cp .env.production.example .env.production
+# set VITE_API_BASE=https://api.app.shelvin-joel.dev/api
+# set VITE_BASE=/             # for custom domain or Pages with CNAME
+# set VITE_BASE=/your-repo/   # if hosting under a repo path without CNAME
+```
 
-It is configured to run every 6 hours by default.
+### Build
 
-## How can I deploy this project?
+```bash
+cd templates
+npm ci
+npm run build
+# output in templates/dist
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Deploy to GitHub Pages (two common options)
 
-## Can I connect a custom domain to my Lovable project?
+1) Push the `dist/` contents to a `gh-pages` branch and enable Pages from that branch.
+   - Example: `npm run build` then `npx gh-pages -d dist` (if you prefer, add gh-pages devDependency).
+2) Use a GitHub Action that runs `npm ci && npm run build` and publishes `dist` to `gh-pages`.
 
-Yes, you can!
+Add a `CNAME` in the repo settings (or place a `CNAME` file in `dist/`) for the frontend domain `app.shelvin-joel.dev`. (A `CNAME` file is already provided in `templates/public/` so it will be included in the build.)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Verify the live build
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+curl -s https://app.shelvin-joel.dev/sw.js | grep moviebay-v2   # should show current SW version
+```
+
+---
+
+## 3) Connecting frontend to backend
+
+- The frontend reads `VITE_API_BASE` at build time. Set it to your API URL ending with `/api` (e.g., `https://api.app.shelvin-joel.dev/api`).
+- CORS: the backend honors `ALLOWED_ORIGINS` (comma-separated). Set it in `.env` to your frontend domain (`https://app.shelvin-joel.dev`) once deployed.
+
+---
+
+## 4) Optional: systemd service for the API
+
+`/etc/systemd/system/mobifliks.service`
+
+```ini
+[Unit]
+Description=Mobifliks Mirror API
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/root/scraper
+EnvironmentFile=/root/scraper/.env
+ExecStart=/root/scraper/.venv/bin/uvicorn api_server:app --host 0.0.0.0 --port 8000 --workers 2
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable: `sudo systemctl enable --now mobifliks && sudo systemctl status mobifliks`
+
+---
+
+## 5) Quick checklist before deploying
+
+- [ ] `.env` filled on VPS (Mobifliks creds, API_HOST/PORT, ALLOWED_ORIGINS)
+- [ ] API running (`curl /api/health` returns 200)
+- [ ] Nginx proxy for `api.app.shelvin-joel.dev` in place
+- [ ] `.env.production` set with `VITE_API_BASE` and `VITE_BASE`
+- [ ] `npm run build` succeeded; `dist/` uploaded to GitHub Pages
+- [ ] Frontend domain resolves and shows fresh data without hard reload
+- [ ] (Optional) TMDB/other poster enhancement skipped for now
+
+---
+
+## 6) Local dev
+
+- Backend: `uvicorn api_server:app --reload`
+- Frontend: `cd templates && npm ci && npm run dev` (proxy to `http://127.0.0.1:8000/api` via Vite config)
+
+Happy shipping!

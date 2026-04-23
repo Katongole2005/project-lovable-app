@@ -1,0 +1,159 @@
+/* Shared UI Components for Moviebay */
+
+.nav-pill-active {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff5b2e 52%, #ff4d6d 100%) !important;
+  color: #ffffff !important;
+}
+
+.nav-container-dark {
+  background-color: #1c1c1e !important;
+}
+
+.carousel-perspective {
+  perspective: 1200px;
+}
+
+.btn-gradient-next {
+  background: linear-gradient(135deg, #ff8a3d, #ff4d6d) !important;
+}
+
+.blur-image-low-res {
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.dynamic-card {
+  transform: translateX(var(--tx)) translateZ(var(--tz)) rotateY(var(--ry)) scale(var(--scale));
+  opacity: var(--opacity);
+  z-index: var(--zIndex);
+}
+
+.animate-10s {
+  animation-duration: 10s !important;
+}
+
+.scale-102 {
+  transform: scale(1.02);
+}
+
+.animate-progress {
+  animation: hero-progress-fill linear forwards;
+  animation-duration: var(--duration, 5000ms);
+}
+
+.dynamic-delay {
+  transition-delay: var(--delay, 0ms) !important;
+}
+
+/* Movie Modal Surface Styles */
+.modal-primary-play-surface {
+  background: linear-gradient(135deg, rgba(184, 59, 59, 0.95) 0%, rgba(130, 28, 39, 0.98) 52%, rgba(76, 14, 23, 1) 100%) !important;
+  box-shadow: 0 8px 24px rgba(90, 17, 27, 0.28), 0 0 28px rgba(184, 59, 59, 0.14) !important;
+}
+
+.modal-tab-surface {
+  background: linear-gradient(135deg, rgba(184, 59, 59, 0.18) 0%, rgba(90, 17, 27, 0.9) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 24px rgba(90, 17, 27, 0.16) !important;
+}
+
+.modal-panel-surface {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.modal-tinted-panel-surface {
+  background: linear-gradient(180deg, rgba(120, 24, 33, 0.22) 0%, rgba(255, 255, 255, 0.025) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.modal-active-utility-surface {
+  background: linear-gradient(135deg, rgba(184, 59, 59, 0.18) 0%, rgba(90, 17, 27, 0.62) 100%) !important;
+  border-color: rgba(184, 59, 59, 0.32) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.card-gloss-effect {
+  background: radial-gradient(circle at var(--gloss-x) var(--gloss-y), hsl(0 0% 100% / 0.18) 0%, transparent 55%) !important;
+}
+
+.progress-fill-dynamic {
+  width: var(--progress, 0%) !important;
+}
+
+/* Top 10 Today Styles */
+.crown-float {
+  animation: crown-float 3s ease-in-out infinite !important;
+}
+
+@keyframes crown-float {
+  0%, 100% { transform: translate(-50%, 0); shadow: 0 2px 4px rgba(250,204,21,0.5); }
+  50% { transform: translate(-50%, -6px); shadow: 0 8px 16px rgba(250,204,21,0.3); }
+}
+
+.metallic-number {
+  font-family: 'Georgia', serif !important;
+  margin-right: -16px !important;
+  z-index: 0 !important;
+}
+
+.top10-card-shadow {
+  box-shadow: 0 8px 32px hsl(230 60% 5% / 0.5), 0 2px 8px hsl(230 60% 5% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.05) !important;
+}
+
+/* Cinematic Player UI */
+.btn-cinematic-play {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff5b2e 50%, #ff4d6d 100%) !important;
+}
+
+.ranking-number-offset {
+  font-family: 'Georgia', serif !important;
+  margin-right: -16px !important;
+  z-index: 0 !important;
+}
+
+.crown-float {
+  animation: crown-float 3s ease-in-out infinite !important;
+}
+
+@keyframes crown-float {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -6px); }
+}
+
+/* Performance & Animation Utilities */
+.will-change-transform {
+  will-change: transform !important;
+}
+
+.animate-delay-100 { animation-delay: 0.1s !important; }
+.animate-delay-150 { animation-delay: 0.15s !important; }
+.animate-delay-200 { animation-delay: 0.2s !important; }
+.animate-delay-300 { animation-delay: 0.3s !important; }
+
+/* Modal & Layout Utilities */
+.modal-surface-main {
+  background: linear-gradient(180deg, hsl(230 18% 5% / 0.95) 0%, hsl(230 18% 5%) 40px) !important;
+  border-radius: 28px 28px 0 0 !important;
+}
+
+.modal-drag-indicator {
+  background: linear-gradient(90deg, transparent, hsl(var(--accent-hue, 210) 40% 60% / 0.5), transparent) !important;
+}
+
+.content-visibility-auto {
+  content-visibility: auto !important;
+}
+
+.animate-ken-burns-mobile {
+  animation: kenBurnsMobile 20s ease-in-out infinite !important;
+}
+
+@keyframes kenBurnsMobile {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1) translate(-2%, -1%); }
+  100% { transform: scale(1); }
+}
