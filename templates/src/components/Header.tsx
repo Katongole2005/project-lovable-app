@@ -61,10 +61,10 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
 
   const currentTab = useMemo(() => {
     if (activeTab) {
-      if (activeTab === "home") return "movies";
       return activeTab;
     }
 
+    if (location.pathname === "/") return "home";
     if (location.pathname === "/series") return "series";
     if (location.pathname === "/originals") return "originals";
     if (location.pathname === "/search") return "search";
