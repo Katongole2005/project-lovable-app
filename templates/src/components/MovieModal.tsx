@@ -17,8 +17,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 
-export function getProxiedPlayUrl(url: string, title: string, detailsUrl?: string | null, mobifliksId?: string | null) {
-  return buildMediaUrl({
+export async function getProxiedPlayUrl(url: string, title: string, detailsUrl?: string | null, mobifliksId?: string | null) {
+  return await buildMediaUrl({
     url,
     title,
     detailsUrl,
@@ -43,7 +43,7 @@ async function downloadWithName(url: string, filename: string, detailsUrl?: stri
   const extMatch = url.match(/\.(mp4|mkv|avi|mov|webm)(\?|$)/i);
   const ext = extMatch ? extMatch[1].toLowerCase() : "mp4";
   const fullName = `${safeName} - s-u.in.${ext}`;
-  const mediaUrl = buildMediaUrl({
+  const mediaUrl = await buildMediaUrl({
     url,
     title: fullName,
     detailsUrl,
@@ -334,28 +334,31 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       : null;
   const releaseLabel = movie.release_date ? movie.release_date : null;
   const certificationLabel = movie.certification ? movie.certification : null;
-  const handlePlay = (url: string, title: string) => {
-    setTimeout(() => {
-      onPlay(
-        buildMediaUrl({
-          url,
-          title,
-          detailsUrl: (movie as any).video_page_url || movie.details_url,
-          mobifliksId: movie.mobifliks_id,
-          play: true,
-        }),
-        title
-      );
-    }, 0);
+  const handlePlay = async (url: string, title: string) => {
+    const finalUrl = await buildMediaUrl({
+      url,
+      title,
+      detailsUrl: (movie as any).video_page_url || movie.details_url,
+      mobifliksId: movie.mobifliks_id,
+      play: true,
+    });
+    onPlay(finalUrl, title);
   };
 
-  const preloadUrl = React.useMemo(() => {
-    if (!isOpen || !movie) return null;
+  const [preloadUrl, setPreloadUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    if (!isOpen || !movie) {
+      setPreloadUrl(null);
+      return;
+    }
     
     if (typeof navigator !== 'undefined' && 'connection' in navigator) {
       const conn = (navigator as any).connection;
       if (conn.saveData || conn.effectiveType === '2g' || conn.effectiveType === '3g') {
-        return null;
+        setPreloadUrl(null);
+        return;
       }
     }
 
@@ -363,15 +366,22 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       ? (series.episodes?.[0]?.download_url || series.episodes?.[0]?.server2_url)
       : (movie.download_url || movie.server2_url);
 
-    if (!targetUrl) return null;
+    if (!targetUrl) {
+      setPreloadUrl(null);
+      return;
+    }
 
-    return buildMediaUrl({
+    buildMediaUrl({
       url: targetUrl,
       title: movie.title,
       detailsUrl: (movie as any).video_page_url || movie.details_url,
       mobifliksId: movie.mobifliks_id,
       play: true,
+    }).then(url => {
+      if (isMounted) setPreloadUrl(url);
     });
+
+    return () => { isMounted = false; };
   }, [isOpen, movie, series.episodes]);
 
   return (

@@ -1,5 +1,6 @@
 import type { Movie, Series, Episode, SearchResult } from "@/types/movie";
 import { supabase } from "@/integrations/supabase/client";
+import { generateSecureToken } from "./crypto";
 
 const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
 const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "/api";
@@ -142,7 +143,7 @@ function shouldUseDirectPlayback(url?: string): boolean {
   );
 }
 
-function buildWorkerPlaybackUrl(targetUrl: string, title: string): string | null {
+async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise<string | null> {
   if (!CLOUDFLARE_WORKER_URL) {
     return null;
   }
@@ -152,8 +153,13 @@ function buildWorkerPlaybackUrl(targetUrl: string, title: string): string | null
     return null;
   }
 
-  endpoint.searchParams.set("url", targetUrl);
-  endpoint.searchParams.set("name", title || "video");
+  const token = await generateSecureToken(targetUrl, title);
+  if (token) {
+    endpoint.searchParams.set("token", token);
+  } else {
+    endpoint.searchParams.set("url", targetUrl);
+    endpoint.searchParams.set("name", title || "video");
+  }
   endpoint.searchParams.set("play", "1");
   return endpoint.toString();
 }
@@ -228,7 +234,7 @@ export async function fetchMediaSize(url: string, title?: string): Promise<strin
   return null;
 }
 
-export function buildMediaUrl({
+export async function buildMediaUrl({
   url,
   title,
   detailsUrl,
@@ -240,11 +246,11 @@ export function buildMediaUrl({
   detailsUrl?: string | null;
   mobifliksId?: string | null;
   play?: boolean;
-}): string {
+}): Promise<string> {
   const normalizedUrl = unwrapLegacyWorkerUrl(url);
   if (play) {
     if (shouldProxyMediaUrl(normalizedUrl)) {
-      const workerPlaybackUrl = buildWorkerPlaybackUrl(normalizedUrl, title);
+      const workerPlaybackUrl = await buildWorkerPlaybackUrl(normalizedUrl, title);
       if (workerPlaybackUrl) {
         preconnectOrigin(CLOUDFLARE_WORKER_URL);
         return workerPlaybackUrl;
@@ -273,8 +279,15 @@ export function buildMediaUrl({
       preconnectOrigin(normalizedUrl);
       return normalizedUrl;
     }
-    endpoint.searchParams.set("url", normalizedUrl);
-    endpoint.searchParams.set("name", title || "video");
+    
+    const token = await generateSecureToken(normalizedUrl, title);
+    if (token) {
+      endpoint.searchParams.set("token", token);
+    } else {
+      endpoint.searchParams.set("url", normalizedUrl);
+      endpoint.searchParams.set("name", title || "video");
+    }
+    
     if (play) {
       endpoint.searchParams.set("play", "1");
     } else {

@@ -54,10 +54,10 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
     setInWatchlist(isInWatchlist(movie.mobifliks_id));
   }, [movie.mobifliks_id]);
 
-  const primePlayback = useCallback(() => {
+  const primePlayback = useCallback(async () => {
     const targetUrl = movie.server2_url || movie.download_url;
     if (!targetUrl) return;
-    const mediaUrl = buildMediaUrl({
+    const mediaUrl = await buildMediaUrl({
       url: targetUrl,
       title: movie.title,
       detailsUrl: movie.video_page_url || movie.details_url,

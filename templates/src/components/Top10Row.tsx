@@ -47,11 +47,11 @@ function Top10Card({
   onClick: (movie: Movie) => void;
   index: number;
 }) {
-  const handleMouseEnter = useCallback(() => {
+  const handleMouseEnter = useCallback(async () => {
     preloadMovieBackdrop(movie);
     const targetUrl = movie.server2_url || movie.download_url;
     if (!targetUrl) return;
-    const mediaUrl = buildMediaUrl({
+    const mediaUrl = await buildMediaUrl({
       url: targetUrl,
       title: movie.title,
       detailsUrl: movie.video_page_url || movie.details_url,

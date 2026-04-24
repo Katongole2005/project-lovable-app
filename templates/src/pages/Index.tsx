@@ -127,11 +127,11 @@ function parseEpisodeInfoFromTitle(title: string): {
   };
 }
 
-function buildPrimaryPlaybackUrl(item: Movie | Series): string | null {
+async function buildPrimaryPlaybackUrl(item: Movie | Series): Promise<string | null> {
   if (item.type === "movie") {
     const targetUrl = item.server2_url || item.download_url;
     if (targetUrl) {
-      return buildMediaUrl({
+      return await buildMediaUrl({
         url: targetUrl,
         title: item.title,
         detailsUrl: item.video_page_url || item.details_url,
@@ -148,7 +148,7 @@ function buildPrimaryPlaybackUrl(item: Movie | Series): string | null {
   }
 
   const seasonNumber = firstEpisode.season_number || 1;
-  return buildMediaUrl({
+  return await buildMediaUrl({
     url: targetUrl,
     title: `${item.title} - S${seasonNumber}:E${firstEpisode.episode_number}`,
     detailsUrl: firstEpisode.video_page_url || item.video_page_url || item.details_url,
@@ -704,8 +704,8 @@ export default function Index() {
 
   selectedMovieRef.current = selectedMovie;
 
-  const handlePlayVideo = useCallback((url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
-    const proxiedUrl = buildMediaUrl({ url, title, play: true });
+  const handlePlayVideo = useCallback(async (url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
+    const proxiedUrl = await buildMediaUrl({ url, title, play: true });
     const cachedMedia = getCachedMediaAvailability(proxiedUrl);
     const playbackUrl = cachedMedia?.resolved_url || proxiedUrl;
 
@@ -834,10 +834,10 @@ export default function Index() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [isModalOpen, isVideoOpen, viewMode]);
 
-  const handleHeroPlay = useCallback((movie: Movie) => {
+  const handleHeroPlay = useCallback(async (movie: Movie) => {
     const targetUrl = movie.server2_url || movie.download_url;
     if (targetUrl) {
-      const mediaUrl = buildMediaUrl({
+      const mediaUrl = await buildMediaUrl({
         url: targetUrl,
         title: movie.title,
         detailsUrl: movie.video_page_url || movie.details_url,
@@ -1139,11 +1139,11 @@ export default function Index() {
                     <Suspense fallback={null}>
                       <ContinueWatchingRow
                         items={continueWatching}
-                        onResume={(item) => {
+                        onResume={async (item) => {
                           const resumeTitle = item.episodeInfo
                             ? `${item.title} - ${item.episodeInfo}`
                             : item.title;
-                          const mediaUrl = buildMediaUrl({
+                          const mediaUrl = await buildMediaUrl({
                             url: item.url,
                             title: resumeTitle,
                             mobifliksId: item.contentId,
