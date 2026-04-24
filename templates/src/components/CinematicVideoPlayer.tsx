@@ -96,6 +96,14 @@ export function CinematicVideoPlayer({
   }, [activeVideoUrl, isOpen, isPlaying]);
 
   useEffect(() => {
+    if (!isOpen || !activeVideoUrl || isEmbeddableVideo || isPlaying) return;
+
+    // Direct video playback should start immediately after the user picks a title
+    // instead of waiting on an extra splash-screen interaction.
+    beginPlayback();
+  }, [activeVideoUrl, beginPlayback, isEmbeddableVideo, isOpen, isPlaying]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
 
     const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
@@ -565,7 +573,7 @@ export function CinematicVideoPlayer({
                     autoPlay
                     controls={useNativeVideoControls}
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     poster={posterUrl ?? undefined}
                     className="absolute inset-0 h-full w-full bg-black object-contain"
                     onLoadedMetadata={handleDirectLoadedMetadata}
