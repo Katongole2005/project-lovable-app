@@ -3,7 +3,7 @@ import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack,
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { getImageUrl } from "@/lib/api";
+import { buildPlaybackRecoveryUrl, getImageUrl } from "@/lib/api";
 import { Slider } from "@/components/ui/slider";
 import type { Movie, Series, SubtitleTrack, SkipSegment } from "@/types/movie";
 
@@ -50,6 +50,10 @@ export function CinematicVideoPlayer({
   const [isBuffering, setIsBuffering] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [activeVideoUrl, setActiveVideoUrl] = useState(videoUrl);
+  const [resumeTime, setResumeTime] = useState(startTime);
+  const [hasRetriedPlayback, setHasRetriedPlayback] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -64,7 +68,7 @@ export function CinematicVideoPlayer({
   const posterUrl = activeMovie?.image_url ? getImageUrl(activeMovie.image_url) : null;
   const year = activeMovie?.year;
   const genres = activeMovie?.genres || [];
-  const isEmbeddableVideo = /youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com/i.test(videoUrl);
+  const isEmbeddableVideo = /youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com/i.test(activeVideoUrl);
   const sessionKey = `${videoUrl}|${startTime}|${movie?.mobifliks_id ?? ""}`;
   const useNativeVideoControls = isTouchDevice && !isEmbeddableVideo;
   const controlsHideDelayMs = isTouchDevice ? 6500 : 4000;
@@ -87,9 +91,9 @@ export function CinematicVideoPlayer({
   }, [isOpen, movie, sessionKey, title]);
 
   useEffect(() => {
-    if (!isOpen || !videoUrl || !isPlaying) return;
+    if (!isOpen || !activeVideoUrl || !isPlaying) return;
     setIsBuffering(true);
-  }, [isOpen, isPlaying, videoUrl]);
+  }, [activeVideoUrl, isOpen, isPlaying]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -121,7 +125,7 @@ export function CinematicVideoPlayer({
     }, 1200);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isEmbeddableVideo, isPlaying, startTime, videoUrl]);
+  }, [activeVideoUrl, isEmbeddableVideo, isPlaying, resumeTime]);
 
   // Reset state when player opens/closes or URL changes
   useEffect(() => {
@@ -133,6 +137,10 @@ export function CinematicVideoPlayer({
       setHasEnded(false);
       setShowControls(true);
       setCurrentTime(startTime);
+      setActiveVideoUrl(videoUrl);
+      setResumeTime(startTime);
+      setHasRetriedPlayback(false);
+      setPlaybackError(null);
       setDuration(0);
       setIsBuffering(false);
       setIsSeeking(false);
@@ -143,6 +151,10 @@ export function CinematicVideoPlayer({
       setIsPaused(false);
       setHasEnded(false);
       setCurrentTime(0);
+      setActiveVideoUrl(videoUrl);
+      setResumeTime(startTime);
+      setHasRetriedPlayback(false);
+      setPlaybackError(null);
       setDuration(0);
       setIsBuffering(false);
       setIsSeeking(false);
@@ -211,8 +223,8 @@ export function CinematicVideoPlayer({
 
   const iframeSrc = isPlaying && isEmbeddableVideo
     ? (() => {
-        const sep = videoUrl.includes("?") ? "&" : "?";
-        return videoUrl + `${sep}autoplay=1${startTime > 0 ? `&start=${Math.floor(startTime)}` : ""}`;
+        const sep = activeVideoUrl.includes("?") ? "&" : "?";
+        return activeVideoUrl + `${sep}autoplay=1${resumeTime > 0 ? `&start=${Math.floor(resumeTime)}` : ""}`;
       })()
     : undefined;
 
@@ -231,6 +243,7 @@ export function CinematicVideoPlayer({
   const handleSeek = (values: number[]) => {
     const time = values[0];
     setCurrentTime(time);
+    setResumeTime(time);
     if (isEmbeddableVideo) {
       sendCommand("seek", time);
     } else if (videoRef.current) {
@@ -280,8 +293,8 @@ export function CinematicVideoPlayer({
   const handleDirectLoadedMetadata = () => {
     const video = videoRef.current;
     if (!video) return;
-    if (startTime > 0 && Math.abs(video.currentTime - startTime) > 1) {
-      video.currentTime = startTime;
+    if (resumeTime > 0 && Math.abs(video.currentTime - resumeTime) > 1) {
+      video.currentTime = resumeTime;
     }
     setDuration(video.duration || 0);
   };
@@ -309,6 +322,7 @@ export function CinematicVideoPlayer({
     pauseRequestedRef.current = false;
     setIsPaused(false);
     setHasEnded(false);
+    setPlaybackError(null);
   };
 
   const handleDirectPause = () => {
@@ -320,6 +334,7 @@ export function CinematicVideoPlayer({
     pauseRequestedRef.current = false;
     setIsPaused(false);
     setIsBuffering(false);
+    setPlaybackError(null);
   };
 
   const handleDirectWaiting = () => {
@@ -349,10 +364,48 @@ export function CinematicVideoPlayer({
     setIsBuffering(false);
   };
 
+  const attemptPlaybackRecovery = useCallback(() => {
+    if (hasRetriedPlayback) return false;
+
+    const fallbackUrl = buildPlaybackRecoveryUrl(activeVideoUrl, activeTitle);
+    if (!fallbackUrl || fallbackUrl === activeVideoUrl) {
+      return false;
+    }
+
+    const nextResumeTime = videoRef.current?.currentTime || currentTime || resumeTime || startTime;
+    pauseRequestedRef.current = false;
+    setHasRetriedPlayback(true);
+    setPlaybackError(null);
+    setIsPaused(false);
+    setIsBuffering(true);
+    setHasEnded(false);
+    setResumeTime(nextResumeTime);
+    setCurrentTime(nextResumeTime);
+    setActiveVideoUrl(fallbackUrl);
+    return true;
+  }, [activeTitle, activeVideoUrl, currentTime, hasRetriedPlayback, resumeTime, startTime]);
+
   const handleDirectError = () => {
     pauseRequestedRef.current = false;
     setIsPaused(true);
     setIsBuffering(false);
+    if (attemptPlaybackRecovery()) {
+      return;
+    }
+    setPlaybackError("This stream failed to load. Try replaying or switch to the other server.");
+  };
+
+  const handleRetryPlayback = () => {
+    pauseRequestedRef.current = false;
+    setPlaybackError(null);
+    setHasRetriedPlayback(false);
+    setHasEnded(false);
+    setIsPaused(false);
+    setIsBuffering(true);
+    setActiveVideoUrl(videoUrl);
+    setResumeTime(currentTime || startTime);
+    setCurrentTime(currentTime || startTime);
+    beginPlayback();
   };
 
   return (
@@ -505,8 +558,8 @@ export function CinematicVideoPlayer({
                 ) : (
                   <video
                     ref={videoRef}
-                    key={`${videoUrl}-${startTime}`}
-                    src={videoUrl}
+                    key={`${activeVideoUrl}-${resumeTime}`}
+                    src={activeVideoUrl}
                     autoPlay
                     controls={useNativeVideoControls}
                     playsInline
@@ -535,6 +588,30 @@ export function CinematicVideoPlayer({
                     <div className="text-center">
                       <p className="text-sm font-semibold tracking-wide text-white">Loading movie...</p>
                       <p className="mt-1 text-xs text-white/60">{activeTitle}</p>
+                    </div>
+                  </div>
+                )}
+
+                {playbackError && !isBuffering && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/72 px-6">
+                    <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/75 p-6 text-center shadow-2xl backdrop-blur-xl">
+                      <p className="text-lg font-semibold text-white">Playback interrupted</p>
+                      <p className="mt-2 text-sm text-white/68">{playbackError}</p>
+                      <div className="mt-5 flex items-center justify-center gap-3">
+                        <button
+                          onClick={handleRetryPlayback}
+                          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          Retry
+                        </button>
+                        <button
+                          onClick={handleClose}
+                          className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10"
+                        >
+                          Close
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

@@ -17,6 +17,23 @@ const mediaAvailabilityRequests = new Map<string, Promise<MediaAvailability>>();
 const preconnectedOrigins = new Set<string>();
 const warmedMediaUrls = new Set<string>();
 
+function getUrlBase(): string {
+  return typeof window !== "undefined" ? window.location.origin : "http://localhost";
+}
+
+function createUrl(url: string): URL | null {
+  try {
+    return new URL(url, getUrlBase());
+  } catch {
+    return null;
+  }
+}
+
+function buildApiEndpoint(path: string): URL | null {
+  if (!API_BASE) return null;
+  return createUrl(`${API_BASE}${path}`);
+}
+
 
 export const getImageUrl = (url?: string) => {
   if (!url) return fallbackPoster;
@@ -50,7 +67,9 @@ function preconnectOrigin(url?: string | null): void {
   if (!url || typeof document === "undefined") return;
 
   try {
-    const origin = new URL(url).origin;
+    const parsed = createUrl(url);
+    if (!parsed) return;
+    const origin = parsed.origin;
     if (preconnectedOrigins.has(origin)) return;
 
     const link = document.createElement("link");
@@ -160,9 +179,28 @@ export function buildMediaUrl({
     return normalizedUrl;
   }
 
+  const apiMediaEndpoint = buildApiEndpoint("/media");
+  if (play && apiMediaEndpoint) {
+    preconnectOrigin(API_BASE);
+    apiMediaEndpoint.searchParams.set("url", normalizedUrl);
+    apiMediaEndpoint.searchParams.set("title", title || "video");
+    if (detailsUrl) {
+      apiMediaEndpoint.searchParams.set("details_url", detailsUrl);
+    }
+    if (mobifliksId) {
+      apiMediaEndpoint.searchParams.set("mobifliks_id", mobifliksId);
+    }
+    apiMediaEndpoint.searchParams.set("play", "true");
+    return apiMediaEndpoint.toString();
+  }
+
   if (CLOUDFLARE_WORKER_URL) {
     preconnectOrigin(CLOUDFLARE_WORKER_URL);
-    const endpoint = new URL(CLOUDFLARE_WORKER_URL);
+    const endpoint = createUrl(CLOUDFLARE_WORKER_URL);
+    if (!endpoint) {
+      preconnectOrigin(normalizedUrl);
+      return normalizedUrl;
+    }
     endpoint.searchParams.set("url", normalizedUrl);
     endpoint.searchParams.set("name", title || "video");
     if (play) {
@@ -173,26 +211,25 @@ export function buildMediaUrl({
     return endpoint.toString();
   }
 
-  if (!API_BASE) {
+  if (!apiMediaEndpoint) {
     preconnectOrigin(normalizedUrl);
     return normalizedUrl;
   }
 
   preconnectOrigin(API_BASE);
-  const endpoint = new URL(`${API_BASE}/media`);
-  endpoint.searchParams.set("url", normalizedUrl);
-  endpoint.searchParams.set("title", title || "video");
+  apiMediaEndpoint.searchParams.set("url", normalizedUrl);
+  apiMediaEndpoint.searchParams.set("title", title || "video");
   if (detailsUrl) {
-    endpoint.searchParams.set("details_url", detailsUrl);
+    apiMediaEndpoint.searchParams.set("details_url", detailsUrl);
   }
   if (mobifliksId) {
-    endpoint.searchParams.set("mobifliks_id", mobifliksId);
+    apiMediaEndpoint.searchParams.set("mobifliks_id", mobifliksId);
   }
   if (play) {
-    endpoint.searchParams.set("play", "true");
+    apiMediaEndpoint.searchParams.set("play", "true");
   }
 
-  return endpoint.toString();
+  return apiMediaEndpoint.toString();
 }
 
 export interface MediaAvailability {
@@ -202,20 +239,22 @@ export interface MediaAvailability {
 }
 
 export function buildResolveMediaUrl(mediaUrl: string): string | null {
-  if (!API_BASE) {
+  const resolveEndpoint = buildApiEndpoint("/resolve-media");
+  if (!resolveEndpoint) {
     return null;
   }
 
   try {
-    const parsed = new URL(mediaUrl);
+    const parsed = createUrl(mediaUrl);
+    if (!parsed) return null;
     
     // Support for resolving Cloudflare worker proxy URLs mapping back to python api
-    if (CLOUDFLARE_WORKER_URL && parsed.hostname === new URL(CLOUDFLARE_WORKER_URL).hostname) {
+    const workerUrl = CLOUDFLARE_WORKER_URL ? createUrl(CLOUDFLARE_WORKER_URL) : null;
+    if (workerUrl && parsed.hostname === workerUrl.hostname) {
       const targetUrl = parsed.searchParams.get("url");
       if (!targetUrl) return null;
-      const endpoint = new URL(`${API_BASE}/resolve-media`);
-      endpoint.searchParams.set("url", targetUrl);
-      return endpoint.toString();
+      resolveEndpoint.searchParams.set("url", targetUrl);
+      return resolveEndpoint.toString();
     }
 
     if (!parsed.pathname.endsWith("/media")) {
@@ -228,6 +267,37 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
   } catch {
     return null;
   }
+}
+
+export function buildPlaybackRecoveryUrl(mediaUrl: string, title: string): string | null {
+  const apiMediaEndpoint = buildApiEndpoint("/media");
+  if (!apiMediaEndpoint) {
+    return null;
+  }
+
+  const parsed = createUrl(mediaUrl);
+  if (!parsed) {
+    return null;
+  }
+
+  if (parsed.pathname.endsWith("/media")) {
+    return null;
+  }
+
+  const workerUrl = CLOUDFLARE_WORKER_URL ? createUrl(CLOUDFLARE_WORKER_URL) : null;
+  const targetUrl =
+    workerUrl && parsed.hostname === workerUrl.hostname
+      ? parsed.searchParams.get("url")
+      : mediaUrl;
+
+  if (!targetUrl || !shouldProxyMediaUrl(targetUrl)) {
+    return null;
+  }
+
+  apiMediaEndpoint.searchParams.set("url", targetUrl);
+  apiMediaEndpoint.searchParams.set("title", title || "video");
+  apiMediaEndpoint.searchParams.set("play", "true");
+  return apiMediaEndpoint.toString();
 }
 
 export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaAvailability> {
