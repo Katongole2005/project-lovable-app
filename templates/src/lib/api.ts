@@ -271,16 +271,32 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
 
 export function buildPlaybackRecoveryUrl(mediaUrl: string, title: string): string | null {
   const apiMediaEndpoint = buildApiEndpoint("/media");
-  if (!apiMediaEndpoint) {
-    return null;
-  }
-
   const parsed = createUrl(mediaUrl);
   if (!parsed) {
     return null;
   }
 
   if (parsed.pathname.endsWith("/media")) {
+    const targetUrl = parsed.searchParams.get("url");
+    if (!targetUrl) {
+      return null;
+    }
+
+    if (CLOUDFLARE_WORKER_URL) {
+      const workerEndpoint = createUrl(CLOUDFLARE_WORKER_URL);
+      if (!workerEndpoint) {
+        return targetUrl;
+      }
+      workerEndpoint.searchParams.set("url", targetUrl);
+      workerEndpoint.searchParams.set("name", title || "video");
+      workerEndpoint.searchParams.set("play", "1");
+      return workerEndpoint.toString();
+    }
+
+    return targetUrl;
+  }
+
+  if (!apiMediaEndpoint) {
     return null;
   }
 
