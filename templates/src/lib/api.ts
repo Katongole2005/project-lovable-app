@@ -818,6 +818,8 @@ export async function searchMovies(query: string, page: number = 1, limit: numbe
     total_results: count ?? 0,
     page,
   };
+    page,
+  };
 }
 
 export async function searchAll(query: string, page: number = 1, limit: number = 100): Promise<Movie[]> {
@@ -864,6 +866,7 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
     const versions = await fetchMovieVariants(movie);
     const detailedMovie = {
       ...movie,
+      logo: data?.raw_data?.logo ?? movie.logo,
       vj_count: versions.length > 1 ? versions.length : undefined,
       vj_versions: versions.length > 1 ? versions : undefined,
     };
@@ -893,88 +896,17 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
   }
 
   const request = (async () => {
-    const { data: series, error } = await supabase
+    const { data, error } = await supabase
       .from("movies")
       .select("*")
       .eq("mobifliks_id", id)
       .eq("type", "series")
       .single();
-    if (error || !series) {
+    if (error || !data) {
       console.error("fetchSeriesDetails error:", error);
       return null;
     }
 
-    const baseName = getSeriesBaseName(series.title);
-
-    const { data: allRelated } = await supabase
-      .from("movies")
-      .select("mobifliks_id, title")
-      .eq("type", "series")
-      .ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`)
-      .order("title", { ascending: true });
-
-    const seasonEntries = (allRelated ?? [])
-      .filter((r) => getSeriesBaseName(r.title) === baseName)
-      .sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
-
-    const seasonIds = seasonEntries.length > 1
-      ? seasonEntries.map((s) => s.mobifliks_id)
-      : [id];
-
-    const assignedSeasons = new Set<number>();
-    const seasonNumbers: number[] = [];
-    for (const entry of seasonEntries) {
-      let sNum = extractSeasonNumber(entry.title);
-      while (assignedSeasons.has(sNum)) sNum++;
-      assignedSeasons.add(sNum);
-      seasonNumbers.push(sNum);
-    }
-
-    const allEpisodes: Episode[] = [];
-    let maxSeasonUsed = 0;
-
-    for (let i = 0; i < seasonIds.length; i++) {
-      const baseSeason = seasonEntries.length > 1
-        ? seasonNumbers[i]
-        : 1;
-
-      const { data: eps } = await supabase
-        .from("movies")
-        .select("*")
-        .eq("series_id", seasonIds[i])
-        .eq("type", "episode")
-        .order("episode_number", { ascending: true });
-
-      if (eps?.length) {
-        const chunks = splitEpisodesByGap(eps);
-        for (let c = 0; c < chunks.length; c++) {
-          const seasonNum = c === 0 ? baseSeason : maxSeasonUsed + 1 + c;
-          chunks[c].forEach((ep: any, idx: number) => {
-            allEpisodes.push({
-              ...ep,
-              season_number: seasonNum,
-              episode_number: idx + 1,
-            } as Episode);
-          });
-        }
-        maxSeasonUsed = Math.max(maxSeasonUsed, baseSeason + chunks.length - 1);
-      }
-    }
-
-    const details = {
-      ...series,
-      title: baseName,
-      episodes: allEpisodes,
-      total_episodes: allEpisodes.length,
-      relatedSeasonIds: seasonIds.length > 1 ? seasonIds : undefined,
-    } as Series;
-
-    seriesDetailsCache.set(id, details);
-    boundedMap(seriesDetailsCache, MAX_DETAIL_CACHE);
-    return details;
-  })();
-
-  seriesDetailsRequests.set(id, request);
 
   try {
     return await request;
