@@ -704,6 +704,16 @@ export function CinematicVideoPlayer({
                   {/* Bottom Controls Bar */}
                   <div className="absolute inset-x-0 bottom-0 pb-10 pt-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none">
                     <div className="max-w-[1200px] mx-auto px-6 pointer-events-auto space-y-4">
+                      {/* Brand Logo Overlay */}
+                      {activeMovie?.logo_url && (
+                        <div className="flex justify-start px-1 -mb-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                          <img 
+                            src={activeMovie.logo_url} 
+                            alt={activeTitle} 
+                            className="h-10 md:h-16 w-auto max-w-[180px] md:max-w-[280px] object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 transition-opacity hover:opacity-100" 
+                          />
+                        </div>
+                      )}
                       
                       {/* Timeline / Seek Bar */}
                       <div className="group relative pt-4 pb-2 px-1">
