@@ -199,7 +199,8 @@ export function shouldProxyMediaUrl(url?: string): boolean {
     /b-cdn\.net/i.test(normalized) ||
     /pearlpix\.xyz/i.test(normalized) ||
     /bunnycdn\.com/i.test(normalized) ||
-    /storage\.googleapis\.com/i.test(normalized)
+    /storage\.googleapis\.com/i.test(normalized) ||
+    /\.(mp4|m4v|webm|m3u8|mov|avi|mkv)(\?|$)/i.test(normalized)
   );
 }
 

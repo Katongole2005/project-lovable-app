@@ -707,7 +707,11 @@ export default function Index() {
   const handlePlayVideo = useCallback(async (url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
     const proxiedUrl = await buildMediaUrl({ url, title, play: true });
     const cachedMedia = getCachedMediaAvailability(proxiedUrl);
-    const playbackUrl = cachedMedia?.resolved_url || proxiedUrl;
+    let playbackUrl = cachedMedia?.resolved_url || proxiedUrl;
+
+    if (playbackUrl !== proxiedUrl && shouldProxyMediaUrl(playbackUrl)) {
+      playbackUrl = await buildMediaUrl({ url: playbackUrl, title, play: true });
+    }
 
     const movie = selectedMovieRef.current;
     const parsedEpisode = parseEpisodeInfoFromTitle(title);

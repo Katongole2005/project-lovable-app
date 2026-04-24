@@ -4,6 +4,9 @@
  */
 
 const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "";
+if (typeof window !== "undefined") {
+  console.log("MovieBay Security System: Key status =", SECRET_KEY ? "LOADED" : "MISSING");
+}
 
 /**
  * Encrypts a payload into a URL-safe Base64 token.
