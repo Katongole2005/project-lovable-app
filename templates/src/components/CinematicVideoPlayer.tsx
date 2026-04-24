@@ -558,14 +558,16 @@ export function CinematicVideoPlayer({
                     style={{ top: "-10px", height: "calc(100% + 20px)" }}
                   />
                 ) : (
-                  <video
-                    ref={videoRef}
-                    key={`${activeVideoUrl}-${resumeTime}`}
-                    src={activeVideoUrl}
-                    autoPlay
-                    controls={useNativeVideoControls}
-                    playsInline
-                    preload="metadata"
+                    <video
+                      ref={videoRef}
+                      key={`${activeVideoUrl}-${resumeTime}`}
+                      src={activeVideoUrl}
+                      autoPlay
+                      controls={useNativeVideoControls}
+                      controlsList="nodownload"
+                      onContextMenu={(e) => e.preventDefault()}
+                      playsInline
+                      preload="metadata"
                     poster={posterUrl ?? undefined}
                     className="absolute inset-0 h-full w-full bg-black object-contain"
                     onLoadedMetadata={handleDirectLoadedMetadata}
