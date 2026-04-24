@@ -704,8 +704,21 @@ export default function Index() {
 
   selectedMovieRef.current = selectedMovie;
 
-  const handlePlayVideo = useCallback(async (url: string, title: string, startAt = 0, playbackItem?: ContinueWatching) => {
-    const proxiedUrl = await buildMediaUrl({ url, title, play: true });
+  const handlePlayVideo = useCallback(async (
+    url: string, 
+    title: string, 
+    startAt = 0, 
+    playbackItem?: ContinueWatching,
+    mobifliksId?: string,
+    detailsUrl?: string
+  ) => {
+    const proxiedUrl = await buildMediaUrl({ 
+      url, 
+      title, 
+      play: true,
+      mobifliksId,
+      detailsUrl
+    });
     const cachedMedia = getCachedMediaAvailability(proxiedUrl);
     let playbackUrl = cachedMedia?.resolved_url || proxiedUrl;
 

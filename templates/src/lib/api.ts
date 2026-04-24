@@ -198,7 +198,9 @@ export function shouldProxyMediaUrl(url?: string): boolean {
     /pearlpix\.xyz/i.test(normalized) ||
     /bunnycdn\.com/i.test(normalized) ||
     /storage\.googleapis\.com/i.test(normalized) ||
-    /\.(mp4|m4v|webm|m3u8|mov|avi|mkv)(\?|$)/i.test(normalized)
+    /\.(mp4|m4v|webm|m3u8|mov|avi|mkv)(\?|$)/i.test(normalized) ||
+    /munoserver/i.test(normalized) ||
+    /munotech/i.test(normalized)
   );
 }
 
@@ -370,7 +372,12 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
   }
 }
 
-export function buildPlaybackRecoveryUrl(mediaUrl: string, title: string): string | null {
+export function buildPlaybackRecoveryUrl(
+  mediaUrl: string, 
+  title: string,
+  mobifliksId?: string,
+  detailsUrl?: string
+): string | null {
   const parsed = createUrl(mediaUrl);
   if (!parsed) {
     return null;
@@ -391,14 +398,14 @@ export function buildPlaybackRecoveryUrl(mediaUrl: string, title: string): strin
     if (!targetUrl) {
       return null;
     }
-    return buildApiPlaybackUrl(targetUrl, title) ?? targetUrl;
+    return buildApiPlaybackUrl(targetUrl, title, detailsUrl, mobifliksId) ?? targetUrl;
   }
 
   if (!shouldProxyMediaUrl(mediaUrl)) {
     return null;
   }
 
-  return buildWorkerPlaybackUrl(mediaUrl, title) ?? buildApiPlaybackUrl(mediaUrl, title);
+  return buildApiPlaybackUrl(mediaUrl, title, detailsUrl, mobifliksId) ?? mediaUrl;
 }
 
 export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaAvailability> {

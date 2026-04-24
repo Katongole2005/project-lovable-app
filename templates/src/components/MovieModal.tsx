@@ -603,7 +603,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                             "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
                             TRENDING_ACCENT_BUTTON_CLASS
                           )}
-                          onClick={() => onPlay(movie.download_url!, movie.title)}
+                          onClick={() => onPlay(movie.download_url!, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url)}
                         >
                           <Play className="w-5 h-5 fill-current" />
                           {movie.server2_url ? "Server 1" : "Play"}
@@ -617,7 +617,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                             "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
                             !movie.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
                           )}
-                          onClick={() => onPlay(movie.server2_url!, movie.title)}
+                          onClick={() => onPlay(movie.server2_url!, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url)}
                         >
                           <Play className="w-5 h-5 fill-current" />
                           {movie.download_url ? "Server 2" : "Play"}
@@ -636,7 +636,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                               onClick={() => {
                                 const firstEp = series.episodes?.[0];
                                 if (firstEp?.download_url) {
-                                  onPlay(firstEp.download_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`);
+                                  onPlay(firstEp.download_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`, 0, firstEp.mobifliks_id, firstEp.video_page_url || movie.video_page_url || movie.details_url);
                                 }
                               }}
                             >
@@ -655,7 +655,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                               onClick={() => {
                                 const firstEp = series.episodes?.[0];
                                 if (firstEp?.server2_url) {
-                                  onPlay(firstEp.server2_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`);
+                                  onPlay(firstEp.server2_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`, 0, firstEp.mobifliks_id, firstEp.video_page_url || movie.video_page_url || movie.details_url);
                                 }
                               }}
                             >
@@ -1127,7 +1127,7 @@ function MobileMovieLayout({
             ? (episode?.download_url || episode?.server2_url)
             : (episode?.server2_url || episode?.download_url);
           if (resumeTargetUrl) {
-            onPlay(resumeTargetUrl, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
+            onPlay(resumeTargetUrl, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`, 0, episode?.mobifliks_id, episode?.video_page_url || movie.video_page_url || movie.details_url);
             return;
           }
         }
@@ -1138,7 +1138,7 @@ function MobileMovieLayout({
           : (firstEpisode?.server2_url || firstEpisode?.download_url);
 
         if (targetUrl) {
-          onPlay(targetUrl, `${movie.title} - S1:E1`);
+          onPlay(targetUrl, `${movie.title} - S1:E1`, 0, firstEpisode?.mobifliks_id, firstEpisode?.video_page_url || movie.video_page_url || movie.details_url);
         } else {
           toast.error("The first episode is not currently playable.");
         }
@@ -1155,7 +1155,7 @@ function MobileMovieLayout({
       : (movie.server2_url || movie.download_url);
 
     if (targetUrl) {
-      onPlay(targetUrl, movie.title);
+      onPlay(targetUrl, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url);
       return;
     }
 
@@ -2204,7 +2204,10 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
           if (targetUrl) {
             onPlay(
               targetUrl,
-              `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
+              `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`,
+              0,
+              episode.mobifliks_id,
+              episode.video_page_url || movie.video_page_url || movie.details_url
             );
           }
         }
@@ -2262,7 +2265,10 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                     e.stopPropagation();
                     onPlay(
                       episode.download_url!,
-                      `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
+                      `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`,
+                      0,
+                      episode.mobifliks_id,
+                      episode.video_page_url || movie.video_page_url || movie.details_url
                     );
                   }}
                 >
@@ -2279,7 +2285,10 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                     e.stopPropagation();
                     onPlay(
                       episode.server2_url!,
-                      `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`
+                      `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`,
+                      0,
+                      episode.mobifliks_id,
+                      episode.video_page_url || movie.video_page_url || movie.details_url
                     );
                   }}
                 >

@@ -377,7 +377,12 @@ export function CinematicVideoPlayer({
   const attemptPlaybackRecovery = useCallback(() => {
     if (hasRetriedPlayback) return false;
 
-    const fallbackUrl = buildPlaybackRecoveryUrl(activeVideoUrl, activeTitle);
+    const fallbackUrl = buildPlaybackRecoveryUrl(
+      activeVideoUrl, 
+      activeTitle,
+      movie?.mobifliks_id,
+      (movie as any)?.video_page_url || movie?.details_url
+    );
     if (!fallbackUrl || fallbackUrl === activeVideoUrl) {
       return false;
     }
@@ -393,7 +398,7 @@ export function CinematicVideoPlayer({
     setCurrentTime(nextResumeTime);
     setActiveVideoUrl(fallbackUrl);
     return true;
-  }, [activeTitle, activeVideoUrl, currentTime, hasRetriedPlayback, resumeTime, startTime]);
+  }, [activeTitle, activeVideoUrl, currentTime, hasRetriedPlayback, resumeTime, startTime, movie]);
 
   const handleDirectError = () => {
     pauseRequestedRef.current = false;
