@@ -105,7 +105,9 @@ if (!shouldDisableServiceWorker && "serviceWorker" in navigator) {
       const handleNewWorker = (worker: ServiceWorker) => {
         worker.addEventListener("statechange", () => {
           if (worker.state === "activated" && navigator.serviceWorker.controller) {
-            window.location.reload();
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('sw', new Date().getTime().toString());
+            window.location.href = currentUrl.toString();
           }
         });
       };

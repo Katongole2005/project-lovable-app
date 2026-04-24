@@ -25,7 +25,12 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
       if (!pageHasAlreadyBeenForceRefreshed) {
         // Assume that the error is due to an outdated chunk hash or temporary network issue
         window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
-        window.location.reload();
+        
+        // Force bypass CDN and browser cache by appending a timestamp to the URL
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('v', new Date().getTime().toString());
+        window.location.href = currentUrl.toString();
+        
         // Return a promise that never resolves while the page is reloading
         return new Promise(() => {});
       }
