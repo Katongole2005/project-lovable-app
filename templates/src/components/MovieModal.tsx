@@ -349,11 +349,41 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     }, 0);
   };
 
+  const preloadUrl = React.useMemo(() => {
+    if (!isOpen || !movie) return null;
+    
+    if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+      const conn = (navigator as any).connection;
+      if (conn.saveData || conn.effectiveType === '2g' || conn.effectiveType === '3g') {
+        return null;
+      }
+    }
+
+    const targetUrl = movie.type === "series"
+      ? (series.episodes?.[0]?.download_url || series.episodes?.[0]?.server2_url)
+      : (movie.download_url || movie.server2_url);
+
+    if (!targetUrl) return null;
+
+    return buildMediaUrl({
+      url: targetUrl,
+      title: movie.title,
+      detailsUrl: (movie as any).video_page_url || movie.details_url,
+      mobifliksId: movie.mobifliks_id,
+      play: true,
+    });
+  }, [isOpen, movie, series.episodes]);
+
   return (
     <ErrorBoundary>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* Mobile: Full screen sheet, Desktop: Centered modal */}
       <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-200 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] data-[state=open]:slide-in-from-bottom md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-bottom md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%]">
+        
+        {preloadUrl && (
+          <video src={preloadUrl} preload="auto" className="hidden" playsInline muted />
+        )}
+        
         <DialogTitle className="sr-only">{movie.title}</DialogTitle>
         <DialogDescription className="sr-only">
           {movie.description || (isSeries ? "Series details and episodes." : "Movie details and playback.")}
