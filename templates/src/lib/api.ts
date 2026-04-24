@@ -17,6 +17,27 @@ const mediaAvailabilityRequests = new Map<string, Promise<MediaAvailability>>();
 const preconnectedOrigins = new Set<string>();
 const warmedMediaUrls = new Set<string>();
 
+// ─── Bounded-cache helpers ────────────────────────────────────────────────────
+// All caches above are module-level singletons that survive for the full
+// browser session. Without size limits they grow continuously; Chrome runs out
+// of heap memory and crashes with STATUS_BREAKPOINT after a few minutes.
+const MAX_DETAIL_CACHE = 60;
+const MAX_GENRE_CACHE  = 8;
+const MAX_MEDIA_CACHE  = 100;
+const MAX_WARM_URLS    = 150;
+function boundedSet<T>(set: Set<T>, max: number): void {
+  if (set.size <= max) return;
+  const iter = set.values();
+  let n = set.size - max;
+  while (n-- > 0) set.delete(iter.next().value);
+}
+function boundedMap<K, V>(map: Map<K, V>, max: number): void {
+  if (map.size <= max) return;
+  const iter = map.keys();
+  let n = map.size - max;
+  while (n-- > 0) map.delete(iter.next().value);
+}
+
 function getUrlBase(): string {
   return typeof window !== "undefined" ? window.location.origin : "http://localhost";
 }
@@ -87,10 +108,6 @@ function warmMediaElement(url?: string | null): void {
   if (!url || typeof document === "undefined" || warmedMediaUrls.has(url)) return;
 
   try {
-    // Only preconnect to the origin — do NOT create a video element with preload="auto".
-    // A hidden preload="auto" video element would download the entire file in the
-    // background while the user is already watching it in the main player, causing
-    // Chrome to run out of memory (STATUS_BREAKPOINT crash) after 2–5 minutes.
     preconnectOrigin(url);
 
     if (shouldProxyMediaUrl(url)) {
@@ -98,6 +115,7 @@ function warmMediaElement(url?: string | null): void {
     }
 
     warmedMediaUrls.add(url);
+    boundedSet(warmedMediaUrls, MAX_WARM_URLS);
   } catch {
     // Ignore warmup failures.
   }
@@ -398,6 +416,7 @@ export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaA
         candidate_urls: Array.isArray(data.candidate_urls) ? data.candidate_urls : [mediaUrl],
       };
       mediaAvailabilityCache.set(mediaUrl, resolved);
+      boundedMap(mediaAvailabilityCache, MAX_MEDIA_CACHE);
       preconnectOrigin(resolved.resolved_url ?? mediaUrl);
       resolved.candidate_urls.forEach((candidate) => preconnectOrigin(candidate));
       return resolved;
@@ -408,6 +427,7 @@ export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaA
         candidate_urls: [mediaUrl],
       };
       mediaAvailabilityCache.set(mediaUrl, fallback);
+      boundedMap(mediaAvailabilityCache, MAX_MEDIA_CACHE);
       preconnectOrigin(mediaUrl);
       return fallback;
     }
@@ -440,6 +460,7 @@ export function primeMediaAvailability(mediaUrl?: string | null): void {
       resolved_url: mediaUrl,
       candidate_urls: [mediaUrl],
     });
+    boundedMap(mediaAvailabilityCache, MAX_MEDIA_CACHE);
     return;
   }
   void resolveMediaAvailability(mediaUrl);
@@ -833,6 +854,7 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
     };
 
     movieDetailsCache.set(id, detailedMovie);
+    boundedMap(movieDetailsCache, MAX_DETAIL_CACHE);
     return detailedMovie;
   })();
 
@@ -933,6 +955,7 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
     } as Series;
 
     seriesDetailsCache.set(id, details);
+    boundedMap(seriesDetailsCache, MAX_DETAIL_CACHE);
     return details;
   })();
 
