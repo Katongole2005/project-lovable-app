@@ -140,6 +140,29 @@ function buildWorkerPlaybackUrl(targetUrl: string, title: string): string | null
   return endpoint.toString();
 }
 
+function buildApiPlaybackUrl(
+  targetUrl: string,
+  title: string,
+  detailsUrl?: string | null,
+  mobifliksId?: string | null,
+): string | null {
+  const apiMediaEndpoint = buildApiEndpoint("/media");
+  if (!apiMediaEndpoint) {
+    return null;
+  }
+
+  apiMediaEndpoint.searchParams.set("url", targetUrl);
+  apiMediaEndpoint.searchParams.set("title", title || "video");
+  if (detailsUrl) {
+    apiMediaEndpoint.searchParams.set("details_url", detailsUrl);
+  }
+  if (mobifliksId) {
+    apiMediaEndpoint.searchParams.set("mobifliks_id", mobifliksId);
+  }
+  apiMediaEndpoint.searchParams.set("play", "true");
+  return apiMediaEndpoint.toString();
+}
+
 export function shouldProxyMediaUrl(url?: string): boolean {
   if (!url) return false;
   const normalized = unwrapLegacyWorkerUrl(url);
@@ -201,37 +224,16 @@ export function buildMediaUrl({
   play?: boolean;
 }): string {
   const normalizedUrl = unwrapLegacyWorkerUrl(url);
+  if (play) {
+    // Prefer the raw stream URL first. The worker/proxy can still be used later
+    // as a fallback if direct playback fails for a specific source.
+    preconnectOrigin(normalizedUrl);
+    return normalizedUrl;
+  }
+
   if (!shouldProxyMediaUrl(normalizedUrl)) {
     preconnectOrigin(normalizedUrl);
     return normalizedUrl;
-  }
-
-  const apiMediaEndpoint = buildApiEndpoint("/media");
-  if (play && shouldUseDirectPlayback(normalizedUrl)) {
-    preconnectOrigin(normalizedUrl);
-    return normalizedUrl;
-  }
-
-  if (play) {
-    const workerPlaybackUrl = buildWorkerPlaybackUrl(normalizedUrl, title || "video");
-    if (workerPlaybackUrl) {
-      preconnectOrigin(CLOUDFLARE_WORKER_URL);
-      return workerPlaybackUrl;
-    }
-  }
-
-  if (play && apiMediaEndpoint) {
-    preconnectOrigin(API_BASE);
-    apiMediaEndpoint.searchParams.set("url", normalizedUrl);
-    apiMediaEndpoint.searchParams.set("title", title || "video");
-    if (detailsUrl) {
-      apiMediaEndpoint.searchParams.set("details_url", detailsUrl);
-    }
-    if (mobifliksId) {
-      apiMediaEndpoint.searchParams.set("mobifliks_id", mobifliksId);
-    }
-    apiMediaEndpoint.searchParams.set("play", "true");
-    return apiMediaEndpoint.toString();
   }
 
   if (CLOUDFLARE_WORKER_URL) {
@@ -251,25 +253,14 @@ export function buildMediaUrl({
     return endpoint.toString();
   }
 
-  if (!apiMediaEndpoint) {
+  const apiPlaybackUrl = buildApiPlaybackUrl(normalizedUrl, title, detailsUrl, mobifliksId);
+  if (!apiPlaybackUrl) {
     preconnectOrigin(normalizedUrl);
     return normalizedUrl;
   }
 
   preconnectOrigin(API_BASE);
-  apiMediaEndpoint.searchParams.set("url", normalizedUrl);
-  apiMediaEndpoint.searchParams.set("title", title || "video");
-  if (detailsUrl) {
-    apiMediaEndpoint.searchParams.set("details_url", detailsUrl);
-  }
-  if (mobifliksId) {
-    apiMediaEndpoint.searchParams.set("mobifliks_id", mobifliksId);
-  }
-  if (play) {
-    apiMediaEndpoint.searchParams.set("play", "true");
-  }
-
-  return apiMediaEndpoint.toString();
+  return apiPlaybackUrl;
 }
 
 export interface MediaAvailability {
@@ -330,14 +321,14 @@ export function buildPlaybackRecoveryUrl(mediaUrl: string, title: string): strin
     if (!targetUrl) {
       return null;
     }
-    return targetUrl;
+    return buildApiPlaybackUrl(targetUrl, title) ?? targetUrl;
   }
 
   if (!shouldProxyMediaUrl(mediaUrl)) {
     return null;
   }
 
-  return buildWorkerPlaybackUrl(mediaUrl, title);
+  return buildWorkerPlaybackUrl(mediaUrl, title) ?? buildApiPlaybackUrl(mediaUrl, title);
 }
 
 export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaAvailability> {
