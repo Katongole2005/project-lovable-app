@@ -113,6 +113,33 @@ function unwrapLegacyWorkerUrl(url: string): string {
   }
 }
 
+function shouldUseDirectPlayback(url?: string): boolean {
+  if (!url) return false;
+  const normalized = unwrapLegacyWorkerUrl(url);
+  return (
+    /b-cdn\.net/i.test(normalized) ||
+    /bunnycdn\.com/i.test(normalized) ||
+    /storage\.googleapis\.com/i.test(normalized) ||
+    /\.(mp4|m4v|webm)(\?|$)/i.test(normalized)
+  );
+}
+
+function buildWorkerPlaybackUrl(targetUrl: string, title: string): string | null {
+  if (!CLOUDFLARE_WORKER_URL) {
+    return null;
+  }
+
+  const endpoint = createUrl(CLOUDFLARE_WORKER_URL);
+  if (!endpoint) {
+    return null;
+  }
+
+  endpoint.searchParams.set("url", targetUrl);
+  endpoint.searchParams.set("name", title || "video");
+  endpoint.searchParams.set("play", "1");
+  return endpoint.toString();
+}
+
 export function shouldProxyMediaUrl(url?: string): boolean {
   if (!url) return false;
   const normalized = unwrapLegacyWorkerUrl(url);
@@ -180,6 +207,19 @@ export function buildMediaUrl({
   }
 
   const apiMediaEndpoint = buildApiEndpoint("/media");
+  if (play && shouldUseDirectPlayback(normalizedUrl)) {
+    preconnectOrigin(normalizedUrl);
+    return normalizedUrl;
+  }
+
+  if (play) {
+    const workerPlaybackUrl = buildWorkerPlaybackUrl(normalizedUrl, title || "video");
+    if (workerPlaybackUrl) {
+      preconnectOrigin(CLOUDFLARE_WORKER_URL);
+      return workerPlaybackUrl;
+    }
+  }
+
   if (play && apiMediaEndpoint) {
     preconnectOrigin(API_BASE);
     apiMediaEndpoint.searchParams.set("url", normalizedUrl);
@@ -270,50 +310,34 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
 }
 
 export function buildPlaybackRecoveryUrl(mediaUrl: string, title: string): string | null {
-  const apiMediaEndpoint = buildApiEndpoint("/media");
   const parsed = createUrl(mediaUrl);
   if (!parsed) {
     return null;
   }
+
+  const workerUrl = CLOUDFLARE_WORKER_URL ? createUrl(CLOUDFLARE_WORKER_URL) : null;
 
   if (parsed.pathname.endsWith("/media")) {
     const targetUrl = parsed.searchParams.get("url");
     if (!targetUrl) {
       return null;
     }
+    return buildWorkerPlaybackUrl(targetUrl, title) ?? targetUrl;
+  }
 
-    if (CLOUDFLARE_WORKER_URL) {
-      const workerEndpoint = createUrl(CLOUDFLARE_WORKER_URL);
-      if (!workerEndpoint) {
-        return targetUrl;
-      }
-      workerEndpoint.searchParams.set("url", targetUrl);
-      workerEndpoint.searchParams.set("name", title || "video");
-      workerEndpoint.searchParams.set("play", "1");
-      return workerEndpoint.toString();
+  if (workerUrl && parsed.hostname === workerUrl.hostname) {
+    const targetUrl = parsed.searchParams.get("url");
+    if (!targetUrl) {
+      return null;
     }
-
     return targetUrl;
   }
 
-  if (!apiMediaEndpoint) {
+  if (!shouldProxyMediaUrl(mediaUrl)) {
     return null;
   }
 
-  const workerUrl = CLOUDFLARE_WORKER_URL ? createUrl(CLOUDFLARE_WORKER_URL) : null;
-  const targetUrl =
-    workerUrl && parsed.hostname === workerUrl.hostname
-      ? parsed.searchParams.get("url")
-      : mediaUrl;
-
-  if (!targetUrl || !shouldProxyMediaUrl(targetUrl)) {
-    return null;
-  }
-
-  apiMediaEndpoint.searchParams.set("url", targetUrl);
-  apiMediaEndpoint.searchParams.set("title", title || "video");
-  apiMediaEndpoint.searchParams.set("play", "true");
-  return apiMediaEndpoint.toString();
+  return buildWorkerPlaybackUrl(mediaUrl, title);
 }
 
 export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaAvailability> {
