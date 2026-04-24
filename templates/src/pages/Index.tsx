@@ -206,7 +206,7 @@ export default function Index() {
     year: null,
     contentType: "movies",
   });
-  const [nextPage, setNextPage] = useState(2);
+  const [nextLoadOffset, setNextLoadOffset] = useState(0);
   const [allVJs, setAllVJs] = useState<{ id: string; label: string }[]>([]);
 
   const filterCategories = useMemo(() => [
@@ -560,20 +560,23 @@ export default function Index() {
   useEffect(() => {
     if (viewMode === "movies" && moviesQueryData) {
       setCategoryMovies(sortByYearDesc(moviesQueryData));
+      setNextLoadOffset(homeFeedLimit);
       setIsLoading(false);
     } else if (viewMode === "series" && seriesQueryData) {
       setCategoryMovies(sortByYearDesc(seriesQueryData));
+      setNextLoadOffset(Math.min(homeFeedLimit * 2, 200));
       setIsLoading(false);
     } else if (viewMode === "originals" && originalsQueryData) {
       setCategoryMovies(sortByYearDesc(originalsQueryData));
       setOriginalsPage(1);
+      setNextLoadOffset(originalsInitialLimit);
       setIsLoading(false);
     } else if ((viewMode === "movies" && isMoviesLoading) ||
       (viewMode === "series" && isSeriesLoading) ||
       (viewMode === "originals" && isOriginalsLoading)) {
       setIsLoading(true);
     }
-  }, [viewMode, moviesQueryData, seriesQueryData, originalsQueryData, isMoviesLoading, isSeriesLoading, isOriginalsLoading]);
+  }, [viewMode, moviesQueryData, seriesQueryData, originalsQueryData, isMoviesLoading, isSeriesLoading, isOriginalsLoading, homeFeedLimit, originalsInitialLimit, isOriginalsLoading]);
 
 
   const handleSearch = useCallback(async (query: string) => {
@@ -897,6 +900,7 @@ export default function Index() {
       setActiveVJ(null);
       setActiveCategory("trending");
       setOriginalsPage(1);
+      setNextLoadOffset(0);
 
       if (tab === "home") {
         setSearchQuery("");
@@ -966,6 +970,11 @@ export default function Index() {
           setCategoryMovies(sortByYearDesc(data));
           setActiveVJ(filters.vj);
           setActiveFilters(filters);
+          setNextLoadOffset(
+            filters.contentType === "series"
+              ? Math.min(100 * 2, 200)
+              : 100
+          );
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
@@ -1002,29 +1011,29 @@ export default function Index() {
     setIsLoadingMore(true);
     const dbFilters: FilterOptions = { vj: activeFilters.vj, year: activeFilters.year };
     try {
-      const currentCount = categoryMovies.length;
-      const nextPage = Math.floor(currentCount / 20) + 1;
-
       let more: Movie[] = [];
       if (viewMode === "movies") {
         if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
-          more = await fetchByGenre(genre, "movie", 20, dbFilters, nextPage);
+          more = await fetchByGenre(genre, "movie", 20, dbFilters, 1, nextLoadOffset);
         } else {
-          more = await fetchMoviesSorted("movie", 20, nextPage, dbFilters);
+          more = await fetchMoviesSorted("movie", 20, 1, dbFilters, nextLoadOffset);
         }
+        setNextLoadOffset((prev) => prev + 20);
       } else if (viewMode === "series") {
         if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
-          more = await fetchByGenre(genre, "series", 20, dbFilters, nextPage);
+          more = await fetchByGenre(genre, "series", 20, dbFilters, 1, nextLoadOffset);
         } else {
-          more = await fetchSeries(20, nextPage, undefined, dbFilters);
+          more = await fetchSeries(20, 1, undefined, dbFilters, nextLoadOffset);
         }
+        setNextLoadOffset((prev) => prev + Math.min(20 * 2, 200));
       } else if (viewMode === "originals") {
         const nextOriginalsPage = originalsPage + 1;
         const originals = await fetchOriginals(60, nextOriginalsPage);
         more = sortByYearDesc(originals);
         setOriginalsPage(nextOriginalsPage);
+        setNextLoadOffset((prev) => prev + 60);
       }
 
       const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
@@ -1035,7 +1044,7 @@ export default function Index() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByYearDesc, activeFilters]);
+  }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByYearDesc, activeFilters, nextLoadOffset]);
 
   // Get category title
   const getCategoryTitle = () => {

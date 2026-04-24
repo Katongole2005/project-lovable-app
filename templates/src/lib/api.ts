@@ -713,10 +713,11 @@ export async function fetchMoviesSorted(
   contentType: string = "movie",
   limit: number = 20,
   page: number = 1,
-  filters?: FilterOptions
+  filters?: FilterOptions,
+  offsetOverride?: number
 ): Promise<Movie[]> {
   const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
-  const offset = (page - 1) * limit;
+  const offset = offsetOverride ?? ((page - 1) * limit);
   let query = supabase
     .from("movies")
     .select("*")
@@ -731,11 +732,11 @@ export async function fetchMoviesSorted(
   return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
-export async function fetchSeries(limit: number = 20, page: number = 1, language?: string, filters?: FilterOptions): Promise<Movie[]> {
+export async function fetchSeries(limit: number = 20, page: number = 1, language?: string, filters?: FilterOptions, offsetOverride?: number): Promise<Movie[]> {
   const fetchLimit = Math.min(limit * 2, 200);
   // Series are grouped after fetch, so each page reads a wider raw window.
   // Use the raw fetch window for offsets to avoid overlapping page ranges.
-  const offset = (page - 1) * fetchLimit;
+  const offset = offsetOverride ?? ((page - 1) * fetchLimit);
   let query = supabase
     .from("movies")
     .select("*")
@@ -986,13 +987,15 @@ export async function fetchByGenre(
   contentType: "movie" | "series" | "all" = "movie",
   limit: number = 40,
   filters?: FilterOptions,
-  page: number = 1
+  page: number = 1,
+  offsetOverride?: number
 ): Promise<Movie[]> {
   const cacheKey = JSON.stringify({
     genre,
     contentType,
     limit,
     page,
+    offset: offsetOverride ?? null,
     vj: filters?.vj ?? null,
     year: filters?.year ?? null,
   });
@@ -1008,7 +1011,7 @@ export async function fetchByGenre(
 
   const request = (async () => {
     const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
-    const offset = (page - 1) * fetchLimit;
+    const offset = offsetOverride ?? ((page - 1) * fetchLimit);
     let query = supabase
       .from("movies")
       .select("*")
