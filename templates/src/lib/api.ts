@@ -484,6 +484,110 @@ const normalize = (items: unknown[]): Movie[] =>
       }))
     : [];
 
+function compareOptionalDateDesc(left?: string | null, right?: string | null): number {
+  if (left && right) {
+    if (left > right) return -1;
+    if (left < right) return 1;
+  }
+  if (left && !right) return -1;
+  if (!left && right) return 1;
+  return 0;
+}
+
+function compareMoviePriority(left: Movie, right: Movie): number {
+  const viewsDiff = (right.views ?? 0) - (left.views ?? 0);
+  if (viewsDiff !== 0) return viewsDiff;
+
+  const releaseDiff = compareOptionalDateDesc(left.release_date, right.release_date);
+  if (releaseDiff !== 0) return releaseDiff;
+
+  const createdDiff = compareOptionalDateDesc(left.created_at, right.created_at);
+  if (createdDiff !== 0) return createdDiff;
+
+  return left.title.localeCompare(right.title);
+}
+
+function getVariantTitle(movie: Movie): string {
+  return movie.type === "series" ? getSeriesBaseName(movie.title) : cleanTitle(movie.title);
+}
+
+function getVariantGroupKey(movie: Movie): string {
+  const translationBucket = movie.vj_name?.trim() ? "translated" : "original";
+  const titleKey = getVariantTitle(movie).toLowerCase();
+  const yearKey = movie.year ?? movie.release_date?.slice(0, 4) ?? "unknown";
+  return `${movie.type}:${translationBucket}:${titleKey}:${yearKey}`;
+}
+
+function stripVariantMetadata(movie: Movie): Movie {
+  const { vj_versions, vj_count, ...rest } = movie;
+  return { ...rest };
+}
+
+function attachVariantVersions(movies: Movie[]): Movie[] {
+  const groups = new Map<string, { items: Movie[]; firstIndex: number }>();
+  const result: Array<{ item: Movie; index: number }> = [];
+
+  movies.forEach((movie, index) => {
+    const key = getVariantGroupKey(movie);
+    const group = groups.get(key);
+    if (group) {
+      group.items.push(movie);
+      return;
+    }
+
+    groups.set(key, { items: [movie], firstIndex: index });
+  });
+
+  groups.forEach(({ items, firstIndex }) => {
+    const sortedVariants = [...items].sort(compareMoviePriority).map(stripVariantMetadata);
+    const primary = sortedVariants[0];
+
+    result.push({
+      item: {
+        ...primary,
+        vj_count: sortedVariants.length > 1 ? sortedVariants.length : undefined,
+        vj_versions: sortedVariants.length > 1 ? sortedVariants : undefined,
+      },
+      index: firstIndex,
+    });
+  });
+
+  return result.sort((a, b) => a.index - b.index).map((entry) => entry.item);
+}
+
+function finalizeBrowseResults(movies: Movie[], limit?: number): Movie[] {
+  const grouped = attachVariantVersions(groupSeriesList(movies));
+  return typeof limit === "number" ? grouped.slice(0, limit) : grouped;
+}
+
+async function fetchMovieVariants(movie: Movie): Promise<Movie[]> {
+  const safeTitle = getVariantTitle(movie).replace(/[%_\\]/g, (char) => `\\${char}`);
+  let query = supabase
+    .from("movies")
+    .select("*")
+    .eq("type", movie.type)
+    .ilike("title", `%${safeTitle}%`)
+    .order("views", { ascending: false })
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .limit(movie.type === "series" ? 60 : 20);
+
+  if (movie.year) {
+    query = query.eq("year", movie.year);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("fetchMovieVariants error:", error);
+    return [];
+  }
+
+  return normalize(data ?? [])
+    .filter((candidate) => getVariantGroupKey(candidate) === getVariantGroupKey(movie))
+    .sort(compareMoviePriority)
+    .map(stripVariantMetadata);
+}
+
 // ─── Series Grouping ─────────────────────────────────────────────────────────
 
 const seasonPattern = /\s*[-–—]?\s*Season\s*\d+/i;
@@ -573,17 +677,18 @@ function applyFilters(query: any, filters?: FilterOptions) {
 // ─── Data Fetching (Supabase Direct) ─────────────────────────────────────────
 
 export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
+  const targetLimit = filters?.vj || filters?.year ? 60 : 30;
   let query = supabase
     .from("movies")
     .select("*")
     .eq("type", "movie")
     .order("release_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false, nullsFirst: false })
-    .limit(filters?.vj || filters?.year ? 60 : 30);
+    .limit(Math.min(targetLimit * 2, 120));
   query = applyFilters(query, filters);
   const { data, error } = await query;
   if (error) { console.error("fetchTrending error:", error); return []; }
-  return normalize(data ?? []);
+  return finalizeBrowseResults(normalize(data ?? []), targetLimit);
 }
 
 export async function fetchRecent(
@@ -601,8 +706,7 @@ export async function fetchRecent(
     .order("created_at", { ascending: false })
     .range(offset, offset + fetchLimit - 1);
   if (error) { console.error("fetchRecent error:", error); return []; }
-  const results = normalize(data ?? []);
-  return contentType === "series" ? groupSeriesList(results).slice(0, limit) : results;
+  return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
 export async function fetchMoviesSorted(
@@ -624,8 +728,7 @@ export async function fetchMoviesSorted(
   query = applyFilters(query, filters);
   const { data, error } = await query;
   if (error) { console.error("fetchMoviesSorted error:", error); return []; }
-  const results = normalize(data ?? []);
-  return contentType === "series" ? groupSeriesList(results).slice(0, limit) : results;
+  return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
 export async function fetchSeries(limit: number = 20, page: number = 1, language?: string, filters?: FilterOptions): Promise<Movie[]> {
@@ -649,7 +752,7 @@ export async function fetchSeries(limit: number = 20, page: number = 1, language
 
   const { data, error } = await query;
   if (error) { console.error("fetchSeries error:", error); return []; }
-  return groupSeriesList(normalize(data ?? [])).slice(0, limit);
+  return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
 export async function searchMovies(query: string, page: number = 1, limit: number = 20): Promise<SearchResult> {
@@ -664,7 +767,7 @@ export async function searchMovies(query: string, page: number = 1, limit: numbe
     .order("views", { ascending: false })
     .range(offset, offset + fetchLimit - 1);
   if (error) { console.error("searchMovies error:", error); return { results: [], total_results: 0, page }; }
-  const grouped = groupSeriesList(normalize(data ?? []));
+  const grouped = finalizeBrowseResults(normalize(data ?? []));
   return {
     results: grouped.slice(0, limit),
     total_results: count ?? 0,
@@ -684,7 +787,7 @@ export async function searchAll(query: string, page: number = 1, limit: number =
     .order("views", { ascending: false })
     .range(offset, offset + fetchLimit - 1);
   if (error) { console.error("searchAll error:", error); return []; }
-  return groupSeriesList(normalize(data ?? [])).slice(0, limit);
+  return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
 export async function fetchMovieDetails(id: string): Promise<Movie | null> {
@@ -708,9 +811,20 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
       return null;
     }
 
-    const movie = data as Movie;
-    movieDetailsCache.set(id, movie);
-    return movie;
+    const movie = normalize([data])[0];
+    if (!movie) {
+      return null;
+    }
+
+    const versions = await fetchMovieVariants(movie);
+    const detailedMovie = {
+      ...movie,
+      vj_count: versions.length > 1 ? versions.length : undefined,
+      vj_versions: versions.length > 1 ? versions : undefined,
+    };
+
+    movieDetailsCache.set(id, detailedMovie);
+    return detailedMovie;
   })();
 
   movieDetailsRequests.set(id, request);
@@ -840,7 +954,7 @@ export async function fetchSuggestions(query: string): Promise<Movie[]> {
     .order("views", { ascending: false })
     .limit(20);
   if (error) { console.error("fetchSuggestions error:", error); return []; }
-  return groupSeriesList(normalize(data ?? [])).slice(0, 10);
+  return finalizeBrowseResults(normalize(data ?? []), 10);
 }
 
 export async function fetchStats(): Promise<{ popular_searches: string[] }> {
@@ -918,7 +1032,7 @@ export async function fetchByGenre(
     }
 
     const results = normalize(data ?? []);
-    const groupedResults = contentType === "series" ? groupSeriesList(results).slice(0, limit) : groupSeriesList(results);
+    const groupedResults = finalizeBrowseResults(results, limit);
     genreQueryCache.set(cacheKey, groupedResults);
     return groupedResults;
   })();

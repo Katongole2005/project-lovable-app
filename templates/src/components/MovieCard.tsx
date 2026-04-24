@@ -90,6 +90,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
 
   const isNew = isNewRelease(movie);
   const trending = isTrending(movie);
+  const hasMultipleVjs = (movie.vj_versions?.length ?? 0) > 1;
 
   return (
     <div
@@ -154,6 +155,11 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
             <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-orange-500 text-white flex items-center gap-0.5 shadow-[0_2px_8px_rgba(249,115,22,0.4)]">
               <TrendingUp className="w-2.5 h-2.5" />
               HOT
+            </span>
+          )}
+          {hasMultipleVjs && (
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-sky-500/90 text-white shadow-[0_2px_8px_rgba(14,165,233,0.35)]">
+              {movie.vj_versions?.length} VJs
             </span>
           )}
           {movie.type === "series" && (

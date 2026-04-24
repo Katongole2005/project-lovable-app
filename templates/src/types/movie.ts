@@ -42,6 +42,8 @@ export interface Movie {
   subtitles?: SubtitleTrack[];
   skip_segments?: SkipSegment[];
   video_page_url?: string;
+  vj_count?: number;
+  vj_versions?: Movie[];
 }
 
 export interface Episode {

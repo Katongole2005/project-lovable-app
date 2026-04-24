@@ -108,6 +108,76 @@ interface MovieModalProps {
 
 const fallbackCastAvatar = "https://placehold.co/160x160/1a1a2e/ffffff?text=Actor";
 
+function VJVersionSwitcher({
+  movie,
+  onMovieSelect,
+  compact = false,
+}: {
+  movie: Movie | Series;
+  onMovieSelect?: (movie: Movie) => void;
+  compact?: boolean;
+}) {
+  const versions = React.useMemo(
+    () => (movie.vj_versions ?? []).filter((version) => Boolean(version.vj_name)),
+    [movie.vj_versions]
+  );
+
+  if (!onMovieSelect || versions.length <= 1) {
+    return null;
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-[22px] border border-white/8 modal-panel-surface",
+        compact ? "px-4 py-3.5" : "p-4"
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">VJ Versions</p>
+          <p className="mt-1 text-sm text-white/68">Choose the translation you want for this title.</p>
+        </div>
+        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/72">
+          {versions.length} options
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {versions.map((version) => {
+          const isActive = version.mobifliks_id === movie.mobifliks_id;
+          const viewsLabel = version.views && version.views > 0
+            ? (version.views >= 1000 ? `${(version.views / 1000).toFixed(1)}K views` : `${version.views} views`)
+            : null;
+
+          return (
+            <button
+              key={version.mobifliks_id}
+              type="button"
+              onClick={() => {
+                if (!isActive) {
+                  onMovieSelect(version);
+                }
+              }}
+              className={cn(
+                "rounded-2xl border px-3.5 py-2.5 text-left transition-transform active:scale-[0.97]",
+                isActive
+                  ? "border-transparent text-white modal-active-utility-surface"
+                  : "border-white/8 bg-white/[0.035] text-white/72 hover:bg-white/[0.06]"
+              )}
+            >
+              <p className="text-sm font-semibold">{version.vj_name ? `VJ ${version.vj_name}` : "Default"}</p>
+              <p className="mt-1 text-[11px] text-white/46">
+                {isActive ? "Current version" : viewsLabel || "Switch to this version"}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = false, onMovieSelect }: MovieModalProps) {
   // NOTE: hooks must be called unconditionally; keep all hooks above the null-guard return.
   const deviceProfile = useDeviceProfile();
@@ -674,6 +744,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                     <span className="text-white/90">{movie.file_size}</span>
                   </motion.p>
                 )}
+
+                <motion.div variants={fadeInUp}>
+                  <VJVersionSwitcher movie={movie} onMovieSelect={onMovieSelect} />
+                </motion.div>
 
                 {isSeries && series.episodes && series.episodes.length > 0 && (
                   <DesktopEpisodeSection
@@ -1569,6 +1643,10 @@ function MobileMovieLayout({
                     <Tag className="h-4 w-4 text-white/30" />
                   </motion.div>
                 )}
+
+                <motion.div variants={fadeInUp}>
+                  <VJVersionSwitcher movie={movie} onMovieSelect={onMovieSelect} compact />
+                </motion.div>
 
                 {isSeries && (
                   <div ref={episodesSectionRef} className="space-y-0 pt-2">
