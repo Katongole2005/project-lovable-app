@@ -52,11 +52,14 @@ export function StayedAlertModal({ isOpen, onClose, onAuthClick }: StayedAlertMo
 
         {/* Close */}
         <button
-          onClick={onClose}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
           aria-label="Close"
-          className="absolute right-5 top-5 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-white/60 transition-all hover:bg-white/10 hover:text-white active:scale-90"
+          className="absolute right-4 top-4 z-50 rounded-full border border-white/10 bg-white/10 p-3 text-white transition-all hover:bg-white/20 active:scale-90"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </button>
 
         <div className="relative z-10 flex flex-col items-center px-8 py-10 text-center">
