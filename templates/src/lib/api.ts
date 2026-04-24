@@ -288,6 +288,11 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
       return resolveEndpoint.toString();
     }
 
+    if (shouldProxyMediaUrl(mediaUrl)) {
+      resolveEndpoint.searchParams.set("url", mediaUrl);
+      return resolveEndpoint.toString();
+    }
+
     if (!parsed.pathname.endsWith("/media")) {
       return null;
     }
