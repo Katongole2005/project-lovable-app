@@ -577,9 +577,9 @@ export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
     .from("movies")
     .select("*")
     .eq("type", "movie")
+    .order("created_at", { ascending: false, nullsFirst: false })
     .order("release_date", { ascending: false, nullsFirst: false })
-    .order("views", { ascending: false })
-    .limit(filters?.vj || filters?.year ? 200 : 50);
+    .limit(filters?.vj || filters?.year ? 60 : 30);
   query = applyFilters(query, filters);
   const { data, error } = await query;
   if (error) { console.error("fetchTrending error:", error); return []; }

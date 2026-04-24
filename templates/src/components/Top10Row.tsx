@@ -19,7 +19,7 @@ export const Top10Row = forwardRef<HTMLElement, Top10RowProps>(function Top10Row
   return (
     <section ref={ref} className={cn("py-6 content-visibility-auto", className)}>
       <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight mb-6" data-testid="text-section-top10">
-        Top 10 Today
+        Latest 10
       </h2>
       <div className="flex gap-5 md:gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
         {top10.map((movie, index) => (
@@ -49,9 +49,10 @@ function Top10Card({
 }) {
   const handleMouseEnter = useCallback(() => {
     preloadMovieBackdrop(movie);
-    if (!movie.download_url) return;
+    const targetUrl = movie.server2_url || movie.download_url;
+    if (!targetUrl) return;
     const mediaUrl = buildMediaUrl({
-      url: movie.download_url,
+      url: targetUrl,
       title: movie.title,
       detailsUrl: movie.video_page_url || movie.details_url,
       mobifliksId: movie.mobifliks_id,

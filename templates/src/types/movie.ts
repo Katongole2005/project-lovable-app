@@ -21,6 +21,7 @@ export interface Movie {
   mobifliks_id: string;
   title: string;
   year?: number;
+  created_at?: string | null;
   language?: string;
   type: 'movie' | 'series';
   image_url?: string;

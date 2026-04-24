@@ -101,7 +101,7 @@ function parseEpisodeInfoFromTitle(title: string): {
 
 function buildPrimaryPlaybackUrl(item: Movie | Series): string | null {
   if (item.type === "movie") {
-    const targetUrl = item.download_url || item.server2_url;
+    const targetUrl = item.server2_url || item.download_url;
     if (targetUrl) {
       return buildMediaUrl({
         url: targetUrl,
@@ -114,7 +114,7 @@ function buildPrimaryPlaybackUrl(item: Movie | Series): string | null {
   }
 
   const firstEpisode = (item as Series).episodes?.find((episode) => episode.download_url || episode.server2_url);
-  const targetUrl = firstEpisode?.download_url || firstEpisode?.server2_url;
+  const targetUrl = firstEpisode?.server2_url || firstEpisode?.download_url;
   if (!targetUrl) {
     return null;
   }
@@ -210,7 +210,7 @@ export default function Index() {
   const [allVJs, setAllVJs] = useState<{ id: string; label: string }[]>([]);
 
   const filterCategories = useMemo(() => [
-    { id: "trending", label: "Trending" },
+    { id: "trending", label: "Latest Added" },
     ...Object.entries(CATEGORY_TO_GENRE).map(([id, label]) => ({ id, label }))
   ], []);
 
@@ -379,6 +379,30 @@ export default function Index() {
     });
   }, []);
 
+  const sortByLatestAdded = useCallback((items: Movie[]) => {
+    return [...items].sort((a, b) => {
+      const createdA = a.created_at || "";
+      const createdB = b.created_at || "";
+      if (createdA && createdB) {
+        if (createdA > createdB) return -1;
+        if (createdA < createdB) return 1;
+      }
+      if (createdA && !createdB) return -1;
+      if (!createdA && createdB) return 1;
+
+      const dateA = a.release_date || "";
+      const dateB = b.release_date || "";
+      if (dateA && dateB) {
+        if (dateA > dateB) return -1;
+        if (dateA < dateB) return 1;
+      }
+      if (dateA && !dateB) return -1;
+      if (!dateA && dateB) return 1;
+
+      return (b.year || 0) - (a.year || 0);
+    });
+  }, []);
+
   const preloadHeroAssets = useCallback((items: Movie[]) => {
     for (const [index, item] of items.slice(0, 3).entries()) {
       if (item.backdrop_url) {
@@ -417,20 +441,19 @@ export default function Index() {
         const tData = trendingData || [];
         const mData = moviesQueryData || [];
 
-        const baseForTrending = tData.length > 0 ? tData : mData;
-        const sortedTrending = sortByYearDesc(baseForTrending);
+        const latestAddedMovies = tData.length > 0 ? [...tData] : sortByLatestAdded(mData);
 
         // Hero carousel: keep above-the-fold work small.
-        const heroMovies = sortedTrending.filter((m: Movie) => m.type === 'movie').slice(0, heroMovieLimit);
+        const heroMovies = latestAddedMovies.filter((m: Movie) => m.type === 'movie').slice(0, heroMovieLimit);
         const heroSeries = (seriesQueryData && seriesQueryData.length > 0)
           ? seriesQueryData.slice(0, heroSeriesLimit)
-          : sortedTrending.filter((m: Movie) => m.type === 'series').slice(0, heroSeriesLimit);
+          : latestAddedMovies.filter((m: Movie) => m.type === 'series').slice(0, heroSeriesLimit);
 
         const newTrending = [...heroMovies, ...heroSeries].slice(0, heroMovieLimit + heroSeriesLimit);
         preloadHeroAssets(newTrending);
         startTransition(() => {
           setTrending(newTrending);
-          setRecentMovies(sortedTrending.length > 0 ? sortedTrending : sortByYearDesc(mData));
+          setRecentMovies(latestAddedMovies.length > 0 ? latestAddedMovies : sortByYearDesc(mData));
 
           if (seriesQueryData) {
             setRecentSeries(sortByYearDesc(seriesQueryData));
@@ -468,7 +491,7 @@ export default function Index() {
       });
     }
     loadData();
-  }, [heroMovieLimit, heroSeriesLimit, moviesQueryData, preloadHeroAssets, seriesQueryData, sortByYearDesc, trendingData]);
+  }, [heroMovieLimit, heroSeriesLimit, moviesQueryData, preloadHeroAssets, seriesQueryData, sortByLatestAdded, sortByYearDesc, trendingData]);
 
   useEffect(() => {
     if (!showDeferredHomeSections) return;
@@ -805,7 +828,7 @@ export default function Index() {
 
   // Handle play from hero
   const handleHeroPlay = useCallback((movie: Movie) => {
-    const targetUrl = movie.download_url || movie.server2_url;
+    const targetUrl = movie.server2_url || movie.download_url;
     if (targetUrl) {
       const mediaUrl = buildMediaUrl({
         url: targetUrl,
@@ -892,7 +915,7 @@ export default function Index() {
       if (category === "trending") {
         const data = await fetchTrending(dbFilters);
         startTransition(() => {
-          setRecentMovies(sortByYearDesc(data));
+          setRecentMovies(data);
         });
       } else {
         const genre = CATEGORY_TO_GENRE[category] || category;
@@ -963,7 +986,7 @@ export default function Index() {
           }
           setActiveVJ(filters.vj);
           setActiveFilters(filters);
-          setRecentMovies(sortByYearDesc(data));
+          setRecentMovies(filters.category === "trending" ? data : sortByYearDesc(data));
         });
       }
     } catch (error) {
@@ -1017,7 +1040,7 @@ export default function Index() {
   // Get category title
   const getCategoryTitle = () => {
     const titles: Record<string, string> = {
-      trending: "Trending",
+      trending: "Latest Added",
       action: "Action",
       romance: "Romance",
       animation: "Animation",
@@ -1025,7 +1048,7 @@ export default function Index() {
       special: "Special",
       drama: "Drama",
     };
-    if (activeCategory === "trending") return "Trending";
+    if (activeCategory === "trending") return "Latest Added";
     return `Trending in ${titles[activeCategory] || "All"}`;
   };
 
@@ -1065,7 +1088,7 @@ export default function Index() {
                       movies={trending}
                       onPlay={handleHeroPlay}
                       onMovieClick={handleMovieClick}
-                      title="Top Movies"
+                      title="Latest on Moviebay"
                       onViewAll={() => handleTabChange("movies")}
                     />
                   </Suspense>

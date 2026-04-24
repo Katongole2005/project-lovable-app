@@ -7,7 +7,7 @@ interface CategoryChipsProps {
 }
 
 const categories = [
-  { id: "trending", label: "Trending", icon: Flame },
+  { id: "trending", label: "Latest Added", icon: Flame },
   { id: "action", label: "Action", icon: Sword },
   { id: "adventure", label: "Adventure", icon: Compass },
   { id: "crime", label: "Crime", icon: Shield },

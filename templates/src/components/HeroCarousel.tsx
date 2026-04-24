@@ -139,9 +139,10 @@ export function HeroCarousel({
 
   React.useEffect(() => {
     const primeMoviePlayback = (movie?: Movie) => {
-      if (!movie?.download_url) return;
+      const targetUrl = movie?.server2_url || movie?.download_url;
+      if (!targetUrl) return;
       const mediaUrl = buildMediaUrl({
-        url: movie.download_url,
+        url: targetUrl,
         title: movie.title,
         detailsUrl: movie.video_page_url || movie.details_url,
         mobifliksId: movie.mobifliks_id,

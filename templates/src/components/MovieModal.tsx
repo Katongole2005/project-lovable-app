@@ -742,7 +742,7 @@ function MobileMovieLayout({
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
   const [showCompactHeader, setShowCompactHeader] = React.useState(false);
   const [backdropLoaded, setBackdropLoaded] = React.useState(false);
-  const [selectedServer, setSelectedServer] = React.useState<1 | 2>(1);
+  const [selectedServer, setSelectedServer] = React.useState<1 | 2>(2);
   const [scrollTop, setScrollTop] = React.useState(0);
   const [relatedMovies, setRelatedMovies] = React.useState<Movie[]>([]);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -918,19 +918,19 @@ function MobileMovieLayout({
 
     const sources: Array<{ id: 1 | 2; label: string; hint: string }> = [];
 
-    if (hasPrimarySource) {
-      sources.push({
-        id: 1,
-        label: hasSecondarySource ? "Primary stream" : "Ready to play",
-        hint: movieS1Size || (isSeries ? "Recommended source" : runtimeLabel || "Recommended source"),
-      });
-    }
-
     if (hasSecondarySource) {
       sources.push({
         id: 2,
-        label: hasPrimarySource ? "Backup stream" : "Alternate source",
-        hint: movieS2Size || "Use if the first source is slow",
+        label: hasPrimarySource ? "Primary stream" : "Ready to play",
+        hint: movieS2Size || "Faster stream",
+      });
+    }
+
+    if (hasPrimarySource) {
+      sources.push({
+        id: 1,
+        label: hasSecondarySource ? "Backup stream" : "Alternate source",
+        hint: movieS1Size || (isSeries ? "Use if the first source is slow" : runtimeLabel || "Use if the first source is slow"),
       });
     }
 
@@ -997,8 +997,11 @@ function MobileMovieLayout({
             entry.episode_number === resumeEpisode.episode &&
             (entry.season_number || 1) === resumeEpisode.season
           );
-          if (episode?.download_url) {
-            onPlay(episode.download_url, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
+          const resumeTargetUrl = selectedServer === 1
+            ? (episode?.download_url || episode?.server2_url)
+            : (episode?.server2_url || episode?.download_url);
+          if (resumeTargetUrl) {
+            onPlay(resumeTargetUrl, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`);
             return;
           }
         }
