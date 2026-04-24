@@ -20,7 +20,6 @@ const SearchBar = lazy(() => import("@/components/SearchBar").then(module => ({ 
 const MovieModal = lazy(() => import("@/components/MovieModal").then(module => ({ default: module.MovieModal })));
 const CinematicVideoPlayer = lazy(loadCinematicVideoPlayer);
 const FilterModal = lazy(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
-const AmbientParticles = lazy(() => import("@/components/AmbientParticles").then(module => ({ default: module.AmbientParticles })));
 import { DynamicBackground } from "@/components/DynamicBackground";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
@@ -199,7 +198,6 @@ export default function Index() {
   const [showExitToast, setShowExitToast] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showDeferredHomeSections, setShowDeferredHomeSections] = useState(false);
-  const [showAmbientEffects, setShowAmbientEffects] = useState(false);
   const [activeFilters, setActiveFilters] = useState<FilterState>({
     category: null,
     vj: null,
@@ -225,7 +223,6 @@ export default function Index() {
     let idleId: number | null = null;
     const revealDeferredUi = () => {
       startTransition(() => {
-        setShowAmbientEffects(true);
         setShowDeferredHomeSections(true);
       });
     };
@@ -1050,12 +1047,6 @@ export default function Index() {
 
   return (
     <div className="min-h-screen pb-safe relative">
-      {showAmbientEffects && (
-        <Suspense fallback={null}>
-          <AmbientParticles />
-        </Suspense>
-      )}
-
       {/* Premium Dynamic Mesh Background */}
       <DynamicBackground />
 

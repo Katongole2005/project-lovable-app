@@ -34,7 +34,7 @@ export function HeroCarousel({
   const transitionDuration = deviceProfile.allowComplexAnimations ? 1300 : 650;
   const autoplayDelayMs = deviceProfile.autoplayDelayMs;
   const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
-  const shouldAutoplay = totalSlides > 1 && autoplayDelayMs > 0;
+  const shouldAutoplay = false;
 
 
   const scrollTo = React.useCallback((index: number) => {
@@ -81,20 +81,6 @@ export function HeroCarousel({
     },
     [deviceProfile.allowHighResImages]
   );
-
-  React.useEffect(() => {
-    if (totalSlides <= 1 || deviceProfile.isWeakDevice) return;
-
-    const nextIdx = (selectedIndex + 1) % totalSlides;
-    const nextMovie = displayMovies[nextIdx];
-    if (!nextMovie) return;
-
-    const backdropUrl = getBackdrop(nextMovie);
-    if (backdropUrl) {
-      const img = new Image();
-      img.src = backdropUrl;
-    }
-  }, [deviceProfile.isWeakDevice, displayMovies, getBackdrop, selectedIndex, totalSlides]);
 
   const touchStartX = React.useRef(0);
   const handleTouchStart = (e: React.TouchEvent) => {
