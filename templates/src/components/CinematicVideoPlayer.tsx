@@ -482,8 +482,16 @@ export function CinematicVideoPlayer({
                 </button>
 
                 {/* Title row */}
-                <div className="absolute top-4 left-16 right-16 z-10 text-center">
-                  <p className="truncate text-sm font-semibold text-white/80 tracking-wide">{activeTitle}</p>
+                <div className="absolute top-4 left-16 right-16 z-10 text-center flex flex-col items-center">
+                  {activeMovie?.logo_url ? (
+                    <img
+                      src={activeMovie.logo_url}
+                      alt={activeTitle}
+                      className="h-8 w-auto max-w-full object-contain drop-shadow-md"
+                    />
+                  ) : (
+                    <p className="truncate text-sm font-semibold text-white/80 tracking-wide">{activeTitle}</p>
+                  )}
                   <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/40">
                     {activeMovie?.type === "series" ? (
                       <span className="rounded bg-primary/20 px-1.5 py-0.5 text-primary text-[9px] font-bold uppercase tracking-widest">Series</span>
@@ -589,9 +597,17 @@ export function CinematicVideoPlayer({
                 {isBuffering && (
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/45 backdrop-blur-sm pointer-events-none">
                     <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    <div className="text-center">
+                    <div className="text-center flex flex-col items-center gap-2">
                       <p className="text-sm font-semibold tracking-wide text-white">Loading movie...</p>
-                      <p className="mt-1 text-xs text-white/60">{activeTitle}</p>
+                      {activeMovie?.logo_url ? (
+                        <img
+                          src={activeMovie.logo_url}
+                          alt={activeTitle}
+                          className="h-6 w-auto max-w-full object-contain opacity-80"
+                        />
+                      ) : (
+                        <p className="mt-1 text-xs text-white/60">{activeTitle}</p>
+                      )}
                     </div>
                   </div>
                 )}

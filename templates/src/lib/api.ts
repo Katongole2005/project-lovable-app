@@ -524,6 +524,7 @@ const normalize = (items: unknown[]): Movie[] =>
         title: cleanTitle(m.title ?? ""),
         year: fixYear(m.year),
         release_date: fixReleaseDate(m.release_date),
+        logo_url: (m as any).raw_data?.tmdb?.details?.logo_url || m.logo_url,
       }))
     : [];
 

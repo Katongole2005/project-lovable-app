@@ -112,9 +112,19 @@ function Top10Card({
         </div>
       </div>
 
-      <p className="mt-2 text-xs font-medium text-foreground line-clamp-1 max-w-[130px] ml-auto text-center pl-4" data-testid={`text-top10-title-${rank}`}>
-        {movie.title}
-      </p>
+      <div className="mt-2 h-4 flex items-center justify-center pl-4 max-w-[130px] ml-auto">
+        {movie.logo_url ? (
+          <img
+            src={movie.logo_url}
+            alt={movie.title}
+            className="h-full w-auto max-w-full object-contain"
+          />
+        ) : (
+          <p className="text-xs font-medium text-foreground line-clamp-1" data-testid={`text-top10-title-${rank}`}>
+            {movie.title}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

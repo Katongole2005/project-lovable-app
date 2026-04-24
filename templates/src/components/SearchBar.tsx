@@ -165,7 +165,15 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
                     className="w-10 h-14 rounded object-cover bg-muted"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-foreground truncate">{movie.title}</p>
+                    {movie.logo_url ? (
+                      <img
+                        src={movie.logo_url}
+                        alt={movie.title}
+                        className="h-5 w-auto max-w-full object-contain object-left mb-1"
+                      />
+                    ) : (
+                      <p className="font-medium text-sm text-foreground truncate">{movie.title}</p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       {[movie.year, movie.language, movie.type === "series" ? "Series" : "Movie"]
                         .filter(Boolean)

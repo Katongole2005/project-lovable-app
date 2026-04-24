@@ -26,6 +26,7 @@ export interface Movie {
   type: 'movie' | 'series';
   image_url?: string;
   backdrop_url?: string;
+  logo_url?: string;
   genres?: string[];
   description?: string;
   cast?: CastMember[];

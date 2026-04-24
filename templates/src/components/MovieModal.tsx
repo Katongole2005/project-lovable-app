@@ -532,10 +532,20 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                   </div>
 
                   <div className="flex-1 min-w-0 space-y-4 pt-2">
-                    <motion.h1 variants={fadeInUp} className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
-                      {movie.title}
-                      {isSeries && <span className="text-primary text-2xl ml-2 font-semibold">(Series)</span>}
-                    </motion.h1>
+                    <motion.div variants={fadeInUp} className="min-w-0 space-y-4 pt-2">
+                      {movie.logo_url ? (
+                        <img
+                          src={movie.logo_url}
+                          alt={movie.title}
+                          className="h-16 lg:h-24 xl:h-28 w-auto max-w-[500px] object-contain object-left drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+                        />
+                      ) : (
+                        <h1 className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
+                          {movie.title}
+                        </h1>
+                      )}
+                      {isSeries && <span className="text-primary text-2xl font-semibold inline-block">(Series)</span>}
+                    </motion.div>
 
                     <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-3">
                       {/* Rating */}
@@ -1298,14 +1308,25 @@ function MobileMovieLayout({
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <h2
-          className={cn(
-            "text-sm font-semibold text-white truncate max-w-[50vw] transition-opacity duration-150",
-            showCompactHeader ? "opacity-100" : "opacity-0"
-          )}
-        >
-          {movie.title}
-        </h2>
+        {movie.logo_url ? (
+          <img
+            src={movie.logo_url}
+            alt={movie.title}
+            className={cn(
+              "h-6 w-auto max-w-[40vw] object-contain transition-opacity duration-150",
+              showCompactHeader ? "opacity-100" : "opacity-0"
+            )}
+          />
+        ) : (
+          <h2
+            className={cn(
+              "text-sm font-semibold text-white truncate max-w-[50vw] transition-opacity duration-150",
+              showCompactHeader ? "opacity-100" : "opacity-0"
+            )}
+          >
+            {movie.title}
+          </h2>
+        )}
 
         <div className="min-w-[76px] flex justify-end">
           <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/6 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75">
@@ -1370,9 +1391,18 @@ function MobileMovieLayout({
               <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">
                 {heroSupportLabel}
               </p>
-              <h1 className="mt-2 text-[31px] font-display font-bold text-white text-pretty drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)] leading-[1.02] line-clamp-2 tracking-[-0.03em]" data-testid="text-movie-title">
-                {movie.title}
-              </h1>
+              {movie.logo_url ? (
+                <img
+                  src={movie.logo_url}
+                  alt={movie.title}
+                  className="mt-2 h-12 w-auto max-w-[80vw] object-contain object-left drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)]"
+                  loading="eager"
+                />
+              ) : (
+                <h1 className="mt-2 text-[31px] font-display font-bold text-white text-pretty drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)] leading-[1.02] line-clamp-2 tracking-[-0.03em]" data-testid="text-movie-title">
+                  {movie.title}
+                </h1>
+              )}
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-black/25 px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]">
                   <Star className="h-3.5 w-3.5 fill-[#facc15] text-[#facc15]" />

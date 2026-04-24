@@ -196,8 +196,17 @@ export function HeroCarousel({
 
         {currentMovie && (
             <div key={currentMovie.mobifliks_id} className="relative z-10 mt-3 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <h3 className="text-lg font-display font-bold text-white tracking-tight drop-shadow-lg">{currentMovie.title}</h3>
+              <div className="flex flex-col items-center justify-center gap-3 mb-2 px-4">
+                {currentMovie.logo_url ? (
+                  <img
+                    src={currentMovie.logo_url}
+                    alt={currentMovie.title}
+                    className="h-10 w-auto max-w-full object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+                    loading="eager"
+                  />
+                ) : (
+                  <h3 className="text-lg font-display font-bold text-white tracking-tight drop-shadow-lg line-clamp-1">{currentMovie.title}</h3>
+                )}
                 <span className="px-2.5 py-1 text-[10px] font-bold rounded-md text-black bg-gradient-to-r from-[hsl(45,100%,55%)] to-[hsl(35,100%,50%)] shadow-[0_0_12px_hsl(45_100%_50%/0.3)]">
                   IMDB {getImdbRating(currentMovie)}
                 </span>
@@ -288,9 +297,18 @@ export function HeroCarousel({
                       {String(selectedIndex + 1).padStart(2, "0")}
                     </span>
                     <div className="pb-1 lg:pb-2">
-                      <h2 className="text-2xl lg:text-4xl xl:text-5xl font-display font-bold text-white leading-tight tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                        {currentMovie.title}
-                      </h2>
+                      {currentMovie.logo_url ? (
+                        <img
+                          src={currentMovie.logo_url}
+                          alt={currentMovie.title}
+                          className="h-16 lg:h-24 xl:h-28 w-auto max-w-[400px] object-contain object-left drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+                          loading="eager"
+                        />
+                      ) : (
+                        <h2 className="text-2xl lg:text-4xl xl:text-5xl font-display font-bold text-white leading-tight tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                          {currentMovie.title}
+                        </h2>
+                      )}
                     </div>
                   </div>
 

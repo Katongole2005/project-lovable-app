@@ -195,9 +195,19 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
       </div>
 
       <div className="mt-3 space-y-1.5">
-        <h3 className="font-display font-medium text-sm leading-snug text-foreground line-clamp-1 group-hover:text-primary transition-colors tracking-normal" data-testid={`text-title-${movie.mobifliks_id}`}>
-          {movie.title}
-        </h3>
+        <div className="h-5 flex items-center">
+          {movie.logo_url ? (
+            <img
+              src={movie.logo_url}
+              alt={movie.title}
+              className="h-full w-auto max-w-full object-contain object-left opacity-90 group-hover:opacity-100 transition-opacity"
+            />
+          ) : (
+            <h3 className="font-display font-medium text-sm leading-snug text-foreground line-clamp-1 group-hover:text-primary transition-colors tracking-normal" data-testid={`text-title-${movie.mobifliks_id}`}>
+              {movie.title}
+            </h3>
+          )}
+        </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="rating-badge font-semibold" data-testid={`text-rating-${movie.mobifliks_id}`}>
             <Star className="w-3 h-3 fill-current" />
