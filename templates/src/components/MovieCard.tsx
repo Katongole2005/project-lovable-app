@@ -12,6 +12,7 @@ interface MovieCardProps {
   showProgress?: number;
   className?: string;
   priority?: boolean;
+  allowNewBadge?: boolean;
   onWatchlistChange?: () => void;
 }
 
@@ -43,7 +44,7 @@ function getStableRating(movie: Movie): string {
   return (6 + (Math.abs(hash) % 26) / 10).toFixed(1);
 }
 
-const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, onWatchlistChange }, ref) {
+const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, allowNewBadge = true, onWatchlistChange }, ref) {
   const rating = getStableRating(movie);
 
   const [inWatchlist, setInWatchlist] = useState(false);
@@ -88,7 +89,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
     onWatchlistChange?.();
   }, [movie, onWatchlistChange]);
 
-  const isNew = isNewRelease(movie);
+  const isNew = allowNewBadge && isNewRelease(movie);
   const trending = isTrending(movie);
   const hasMultipleVjs = (movie.vj_versions?.length ?? 0) > 1;
 

@@ -312,21 +312,9 @@ export default function Index() {
     });
   }, [isModalOpen, selectedMovie]);
 
-  useEffect(() => {
-    if (continueWatching.length === 0) return;
-
-    scheduleLowPriorityTask(() => {
-      continueWatching.slice(0, 1).forEach((item) => {
-        const mediaUrl = buildMediaUrl({
-          url: item.url,
-          title: item.episodeInfo ? `${item.title} - ${item.episodeInfo}` : item.title,
-          mobifliksId: item.contentId,
-          play: true,
-        });
-        primeMediaAvailability(mediaUrl);
-      });
-    });
-  }, [continueWatching]);
+  // Do not auto-prime continue-watching media on the homepage.
+  // Those background resolve/preconnect tasks can accumulate even when the
+  // user never presses play, which makes the idle home screen much heavier.
 
   // Dynamic SEO per view/modal
   const seoTitleMap: Record<ViewMode, string> = {
@@ -404,13 +392,12 @@ export default function Index() {
   }, []);
 
   const preloadHeroAssets = useCallback((items: Movie[]) => {
-    for (const [index, item] of items.slice(0, 3).entries()) {
-      if (item.backdrop_url) {
-        preloadImage(getOptimizedBackdropUrl(item.backdrop_url)).catch(() => { });
-      }
-      if (item.image_url && index < 2) {
-        preloadImage(getImageUrl(item.image_url)).catch(() => { });
-      }
+    const firstHero = items[0];
+    if (firstHero?.backdrop_url) {
+      preloadImage(getOptimizedBackdropUrl(firstHero.backdrop_url)).catch(() => { });
+    }
+    if (firstHero?.image_url) {
+      preloadImage(getImageUrl(firstHero.image_url)).catch(() => { });
     }
   }, []);
 

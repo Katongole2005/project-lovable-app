@@ -94,6 +94,7 @@ export const MovieRow = forwardRef<HTMLElement, MovieRowProps>(function MovieRow
             onClick={onMovieClick}
             className="w-full"
             priority={index < 4}
+            allowNewBadge={index < 15}
           />
         ))}
       </div>

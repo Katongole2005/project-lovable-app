@@ -41,6 +41,7 @@ export function MovieGrid({ movies, onMovieClick, isLoading, emptyMessage = "No 
           onClick={onMovieClick}
           className="w-full"
           priority={index < 6}
+          allowNewBadge={index < 15}
         />
       ))}
     </div>
