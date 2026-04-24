@@ -9,6 +9,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SiteSettingsProvider, useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import Maintenance from "./pages/Maintenance";
 import { AppLoader } from "@/components/AppLoader";
+import { Analytics } from "@vercel/analytics/react";
 
 const Toaster = lazy(() => import("@/components/ui/toaster").then(module => ({ default: module.Toaster })));
 const CookieConsent = lazy(() => import("@/components/CookieConsent").then(module => ({ default: module.CookieConsent })));
@@ -34,6 +35,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <Analytics />
       <ErrorBoundary>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           {showDeferredUi && (
