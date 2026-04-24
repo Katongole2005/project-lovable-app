@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, star
 import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, startTransition } from "react";
+import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Header } from "@/components/Header";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
@@ -21,6 +25,7 @@ const MovieModal = lazy(() => import("@/components/MovieModal").then(module => (
 const CinematicVideoPlayer = lazy(loadCinematicVideoPlayer);
 const FilterModal = lazy(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
 import { DynamicBackground } from "@/components/DynamicBackground";
+import { StayedAlertModal } from "@/components/StayedAlertModal";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
@@ -198,6 +203,8 @@ export default function Index() {
   const [showExitToast, setShowExitToast] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showDeferredHomeSections, setShowDeferredHomeSections] = useState(false);
+  const [isStayedAlertOpen, setIsStayedAlertOpen] = useState(false);
+
   const [activeFilters, setActiveFilters] = useState<FilterState>({
     category: null,
     vj: null,
@@ -215,6 +222,13 @@ export default function Index() {
   const filterYears = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 25 }, (_, i) => currentYear - i);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsStayedAlertOpen(true);
+    }, 5 * 60 * 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -309,10 +323,6 @@ export default function Index() {
     });
   }, [isModalOpen, selectedMovie]);
 
-  // Do not auto-prime continue-watching media on the homepage.
-  // Those background resolve/preconnect tasks can accumulate even when the
-  // user never presses play, which makes the idle home screen much heavier.
-
   // Dynamic SEO per view/modal
   const seoTitleMap: Record<ViewMode, string> = {
     home: "",
@@ -344,7 +354,6 @@ export default function Index() {
 
   const sortByYearDesc = useCallback((items: Movie[]) => {
     return [...items].sort((a, b) => {
-      // Primary: release_date (YYYY-MM-DD string comparison)
       const dateA = a.release_date || "";
       const dateB = b.release_date || "";
       if (dateA && dateB) {
@@ -354,12 +363,10 @@ export default function Index() {
       if (dateA && !dateB) return -1;
       if (!dateA && dateB) return 1;
 
-      // Secondary: year
       const yearA = a.year || 0;
       const yearB = b.year || 0;
       if (yearA !== yearB) return yearB - yearA;
 
-      // Tertiary: created_at (if available in types)
       return 0;
     });
   }, []);
@@ -420,14 +427,12 @@ export default function Index() {
   // Load initial data
   useEffect(() => {
     async function loadData() {
-      // Sync React Query data to local state for components expecting state
       if (trendingData || moviesQueryData) {
         const tData = trendingData || [];
         const mData = moviesQueryData || [];
 
         const latestAddedMovies = tData.length > 0 ? [...tData] : sortByLatestAdded(mData);
 
-        // Hero carousel: keep above-the-fold work small.
         const heroMovies = latestAddedMovies.filter((m: Movie) => m.type === 'movie').slice(0, heroMovieLimit);
         const heroSeries = (seriesQueryData && seriesQueryData.length > 0)
           ? seriesQueryData.slice(0, heroSeriesLimit)
@@ -518,7 +523,6 @@ export default function Index() {
     prefetchSeriesDetailsFor(combinedSeries, viewMode === "series" ? 8 : 4);
   }, [categoryMovies, prefetchSeriesDetailsFor, recentSeries, trending, viewMode]);
 
-  // Deep-link: open movie/series modal when visiting /movie/:id or /series/:id directly
   useEffect(() => {
     const match = location.pathname.match(/^\/(movie|series)\/(.+)$/);
     if (match && !isModalOpen) {
@@ -582,7 +586,6 @@ export default function Index() {
     }
   }, []);
 
-  // Handle movie click - prefer cached/prefetched series details before opening
   const handleMovieClick = useCallback(async (movie: Movie) => {
     let resolvedMovie: Movie | Series = movie;
     const needsSeriesDetails = movie.type === "series" && (!("episodes" in movie) || !(movie as Series).episodes?.length);
@@ -620,7 +623,6 @@ export default function Index() {
     );
     setIsModalOpen(true);
 
-    // Push shareable URL with SEO-friendly slug
     const typeSlug = movie.type === "series" ? "series" : "movie";
     const urlSlug = toSlug(movie.title, movie.mobifliks_id, movie.year);
     requestAnimationFrame(() => {
@@ -632,7 +634,6 @@ export default function Index() {
 
     scheduleLowPriorityTask(() => addToRecent(resolvedMovie));
 
-    // Fetch full details in background (for episodes, cast, etc.)
     void (async () => {
       try {
         const details = movie.type === "series"
@@ -658,7 +659,6 @@ export default function Index() {
     setIsModalOpen(false);
     setSelectedMovieDetailsLoading(false);
     
-    // Synchronize URL: revert to base view if we're on a movie/series route
     if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
       const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
       navigateTo(targetPath, { replace: true });
@@ -672,7 +672,6 @@ export default function Index() {
     setActivePlayerSubtitles([]);
     setActivePlayerSkipSegments([]);
     
-    // Synchronize URL: revert to base view if we're on a movie/series route
     if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
       const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
       navigateTo(targetPath, { replace: true });
@@ -811,9 +810,6 @@ export default function Index() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [isModalOpen, isVideoOpen, viewMode]);
 
-  // React Router now handles history for movies/series/search/originals views
-
-  // Handle play from hero
   const handleHeroPlay = useCallback((movie: Movie) => {
     const targetUrl = movie.server2_url || movie.download_url;
     if (targetUrl) {
@@ -848,11 +844,6 @@ export default function Index() {
   const handleVideoTimeUpdate = useCallback((currentTime: number, duration: number) => {
     const item = activePlaybackItemRef.current;
     if (duration > 0 && item) {
-      // Throttle: only write to localStorage every 5 seconds.
-      // updateContinueWatching dispatches a custom event that triggers
-      // useSyncExternalStore to re-render the entire Index tree. Without
-      // throttling this fires ~4x/second (~1440 full re-renders in 6 min),
-      // accumulating memory until Chrome crashes (STATUS_BREAKPOINT).
       const now = Date.now();
       if (now - lastContinueWatchingWriteRef.current < 5000) return;
       lastContinueWatchingWriteRef.current = now;
@@ -892,7 +883,6 @@ export default function Index() {
     });
   }, [navigateTo]);
 
-  // Handle category change
   const handleCategoryChange = useCallback(async (category: string, vjOverride?: string | null) => {
     setActiveCategory(category);
     if (vjOverride === undefined) setActiveVJ(null);
@@ -1030,7 +1020,6 @@ export default function Index() {
     }
   }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByYearDesc, activeFilters, nextLoadOffset]);
 
-  // Get category title
   const getCategoryTitle = () => {
     const titles: Record<string, string> = {
       trending: "Latest Added",
@@ -1045,6 +1034,40 @@ export default function Index() {
     return `Trending in ${titles[activeCategory] || "All"}`;
   };
 
+  const MemoizedHeader = useMemo(() => (
+    <Header
+      onSearch={handleSearch}
+      onMovieSelect={handleMovieClick}
+      popularSearches={popularSearches}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+    />
+  ), [handleSearch, handleMovieClick, popularSearches, activeTab, handleTabChange]);
+
+  const MemoizedHero = useMemo(() => (
+    <Suspense fallback={null}>
+      <HeroCarousel
+        movies={trending}
+        onPlay={handleHeroPlay}
+        onMovieClick={handleMovieClick}
+        title="Latest on Moviebay"
+        onViewAll={() => handleTabChange("movies")}
+      />
+    </Suspense>
+  ), [trending, handleHeroPlay, handleMovieClick, handleTabChange]);
+
+  const MemoizedMovieRow = useMemo(() => (
+    <MovieRow
+      title={getCategoryTitle()}
+      movies={recentMovies}
+      onMovieClick={handleMovieClick}
+      onViewAll={() => handleTabChange("movies")}
+      isLoading={isLoading && recentMovies.length === 0}
+      showFilters
+      onFilterClick={() => setIsFilterOpen(true)}
+    />
+  ), [getCategoryTitle, recentMovies, handleMovieClick, handleTabChange, isLoading, setIsFilterOpen]);
+
   return (
     <div className="min-h-screen pb-safe relative">
       {/* Premium Dynamic Mesh Background */}
@@ -1055,13 +1078,7 @@ export default function Index() {
         <AnnouncementBanner />
 
         {/* Header */}
-        <Header
-          onSearch={handleSearch}
-          onMovieSelect={handleMovieClick}
-          popularSearches={popularSearches}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-        />
+        {MemoizedHeader}
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-4">
@@ -1070,15 +1087,7 @@ export default function Index() {
             <PageTransition>
               {shouldShowHero && (
                 trending.length > 0 ? (
-                  <Suspense fallback={null}>
-                    <HeroCarousel
-                      movies={trending}
-                      onPlay={handleHeroPlay}
-                      onMovieClick={handleMovieClick}
-                      title="Latest on Moviebay"
-                      onViewAll={() => handleTabChange("movies")}
-                    />
-                  </Suspense>
+                  MemoizedHero
                 ) : isHeroLoading ? (
                   null
                 ) : null
@@ -1130,15 +1139,7 @@ export default function Index() {
 
               <div className="mt-4">
                 <div className="section-divider mb-2" />
-                <MovieRow
-                  title={getCategoryTitle()}
-                  movies={recentMovies}
-                  onMovieClick={handleMovieClick}
-                  onViewAll={() => handleTabChange("movies")}
-                  isLoading={isLoading && recentMovies.length === 0}
-                  showFilters
-                  onFilterClick={() => setIsFilterOpen(true)}
-                />
+                {MemoizedMovieRow}
               </div>
 
               {showDeferredHomeSections && (
@@ -1396,6 +1397,15 @@ export default function Index() {
               initialFilters={activeFilters}
             />
           )}
+
+          {/* Stayed Too Long Alert */}
+          <StayedAlertModal
+            isOpen={isStayedAlertOpen}
+            onClose={() => setIsStayedAlertOpen(false)}
+            onAuthClick={() => {
+              setIsStayedAlertOpen(false);
+            }}
+          />
         </Suspense>
       </div>
     </div>
