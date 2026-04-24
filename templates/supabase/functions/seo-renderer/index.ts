@@ -16,11 +16,13 @@ serve(async (req: Request) => {
   try {
     const url = new URL(req.url)
     const type = url.searchParams.get('type') // 'movie' or 'series'
-    const id = url.searchParams.get('id')
-
-    if (!id) {
+    const rawId = url.searchParams.get('id')
+    if (!rawId) {
       return new Response("Missing ID", { status: 400 })
     }
+
+    // Extract real ID from slug (last segment after hyphen)
+    const id = rawId.includes('-') ? rawId.split('-').pop() : rawId
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
