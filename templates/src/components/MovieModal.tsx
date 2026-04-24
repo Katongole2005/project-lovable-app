@@ -400,7 +400,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                   src={backgroundImage}
                   alt=""
                   className={cn(
-                    "w-full h-full object-cover object-top scale-110 transition-opacity duration-500",
+                    "w-full h-full object-cover object-center scale-105 transition-opacity duration-500",
                     desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                   )}
                 />
@@ -409,7 +409,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                     src={backgroundImage}
                     alt=""
                     className={cn(
-                      "absolute inset-0 w-full h-full object-cover object-top scale-150 blur-3xl transition-opacity duration-500",
+                      "absolute inset-0 w-full h-full object-cover object-center scale-125 blur-3xl transition-opacity duration-500",
                       desktopBackdropLoaded ? "opacity-80" : "opacity-0"
                     )}
                   />
@@ -459,7 +459,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       src={backgroundImage}
                       alt={`${movie.title} backdrop`}
                       className={cn(
-                        "w-full h-full object-cover object-top transition-opacity duration-500",
+                        "w-full h-full object-cover object-center transition-opacity duration-500",
                         desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                       )}
                     />
@@ -1188,7 +1188,7 @@ function MobileMovieLayout({
               src={backgroundImage}
               alt=""
               className={cn(
-                "w-full h-full object-cover object-top scale-110 transition-opacity duration-700",
+                "w-full h-full object-cover object-center scale-105 transition-opacity duration-700",
                 backdropLoaded ? "opacity-100" : "opacity-0"
               )}
             />
@@ -1197,7 +1197,7 @@ function MobileMovieLayout({
                 src={backgroundImage}
                 alt=""
                 className={cn(
-                  "absolute inset-0 w-full h-full object-cover object-top scale-[2] blur-[60px] transition-opacity duration-700",
+                  "absolute inset-0 w-full h-full object-cover object-center scale-[1.45] blur-[60px] transition-opacity duration-700",
                   backdropLoaded ? "opacity-60" : "opacity-0"
                 )}
               />
@@ -1273,7 +1273,7 @@ function MobileMovieLayout({
       </div>
 
       <div className="absolute top-0 left-0 right-0 z-10">
-        <div className="relative w-full aspect-[3/4] max-h-[525px] overflow-hidden">
+        <div className="relative w-full aspect-[16/10] max-h-[360px] overflow-hidden">
           {!backdropLoaded && (
             <div className="absolute inset-0 bg-gradient-to-br from-[hsl(230,20%,12%)] via-[hsl(240,15%,8%)] to-[hsl(220,18%,6%)]">
               <div className="absolute inset-0 shimmer" />
@@ -1290,7 +1290,7 @@ function MobileMovieLayout({
                 src={backgroundImage}
                 alt={movie.title}
                 className={cn(
-                  "w-full h-full object-cover object-top transition-opacity duration-700",
+                  "w-full h-full object-cover object-center transition-opacity duration-700",
                   backdropLoaded ? "opacity-100" : "opacity-0",
                   backdropLoaded && deviceProfile.allowAmbientEffects && "animate-ken-burns-mobile"
                 )}
