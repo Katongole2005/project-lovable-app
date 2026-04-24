@@ -64,6 +64,7 @@ export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>
             onClick={onMovieClick}
             className="w-full"
             priority={index < 4}
+            allowNewBadge={false}
           />
         ))}
       </div>

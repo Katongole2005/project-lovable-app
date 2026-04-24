@@ -44,7 +44,7 @@ function getStableRating(movie: Movie): string {
   return (6 + (Math.abs(hash) % 26) / 10).toFixed(1);
 }
 
-const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, allowNewBadge = true, onWatchlistChange }, ref) {
+const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, allowNewBadge = false, onWatchlistChange }, ref) {
   const rating = getStableRating(movie);
 
   const [inWatchlist, setInWatchlist] = useState(false);
