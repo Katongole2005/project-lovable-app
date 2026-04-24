@@ -1,0 +1,1 @@
+import{c as t}from"./index-BXNGXsfZ.js";import{a as e}from"./vendor-query-CX4uGQHA.js";import{s as n,f as o}from"./storage-7dSjz4PK.js";const s=t("ChevronRight",[["path",{d:"m9 18 6-6-6-6",key:"mthhwq"}]]),r=Object.freeze([]);function h(){return e.useSyncExternalStore(n,o,()=>r)}export{s as C,h as u};

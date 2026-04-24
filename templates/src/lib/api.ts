@@ -2,7 +2,7 @@ import type { Movie, Series, Episode, SearchResult } from "@/types/movie";
 import { supabase } from "@/integrations/supabase/client";
 
 const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
-const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "";
+const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "/api";
 export const API_BASE = (import.meta.env.VITE_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, "");
 export const CLOUDFLARE_WORKER_URL = "https://cdn.s-u.in";
 

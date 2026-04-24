@@ -70,7 +70,7 @@ export function CinematicVideoPlayer({
   const genres = activeMovie?.genres || [];
   const isEmbeddableVideo = /youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com/i.test(activeVideoUrl);
   const sessionKey = `${videoUrl}|${startTime}|${movie?.mobifliks_id ?? ""}`;
-  const useNativeVideoControls = isTouchDevice && !isEmbeddableVideo;
+  const useNativeVideoControls = !isEmbeddableVideo;
   const controlsHideDelayMs = isTouchDevice ? 6500 : 4000;
 
   const beginPlayback = useCallback(() => {
@@ -302,18 +302,20 @@ export function CinematicVideoPlayer({
   const handleDirectTimeUpdate = () => {
     const video = videoRef.current;
     if (!video) return;
-    // Throttle state updates to once per second.
-    // timeupdate fires ~4x/second; each setCurrentTime() re-renders the full
-    // player component. Over 6 min that's ~1440 re-renders of complex overlay
-    // UI, compounding memory pressure that causes the Chrome OOM crash.
+    // Keep native-control playback extremely quiet in React so the browser can
+    // spend its resources on decoding/rendering the video instead of repainting
+    // a custom overlay every second.
     const now = Date.now();
-    const shouldUpdate = now - lastTimeUpdateRef.current >= 1000;
+    const updateIntervalMs = useNativeVideoControls ? 5000 : 1000;
+    const shouldUpdate = now - lastTimeUpdateRef.current >= updateIntervalMs;
     if (shouldUpdate) {
       lastTimeUpdateRef.current = now;
-      if (!isSeeking) {
+      if (!useNativeVideoControls && !isSeeking) {
         setCurrentTime(video.currentTime);
       }
-      setDuration(video.duration || 0);
+      if (!useNativeVideoControls) {
+        setDuration(video.duration || 0);
+      }
       onTimeUpdate?.(video.currentTime, video.duration || 0);
     }
   };
@@ -617,11 +619,11 @@ export function CinematicVideoPlayer({
                 )}
 
                 {useNativeVideoControls && (
-                  <div className="absolute inset-x-0 top-0 z-30 flex items-start justify-between bg-gradient-to-b from-black/85 via-black/45 to-transparent px-4 pb-10 pt-4 pointer-events-none">
+                  <div className="absolute inset-x-0 top-0 z-30 flex items-start justify-between bg-gradient-to-b from-black/70 via-black/25 to-transparent px-4 pb-8 pt-4 pointer-events-none">
                     <div className="pointer-events-auto flex items-center gap-3">
                       <button
                         onClick={handleClose}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md transition-all active:scale-95"
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white transition-all active:scale-95"
                         aria-label="Close player"
                       >
                         <ChevronDown className="h-5 w-5" />
