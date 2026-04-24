@@ -225,8 +225,20 @@ export function buildMediaUrl({
 }): string {
   const normalizedUrl = unwrapLegacyWorkerUrl(url);
   if (play) {
-    // Prefer the raw stream URL first. The worker/proxy can still be used later
-    // as a fallback if direct playback fails for a specific source.
+    if (shouldProxyMediaUrl(normalizedUrl)) {
+      const workerPlaybackUrl = buildWorkerPlaybackUrl(normalizedUrl, title);
+      if (workerPlaybackUrl) {
+        preconnectOrigin(CLOUDFLARE_WORKER_URL);
+        return workerPlaybackUrl;
+      }
+
+      const apiPlaybackUrl = buildApiPlaybackUrl(normalizedUrl, title, detailsUrl, mobifliksId);
+      if (apiPlaybackUrl) {
+        preconnectOrigin(API_BASE);
+        return apiPlaybackUrl;
+      }
+    }
+
     preconnectOrigin(normalizedUrl);
     return normalizedUrl;
   }
