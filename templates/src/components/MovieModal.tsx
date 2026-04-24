@@ -489,7 +489,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       src={backgroundImage}
                       alt={`${movie.title} backdrop`}
                       className={cn(
-                        "w-full h-full object-contain object-center transition-opacity duration-500",
+                        "w-full h-full object-cover object-[center_top] transition-opacity duration-500",
                         desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                       )}
                     />
@@ -499,7 +499,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                     <div className="absolute inset-0 shimmer" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                {/* Premium fade gradients to seamlessly blend the backdrop into the content */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
               </div>
 
               {/* Content area - overlapping backdrop */}
