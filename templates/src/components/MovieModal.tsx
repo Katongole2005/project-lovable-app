@@ -447,7 +447,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
             <div className="relative w-full max-w-full">
 
               {/* Backdrop hero section */}
-              <div className="relative h-[350px] lg:h-[425px] overflow-hidden">
+              <div className="relative h-[350px] lg:h-[425px] overflow-hidden bg-black/50">
                 {backgroundImage ? (
                   <>
                     {!desktopBackdropLoaded && (
@@ -459,7 +459,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       src={backgroundImage}
                       alt={`${movie.title} backdrop`}
                       className={cn(
-                        "w-full h-full object-cover object-center transition-opacity duration-500",
+                        "w-full h-full object-contain object-center transition-opacity duration-500",
                         desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                       )}
                     />
@@ -1273,7 +1273,7 @@ function MobileMovieLayout({
       </div>
 
       <div className="absolute top-0 left-0 right-0 z-10">
-        <div className="relative w-full aspect-[16/10] max-h-[360px] overflow-hidden">
+        <div className="relative w-full aspect-[16/10] max-h-[360px] overflow-hidden bg-black/50">
           {!backdropLoaded && (
             <div className="absolute inset-0 bg-gradient-to-br from-[hsl(230,20%,12%)] via-[hsl(240,15%,8%)] to-[hsl(220,18%,6%)]">
               <div className="absolute inset-0 shimmer" />
@@ -1290,9 +1290,8 @@ function MobileMovieLayout({
                 src={backgroundImage}
                 alt={movie.title}
                 className={cn(
-                  "w-full h-full object-cover object-center transition-opacity duration-700",
-                  backdropLoaded ? "opacity-100" : "opacity-0",
-                  backdropLoaded && deviceProfile.allowAmbientEffects && "animate-ken-burns-mobile"
+                  "w-full h-full object-contain object-center transition-opacity duration-700",
+                  backdropLoaded ? "opacity-100" : "opacity-0"
                 )}
               />
             </div>
