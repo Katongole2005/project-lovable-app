@@ -2,10 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, star
 import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
-import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, startTransition } from "react";
-import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Header } from "@/components/Header";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
@@ -14,16 +10,39 @@ import { MovieGrid } from "@/components/MovieGrid";
 import { FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
 
+// Helper function to retry lazy loading chunks in case of network errors or outdated hashes
+const lazyWithRetry = (componentImport: () => Promise<any>) =>
+  lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
+    );
+
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        // Assume that the error is due to an outdated chunk hash or temporary network issue
+        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+        window.location.reload();
+        // Return a promise that never resolves while the page is reloading
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+
 const loadHeroCarousel = () => import("@/components/HeroCarousel").then(module => ({ default: module.HeroCarousel }));
 const loadCinematicVideoPlayer = () => import("@/components/CinematicVideoPlayer").then(module => ({ default: module.CinematicVideoPlayer }));
-const HeroCarousel = lazy(loadHeroCarousel);
-const ContinueWatchingRow = lazy(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
-const RecommendationRow = lazy(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
-const Top10Row = lazy(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
-const SearchBar = lazy(() => import("@/components/SearchBar").then(module => ({ default: module.SearchBar })));
-const MovieModal = lazy(() => import("@/components/MovieModal").then(module => ({ default: module.MovieModal })));
-const CinematicVideoPlayer = lazy(loadCinematicVideoPlayer);
-const FilterModal = lazy(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
+const HeroCarousel = lazyWithRetry(loadHeroCarousel);
+const ContinueWatchingRow = lazyWithRetry(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
+const RecommendationRow = lazyWithRetry(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
+const Top10Row = lazyWithRetry(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
+const SearchBar = lazyWithRetry(() => import("@/components/SearchBar").then(module => ({ default: module.SearchBar })));
+const MovieModal = lazyWithRetry(() => import("@/components/MovieModal").then(module => ({ default: module.MovieModal })));
+const CinematicVideoPlayer = lazyWithRetry(loadCinematicVideoPlayer);
+const FilterModal = lazyWithRetry(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
 import { DynamicBackground } from "@/components/DynamicBackground";
 import { StayedAlertModal } from "@/components/StayedAlertModal";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
