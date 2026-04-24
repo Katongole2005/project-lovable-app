@@ -16,9 +16,13 @@ interface MovieCardProps {
 }
 
 function isNewRelease(movie: Movie): boolean {
-  if (!movie.release_date) return false;
-  const released = new Date(movie.release_date);
-  const daysAgo = (Date.now() - released.getTime()) / (1000 * 60 * 60 * 24);
+  const newestKnownDate = movie.created_at || movie.release_date;
+  if (!newestKnownDate) return false;
+
+  const addedAt = new Date(newestKnownDate);
+  if (Number.isNaN(addedAt.getTime())) return false;
+
+  const daysAgo = (Date.now() - addedAt.getTime()) / (1000 * 60 * 60 * 24);
   return daysAgo >= 0 && daysAgo <= 30;
 }
 
