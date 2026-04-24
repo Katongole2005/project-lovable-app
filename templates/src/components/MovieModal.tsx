@@ -272,14 +272,14 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       
       // Fetch sizes for non-series movies OR first episode of series
       if (movie.type !== "series") {
-        if (movie.download_url) fetchMediaSize(movie.download_url, movie.title).then(setMovieS1Size);
-        if (movie.server2_url) fetchMediaSize(movie.server2_url, movie.title).then(setMovieS2Size);
+        if (movie.download_url) fetchMediaSize(movie.download_url, movie.title, movie.mobifliks_id).then(setMovieS1Size);
+        if (movie.server2_url) fetchMediaSize(movie.server2_url, movie.title, movie.mobifliks_id).then(setMovieS2Size);
       } else {
         const series = movie as Series;
         if (series.episodes && series.episodes.length > 0) {
           const ep1 = series.episodes[0];
-          if (ep1.download_url) fetchMediaSize(ep1.download_url, movie.title).then(setMovieS1Size);
-          if (ep1.server2_url) fetchMediaSize(ep1.server2_url, movie.title).then(setMovieS2Size);
+          if (ep1.download_url) fetchMediaSize(ep1.download_url, movie.title, ep1.mobifliks_id).then(setMovieS1Size);
+          if (ep1.server2_url) fetchMediaSize(ep1.server2_url, movie.title, ep1.mobifliks_id).then(setMovieS2Size);
         }
       }
     }
@@ -1930,10 +1930,10 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
 
   React.useEffect(() => {
     if (episode.download_url) {
-      fetchMediaSize(episode.download_url, seriesTitle).then(setS1Size);
+      fetchMediaSize(episode.download_url, seriesTitle, episode.mobifliks_id).then(setS1Size);
     }
     if (episode.server2_url) {
-      fetchMediaSize(episode.server2_url, seriesTitle).then(setS2Size);
+      fetchMediaSize(episode.server2_url, seriesTitle, episode.mobifliks_id).then(setS2Size);
     }
   }, [episode.download_url, episode.server2_url, seriesTitle]);
 
@@ -2183,10 +2183,10 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
 
   React.useEffect(() => {
     if (episode.download_url) {
-      fetchMediaSize(episode.download_url, seriesTitle).then(setS1Size);
+      fetchMediaSize(episode.download_url, seriesTitle, episode.mobifliks_id).then(setS1Size);
     }
     if (episode.server2_url) {
-      fetchMediaSize(episode.server2_url, seriesTitle).then(setS2Size);
+      fetchMediaSize(episode.server2_url, seriesTitle, episode.mobifliks_id).then(setS2Size);
     }
   }, [episode.download_url, episode.server2_url, seriesTitle]);
 

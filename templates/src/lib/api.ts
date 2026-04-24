@@ -202,35 +202,59 @@ export function shouldProxyMediaUrl(url?: string): boolean {
   );
 }
 
-export async function fetchMediaSize(url: string, title?: string): Promise<string | null> {
-  if (!CLOUDFLARE_WORKER_URL) return null;
+export async function fetchMediaSize(url: string, title?: string, mobifliksId?: string): Promise<string | null> {
+  if (!url) return null;
   
-  try {
-    const workerUrl = new URL(CLOUDFLARE_WORKER_URL);
-    workerUrl.searchParams.set("url", url);
-    workerUrl.searchParams.set("size", "1");
-    if (title) workerUrl.searchParams.set("name", title);
+  // Try Cloudflare worker first (it's faster if the link is alive)
+  if (CLOUDFLARE_WORKER_URL) {
+    try {
+      const workerUrl = new URL(CLOUDFLARE_WORKER_URL);
+      workerUrl.searchParams.set("url", url);
+      workerUrl.searchParams.set("size", "1");
+      if (title) workerUrl.searchParams.set("name", title);
 
-    const response = await fetch(workerUrl.toString());
-    if (!response.ok) return null;
-    
-    const data = await response.json();
-    if (data.size && data.size !== "unknown") {
-      const bytes = parseInt(data.size);
-      if (isNaN(bytes)) return null;
-      
-      if (bytes < 1024) return `${bytes} B`;
-      const kb = bytes / 1024;
-      if (kb < 1024) return `${kb.toFixed(1)} KB`;
-      const mb = kb / 1024;
-      if (mb < 1024) return `${mb.toFixed(1)} MB`;
-      const gb = mb / 1024;
-      return `${gb.toFixed(2)} GB`;
+      const response = await fetch(workerUrl.toString());
+      if (response.ok) {
+        const data = await response.json();
+        if (data.size && data.size !== "unknown") {
+          return formatBytes(parseInt(data.size));
+        }
+      }
+    } catch (e) {
+      console.warn("Cloudflare size fetch failed, trying backend fallback:", e);
+    }
+  }
+
+  // Fallback to Python backend with re-resolution support
+  try {
+    const backendUrl = new URL(`${DEFAULT_API_BASE}/media-info`);
+    backendUrl.searchParams.set("url", url);
+    if (title) backendUrl.searchParams.set("title", title);
+    if (mobifliksId) backendUrl.searchParams.set("mobifliks_id", mobifliksId);
+
+    const response = await fetch(backendUrl.toString());
+    if (response.ok) {
+      const data = await response.json();
+      if (data.size) {
+        return formatBytes(parseInt(data.size));
+      }
     }
   } catch (e) {
-    console.error("Failed to fetch media size:", e);
+    console.error("Backend size fetch failed:", e);
   }
+
   return null;
+}
+
+function formatBytes(bytes: number): string | null {
+  if (isNaN(bytes) || bytes <= 0) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  if (mb < 1024) return `${mb.toFixed(1)} MB`;
+  const gb = mb / 1024;
+  return `${gb.toFixed(2)} GB`;
 }
 
 export async function buildMediaUrl({
