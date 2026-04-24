@@ -19,19 +19,18 @@ const preconnectedOrigins = new Set<string>();
 const warmedMediaUrls = new Set<string>();
 
 // ─── Bounded-cache helpers ────────────────────────────────────────────────────
-// All caches above are module-level singletons that survive for the full
-// browser session. Without size limits they grow continuously; Chrome runs out
-// of heap memory and crashes with STATUS_BREAKPOINT after a few minutes.
 const MAX_DETAIL_CACHE = 60;
 const MAX_GENRE_CACHE  = 8;
 const MAX_MEDIA_CACHE  = 100;
 const MAX_WARM_URLS    = 150;
+
 function boundedSet<T>(set: Set<T>, max: number): void {
   if (set.size <= max) return;
   const iter = set.values();
   let n = set.size - max;
   while (n-- > 0) set.delete(iter.next().value);
 }
+
 function boundedMap<K, V>(map: Map<K, V>, max: number): void {
   if (map.size <= max) return;
   const iter = map.keys();
@@ -55,7 +54,6 @@ function buildApiEndpoint(path: string): URL | null {
   if (!API_BASE) return null;
   return createUrl(`${API_BASE}${path}`);
 }
-
 
 export const getImageUrl = (url?: string) => {
   if (!url) return fallbackPoster;
@@ -323,7 +321,6 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
     const parsed = createUrl(mediaUrl);
     if (!parsed) return null;
     
-    // Support for resolving Cloudflare worker proxy URLs mapping back to python api
     const workerUrl = CLOUDFLARE_WORKER_URL ? createUrl(CLOUDFLARE_WORKER_URL) : null;
     if (workerUrl && parsed.hostname === workerUrl.hostname) {
       const targetUrl = parsed.searchParams.get("url");
@@ -482,7 +479,6 @@ export function primeMediaAvailability(mediaUrl?: string | null): void {
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
-/** Strip common site watermarks from scraped titles */
 const cleanTitle = (title: string): string => {
   if (!title) return title;
   return title
@@ -506,12 +502,9 @@ const fixReleaseDate = (dateStr?: string): string | undefined => {
     const currentYear = new Date().getFullYear();
     if (d.getFullYear() > currentYear) {
       d.setFullYear(currentYear);
-      // Return YYYY-MM-DD
       return d.toISOString().split("T")[0];
     }
-  } catch (e) {
-    // Ignore invalid dates
-  }
+  } catch (e) { }
   return dateStr;
 };
 
@@ -541,13 +534,10 @@ function compareOptionalDateDesc(left?: string | null, right?: string | null): n
 function compareMoviePriority(left: Movie, right: Movie): number {
   const viewsDiff = (right.views ?? 0) - (left.views ?? 0);
   if (viewsDiff !== 0) return viewsDiff;
-
   const releaseDiff = compareOptionalDateDesc(left.release_date, right.release_date);
   if (releaseDiff !== 0) return releaseDiff;
-
   const createdDiff = compareOptionalDateDesc(left.created_at, right.created_at);
   if (createdDiff !== 0) return createdDiff;
-
   return left.title.localeCompare(right.title);
 }
 
@@ -578,14 +568,12 @@ function attachVariantVersions(movies: Movie[]): Movie[] {
       group.items.push(movie);
       return;
     }
-
     groups.set(key, { items: [movie], firstIndex: index });
   });
 
   groups.forEach(({ items, firstIndex }) => {
     const sortedVariants = [...items].sort(compareMoviePriority).map(stripVariantMetadata);
     const primary = sortedVariants[0];
-
     result.push({
       item: {
         ...primary,
@@ -718,7 +706,7 @@ function applyFilters(query: any, filters?: FilterOptions) {
   return query;
 }
 
-// ─── Data Fetching (Supabase Direct) ─────────────────────────────────────────
+// ─── Data Fetching ───────────────────────────────────────────────────────────
 
 export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
   const targetLimit = filters?.vj || filters?.year ? 60 : 30;
@@ -735,11 +723,7 @@ export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
   return finalizeBrowseResults(normalize(data ?? []), targetLimit);
 }
 
-export async function fetchRecent(
-  contentType: string = "movie",
-  limit: number = 20,
-  page: number = 1
-): Promise<Movie[]> {
+export async function fetchRecent(contentType: string = "movie", limit: number = 20, page: number = 1): Promise<Movie[]> {
   const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
   const offset = (page - 1) * limit;
   const { data, error } = await supabase
@@ -753,13 +737,7 @@ export async function fetchRecent(
   return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
-export async function fetchMoviesSorted(
-  contentType: string = "movie",
-  limit: number = 20,
-  page: number = 1,
-  filters?: FilterOptions,
-  offsetOverride?: number
-): Promise<Movie[]> {
+export async function fetchMoviesSorted(contentType: string = "movie", limit: number = 20, page: number = 1, filters?: FilterOptions, offsetOverride?: number): Promise<Movie[]> {
   const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
   const offset = offsetOverride ?? ((page - 1) * limit);
   let query = supabase
@@ -778,8 +756,6 @@ export async function fetchMoviesSorted(
 
 export async function fetchSeries(limit: number = 20, page: number = 1, language?: string, filters?: FilterOptions, offsetOverride?: number): Promise<Movie[]> {
   const fetchLimit = Math.min(limit * 2, 200);
-  // Series are grouped after fetch, so each page reads a wider raw window.
-  // Use the raw fetch window for offsets to avoid overlapping page ranges.
   const offset = offsetOverride ?? ((page - 1) * fetchLimit);
   let query = supabase
     .from("movies")
@@ -788,13 +764,8 @@ export async function fetchSeries(limit: number = 20, page: number = 1, language
     .order("release_date", { ascending: false, nullsFirst: false })
     .order("views", { ascending: false })
     .range(offset, offset + fetchLimit - 1);
-
   query = applyFilters(query, filters);
-
-  if (language) {
-    query = query.eq("language", language);
-  }
-
+  if (language) query = query.eq("language", language);
   const { data, error } = await query;
   if (error) { console.error("fetchSeries error:", error); return []; }
   return finalizeBrowseResults(normalize(data ?? []), limit);
@@ -813,13 +784,7 @@ export async function searchMovies(query: string, page: number = 1, limit: numbe
     .range(offset, offset + fetchLimit - 1);
   if (error) { console.error("searchMovies error:", error); return { results: [], total_results: 0, page }; }
   const grouped = finalizeBrowseResults(normalize(data ?? []));
-  return {
-    results: grouped.slice(0, limit),
-    total_results: count ?? 0,
-    page,
-  };
-    page,
-  };
+  return { results: grouped.slice(0, limit), total_results: count ?? 0, page };
 }
 
 export async function searchAll(query: string, page: number = 1, limit: number = 100): Promise<Movie[]> {
@@ -838,180 +803,115 @@ export async function searchAll(query: string, page: number = 1, limit: number =
 }
 
 export async function fetchMovieDetails(id: string): Promise<Movie | null> {
-  if (movieDetailsCache.has(id)) {
-    return movieDetailsCache.get(id) ?? null;
-  }
-
+  if (movieDetailsCache.has(id)) return movieDetailsCache.get(id) ?? null;
   const inFlight = movieDetailsRequests.get(id);
-  if (inFlight) {
-    return inFlight;
-  }
+  if (inFlight) return inFlight;
 
   const request = (async () => {
-    const { data, error } = await supabase
-      .from("movies")
-      .select("*")
-      .eq("mobifliks_id", id)
-      .single();
-    if (error) {
-      console.error("fetchMovieDetails error:", error);
-      return null;
-    }
-
+    const { data, error } = await supabase.from("movies").select("*").eq("mobifliks_id", id).single();
+    if (error) { console.error("fetchMovieDetails error:", error); return null; }
     const movie = normalize([data])[0];
-    if (!movie) {
-      return null;
-    }
-
+    if (!movie) return null;
     const versions = await fetchMovieVariants(movie);
     const detailedMovie = {
       ...movie,
-      logo: data?.raw_data?.logo ?? movie.logo,
       vj_count: versions.length > 1 ? versions.length : undefined,
       vj_versions: versions.length > 1 ? versions : undefined,
     };
-
     movieDetailsCache.set(id, detailedMovie);
     boundedMap(movieDetailsCache, MAX_DETAIL_CACHE);
     return detailedMovie;
   })();
 
   movieDetailsRequests.set(id, request);
-
-  try {
-    return await request;
-  } finally {
-    movieDetailsRequests.delete(id);
-  }
+  try { return await request; } finally { movieDetailsRequests.delete(id); }
 }
 
 export async function fetchSeriesDetails(id: string): Promise<Series | null> {
-  if (seriesDetailsCache.has(id)) {
-    return seriesDetailsCache.get(id) ?? null;
-  }
-
+  if (seriesDetailsCache.has(id)) return seriesDetailsCache.get(id) ?? null;
   const inFlight = seriesDetailsRequests.get(id);
-  if (inFlight) {
-    return inFlight;
-  }
+  if (inFlight) return inFlight;
 
   const request = (async () => {
-    const { data, error } = await supabase
-      .from("movies")
-      .select("*")
-      .eq("mobifliks_id", id)
-      .eq("type", "series")
-      .single();
-    if (error || !data) {
-      console.error("fetchSeriesDetails error:", error);
-      return null;
+    const { data, error } = await supabase.from("movies").select("*").eq("mobifliks_id", id).eq("type", "series").single();
+    if (error || !data) { console.error("fetchSeriesDetails error:", error); return null; }
+    const series = normalize([data])[0];
+    if (!series) return null;
+    const baseName = getSeriesBaseName(series.title);
+    const { data: allRelated } = await supabase.from("movies").select("mobifliks_id, title").eq("type", "series").ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`).order("title", { ascending: true });
+    const seasonEntries = (allRelated ?? []).filter((r) => getSeriesBaseName(r.title) === baseName).sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
+    const seasonIds = seasonEntries.length > 1 ? seasonEntries.map((s) => s.mobifliks_id) : [id];
+    const assignedSeasons = new Set<number>();
+    const seasonNumbers: number[] = [];
+    for (const entry of seasonEntries) {
+      let sNum = extractSeasonNumber(entry.title);
+      while (assignedSeasons.has(sNum)) sNum++;
+      assignedSeasons.add(sNum);
+      seasonNumbers.push(sNum);
     }
+    const allEpisodes: Episode[] = [];
+    let maxSeasonUsed = 0;
+    for (let i = 0; i < seasonIds.length; i++) {
+      const baseSeason = seasonEntries.length > 1 ? seasonNumbers[i] : 1;
+      const { data: eps } = await supabase.from("movies").select("*").eq("series_id", seasonIds[i]).eq("type", "episode").order("episode_number", { ascending: true });
+      if (eps?.length) {
+        const chunks = splitEpisodesByGap(eps);
+        for (let c = 0; c < chunks.length; c++) {
+          const seasonNum = c === 0 ? baseSeason : maxSeasonUsed + 1 + c;
+          chunks[c].forEach((ep: any, idx: number) => {
+            allEpisodes.push({ ...ep, season_number: seasonNum, episode_number: idx + 1 } as Episode);
+          });
+        }
+        maxSeasonUsed = Math.max(maxSeasonUsed, baseSeason + chunks.length - 1);
+      }
+    }
+    const details = { ...series, title: baseName, episodes: allEpisodes, total_episodes: allEpisodes.length, relatedSeasonIds: seasonIds.length > 1 ? seasonIds : undefined } as Series;
+    seriesDetailsCache.set(id, details);
+    boundedMap(seriesDetailsCache, MAX_DETAIL_CACHE);
+    return details;
+  })();
 
-
-  try {
-    return await request;
-  } finally {
-    seriesDetailsRequests.delete(id);
-  }
+  seriesDetailsRequests.set(id, request);
+  try { return await request; } finally { seriesDetailsRequests.delete(id); }
 }
 
-export function getCachedSeriesDetails(id: string): Series | null {
-  return seriesDetailsCache.get(id) ?? null;
-}
-
-export function hasPendingSeriesDetailsRequest(id: string): boolean {
-  return seriesDetailsRequests.has(id);
-}
+export function getCachedSeriesDetails(id: string): Series | null { return seriesDetailsCache.get(id) ?? null; }
+export function hasPendingSeriesDetailsRequest(id: string): boolean { return seriesDetailsRequests.has(id); }
 
 export async function fetchSuggestions(query: string): Promise<Movie[]> {
   const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
-  const { data, error } = await supabase
-    .from("movies")
-    .select("*")
-    .in("type", ["movie", "series"])
-    .ilike("title", `%${safeQuery}%`)
-    .order("views", { ascending: false })
-    .limit(20);
+  const { data, error } = await supabase.from("movies").select("*").in("type", ["movie", "series"]).ilike("title", `%${safeQuery}%`).order("views", { ascending: false }).limit(20);
   if (error) { console.error("fetchSuggestions error:", error); return []; }
   return finalizeBrowseResults(normalize(data ?? []), 10);
 }
 
 export async function fetchStats(): Promise<{ popular_searches: string[] }> {
-  const { data, error } = await supabase
-    .from("search_history")
-    .select("query")
-    .order("search_time", { ascending: false })
-    .limit(10);
-  if (error) { return { popular_searches: [] }; }
+  const { data, error } = await supabase.from("search_history").select("query").order("search_time", { ascending: false }).limit(10);
+  if (error) return { popular_searches: [] };
   return { popular_searches: (data ?? []).map((r: { query: string }) => r.query) };
 }
 
 export async function fetchOriginals(limit: number = 50, page: number = 1): Promise<Movie[]> {
-  // "Originals" = items without VJ translations (English Movies)
   const offset = (page - 1) * limit;
-  const { data, error } = await supabase
-    .from("movies")
-    .select("*")
-    .eq("type", "movie")
-    .is("vj_name", null)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+  const { data, error } = await supabase.from("movies").select("*").eq("type", "movie").is("vj_name", null).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
   if (error) { console.error("fetchOriginals error:", error); return []; }
   return normalize(data ?? []);
 }
 
-export async function fetchByGenre(
-  genre: string,
-  contentType: "movie" | "series" | "all" = "movie",
-  limit: number = 40,
-  filters?: FilterOptions,
-  page: number = 1,
-  offsetOverride?: number
-): Promise<Movie[]> {
-  const cacheKey = JSON.stringify({
-    genre,
-    contentType,
-    limit,
-    page,
-    offset: offsetOverride ?? null,
-    vj: filters?.vj ?? null,
-    year: filters?.year ?? null,
-  });
-
-  if (genreQueryCache.has(cacheKey)) {
-    return genreQueryCache.get(cacheKey) ?? [];
-  }
-
+export async function fetchByGenre(genre: string, contentType: "movie" | "series" | "all" = "movie", limit: number = 40, filters?: FilterOptions, page: number = 1, offsetOverride?: number): Promise<Movie[]> {
+  const cacheKey = JSON.stringify({ genre, contentType, limit, page, offset: offsetOverride ?? null, vj: filters?.vj ?? null, year: filters?.year ?? null });
+  if (genreQueryCache.has(cacheKey)) return genreQueryCache.get(cacheKey) ?? [];
   const inFlight = genreQueryRequests.get(cacheKey);
-  if (inFlight) {
-    return inFlight;
-  }
+  if (inFlight) return inFlight;
 
   const request = (async () => {
     const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
     const offset = offsetOverride ?? ((page - 1) * fetchLimit);
-    let query = supabase
-      .from("movies")
-      .select("*")
-      .contains("genres", [genre])
-      .order("release_date", { ascending: false, nullsFirst: false })
-      .order("views", { ascending: false, nullsFirst: false })
-      .order("year", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .range(offset, offset + fetchLimit - 1);
-
-    if (contentType !== "all") {
-      query = query.eq("type", contentType);
-    }
-
+    let query = supabase.from("movies").select("*").contains("genres", [genre]).order("release_date", { ascending: false, nullsFirst: false }).order("views", { ascending: false, nullsFirst: false }).order("year", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).range(offset, offset + fetchLimit - 1);
+    if (contentType !== "all") query = query.eq("type", contentType);
     query = applyFilters(query, { vj: filters?.vj, year: filters?.year });
-
     const { data, error } = await query;
-    if (error) {
-      console.error("fetchByGenre error:", error);
-      return [];
-    }
-
+    if (error) { console.error("fetchByGenre error:", error); return []; }
     const results = normalize(data ?? []);
     const groupedResults = finalizeBrowseResults(results, limit);
     genreQueryCache.set(cacheKey, groupedResults);
@@ -1019,10 +919,5 @@ export async function fetchByGenre(
   })();
 
   genreQueryRequests.set(cacheKey, request);
-
-  try {
-    return await request;
-  } finally {
-    genreQueryRequests.delete(cacheKey);
-  }
+  try { return await request; } finally { genreQueryRequests.delete(cacheKey); }
 }
