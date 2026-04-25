@@ -83,7 +83,7 @@ function readProfile(): DeviceProfile {
     allowAmbientEffects: !isWeakDevice && !isCompact,
     allowComplexAnimations,
     allowHighResImages: !saveData && !lowMemory && !isMobile,
-    autoplayDelayMs: allowComplexAnimations ? 5000 : 0,
+    autoplayDelayMs: 3000,
     homeGridItems: isMobile ? 8 : isCompact ? 12 : 24,
     recommendationItems: isMobile ? 6 : isCompact ? 8 : 12,
   };

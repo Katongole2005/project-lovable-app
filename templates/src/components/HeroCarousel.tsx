@@ -34,7 +34,7 @@ export function HeroCarousel({
   const transitionDuration = deviceProfile.allowComplexAnimations ? 1300 : 650;
   const autoplayDelayMs = deviceProfile.autoplayDelayMs;
   const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
-  const shouldAutoplay = false;
+  const shouldAutoplay = true;
 
 
   const scrollTo = React.useCallback((index: number) => {
