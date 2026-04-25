@@ -7,7 +7,7 @@ const Privacy = () => {
   const navigate = useNavigate();
   useSeo({ 
     title: "Privacy Policy", 
-    description: "Learn how Movi Bay protects your data and privacy." 
+    description: "Learn how sj protects your data and privacy." 
   });
 
   return (
@@ -58,7 +58,7 @@ const Privacy = () => {
           <Section 
             icon={<Globe className="w-5 h-5" />}
             title="1. Introduction"
-            content="Movi Bay ('we,' 'us,' or 'our') operates the Movi Bay streaming platform. This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of Personal Identifiable Information (PII) when you use our Service. By using the Service, you agree to the collection and use of information in accordance with this policy."
+            content="sj ('we,' 'us,' or 'our') operates the sj streaming platform. This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of Personal Identifiable Information (PII) when you use our Service. By using the Service, you agree to the collection and use of information in accordance with this policy."
           />
 
           <Section 
@@ -86,7 +86,7 @@ const Privacy = () => {
             title="3. Google OAuth & Limited Use"
             content={
               <div className="space-y-4">
-                <p>Movi Bay's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy#additional_requirements_for_specific_api_scopes" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google API Service User Data Policy</a>, including the Limited Use requirements.</p>
+                <p>sj's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy#additional_requirements_for_specific_api_scopes" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google API Service User Data Policy</a>, including the Limited Use requirements.</p>
                 <p>Specifically, we access your Google Email Address and Basic Profile (name and picture) solely to authenticate your identity and personalize your user profile. We do not use this information for advertising purposes or share it with third parties outside of our essential infrastructure providers (Supabase).</p>
               </div>
             }

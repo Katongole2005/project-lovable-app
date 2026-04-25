@@ -1404,7 +1404,7 @@ export default function Index() {
             <Link to="/terms" className="text-xs font-medium text-white/30 hover:text-primary transition-colors">Terms of Service</Link>
           </div>
           <p className="text-[10px] text-white/10 uppercase tracking-[0.2em]">
-            &copy; 2026 Movi Bay. All Rights Reserved.
+            &copy; 2026 sj. All Rights Reserved.
           </p>
         </footer>
 

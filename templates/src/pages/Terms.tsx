@@ -7,7 +7,7 @@ const Terms = () => {
   const navigate = useNavigate();
   useSeo({ 
     title: "Terms of Service", 
-    description: "Review the terms and conditions for using Movi Bay." 
+    description: "Review the terms and conditions for using sj." 
   });
 
   return (
@@ -58,7 +58,7 @@ const Terms = () => {
           <Section 
             icon={<FileText className="w-5 h-5" />}
             title="1. Acceptance of Terms"
-            content="By creating an account or otherwise accessing the Movi Bay platform, you agree to be bound by these Terms of Service ('Terms'). These Terms constitute a legally binding agreement between you and Movi Bay. If you do not agree to these Terms, you may not access or use the Service."
+            content="By creating an account or otherwise accessing the sj platform, you agree to be bound by these Terms of Service ('Terms'). These Terms constitute a legally binding agreement between you and sj. If you do not agree to these Terms, you may not access or use the Service."
           />
 
           <Section 
@@ -80,7 +80,7 @@ const Terms = () => {
           <Section 
             icon={<ShieldCheck className="w-5 h-5" />}
             title="3. Intellectual Property Rights"
-            content="The Service and its original content (excluding content provided by users), features, and functionality are and will remain the exclusive property of Movi Bay and its licensors. Our trademarks and trade dress may not be used in connection with any product or service without our prior written consent."
+            content="The Service and its original content (excluding content provided by users), features, and functionality are and will remain the exclusive property of sj and its licensors. Our trademarks and trade dress may not be used in connection with any product or service without our prior written consent."
           />
 
           <Section 
@@ -102,7 +102,7 @@ const Terms = () => {
           <Section 
             icon={<Scale className="w-5 h-5" />}
             title="5. Limitation of Liability"
-            content="In no event shall Movi Bay, nor its directors, employees, or partners, be liable for any indirect, incidental, special, or consequential damages resulting from your use of or inability to use the Service. We provide the platform 'as is' without warranties of any kind, express or implied."
+            content="In no event shall sj, nor its directors, employees, or partners, be liable for any indirect, incidental, special, or consequential damages resulting from your use of or inability to use the Service. We provide the platform 'as is' without warranties of any kind, express or implied."
           />
 
           <Section 

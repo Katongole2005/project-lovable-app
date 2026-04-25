@@ -1,7 +1,7 @@
 {
-  "name": "Moviebay",
-  "short_name": "Moviebay",
-  "description": "Stream the latest movies and series.",
+  "name": "sj",
+  "short_name": "sj",
+  "description": "Stream the latest Ugandan translated movies and series.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
