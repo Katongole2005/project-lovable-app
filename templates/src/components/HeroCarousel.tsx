@@ -253,34 +253,28 @@ export function HeroCarousel({
           @keyframes waterRipple {
             0% {
               clip-path: circle(0% at 50% 50%);
-              filter: blur(20px) brightness(1.5);
-              transform: scale(1.15);
-            }
-            40% {
-              filter: blur(10px) brightness(1.2);
+              filter: url(#water-distortion) blur(15px);
+              transform: scale(1.1);
             }
             100% {
               clip-path: circle(150% at 50% 50%);
-              filter: blur(0px) brightness(1);
+              filter: url(#water-distortion) blur(0px);
               transform: scale(1);
             }
           }
           
-          @keyframes rippleWave {
-            0% {
-              transform: translate(-50%, -50%) scale(0);
-              opacity: 0.8;
-              border-width: 8px;
-            }
-            100% {
-              transform: translate(-50%, -50%) scale(4);
-              opacity: 0;
-              border-width: 1px;
-            }
+          @keyframes rippleDisplacement {
+            0% { stop-color: rgba(255,255,255,0.5); }
+            100% { stop-color: rgba(255,255,255,0); }
+          }
+          
+          @keyframes waveScale {
+            0% { transform: scale(0); opacity: 0.8; }
+            100% { transform: scale(5); opacity: 0; }
           }
           
           .animate-water-ripple {
-            animation: waterRipple 1.4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+            animation: waterRipple 2s cubic-bezier(0.1, 0, 0.2, 1) forwards;
           }
           
           .ripple-ring {
@@ -288,22 +282,23 @@ export function HeroCarousel({
             top: 50%;
             left: 50%;
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
             pointer-events: none;
             z-index: 5;
+            transform-origin: center;
           }
           
           .animate-ripple-ring-1 {
             width: 100px; height: 100px;
-            animation: rippleWave 1.2s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+            animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) forwards;
           }
           .animate-ripple-ring-2 {
             width: 100px; height: 100px;
-            animation: rippleWave 1.2s cubic-bezier(0.2, 0, 0.2, 1) 0.15s forwards;
+            animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) 0.3s forwards;
           }
           .animate-ripple-ring-3 {
             width: 100px; height: 100px;
-            animation: rippleWave 1.2s cubic-bezier(0.2, 0, 0.2, 1) 0.3s forwards;
+            animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) 0.6s forwards;
           }
         `}</style>
       </div >
@@ -552,6 +547,28 @@ export function HeroCarousel({
           </div>
         </div>
       </div>
+      {/* Hidden SVG Filter for Water Displacement Effect */}
+      <svg className="absolute w-0 h-0 invisible pointer-events-none" aria-hidden="true">
+        <filter id="water-distortion">
+          <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise">
+            <animate 
+              attributeName="baseFrequency" 
+              values="0.01;0.015;0.01" 
+              dur="10s" 
+              repeatCount="indefinite" 
+            />
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="50" xChannelSelector="R" yChannelSelector="G" result="displacement">
+            <animate 
+              attributeName="scale" 
+              values="80;40;0" 
+              dur="2.5s" 
+              begin="0s"
+              fill="freeze"
+            />
+          </feDisplacementMap>
+        </filter>
+      </svg>
     </div >
   );
 }
