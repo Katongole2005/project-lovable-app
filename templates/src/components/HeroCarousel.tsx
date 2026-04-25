@@ -253,12 +253,12 @@ export function HeroCarousel({
           @keyframes waterRipple {
             0% {
               clip-path: circle(0% at 50% 50%);
-              filter: url(#water-distortion) blur(15px);
+              filter: url(#water-distortion-${selectedIndex}) blur(15px);
               transform: scale(1.1);
             }
             100% {
               clip-path: circle(150% at 50% 50%);
-              filter: url(#water-distortion) blur(0px);
+              filter: url(#water-distortion-${selectedIndex}) blur(0px);
               transform: scale(1);
             }
           }
@@ -549,7 +549,7 @@ export function HeroCarousel({
       </div>
       {/* Hidden SVG Filter for Realistic Liquid "Shuffle" Effect */}
       <svg className="absolute w-0 h-0 invisible pointer-events-none" aria-hidden="true">
-        <filter id="water-distortion" x="-20%" y="-20%" width="140%" height="140%">
+        <filter id={`water-distortion-${selectedIndex}`} key={selectedIndex} x="-20%" y="-20%" width="140%" height="140%">
           {/* Base Turbulence for the "Ripple" waves */}
           <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="4" result="baseNoise">
             <animate attributeName="baseFrequency" values="0.01 0.02; 0.02 0.01; 0.01 0.02" dur="15s" repeatCount="indefinite" />
@@ -560,11 +560,11 @@ export function HeroCarousel({
             <animate attributeName="seed" values="1;100" dur="2s" repeatCount="indefinite" />
           </feTurbulence>
 
-          <feDisplacementMap in="SourceGraphic" in2="baseNoise" scale="100" xChannelSelector="R" yChannelSelector="G" result="primaryDisplacement">
+          <feDisplacementMap in="SourceGraphic" in2="baseNoise" scale="120" xChannelSelector="R" yChannelSelector="G" result="primaryDisplacement">
              <animate attributeName="scale" values="120;60;0" dur="2.8s" fill="freeze" />
           </feDisplacementMap>
 
-          <feDisplacementMap in="primaryDisplacement" in2="shuffleNoise" scale="30" xChannelSelector="A" yChannelSelector="R" result="finalShuffle">
+          <feDisplacementMap in="primaryDisplacement" in2="shuffleNoise" scale="50" xChannelSelector="A" yChannelSelector="R" result="finalShuffle">
              <animate attributeName="scale" values="50;10;0" dur="2.2s" fill="freeze" />
           </feDisplacementMap>
 
