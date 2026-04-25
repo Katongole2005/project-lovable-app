@@ -17,14 +17,35 @@ interface MovieCardProps {
 }
 
 function isNewRelease(movie: Movie): boolean {
-  const newestKnownDate = movie.created_at || movie.release_date;
-  if (!newestKnownDate) return false;
+  const now = Date.now();
+  const dayMs = 1000 * 60 * 60 * 24;
 
-  const addedAt = new Date(newestKnownDate);
-  if (Number.isNaN(addedAt.getTime())) return false;
+  // 1. Check actual release date first (most accurate)
+  if (movie.release_date) {
+    const releaseDate = new Date(movie.release_date);
+    if (!Number.isNaN(releaseDate.getTime())) {
+      const daysAgo = (now - releaseDate.getTime()) / dayMs;
+      // If released within the last 60 days, it's definitely NEW
+      if (daysAgo >= 0 && daysAgo <= 60) return true;
+    }
+  }
 
-  const daysAgo = (Date.now() - addedAt.getTime()) / (1000 * 60 * 60 * 24);
-  return daysAgo >= 0 && daysAgo <= 30;
+  // 2. Check when it was added to MovieBay (only for very recent movies)
+  if (movie.created_at) {
+    const addedAt = new Date(movie.created_at);
+    if (!Number.isNaN(addedAt.getTime())) {
+      const daysSinceAdded = (now - addedAt.getTime()) / dayMs;
+      const movieYear = parseInt(movie.year || "0");
+      const currentYear = new Date().getFullYear();
+
+      // If added in the last 14 days AND it's a movie from this year or last year
+      if (daysSinceAdded >= 0 && daysSinceAdded <= 14 && movieYear >= currentYear - 1) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function isTrending(movie: Movie): boolean {
