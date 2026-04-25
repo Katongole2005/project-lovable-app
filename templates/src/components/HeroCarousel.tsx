@@ -249,6 +249,62 @@ export function HeroCarousel({
           .animate-ken-burns {
             animation: kenBurns 12s ease-in-out infinite;
           }
+          
+          @keyframes waterRipple {
+            0% {
+              clip-path: circle(0% at 50% 50%);
+              filter: blur(20px) brightness(1.5);
+              transform: scale(1.15);
+            }
+            40% {
+              filter: blur(10px) brightness(1.2);
+            }
+            100% {
+              clip-path: circle(150% at 50% 50%);
+              filter: blur(0px) brightness(1);
+              transform: scale(1);
+            }
+          }
+          
+          @keyframes rippleWave {
+            0% {
+              transform: translate(-50%, -50%) scale(0);
+              opacity: 0.8;
+              border-width: 8px;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(4);
+              opacity: 0;
+              border-width: 1px;
+            }
+          }
+          
+          .animate-water-ripple {
+            animation: waterRipple 1.4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+          }
+          
+          .ripple-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+            z-index: 5;
+          }
+          
+          .animate-ripple-ring-1 {
+            width: 100px; height: 100px;
+            animation: rippleWave 1.2s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+          }
+          .animate-ripple-ring-2 {
+            width: 100px; height: 100px;
+            animation: rippleWave 1.2s cubic-bezier(0.2, 0, 0.2, 1) 0.15s forwards;
+          }
+          .animate-ripple-ring-3 {
+            width: 100px; height: 100px;
+            animation: rippleWave 1.2s cubic-bezier(0.2, 0, 0.2, 1) 0.3s forwards;
+          }
         `}</style>
       </div >
 
@@ -262,10 +318,20 @@ export function HeroCarousel({
                 <img
                   src={backdropSrc}
                   alt=""
-                  className={cn("w-full h-full object-cover will-change-transform transition-transform duration-700", deviceProfile.allowAmbientEffects && "scale-102")}
+                  className={cn(
+                    "w-full h-full object-cover will-change-transform",
+                    deviceProfile.allowAmbientEffects && !deviceProfile.isMobile && "animate-water-ripple"
+                  )}
                   loading="eager"
                   fetchPriority="high"
                 />
+                {!deviceProfile.isMobile && deviceProfile.allowAmbientEffects && (
+                  <>
+                    <div className="ripple-ring animate-ripple-ring-1" />
+                    <div className="ripple-ring animate-ripple-ring-2" />
+                    <div className="ripple-ring animate-ripple-ring-3" />
+                  </>
+                )}
               </div>
           )}
           {!backdropSrc && (
