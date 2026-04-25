@@ -169,12 +169,9 @@ export function HeroCarousel({
                   key={movie.mobifliks_id}
                   className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out preserve-3d dynamic-card"
                   style={{
-                    "--tx": `${translateX}%`,
-                    "--tz": `${translateZ}px`,
-                    "--ry": `${rotateY}deg`,
-                    "--scale": scale,
-                    "--opacity": opacity,
-                    "--zIndex": zIndex,
+                    transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
+                    opacity: opacity,
+                    zIndex: zIndex,
                   } as React.CSSProperties}
                   onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}
                 >
