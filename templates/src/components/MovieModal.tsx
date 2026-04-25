@@ -1454,85 +1454,85 @@ function MobileMovieLayout({
               variants={fadeInUp}
               className="space-y-6 pt-0"
             >
-              <AnimatePresence>
-                {actionStep !== "none" && (
+            <AnimatePresence>
+              {actionStep !== "none" && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-8 bg-black/80 backdrop-blur-sm"
+                  onClick={() => setActionStep("none")}
+                >
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-8 bg-black/80 backdrop-blur-sm"
-                    onClick={() => setActionStep("none")}
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                    className="w-full max-w-lg bg-[#141517] rounded-[40px] overflow-hidden shadow-2xl border border-white/5"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ y: "100%" }}
-                      animate={{ y: 0 }}
-                      exit={{ y: "100%" }}
-                      transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                      className="w-full max-w-lg bg-[#141517] rounded-[40px] overflow-hidden shadow-2xl border border-white/5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex justify-center pt-4 pb-2">
-                        <div className="w-12 h-1.5 rounded-full bg-white/10" />
-                      </div>
+                    <div className="flex justify-center pt-4 pb-2">
+                      <div className="w-12 h-1.5 rounded-full bg-white/10" />
+                    </div>
+                    
+                    <div className="px-6 py-6 pb-12 space-y-4">
 
-                      <div className="px-6 py-6 pb-12 space-y-4">
-
-                        <div className="space-y-4">
-                          {(actionStep === "watch_vj" || actionStep === "download_vj") ? (
-                            (movie.vj_versions ?? []).filter(v => !!v.vj_name).map((version) => (
-                              <button
-                                key={version.mobifliks_id}
-                                onClick={() => {
-                                  if (onMovieSelect) onMovieSelect(version);
-                                  setActionStep(actionStep === "watch_vj" ? "watch_server" : "download_server");
-                                }}
-                                className="w-full flex items-center gap-5 p-5 rounded-[32px] bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
-                              >
-                                <div className="w-16 h-16 rounded-[24px] bg-primary/20 flex items-center justify-center text-primary shadow-lg transition-colors group-hover:bg-primary/30">
-                                  <Play className="h-7 w-7 fill-current" />
-                                </div>
-                                <div className="flex-1 text-left">
-                                  <p className="font-bold text-[18px] text-white">VJ {version.vj_name}</p>
-                                  <p className="text-[12px] font-bold uppercase tracking-widest text-white/20 mt-1">MP4 • {movie.file_size || "HD Quality"}</p>
-                                </div>
-                                <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-white/30 transition-colors" />
-                              </button>
-                            ))
-                          ) : (
-                            playbackSources.map((source) => (
-                              <button
-                                key={source.id}
-                                onClick={() => {
-                                  setSelectedServer(source.id);
-                                  if (actionStep === "watch_server") {
-                                    handlePrimaryAction(source.id);
-                                  } else {
-                                    handleMovieDownload(source.id);
-                                  }
-                                  setActionStep("none");
-                                }}
-                                className="w-full flex items-center gap-5 p-5 rounded-[32px] bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
-                              >
-                                <div className={cn(
-                                  "w-16 h-16 rounded-[24px] flex items-center justify-center shadow-lg transition-colors",
-                                  source.id === 1 ? "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20" : "bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20"
-                                )}>
-                                  {actionStep === "download_server" ? <Download className="h-7 w-7" /> : <Play className="h-7 w-7 fill-current" />}
-                                </div>
-                                <div className="flex-1 text-left">
-                                  <p className="font-bold text-[18px] text-white">{source.label}</p>
-                                  <p className="text-[12px] font-bold uppercase tracking-widest text-white/20 mt-1">MP4 • {source.hint}</p>
-                                </div>
-                                <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-white/30 transition-colors" />
-                              </button>
-                            ))
-                          )}
-                        </div>
+                      <div className="space-y-4">
+                        {(actionStep === "watch_vj" || actionStep === "download_vj") ? (
+                          (movie.vj_versions ?? []).filter(v => !!v.vj_name).map((version) => (
+                            <button
+                              key={version.mobifliks_id}
+                              onClick={() => {
+                                if (onMovieSelect) onMovieSelect(version);
+                                setActionStep(actionStep === "watch_vj" ? "watch_server" : "download_server");
+                              }}
+                              className="w-full flex items-center gap-5 p-5 rounded-[32px] bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
+                            >
+                              <div className="w-16 h-16 rounded-[24px] bg-primary/20 flex items-center justify-center text-primary shadow-lg transition-colors group-hover:bg-primary/30">
+                                <Play className="h-7 w-7 fill-current" />
+                              </div>
+                              <div className="flex-1 text-left">
+                                <p className="font-bold text-[18px] text-white">VJ {version.vj_name}</p>
+                                <p className="text-[12px] font-bold uppercase tracking-widest text-white/20 mt-1">MP4 • {movie.file_size || "HD Quality"}</p>
+                              </div>
+                              <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-white/30 transition-colors" />
+                            </button>
+                          ))
+                        ) : (
+                          playbackSources.map((source) => (
+                            <button
+                              key={source.id}
+                              onClick={() => {
+                                setSelectedServer(source.id);
+                                if (actionStep === "watch_server") {
+                                  handlePrimaryAction(source.id);
+                                } else {
+                                  handleMovieDownload(source.id);
+                                }
+                                setActionStep("none");
+                              }}
+                              className="w-full flex items-center gap-5 p-5 rounded-[32px] bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
+                            >
+                              <div className={cn(
+                                "w-16 h-16 rounded-[24px] flex items-center justify-center shadow-lg transition-colors",
+                                source.id === 1 ? "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20" : "bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20"
+                              )}>
+                                {actionStep === "download_server" ? <Download className="h-7 w-7" /> : <Play className="h-7 w-7 fill-current" />}
+                              </div>
+                              <div className="flex-1 text-left">
+                                <p className="font-bold text-[18px] text-white">{source.label}</p>
+                                <p className="text-[12px] font-bold uppercase tracking-widest text-white/20 mt-1">MP4 • {source.hint}</p>
+                              </div>
+                              <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-white/30 transition-colors" />
+                            </button>
+                          ))
+                        )}
                       </div>
-                    </motion.div>
+                    </div>
                   </motion.div>
-                )}
-              </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
               {/* Secondary actions removed from here (moved to header) */}
             </motion.section>
