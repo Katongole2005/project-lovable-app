@@ -49,8 +49,31 @@ import {
   Bell,
   Camera,
 } from "lucide-react";
-import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+// 3D Tilt Hook for the "Dope" Identity Card
+function use3DTilt() {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-100, 100], [10, -10]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(x, [-100, 100], [-10, 10]), { stiffness: 300, damping: 30 });
+
+  function onMouseMove(e: React.MouseEvent) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set(e.clientX - centerX);
+    y.set(e.clientY - centerY);
+  }
+
+  function onMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  return { rotateX, rotateY, onMouseMove, onMouseLeave };
+}
 
 function EditProfileDialog({
   open,
@@ -493,321 +516,272 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-28 md:pb-12" key={refreshKey}>
+  const { rotateX, rotateY, onMouseMove, onMouseLeave } = use3DTilt();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <div className="absolute inset-0 blur-xl bg-primary/20 animate-pulse rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] text-white selection:bg-primary/30 overflow-hidden relative">
       <EditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} user={user} />
       <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
       <PreferencesDialog open={preferencesOpen} onOpenChange={setPreferencesOpen} />
 
-      {/* === HERO HEADER === */}
-      <div ref={heroRef} className="relative overflow-hidden">
-        <motion.div className="absolute inset-0" style={{ y: heroParallaxY }}>
-          <div
-            className={cn(
-              "absolute inset-0",
-              isDark ? "bg-profile-hero-dark" : "bg-profile-hero-light"
-            )}
-          />
-        </motion.div>
-
-        {/* Sticky nav */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="sticky top-0 z-30 flex items-center gap-3 px-4 md:px-8 py-3"
-        >
-          <motion.div
-            className="absolute inset-0 border-b backdrop-blur-xl"
-            style={{ opacity: headerBgOpacity, backgroundColor: "hsl(var(--background) / 0.95)", borderColor: "hsl(var(--border) / 0.1)" }}
-          />
-          <button onClick={() => navigate("/")} className="relative z-10 p-2.5 rounded-2xl bg-card/60 backdrop-blur-lg border border-border/20 hover:bg-accent/50 transition-colors" aria-label="Go back">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-
-          <AnimatePresence>
-            {showCollapsedName && (
-              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="relative z-10 flex items-center gap-2">
-                <Avatar className="w-7 h-7 border border-border/30">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{initials}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-semibold text-foreground truncate">{displayName}</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="ml-auto flex gap-2 relative z-10">
-            <button onClick={() => setTheme(isDark ? "light" : "dark")} className="p-2.5 rounded-2xl bg-card/60 backdrop-blur-lg border border-border/20 hover:bg-accent/50 transition-colors" aria-label="Toggle theme">
-              {isDark ? <Sun className="w-4 h-4 text-foreground" /> : <Moon className="w-4 h-4 text-foreground" />}
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Hero Card */}
-        <div className="relative px-4 md:px-8 pt-4 pb-8">
-          <div className="max-w-3xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-            <div className="relative">
-              <Avatar className="w-28 h-28 md:w-32 md:h-32 relative z-10 border-4 border-background shadow-2xl">
-                <AvatarImage src={user?.user_metadata?.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-br from-primary/30 to-primary/10 text-primary text-3xl font-bold">{initials}</AvatarFallback>
-              </Avatar>
-              <button onClick={() => setEditProfileOpen(true)} className="absolute -bottom-1 -right-1 z-20 w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg border-3 border-background" aria-label="Edit profile image">
-                <Edit3 className="w-4 h-4 text-primary-foreground" />
-              </button>
-            </div>
-            <div className="flex-1 text-center md:text-left mt-3">
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground">{displayName}</h2>
-              <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1.5 justify-center md:justify-start">
-                <Mail className="w-3.5 h-3.5" /> {userEmail}
-              </p>
-              <div className="flex items-center gap-2 mt-3 justify-center md:justify-start flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary/10 border border-primary/20 text-primary">
-                  <Crown className="w-3 h-3" /> Free Plan
-                </span>
-                {isAdmin && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 border border-amber-500/20 text-amber-500">
-                    <Shield className="w-3 h-3" /> Admin
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] text-muted-foreground bg-muted/50">
-                  <Sparkles className="w-3 h-3" /> Since {memberSince}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="max-w-3xl mx-auto grid grid-cols-4 gap-2 md:gap-3 mt-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className={cn("flex flex-col items-center gap-1 py-4 px-2 rounded-2xl border border-border/20", stat.bg)}>
-                <stat.icon className="w-5 h-5 text-muted-foreground mb-1" />
-                <span className="text-xl font-bold text-foreground">{stat.value}</span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Cinematic Background Orbs */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      {/* === TABBED CONTENT === */}
-      <div className="max-w-3xl mx-auto px-4 md:px-8 mt-6">
-        <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/50 border border-border/20 mb-6 backdrop-blur-lg" role="tablist">
-          {activeTab === "activity" ? (
-            <button
-              onClick={() => setActiveTab("activity")}
-              role="tab"
-              aria-selected="true"
-              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground"
+      <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-12">
+        
+        {/* Navigation Header */}
+        <header className="flex items-center justify-between mb-10">
+          <button 
+            onClick={() => navigate("/")} 
+            className="group flex items-center gap-3 px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm font-bold tracking-tight">Back to Movies</span>
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setTheme(isDark ? "light" : "dark")} 
+              className="p-3 rounded-lg bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-all"
             >
-              <motion.div layoutId="profile-tab" className="absolute inset-0 rounded-xl bg-card border border-border/30 shadow-sm" />
-              <span className="relative z-10 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> <span className="hidden sm:inline">Activity</span>
-              </span>
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-          ) : (
-            <button
-              onClick={() => setActiveTab("activity")}
-              role="tab"
-              aria-selected="false"
-              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground/70"
+            <button 
+              onClick={handleSignOut}
+              className="px-5 py-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive hover:bg-destructive/20 transition-all text-sm font-bold"
             >
-              <span className="relative z-10 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> <span className="hidden sm:inline">Activity</span>
-              </span>
+              Log Out
             </button>
-          )}
+          </div>
+        </header>
 
-          {activeTab === "watchlist" ? (
-            <button
-              onClick={() => setActiveTab("watchlist")}
-              role="tab"
-              aria-selected="true"
-              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground"
+        {/* BENTO GRID LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* LEFT COLUMN: Identity & Stats (4 cols) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* 3D Identity Card */}
+            <motion.div
+              style={{ rotateX, rotateY, perspective: 1000 }}
+              onMouseMove={onMouseMove}
+              onMouseLeave={onMouseLeave}
+              className="relative group"
             >
-              <motion.div layoutId="profile-tab" className="absolute inset-0 rounded-xl bg-card border border-border/30 shadow-sm" />
-              <span className="relative z-10 flex items-center gap-2">
-                <Bookmark className="w-4 h-4" /> <span className="hidden sm:inline">Watchlist</span>
-              </span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setActiveTab("watchlist")}
-              role="tab"
-              aria-selected="false"
-              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground/70"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <Bookmark className="w-4 h-4" /> <span className="hidden sm:inline">Watchlist</span>
-              </span>
-            </button>
-          )}
-
-          {activeTab === "settings" ? (
-            <button
-              onClick={() => setActiveTab("settings")}
-              role="tab"
-              aria-selected="true"
-              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground"
-            >
-              <motion.div layoutId="profile-tab" className="absolute inset-0 rounded-xl bg-card border border-border/30 shadow-sm" />
-              <span className="relative z-10 flex items-center gap-2">
-                <Settings className="w-4 h-4" /> <span className="hidden sm:inline">Settings</span>
-              </span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setActiveTab("settings")}
-              role="tab"
-              aria-selected="false"
-              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground/70"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <Settings className="w-4 h-4" /> <span className="hidden sm:inline">Settings</span>
-              </span>
-            </button>
-          )}
-        </div>
-
-        <AnimatePresence mode="wait">
-          {activeTab === "activity" && (
-            <motion.div key="activity" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-              {!user && (
-                <div className="p-6 rounded-3xl bg-primary/10 border border-primary/20 flex flex-col items-center text-center gap-4">
-                  <Sparkles className="w-10 h-10 text-primary" />
-                  <h3 className="text-lg font-bold">Join the Community</h3>
-                  <p className="text-sm text-muted-foreground">Sign in to track your watch history and sync across devices.</p>
-                  <Button onClick={() => navigate("/auth")} className="rounded-xl px-8">Sign In</Button>
-                </div>
-              )}
-
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { icon: Eye, val: totalWatched, lbl: "Viewed" },
-                  { icon: Clock, val: continueWatching.length, lbl: "Progress" },
-                  { icon: Heart, val: ratings.length, lbl: "Rated" },
-                ].map(s => (
-                  <div key={s.lbl} className="flex flex-col items-center gap-1 py-4 rounded-2xl bg-card/60 border border-border/20">
-                    <s.icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-bold">{s.val}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase">{s.lbl}</span>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/50 to-secondary/50 rounded-lg blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+              <div className="relative p-8 rounded-lg bg-black/40 backdrop-blur-3xl border border-white/10 overflow-hidden">
+                <div className="absolute top-0 right-0 p-4">
+                  <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Crown className="w-6 h-6 text-primary" />
                   </div>
+                </div>
+                
+                <div className="relative mb-6">
+                  <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-white/20 relative group/avatar">
+                    <Avatar className="w-full h-full rounded-none">
+                      <AvatarImage src={user?.user_metadata?.avatar_url} />
+                      <AvatarFallback className="bg-primary/20 text-primary text-4xl font-bold">{initials}</AvatarFallback>
+                    </Avatar>
+                    <button 
+                      onClick={() => setEditProfileOpen(true)}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center"
+                    >
+                      <Camera className="w-6 h-6 text-white" />
+                    </button>
+                  </div>
+                </div>
+
+                <h2 className="text-3xl font-bold text-white mb-1">{displayName}</h2>
+                <p className="text-white/40 text-sm mb-6 flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5" /> {userEmail}
+                </p>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end text-xs mb-1">
+                    <span className="text-white/60 font-bold uppercase tracking-wider">Level 12 Buff</span>
+                    <span className="text-primary font-bold">780 / 1000 XP</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: '78%' }}
+                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      className="h-full bg-gradient-to-r from-primary to-secondary rounded-full" 
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Quick Stats Bento Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              {stats.map((stat, idx) => (
+                <motion.div 
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * idx }}
+                  className="p-5 rounded-lg bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all group"
+                >
+                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform", stat.bg)}>
+                    <stat.icon className="w-5 h-5 text-white/80" />
+                  </div>
+                  <div className="text-2xl font-bold text-white">{stat.value}</div>
+                  <div className="text-[10px] text-white/30 uppercase tracking-widest font-bold">{stat.label}</div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Settings Bento Card */}
+            <div className="p-6 rounded-lg bg-white/[0.03] border border-white/5">
+              <h3 className="text-sm font-bold text-white/60 uppercase tracking-widest mb-6">Security & Preferences</h3>
+              <div className="space-y-3">
+                {settingsItems.map(item => (
+                  <button 
+                    key={item.label} 
+                    onClick={item.onClick}
+                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", item.color)}>
+                        <item.icon className={cn("w-4 h-4", item.iconColor)} />
+                      </div>
+                      <span className="text-sm font-medium text-white/80">{item.label}</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all" />
+                  </button>
                 ))}
               </div>
+            </div>
+          </div>
 
-              {continueWatching.length > 0 && (
-                <ContentSection icon={<Play className="w-4 h-4 text-primary" />} title="Continue Watching">
-                  <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
-                    {continueWatching.map(item => (
-                      <div key={item.id} onClick={() => navigateToMovie(item.contentId, item.title, item.type)} className="flex-shrink-0 w-36 rounded-xl overflow-hidden bg-card border border-border/20 cursor-pointer group">
-                        <div className="aspect-[2/3] relative">
-                          <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                          <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[10px] text-white">
-                             <span>S{item.seasonNumber} E{item.episodeNumber}</span>
-                             <span>{Math.round((item.progress / (item.duration || 1)) * 100)}%</span>
-                          </div>
-                        </div>
-                        <div className="p-2">
-                          <p className="text-[10px] font-bold truncate">{item.title}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ContentSection>
-              )}
-
-              {isAdmin && (
-                <div className="space-y-3">
-                  <button onClick={() => navigate("/admin")} className="w-full p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Shield className="w-5 h-5 text-primary" />
-                      <div className="text-left">
-                        <p className="text-sm font-bold">Admin Panel</p>
-                        <p className="text-[10px] text-muted-foreground">Manage everything</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-primary" />
-                  </button>
-                  <SendPushPanel />
+          {/* RIGHT COLUMN: Activity & Content (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+            
+            {/* Watchlist Section */}
+            <div className="p-8 rounded-lg bg-white/[0.03] border border-white/5">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <Bookmark className="w-6 h-6 text-primary" />
+                  <h3 className="text-xl font-bold">Your Watchlist</h3>
                 </div>
-              )}
-
-              {user ? (
-                <Button variant="outline" onClick={handleSignOut} className="w-full h-12 rounded-2xl border-destructive/20 text-destructive hover:bg-destructive/10">
-                  <LogOut className="w-4 h-4 mr-2" /> Sign Out
-                </Button>
-              ) : (
-                <Button onClick={() => navigate("/auth")} className="w-full h-12 rounded-2xl">Sign In</Button>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === "watchlist" && (
-            <motion.div key="watchlist" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-              <div className="flex justify-between items-center mb-4">
                 <div className="flex gap-2">
                   {["all", "movie", "series"].map(f => (
-                    <button key={f} onClick={() => setWatchlistFilter(f as any)} className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all", watchlistFilter === f ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                    <button 
+                      key={f} 
+                      onClick={() => setWatchlistFilter(f as any)} 
+                      className={cn(
+                        "px-4 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                        watchlistFilter === f ? "bg-primary border-primary text-black" : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                      )}
+                    >
                       {f.toUpperCase()}
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {filteredWatchlist.map(item => (
-                  <div key={item.id} onClick={() => navigateToMovie(item.id, item.title, item.type)} className="aspect-[2/3] rounded-xl overflow-hidden border border-border/20 cursor-pointer group">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
 
-          {activeTab === "settings" && (
-            <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-3">
-              {settingsItems.map(item => (
-                <button key={item.label} onClick={item.onClick} className="w-full p-4 rounded-2xl bg-card border border-border/20 flex items-center gap-4 hover:bg-accent transition-colors text-left">
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", item.color)}>
-                    <item.icon className={cn("w-5 h-5", item.iconColor)} />
+              {filteredWatchlist.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredWatchlist.slice(0, 8).map((item, idx) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.05 * idx }}
+                      onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                      className="aspect-[2/3] rounded-lg overflow-hidden border border-white/10 cursor-pointer group relative"
+                    >
+                      <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                        <p className="text-[10px] font-bold text-white uppercase tracking-wider line-clamp-1">{item.title}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-20 flex flex-col items-center justify-center gap-4 text-white/20">
+                  <Bookmark className="w-16 h-16 stroke-[1]" />
+                  <p className="text-sm font-medium">Your watchlist is empty</p>
+                </div>
+              )}
+            </div>
+
+            {/* Recently Viewed Grid */}
+            <div className="p-8 rounded-lg bg-white/[0.03] border border-white/5">
+              <div className="flex items-center gap-3 mb-8">
+                <Clock className="w-6 h-6 text-secondary" />
+                <h3 className="text-xl font-bold">Recent History</h3>
+              </div>
+              
+              <div className="space-y-4">
+                {recentlyViewed.length > 0 ? (
+                  recentlyViewed.slice(0, 5).map((item, idx) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 * idx }}
+                      onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                      className="flex items-center gap-4 p-4 rounded-lg bg-white/[0.02] border border-white/5 hover:bg-white/[0.06] transition-all cursor-pointer group"
+                    >
+                      <div className="w-14 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                        <img src={item.image} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors">{item.title}</h4>
+                        <p className="text-[10px] text-white/30 uppercase tracking-widest mt-1 font-bold">{item.type} • {item.year || '2024'}</p>
+                      </div>
+                      <div className="flex items-center gap-4 pr-2">
+                        <div className="flex flex-col items-end">
+                           <span className="text-[10px] text-white/30 font-bold uppercase">Seen</span>
+                           <span className="text-xs text-white/60 font-medium">Just now</span>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-white/10 group-hover:text-primary transition-colors" />
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                   <p className="text-center py-10 text-white/20 text-sm">No activity recorded yet.</p>
+                )}
+              </div>
+            </div>
+
+            {isAdmin && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button 
+                  onClick={() => navigate("/admin")} 
+                  className="p-8 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all text-left group"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Shield className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold">{item.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{item.desc}</p>
-                  </div>
-                  {item.customContent || <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                  <h4 className="text-xl font-bold mb-2">Admin Dashboard</h4>
+                  <p className="text-sm text-white/40 leading-relaxed">Global system management, movie uploads, and site analytics.</p>
                 </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <div className="p-8 rounded-lg bg-white/[0.03] border border-white/5">
+                  <SendPushPanel />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
-}
-
-function ContentSection({
-  icon,
-  title,
-  count,
-  action,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  count?: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold flex items-center gap-2">
-          {icon} {title}
-        </h3>
-        <div className="flex items-center gap-3">
-          {count && <span className="text-xs text-muted-foreground">{count}</span>}
-          {action}
-        </div>
-      </div>
-      {children}
-    </div>
   );
 }
