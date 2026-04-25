@@ -49,31 +49,8 @@ import {
   Bell,
   Camera,
 } from "lucide-react";
-import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
-
-// 3D Tilt Hook for the "Dope" Identity Card
-function use3DTilt() {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const rotateX = useSpring(useTransform(y, [-100, 100], [10, -10]), { stiffness: 300, damping: 30 });
-  const rotateY = useSpring(useTransform(x, [-100, 100], [-10, 10]), { stiffness: 300, damping: 30 });
-
-  function onMouseMove(e: React.MouseEvent) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    x.set(e.clientX - centerX);
-    y.set(e.clientY - centerY);
-  }
-
-  function onMouseLeave() {
-    x.set(0);
-    y.set(0);
-  }
-
-  return { rotateX, rotateY, onMouseMove, onMouseLeave };
-}
 
 function EditProfileDialog({
   open,
@@ -566,14 +543,9 @@ export default function Profile() {
           {/* LEFT COLUMN: Identity & Stats (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
             
-            {/* 3D Identity Card */}
-            <motion.div
-              style={{ rotateX, rotateY, perspective: 1000 }}
-              onMouseMove={onMouseMove}
-              onMouseLeave={onMouseLeave}
-              className="relative group"
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/50 to-secondary/50 rounded-lg blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+            {/* Identity Card */}
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-secondary/30 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000" />
               <div className="relative p-8 rounded-lg bg-black/40 backdrop-blur-3xl border border-white/10 overflow-hidden">
                 <div className="absolute top-0 right-0 p-4">
                   <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
@@ -616,7 +588,7 @@ export default function Profile() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Quick Stats Bento Cards */}
             <div className="grid grid-cols-2 gap-4">
