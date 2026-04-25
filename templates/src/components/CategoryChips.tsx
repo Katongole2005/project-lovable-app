@@ -35,7 +35,7 @@ export function CategoryChips({ activeCategory, onCategoryChange }: CategoryChip
               onClick={() => onCategoryChange(category.id)}
               data-testid={`button-category-${category.id}`}
               className={cn(
-                "relative category-chip flex-shrink-0 whitespace-nowrap font-medium tracking-normal transition-all duration-200 snap-start press-effect overflow-hidden rounded-full px-4 py-2",
+                "relative category-chip flex-shrink-0 whitespace-nowrap font-medium tracking-normal transition-all duration-200 snap-start press-effect overflow-hidden rounded-lg px-4 py-2",
                 isActive
                   ? "bg-[linear-gradient(135deg,#ff8a3d_0%,#ff5b2e_52%,#ff4d6d_100%)] text-white shadow-[0_10px_26px_rgba(255,91,46,0.2),0_0_22px_rgba(255,138,61,0.14)] border-transparent"
                   : "text-white/60 hover:text-white/90 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12]"

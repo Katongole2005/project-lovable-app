@@ -752,7 +752,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                             {movie.title}
                           </h1>
                         )}
-                        {isSeries && <span className="text-primary text-2xl font-semibold inline-block">(Series)</span>}
+
                       </motion.div>
 
                       <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-3">
@@ -801,6 +801,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                             SERIES
                           </span>
                         )}
+
                       </motion.div>
 
                       <motion.div variants={fadeInUp} className="flex items-center gap-3 pt-2">
@@ -1452,7 +1453,7 @@ function MobileMovieLayout({
             <div className="grid grid-cols-2 gap-3">
               <Button
                 size="lg"
-                className="h-[52px] rounded-2xl border-0 bg-primary text-white active:scale-95 transition-all shadow-glow"
+                className="h-[52px] rounded-lg border-0 bg-primary text-white active:scale-95 transition-all shadow-glow"
                 onClick={() => {
                   const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                   if (versions.length > 1) {
@@ -1468,7 +1469,7 @@ function MobileMovieLayout({
 
               <Button
                 size="lg"
-                className="h-[52px] rounded-2xl border border-white/10 bg-white/5 text-white active:scale-95 transition-all"
+                className="h-[52px] rounded-lg border border-white/10 bg-white/5 text-white active:scale-95 transition-all"
                 onClick={() => {
                   const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                   if (versions.length > 1) {
@@ -1493,7 +1494,7 @@ function MobileMovieLayout({
               </div>
               <button
                 onClick={() => setActionStep("none")}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70"
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70"
               >
                 Back
               </button>

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, User, ChevronDown, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import logoLight from "@/assets/logo.png";
 import logoDark from "@/assets/logo-dark.png";
 
@@ -139,7 +140,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               />
             </Link>
 
-            <nav className="hidden md:flex pill-nav">
+            <nav className="hidden md:flex pill-nav relative rounded-lg">
               {navItems.map((item) => (
                 <button
                   key={item.id}
@@ -147,22 +148,36 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                   className={cn("pill-nav-item", currentTab === item.id && "active")}
                   data-testid={`button-nav-${item.id}`}
                 >
-                  {item.label}
+                  {currentTab === item.id && (
+                    <motion.div
+                      layoutId="nav-pill"
+                      className="pill-nav-indicator"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10">{item.label}</span>
                 </button>
               ))}
               <button
                 onClick={() => handleTabNavigation("search")}
                 className={cn(
-                  "rounded-full p-2 transition-all duration-300",
+                  "relative rounded-lg p-2 transition-all duration-300",
                   currentTab === "search"
-                    ? playButtonSurfaceClass
+                    ? "text-white"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-label="Search"
                 title="Search"
                 data-testid="button-nav-search"
               >
-                <Search className="h-5 w-5" />
+                {currentTab === "search" && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="pill-nav-indicator"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <Search className={cn("relative z-10 h-5 w-5", currentTab === "search" && "animate-pulse")} />
               </button>
             </nav>
 
@@ -171,7 +186,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                 <button
                   onClick={toggleTheme}
                   className={cn(
-                    "rounded-full p-2.5 backdrop-blur transition-all duration-300 hover:bg-card",
+                    "rounded-lg p-2.5 backdrop-blur transition-all duration-300 hover:bg-card",
                     isDark
                       ? playButtonSurfaceClass
                       : "border border-border/40 bg-card/60 text-foreground"
@@ -190,7 +205,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               <Link
                 to="/profile"
                 onClick={() => handleTabNavigation("profile")}
-                className="hidden items-center gap-3 rounded-full border border-border/40 bg-card/60 px-3 py-2 backdrop-blur md:flex"
+                className="hidden items-center gap-3 rounded-lg border border-border/40 bg-card/60 px-3 py-2 backdrop-blur md:flex"
                 data-testid="link-profile"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
@@ -206,7 +221,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
           </div>
 
           <div className="mt-4 flex justify-center md:hidden">
-            <nav className="pill-nav">
+            <nav className="pill-nav relative rounded-lg">
               {navItems.map((item) => (
                 <button
                   key={item.id}
@@ -217,22 +232,36 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                   )}
                   data-testid={`button-nav-mobile-${item.id}`}
                 >
-                  {item.label}
+                  {currentTab === item.id && (
+                    <motion.div
+                      layoutId="nav-pill-mobile"
+                      className="pill-nav-indicator"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10">{item.label}</span>
                 </button>
               ))}
               <button
                 onClick={() => handleTabNavigation("search")}
                 className={cn(
-                  "rounded-full p-1.5 transition-all duration-300",
+                  "relative rounded-full p-1.5 transition-all duration-300",
                   currentTab === "search"
-                    ? playButtonSurfaceClass
+                    ? "text-white"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-label="Search"
                 title="Search"
                 data-testid="button-nav-mobile-search"
               >
-                <Search className="h-4 w-4" />
+                {currentTab === "search" && (
+                  <motion.div
+                    layoutId="nav-pill-mobile"
+                    className="pill-nav-indicator"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <Search className={cn("relative z-10 h-4 w-4", currentTab === "search" && "animate-pulse")} />
               </button>
             </nav>
           </div>

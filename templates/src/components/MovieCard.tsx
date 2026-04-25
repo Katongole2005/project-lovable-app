@@ -179,7 +179,6 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
               HOT
             </span>
           )}
-
           {movie.type === "series" && (
             <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-primary text-primary-foreground shadow-sm">
               SERIES
@@ -230,6 +229,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
             <Star className="w-3 h-3 fill-current" />
             {rating}
           </span>
+
           {movie.year && (
             <>
               <span className="text-muted-foreground/30">•</span>
