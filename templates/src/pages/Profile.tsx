@@ -484,7 +484,6 @@ export default function Profile() {
     },
   ];
 
-  const { rotateX, rotateY, onMouseMove, onMouseLeave } = use3DTilt();
 
   if (loading) {
     return (
