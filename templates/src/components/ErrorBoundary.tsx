@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 currentUrl.searchParams.set('v', Date.now().toString());
                 window.location.href = currentUrl.toString();
               }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3 px-8 rounded-xl transition-all shadow-lg active:scale-95 w-full mb-6"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3 px-8 rounded-lg transition-all shadow-lg active:scale-95 w-full mb-6"
             >
               Reload & Force Update
             </button>
@@ -60,7 +60,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors mb-2">
                     Show technical details
                   </summary>
-                  <div className="bg-muted p-4 rounded-xl border border-destructive/20 opacity-80 mt-2 text-destructive">
+                  <div className="bg-muted p-4 rounded-lg border border-destructive/20 opacity-80 mt-2 text-destructive">
                     <pre className="whitespace-pre-wrap break-all font-mono">{this.state.error?.toString()}</pre>
                   </div>
                 </details>

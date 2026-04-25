@@ -117,7 +117,7 @@ const Terms = () => {
               For any legal questions or support regarding these terms, please contact:
             </p>
             <div className="text-primary font-medium p-4 rounded-lg bg-white/[0.03] border border-white/10 inline-block">
-              support@movibay.ug
+              support@s-u.in
             </div>
           </div>
         </div>

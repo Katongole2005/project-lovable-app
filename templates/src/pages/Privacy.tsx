@@ -116,11 +116,11 @@ const Privacy = () => {
               For any privacy-related inquiries or to exercise your data rights, please contact our Data Protection Officer:
             </p>
             <a 
-              href="mailto:support@movibay.ug" 
+              href="mailto:support@s-u.in" 
               className="inline-flex items-center gap-3 px-6 py-3 rounded-lg bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-white/20 transition-all text-primary font-medium"
             >
               <Mail className="w-5 h-5" />
-              support@movibay.ug
+              support@s-u.in
             </a>
           </div>
         </div>
