@@ -507,15 +507,6 @@ export default function Profile() {
     },
   ];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    );
-  }
-
-  return (
   const { rotateX, rotateY, onMouseMove, onMouseLeave } = use3DTilt();
 
   if (loading) {
@@ -782,6 +773,5 @@ export default function Profile() {
         </div>
       </div>
     </div>
-  );
   );
 }
