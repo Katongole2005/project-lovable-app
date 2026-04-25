@@ -109,7 +109,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
     >
       <div
         className={cn(
-          "relative aspect-[2/3] overflow-hidden rounded-[2rem] bg-card border border-black/[0.03] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm",
+          "relative aspect-[2/3] overflow-hidden rounded-[18px] bg-card border border-black/[0.03] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm",
           typeof window !== "undefined" && window.innerWidth >= 768 && "will-change-transform"
         )}
       >

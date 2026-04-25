@@ -92,7 +92,7 @@ function Top10Card({
           </span>
         </div>
 
-        <div className="relative w-[120px] md:w-[150px] aspect-[2/3] rounded-[1.5rem] overflow-hidden shadow-card card-hover card-rim-light z-10 border border-black/[0.03]"
+        <div className="relative w-[120px] md:w-[150px] aspect-[2/3] rounded-[14px] overflow-hidden shadow-card card-hover card-rim-light z-10 border border-black/[0.03]"
         >
           <BlurImage
             src={getImageUrl(movie.image_url)}

@@ -1339,7 +1339,7 @@ function MobileMovieLayout({
             className="absolute bottom-0 left-0 right-0 flex gap-4 items-end p-5 transition-[transform,opacity] duration-300 ease-out will-change-transform"
             style={heroContentStyle}
           >
-            <div className="w-24 h-36 flex-shrink-0 rounded-none overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.45)] relative">
+            <div className="w-24 h-36 flex-shrink-0 rounded-xl overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.45)] relative">
               <img
                 src={getImageUrl(movie.image_url)}
                 alt={movie.title}
