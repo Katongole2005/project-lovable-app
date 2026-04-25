@@ -109,7 +109,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
     >
       <div
         className={cn(
-          "relative aspect-[2/3] overflow-hidden rounded-2xl bg-card/95 md:bg-card/80 border border-white/[0.06] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm",
+          "relative aspect-[2/3] overflow-hidden rounded-[2rem] bg-card border border-black/[0.03] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm",
           typeof window !== "undefined" && window.innerWidth >= 768 && "will-change-transform"
         )}
       >
@@ -145,26 +145,26 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
           </div>
         )}
 
-        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[80%]">
           {isNew && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500 text-white flex items-center gap-0.5 shadow-[0_2px_8px_rgba(16,185,129,0.4)]">
+            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500 text-white flex items-center gap-0.5 shadow-sm">
               <Sparkles className="w-2.5 h-2.5" />
               NEW
             </span>
           )}
           {trending && !isNew && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-orange-500 text-white flex items-center gap-0.5 shadow-[0_2px_8px_rgba(249,115,22,0.4)]">
+            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-orange-500 text-white flex items-center gap-0.5 shadow-sm">
               <TrendingUp className="w-2.5 h-2.5" />
               HOT
             </span>
           )}
           {hasMultipleVjs && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-sky-500/90 text-white shadow-[0_2px_8px_rgba(14,165,233,0.35)]">
+            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-sky-500/90 text-white shadow-sm">
               {movie.vj_versions?.length} VJs
             </span>
           )}
           {movie.type === "series" && (
-            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/90 text-primary-foreground shadow-[0_2px_8px_hsl(210_100%_60%/0.3)] md:backdrop-blur-sm">
+            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-primary text-primary-foreground shadow-sm">
               SERIES
             </span>
           )}
@@ -175,14 +175,14 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
           aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
           data-testid={`button-watchlist-${movie.mobifliks_id}`}
           className={cn(
-            "absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-10",
+            "absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 z-10 shadow-sm",
             inWatchlist
-              ? "bg-primary/90 text-primary-foreground scale-100 shadow-[0_0_12px_hsl(210_100%_60%/0.4)]"
-              : "bg-black/40 text-white/80 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/60 md:backdrop-blur-sm",
+              ? "bg-primary text-primary-foreground scale-100"
+              : "bg-black/30 text-white/90 backdrop-blur-md opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/50",
             heartFlip && "animate-heart-flip"
           )}
         >
-          <Heart className={cn("w-4 h-4 transition-transform", inWatchlist && "fill-current")} />
+          <Heart className={cn("w-3.5 h-3.5 transition-transform", inWatchlist && "fill-current")} />
         </button>
 
         {showProgress !== undefined && showProgress > 0 && (
@@ -203,7 +203,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
               className="h-full w-auto max-w-full object-contain object-left opacity-90 group-hover:opacity-100 transition-opacity"
             />
           ) : (
-            <h3 className="font-display font-medium text-sm leading-snug text-foreground line-clamp-1 group-hover:text-primary transition-colors tracking-normal" data-testid={`text-title-${movie.mobifliks_id}`}>
+            <h3 className="font-display font-bold text-sm leading-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors tracking-tight" data-testid={`text-title-${movie.mobifliks_id}`}>
               {movie.title}
             </h3>
           )}

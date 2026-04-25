@@ -1185,36 +1185,43 @@ export default function Index() {
 
               {showDeferredHomeSections && (
                 <Suspense fallback={null}>
-                  {siteSettings.top10_enabled && (
-                    <div className="mt-4">
-                      <div className="section-divider mb-2" />
-                      <Top10Row
-                        movies={recentMovies}
-                        onMovieClick={handleMovieClick}
-                      />
+                  <div className="mt-12 space-y-12 pb-12">
+                    <div className="text-center space-y-2">
+                      <h2 className="text-2xl font-bold tracking-tight">Discover More</h2>
+                      <p className="text-muted-foreground text-sm">Hand-picked collections just for you</p>
                     </div>
-                  )}
 
-                  {continueWatching.length > 0 && recentMovies.length > 0 && (
-                    <div className="mt-4">
-                      <div className="section-divider mb-2" />
-                      <RecommendationRow
-                        continueWatching={continueWatching}
-                        allMovies={[...recentMovies, ...recentSeries]}
+                    {siteSettings.top10_enabled && (
+                      <SectionReveal delay={100}>
+                        <div className="section-divider mb-4" />
+                        <Top10Row
+                          movies={recentMovies}
+                          onMovieClick={handleMovieClick}
+                        />
+                      </SectionReveal>
+                    )}
+
+                    {continueWatching.length > 0 && recentMovies.length > 0 && (
+                      <SectionReveal delay={200}>
+                        <div className="section-divider mb-4" />
+                        <RecommendationRow
+                          continueWatching={continueWatching}
+                          allMovies={[...recentMovies, ...recentSeries]}
+                          onMovieClick={handleMovieClick}
+                        />
+                      </SectionReveal>
+                    )}
+
+                    <SectionReveal delay={300}>
+                      <div className="section-divider mb-4" />
+                      <MovieRow
+                        title="Popular Series"
+                        movies={recentSeries}
                         onMovieClick={handleMovieClick}
+                        onViewAll={() => handleTabChange("series")}
+                        isLoading={isLoading && recentSeries.length === 0}
                       />
-                    </div>
-                  )}
-
-                  <div className="mt-4">
-                    <div className="section-divider mb-2" />
-                    <MovieRow
-                      title="Popular Series"
-                      movies={recentSeries}
-                      onMovieClick={handleMovieClick}
-                      onViewAll={() => handleTabChange("series")}
-                      isLoading={isLoading && recentSeries.length === 0}
-                    />
+                    </SectionReveal>
                   </div>
                 </Suspense>
               )}

@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, Tag, Star, CalendarDays, Plus, Heart, List, Share2, Layers } from "lucide-react";
+import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, ChevronRight, Tag, Star, CalendarDays, Plus, Heart, List, Share2, Layers } from "lucide-react";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { toSlug } from "@/lib/slug";
 import { toast } from "sonner";
@@ -50,14 +50,14 @@ async function downloadWithName(url: string, filename: string, detailsUrl?: stri
     mobifliksId,
     play: false,
   });
-  
+
   toast.loading(`Checking "${safeName}"...`, { id: "dl-toast" });
   const mediaStatus = await resolveMediaAvailability(mediaUrl);
   if (!mediaStatus.available) {
     toast.error(`"${safeName}" is not currently downloadable from Mobifliks.`, { id: "dl-toast" });
     return;
   }
-  
+
   toast.success(`Downloading "${safeName}"`, { id: "dl-toast" });
   console.log(`[Download] Initializing download for: ${safeName} (${ext})`);
   const anchor = document.createElement("a");
@@ -269,7 +269,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     if (movie) {
       setUserRatingState(getUserRating(movie.mobifliks_id));
       setInWatchlist(isInWatchlist(movie.mobifliks_id));
-      
+
       // Fetch sizes for non-series movies OR first episode of series
       if (movie.type !== "series") {
         if (movie.download_url) fetchMediaSize(movie.download_url, movie.title, movie.mobifliks_id).then(setMovieS1Size);
@@ -353,7 +353,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       setPreloadUrl(null);
       return;
     }
-    
+
     if (typeof navigator !== 'undefined' && 'connection' in navigator) {
       const conn = (navigator as any).connection;
       if (conn.saveData || conn.effectiveType === '2g' || conn.effectiveType === '3g') {
@@ -386,440 +386,440 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
 
   return (
     <ErrorBoundary>
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      {/* Mobile: Full screen sheet, Desktop: Centered modal */}
-      <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-200 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] data-[state=open]:slide-in-from-bottom md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-bottom md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%]">
-        
-        {preloadUrl && (
-          <video src={preloadUrl} preload="auto" className="hidden" playsInline muted />
-        )}
-        
-        <DialogTitle className="sr-only">{movie.title}</DialogTitle>
-        <DialogDescription className="sr-only">
-          {movie.description || (isSeries ? "Series details and episodes." : "Movie details and playback.")}
-        </DialogDescription>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        {/* Mobile: Full screen sheet, Desktop: Centered modal */}
+        <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-200 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] data-[state=open]:slide-in-from-bottom md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-bottom md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%]">
 
-        {/* Mobile Layout - completely separate, handles its own scroll */}
-        <MobileMovieLayout
-          movie={movie}
-          isSeries={isSeries}
-          series={series}
-          cast={cast}
-          rating={rating}
-          runtimeLabel={runtimeLabel}
-          certificationLabel={certificationLabel}
-          backgroundImage={backgroundImage}
-          onClose={onClose}
-          onPlay={handlePlay}
-          inWatchlist={inWatchlist}
-          onToggleWatchlist={handleToggleWatchlist}
-          detailsLoading={detailsLoading}
-          onMovieSelect={onMovieSelect}
-          movieS1Size={movieS1Size}
-          movieS2Size={movieS2Size}
-        />
+          {preloadUrl && (
+            <video src={preloadUrl} preload="auto" className="hidden" playsInline muted />
+          )}
 
-        {/* Desktop/Tablet Layout with glassmorphism */}
-        <motion.div
-          initial={allowDesktopMotion ? { opacity: 0, scale: 0.98 } : false}
-          animate={allowDesktopMotion ? { opacity: 1, scale: 1 } : undefined}
-          transition={allowDesktopMotion ? { duration: 0.24, ease: [0.22, 1, 0.36, 1] } : undefined}
-          className="hidden md:block relative h-full md:rounded-3xl overflow-hidden"
-        >
-          {/* Multi-layer background for professional glass effect */}
-          <div className="absolute inset-0 z-behind">
-            {(!backgroundImage || !desktopBackdropLoaded) && (
-              <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
-                <div className="absolute inset-0 shimmer" />
-              </div>
-            )}
+          <DialogTitle className="sr-only">{movie.title}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {movie.description || (isSeries ? "Series details and episodes." : "Movie details and playback.")}
+          </DialogDescription>
 
-            {backgroundImage && (
-              <>
-                <img
-                  src={backgroundImage}
-                  alt=""
-                  className={cn(
-                    "w-full h-full object-cover object-center scale-105 transition-opacity duration-500",
-                    desktopBackdropLoaded ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {deviceProfile.allowAmbientEffects && (
+          {/* Mobile Layout - completely separate, handles its own scroll */}
+          <MobileMovieLayout
+            movie={movie}
+            isSeries={isSeries}
+            series={series}
+            cast={cast}
+            rating={rating}
+            runtimeLabel={runtimeLabel}
+            certificationLabel={certificationLabel}
+            backgroundImage={backgroundImage}
+            onClose={onClose}
+            onPlay={handlePlay}
+            inWatchlist={inWatchlist}
+            onToggleWatchlist={handleToggleWatchlist}
+            detailsLoading={detailsLoading}
+            onMovieSelect={onMovieSelect}
+            movieS1Size={movieS1Size}
+            movieS2Size={movieS2Size}
+          />
+
+          {/* Desktop/Tablet Layout with glassmorphism */}
+          <motion.div
+            initial={allowDesktopMotion ? { opacity: 0, scale: 0.98 } : false}
+            animate={allowDesktopMotion ? { opacity: 1, scale: 1 } : undefined}
+            transition={allowDesktopMotion ? { duration: 0.24, ease: [0.22, 1, 0.36, 1] } : undefined}
+            className="hidden md:block relative h-full md:rounded-3xl overflow-hidden"
+          >
+            {/* Multi-layer background for professional glass effect */}
+            <div className="absolute inset-0 z-behind">
+              {(!backgroundImage || !desktopBackdropLoaded) && (
+                <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                  <div className="absolute inset-0 shimmer" />
+                </div>
+              )}
+
+              {backgroundImage && (
+                <>
                   <img
                     src={backgroundImage}
                     alt=""
                     className={cn(
-                      "absolute inset-0 w-full h-full object-cover object-center scale-125 blur-3xl transition-opacity duration-500",
-                      desktopBackdropLoaded ? "opacity-80" : "opacity-0"
+                      "w-full h-full object-cover object-center scale-105 transition-opacity duration-500",
+                      desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                     )}
                   />
-                )}
-              </>
-            )}
-            <div className="absolute inset-0 backdrop-blur-xl bg-black/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
-            {deviceProfile.allowAmbientEffects && (
-              <motion.div
-                className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-                }}
-              />
-            )}
-          </div>
-
-          <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
-
-          {/* Close button — outside ScrollArea so it stays fixed */}
-          <button
-            onClick={onClose}
-            aria-label="Close modal"
-            className={cn(
-              "absolute top-4 right-4 z-critical p-2.5 rounded-full transition-all duration-200 hover:scale-110 active:scale-95 border-none shadow-lg",
-              TRENDING_ACCENT_BUTTON_CLASS
-            )}
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          <ScrollArea className="relative z-content h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
-            <div className="relative w-full max-w-full">
-
-              {/* Backdrop hero section */}
-              <div className="relative h-[350px] lg:h-[425px] overflow-hidden bg-black/50">
-                {backgroundImage ? (
-                  <>
-                    {!desktopBackdropLoaded && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
-                        <div className="absolute inset-0 shimmer" />
-                      </div>
-                    )}
+                  {deviceProfile.allowAmbientEffects && (
                     <img
                       src={backgroundImage}
-                      alt={`${movie.title} backdrop`}
+                      alt=""
                       className={cn(
-                        "w-full h-full object-cover object-[center_top] transition-opacity duration-500",
-                        desktopBackdropLoaded ? "opacity-100" : "opacity-0"
+                        "absolute inset-0 w-full h-full object-cover object-center scale-125 blur-3xl transition-opacity duration-500",
+                        desktopBackdropLoaded ? "opacity-80" : "opacity-0"
                       )}
                     />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
-                    <div className="absolute inset-0 shimmer" />
-                  </div>
-                )}
-                {/* Premium fade gradients to seamlessly blend the backdrop into the content */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
-              </div>
+                  )}
+                </>
+              )}
+              <div className="absolute inset-0 backdrop-blur-xl bg-black/40" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+              {deviceProfile.allowAmbientEffects && (
+                <motion.div
+                  className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+                  }}
+                />
+              )}
+            </div>
 
-              {/* Content area - overlapping backdrop */}
-              <motion.div
-                variants={staggerContainer}
-                initial={allowDesktopMotion ? "hidden" : "visible"}
-                animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : "visible"}
-                className="relative -mt-32 px-10 pb-10 space-y-6"
-              >
-                {/* Poster + Title row */}
-                <motion.div variants={fadeInUp} className="flex gap-6 items-start">
-                  <div className="w-32 lg:w-40 flex-none rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
-                    <img
-                      src={getImageUrl(movie.image_url)}
-                      alt={`${movie.title} poster`}
-                      className="w-full aspect-[2/3] object-cover"
-                    />
-                  </div>
+            <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
 
-                  <div className="flex-1 min-w-0 space-y-4 pt-2">
-                    <motion.div variants={fadeInUp} className="min-w-0 space-y-4 pt-2">
-                      {movie.logo_url ? (
-                        <img
-                          src={movie.logo_url}
-                          alt={movie.title}
-                          className="h-16 lg:h-24 xl:h-28 w-auto max-w-[500px] object-contain object-left drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
-                        />
-                      ) : (
-                        <h1 className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
-                          {movie.title}
-                        </h1>
-                      )}
-                      {isSeries && <span className="text-primary text-2xl font-semibold inline-block">(Series)</span>}
-                    </motion.div>
+            {/* Close button — outside ScrollArea so it stays fixed */}
+            <button
+              onClick={onClose}
+              aria-label="Close modal"
+              className={cn(
+                "absolute top-4 right-4 z-critical p-2.5 rounded-full transition-all duration-200 hover:scale-110 active:scale-95 border-none shadow-lg",
+                TRENDING_ACCENT_BUTTON_CLASS
+              )}
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-                    <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-3">
-                      {/* Rating */}
-                      <span className="flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full border border-[#ff8a3d]/30 bg-[#ff8a3d]/15 text-[#ffd3a8] shadow-[0_0_24px_rgba(255,138,61,0.12)]">
-                        <Star className="w-4 h-4 fill-[#ff8a3d] text-[#ff8a3d]" />
-                        {rating}
-                      </span>
-                      {movie.year && (
-                        <span className="text-lg font-medium text-white/90">{movie.year}</span>
-                      )}
-                      {/* Release Date */}
-                      {releaseLabel && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                          <CalendarDays className="w-4 h-4" />
-                          {releaseLabel}
-                        </span>
-                      )}
-                      {certificationLabel && (
-                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                          {certificationLabel}
-                        </span>
-                      )}
-                      {runtimeLabel && (
-                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                          {runtimeLabel}
-                        </span>
-                      )}
-                      {movie.vj_name && (
-                        <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                          VJ {movie.vj_name}
-                        </span>
-                      )}
-                      {movie.views !== undefined && movie.views > 0 && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                          <Eye className="w-4 h-4" />
-                          {movie.views >= 1000000
-                            ? `${(movie.views / 1000000).toFixed(1)}M`
-                            : movie.views >= 1000
-                              ? `${(movie.views / 1000).toFixed(1)}K`
-                              : movie.views}
-                        </span>
-                      )}
-                      {isSeries && (
-                        <span className="px-2.5 py-0.5 text-sm font-semibold rounded bg-primary/30 text-primary border border-primary/40">
-                          SERIES
-                        </span>
-                      )}
-                    </motion.div>
+            <ScrollArea className="relative z-content h-[90vh] max-h-[90vh] w-full [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:max-h-[90vh]">
+              <div className="relative w-full max-w-full">
 
-                    <motion.div variants={fadeInUp} className="flex items-center gap-3 pt-2">
-                      {!isSeries && movie.download_url && (
-                        <Button
-                          size="lg"
-                          className={cn(
-                            "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                            TRENDING_ACCENT_BUTTON_CLASS
-                          )}
-                          onClick={() => onPlay(movie.download_url!, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url)}
-                        >
-                          <Play className="w-5 h-5 fill-current" />
-                          {movie.server2_url ? "Server 1" : "Play"}
-                          {movieS1Size && <span className="text-sm opacity-70 ml-1.5">({movieS1Size})</span>}
-                        </Button>
+                {/* Backdrop hero section */}
+                <div className="relative h-[350px] lg:h-[425px] overflow-hidden bg-black/50">
+                  {backgroundImage ? (
+                    <>
+                      {!desktopBackdropLoaded && (
+                        <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                          <div className="absolute inset-0 shimmer" />
+                        </div>
                       )}
-                      {!isSeries && movie.server2_url && (
-                        <Button
-                          size="lg"
-                          className={cn(
-                            "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                            !movie.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
-                          )}
-                          onClick={() => onPlay(movie.server2_url!, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url)}
-                        >
-                          <Play className="w-5 h-5 fill-current" />
-                          {movie.download_url ? "Server 2" : "Play"}
-                          {movieS2Size && <span className="text-sm opacity-70 ml-1.5">({movieS2Size})</span>}
-                        </Button>
-                      )}
-                      {isSeries && series.episodes && series.episodes.length > 0 && (
-                        <>
-                          {(series.episodes[0]?.download_url || !series.episodes[0]?.server2_url) && (
-                            <Button
-                              size="lg"
-                              className={cn(
-                                "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                                TRENDING_ACCENT_BUTTON_CLASS
-                              )}
-                              onClick={() => {
-                                const firstEp = series.episodes?.[0];
-                                if (firstEp?.download_url) {
-                                  onPlay(firstEp.download_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`, 0, firstEp.mobifliks_id, firstEp.video_page_url || movie.video_page_url || movie.details_url);
-                                }
-                              }}
-                            >
-                              <Play className="w-5 h-5 fill-current" />
-                              {series.episodes[0]?.server2_url ? "Ep 1 (Server 1)" : "Play S1:E1"}
-                              {movieS1Size && <span className="text-sm opacity-70 ml-1.5">({movieS1Size})</span>}
-                            </Button>
-                          )}
-                          {series.episodes[0]?.server2_url && (
-                            <Button
-                              size="lg"
-                              className={cn(
-                                "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                                !series.episodes[0]?.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
-                              )}
-                              onClick={() => {
-                                const firstEp = series.episodes?.[0];
-                                if (firstEp?.server2_url) {
-                                  onPlay(firstEp.server2_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`, 0, firstEp.mobifliks_id, firstEp.video_page_url || movie.video_page_url || movie.details_url);
-                                }
-                              }}
-                            >
-                              <Play className="w-5 h-5 fill-current" />
-                              {series.episodes[0]?.download_url ? "Ep 1 (Server 2)" : "Play S1:E1"}
-                              {movieS2Size && <span className="text-sm opacity-70 ml-1.5">({movieS2Size})</span>}
-                            </Button>
-                          )}
-                        </>
-                      )}
-
-                      <button
-                        onClick={handleToggleWatchlist}
-                        aria-label={inWatchlist ? "Remove from My List" : "Add to My List"}
+                      <img
+                        src={backgroundImage}
+                        alt={`${movie.title} backdrop`}
                         className={cn(
-                          "w-11 h-11 rounded-full backdrop-blur-sm border-2 flex items-center justify-center transition-all duration-200",
-                          inWatchlist
-                            ? "bg-primary/90 border-primary text-white"
-                            : "bg-white/10 border-white/50 text-white hover:bg-white/20 hover:border-white"
+                          "w-full h-full object-cover object-[center_top] transition-opacity duration-500",
+                          desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                         )}
-                      >
-                        <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
-                      </button>
-                      {/* Share button */}
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const typeSlug = movie.type === "series" ? "series" : "movie";
-                          const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
-                          try {
-                            if (navigator.share) {
-                              await navigator.share({ title: movie.title, url: shareUrl });
-                              return;
-                            }
-                          } catch { }
-                          try {
-                            await navigator.clipboard.writeText(shareUrl);
-                            toast.success("Link copied to clipboard!");
-                          } catch {
-                            const textArea = document.createElement("textarea");
-                            textArea.value = shareUrl;
-                            textArea.style.position = "fixed";
-                            textArea.style.opacity = "0";
-                            document.body.appendChild(textArea);
-                            textArea.select();
-                            document.execCommand("copy");
-                            document.body.removeChild(textArea);
-                            toast.success("Link copied to clipboard!");
-                          }
-                        }}
-                        aria-label="Share"
-                        className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </button>
-                      {FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!(movie.download_url || movie.server2_url)) && (
+                      />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40">
+                      <div className="absolute inset-0 shimmer" />
+                    </div>
+                  )}
+                  {/* Premium fade gradients to seamlessly blend the backdrop into the content */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
+                </div>
+
+                {/* Content area - overlapping backdrop */}
+                <motion.div
+                  variants={staggerContainer}
+                  initial={allowDesktopMotion ? "hidden" : "visible"}
+                  animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : "visible"}
+                  className="relative -mt-32 px-10 pb-10 space-y-6"
+                >
+                  {/* Poster + Title row */}
+                  <motion.div variants={fadeInUp} className="flex gap-6 items-start">
+                    <div className="w-32 lg:w-40 flex-none rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
+                      <img
+                        src={getImageUrl(movie.image_url)}
+                        alt={`${movie.title} poster`}
+                        className="w-full aspect-[2/3] object-cover"
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-4 pt-2">
+                      <motion.div variants={fadeInUp} className="min-w-0 space-y-4 pt-2">
+                        {movie.logo_url ? (
+                          <img
+                            src={movie.logo_url}
+                            alt={movie.title}
+                            className="h-16 lg:h-24 xl:h-28 w-auto max-w-[500px] object-contain object-left drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+                          />
+                        ) : (
+                          <h1 className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
+                            {movie.title}
+                          </h1>
+                        )}
+                        {isSeries && <span className="text-primary text-2xl font-semibold inline-block">(Series)</span>}
+                      </motion.div>
+
+                      <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-3">
+                        {/* Rating */}
+                        <span className="flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full border border-[#ff8a3d]/30 bg-[#ff8a3d]/15 text-[#ffd3a8] shadow-[0_0_24px_rgba(255,138,61,0.12)]">
+                          <Star className="w-4 h-4 fill-[#ff8a3d] text-[#ff8a3d]" />
+                          {rating}
+                        </span>
+                        {movie.year && (
+                          <span className="text-lg font-medium text-white/90">{movie.year}</span>
+                        )}
+                        {/* Release Date */}
+                        {releaseLabel && (
+                          <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                            <CalendarDays className="w-4 h-4" />
+                            {releaseLabel}
+                          </span>
+                        )}
+                        {certificationLabel && (
+                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                            {certificationLabel}
+                          </span>
+                        )}
+                        {runtimeLabel && (
+                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                            {runtimeLabel}
+                          </span>
+                        )}
+                        {movie.vj_name && (
+                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                            VJ {movie.vj_name}
+                          </span>
+                        )}
+                        {movie.views !== undefined && movie.views > 0 && (
+                          <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                            <Eye className="w-4 h-4" />
+                            {movie.views >= 1000000
+                              ? `${(movie.views / 1000000).toFixed(1)}M`
+                              : movie.views >= 1000
+                                ? `${(movie.views / 1000).toFixed(1)}K`
+                                : movie.views}
+                          </span>
+                        )}
+                        {isSeries && (
+                          <span className="px-2.5 py-0.5 text-sm font-semibold rounded bg-primary/30 text-primary border border-primary/40">
+                            SERIES
+                          </span>
+                        )}
+                      </motion.div>
+
+                      <motion.div variants={fadeInUp} className="flex items-center gap-3 pt-2">
+                        {!isSeries && movie.download_url && (
+                          <Button
+                            size="lg"
+                            className={cn(
+                              "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                              TRENDING_ACCENT_BUTTON_CLASS
+                            )}
+                            onClick={() => onPlay(movie.download_url!, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url)}
+                          >
+                            <Play className="w-5 h-5 fill-current" />
+                            {movie.server2_url ? "Server 1" : "Play"}
+                            {movieS1Size && <span className="text-sm opacity-70 ml-1.5">({movieS1Size})</span>}
+                          </Button>
+                        )}
+                        {!isSeries && movie.server2_url && (
+                          <Button
+                            size="lg"
+                            className={cn(
+                              "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                              !movie.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
+                            )}
+                            onClick={() => onPlay(movie.server2_url!, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url)}
+                          >
+                            <Play className="w-5 h-5 fill-current" />
+                            {movie.download_url ? "Server 2" : "Play"}
+                            {movieS2Size && <span className="text-sm opacity-70 ml-1.5">({movieS2Size})</span>}
+                          </Button>
+                        )}
+                        {isSeries && series.episodes && series.episodes.length > 0 && (
+                          <>
+                            {(series.episodes[0]?.download_url || !series.episodes[0]?.server2_url) && (
+                              <Button
+                                size="lg"
+                                className={cn(
+                                  "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                                  TRENDING_ACCENT_BUTTON_CLASS
+                                )}
+                                onClick={() => {
+                                  const firstEp = series.episodes?.[0];
+                                  if (firstEp?.download_url) {
+                                    onPlay(firstEp.download_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`, 0, firstEp.mobifliks_id, firstEp.video_page_url || movie.video_page_url || movie.details_url);
+                                  }
+                                }}
+                              >
+                                <Play className="w-5 h-5 fill-current" />
+                                {series.episodes[0]?.server2_url ? "Ep 1 (Server 1)" : "Play S1:E1"}
+                                {movieS1Size && <span className="text-sm opacity-70 ml-1.5">({movieS1Size})</span>}
+                              </Button>
+                            )}
+                            {series.episodes[0]?.server2_url && (
+                              <Button
+                                size="lg"
+                                className={cn(
+                                  "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                                  !series.episodes[0]?.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
+                                )}
+                                onClick={() => {
+                                  const firstEp = series.episodes?.[0];
+                                  if (firstEp?.server2_url) {
+                                    onPlay(firstEp.server2_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`, 0, firstEp.mobifliks_id, firstEp.video_page_url || movie.video_page_url || movie.details_url);
+                                  }
+                                }}
+                              >
+                                <Play className="w-5 h-5 fill-current" />
+                                {series.episodes[0]?.download_url ? "Ep 1 (Server 2)" : "Play S1:E1"}
+                                {movieS2Size && <span className="text-sm opacity-70 ml-1.5">({movieS2Size})</span>}
+                              </Button>
+                            )}
+                          </>
+                        )}
+
                         <button
-                          onClick={() => {
-                            if (isSeries) {
-                              const firstEp = allEpisodes[0];
-                              const firstTargetUrl = firstEp?.download_url || firstEp?.server2_url;
-                              if (firstTargetUrl) {
-                                const name = `${movie.title} - S${firstEp.season_number || 1}E${String(firstEp.episode_number).padStart(2, '0')}`;
-                                downloadWithName(firstTargetUrl, name, undefined, firstEp.mobifliks_id);
-                              } else {
-                                toast.error("No episodes available to download yet.");
-                                episodesSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+                          onClick={handleToggleWatchlist}
+                          aria-label={inWatchlist ? "Remove from My List" : "Add to My List"}
+                          className={cn(
+                            "w-11 h-11 rounded-full backdrop-blur-sm border-2 flex items-center justify-center transition-all duration-200",
+                            inWatchlist
+                              ? "bg-primary/90 border-primary text-white"
+                              : "bg-white/10 border-white/50 text-white hover:bg-white/20 hover:border-white"
+                          )}
+                        >
+                          <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
+                        </button>
+                        {/* Share button */}
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const typeSlug = movie.type === "series" ? "series" : "movie";
+                            const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
+                            try {
+                              if (navigator.share) {
+                                await navigator.share({ title: movie.title, url: shareUrl });
+                                return;
                               }
-                            } else {
-                              const targetUrl = movie.download_url || movie.server2_url;
-                              const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-                              downloadWithName(targetUrl!, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
+                            } catch { }
+                            try {
+                              await navigator.clipboard.writeText(shareUrl);
+                              toast.success("Link copied to clipboard!");
+                            } catch {
+                              const textArea = document.createElement("textarea");
+                              textArea.value = shareUrl;
+                              textArea.style.position = "fixed";
+                              textArea.style.opacity = "0";
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              document.execCommand("copy");
+                              document.body.removeChild(textArea);
+                              toast.success("Link copied to clipboard!");
                             }
                           }}
-                          aria-label="Download"
-                          className={cn(
-                            "w-11 h-11 rounded-full border-2 border-transparent flex items-center justify-center backdrop-blur-sm transition-all duration-200",
-                            TRENDING_ACCENT_BUTTON_CLASS
-                          )}
+                          aria-label="Share"
+                          className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-white hover:bg-white/20 hover:border-white transition-all duration-200"
                         >
-                          <Download className="w-4 h-4" />
+                          <Share2 className="w-4 h-4" />
                         </button>
-                      )}
-                    </motion.div>
-                  </div>
-                </motion.div>
-
-                {movie.description && (
-                  <motion.p variants={fadeInUp} className="text-white/90 leading-relaxed text-lg max-w-4xl">{movie.description}</motion.p>
-                )}
-
-                {/* User Rating */}
-                <motion.div variants={fadeInUp} className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-white/70">Rate this:</span>
-                  <StarRating rating={userRating} onRate={handleRate} size="md" />
-                </motion.div>
-
-                {/* Cast — improved horizontal carousel with larger cards */}
-                {cast.length > 0 && (
-                  <motion.div variants={fadeInUp} className="space-y-3">
-                    <h4 className="text-lg font-semibold text-white/90">Cast</h4>
-                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin -mx-2 px-2">
-                      {cast.slice(0, 12).map((member, index) => (
-                        <div
-                          key={index}
-                          className="flex-none w-28 group"
-                        >
-                          <div className="w-24 h-24 mx-auto rounded-2xl overflow-hidden border-2 border-white/15 bg-white/5 shadow-lg group-hover:border-white/30 group-hover:scale-105 transition-all duration-300">
-                            <img
-                              src={member.profile_url || fallbackCastAvatar}
-                              alt={member.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = fallbackCastAvatar;
-                              }}
-                            />
-                          </div>
-                          <p className="text-xs font-medium text-white/90 text-center mt-2 line-clamp-2 leading-tight">{member.name}</p>
-                          {member.character && (
-                            <p className="text-[10px] text-white/50 text-center line-clamp-1 mt-0.5">as {member.character}</p>
-                          )}
-                        </div>
-                      ))}
+                        {FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!(movie.download_url || movie.server2_url)) && (
+                          <button
+                            onClick={() => {
+                              if (isSeries) {
+                                const firstEp = allEpisodes[0];
+                                const firstTargetUrl = firstEp?.download_url || firstEp?.server2_url;
+                                if (firstTargetUrl) {
+                                  const name = `${movie.title} - S${firstEp.season_number || 1}E${String(firstEp.episode_number).padStart(2, '0')}`;
+                                  downloadWithName(firstTargetUrl, name, undefined, firstEp.mobifliks_id);
+                                } else {
+                                  toast.error("No episodes available to download yet.");
+                                  episodesSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+                                }
+                              } else {
+                                const targetUrl = movie.download_url || movie.server2_url;
+                                const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
+                                downloadWithName(targetUrl!, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
+                              }
+                            }}
+                            aria-label="Download"
+                            className={cn(
+                              "w-11 h-11 rounded-full border-2 border-transparent flex items-center justify-center backdrop-blur-sm transition-all duration-200",
+                              TRENDING_ACCENT_BUTTON_CLASS
+                            )}
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        )}
+                      </motion.div>
                     </div>
                   </motion.div>
-                )}
 
-                {movie.genres && movie.genres.length > 0 && (
-                  <motion.p variants={fadeInUp} className="text-base">
-                    <span className="text-white/60 font-medium">Genres:</span>{" "}
-                    <span className="text-white/90">{movie.genres.join(", ")}</span>
-                  </motion.p>
-                )}
+                  {movie.description && (
+                    <motion.p variants={fadeInUp} className="text-white/90 leading-relaxed text-lg max-w-4xl">{movie.description}</motion.p>
+                  )}
 
-                {movie.file_size && (
-                  <motion.p variants={fadeInUp} className="text-base">
-                    <span className="text-white/60 font-medium">Size:</span>{" "}
-                    <span className="text-white/90">{movie.file_size}</span>
-                  </motion.p>
-                )}
-
-                <motion.div variants={fadeInUp}>
-                  <VJVersionSwitcher movie={movie} onMovieSelect={onMovieSelect} />
-                </motion.div>
-
-                {isSeries && series.episodes && series.episodes.length > 0 && (
-                  <DesktopEpisodeSection
-                    series={series}
-                    movie={movie}
-                    onPlay={handlePlay}
-                  />
-                )}
-
-                {isSeries && (!series.episodes || series.episodes.length === 0) && !detailsLoading && (
-                  <motion.div variants={fadeInUp} className="pt-4 text-center py-8 text-white/60 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
-                    No episodes available yet.
+                  {/* User Rating */}
+                  <motion.div variants={fadeInUp} className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-white/70">Rate this:</span>
+                    <StarRating rating={userRating} onRate={handleRate} size="md" />
                   </motion.div>
-                )}
-              </motion.div>
-            </div>
-          </ScrollArea>
-        </motion.div>
-      </DialogContent>
-    </Dialog>
+
+                  {/* Cast — improved horizontal carousel with larger cards */}
+                  {cast.length > 0 && (
+                    <motion.div variants={fadeInUp} className="space-y-3">
+                      <h4 className="text-lg font-semibold text-white/90">Cast</h4>
+                      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin -mx-2 px-2">
+                        {cast.slice(0, 12).map((member, index) => (
+                          <div
+                            key={index}
+                            className="flex-none w-28 group"
+                          >
+                            <div className="w-24 h-24 mx-auto rounded-2xl overflow-hidden border-2 border-white/15 bg-white/5 shadow-lg group-hover:border-white/30 group-hover:scale-105 transition-all duration-300">
+                              <img
+                                src={member.profile_url || fallbackCastAvatar}
+                                alt={member.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = fallbackCastAvatar;
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs font-medium text-white/90 text-center mt-2 line-clamp-2 leading-tight">{member.name}</p>
+                            {member.character && (
+                              <p className="text-[10px] text-white/50 text-center line-clamp-1 mt-0.5">as {member.character}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {movie.genres && movie.genres.length > 0 && (
+                    <motion.p variants={fadeInUp} className="text-base">
+                      <span className="text-white/60 font-medium">Genres:</span>{" "}
+                      <span className="text-white/90">{movie.genres.join(", ")}</span>
+                    </motion.p>
+                  )}
+
+                  {movie.file_size && (
+                    <motion.p variants={fadeInUp} className="text-base">
+                      <span className="text-white/60 font-medium">Size:</span>{" "}
+                      <span className="text-white/90">{movie.file_size}</span>
+                    </motion.p>
+                  )}
+
+                  <motion.div variants={fadeInUp}>
+                    <VJVersionSwitcher movie={movie} onMovieSelect={onMovieSelect} />
+                  </motion.div>
+
+                  {isSeries && series.episodes && series.episodes.length > 0 && (
+                    <DesktopEpisodeSection
+                      series={series}
+                      movie={movie}
+                      onPlay={handlePlay}
+                    />
+                  )}
+
+                  {isSeries && (!series.episodes || series.episodes.length === 0) && !detailsLoading && (
+                    <motion.div variants={fadeInUp} className="pt-4 text-center py-8 text-white/60 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
+                      No episodes available yet.
+                    </motion.div>
+                  )}
+                </motion.div>
+              </div>
+            </ScrollArea>
+          </motion.div>
+        </DialogContent>
+      </Dialog>
     </ErrorBoundary>
   );
 }
@@ -869,6 +869,7 @@ function MobileMovieLayout({
   const [showCompactHeader, setShowCompactHeader] = React.useState(false);
   const [backdropLoaded, setBackdropLoaded] = React.useState(false);
   const [selectedServer, setSelectedServer] = React.useState<1 | 2>(2);
+  const [actionStep, setActionStep] = React.useState<"none" | "watch_vj" | "watch_server" | "download_server">("none");
   const [scrollTop, setScrollTop] = React.useState(0);
   const [relatedMovies, setRelatedMovies] = React.useState<Movie[]>([]);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -1014,16 +1015,9 @@ function MobileMovieLayout({
     viewsLabel ? `${viewsLabel} views` : null,
   ].filter(Boolean) as string[];
   const overviewFacts = [
-    { label: "Score", value: `${rating}/5`, icon: Star },
     viewsLabel ? { label: "Views", value: viewsLabel, icon: Eye } : null,
-    formattedReleaseDate ? { label: "Released", value: formattedReleaseDate, icon: CalendarDays } : null,
-    isSeries
-      ? { label: "Episodes", value: `${allEpisodes.length}`, icon: Layers }
-      : runtimeLabel
-        ? { label: "Runtime", value: runtimeLabel, icon: Clock }
-        : movie.file_size
-          ? { label: "Size", value: movie.file_size, icon: Download }
-          : null,
+    movie.file_size ? { label: "Size", value: movie.file_size, icon: Download } : null,
+    isSeries ? { label: "Episodes", value: `${allEpisodes.length}`, icon: Layers } : null,
   ].filter(Boolean) as Array<{
     label: string;
     value: string;
@@ -1088,7 +1082,7 @@ function MobileMovieLayout({
         await navigator.share({ title: movie.title, url: shareUrl });
         return;
       }
-    } catch {}
+    } catch { }
 
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -1106,16 +1100,18 @@ function MobileMovieLayout({
     }
   }, [movie.mobifliks_id, movie.title, movie.type, movie.year]);
 
-  const handleMovieDownload = React.useCallback(() => {
-    const targetUrl = selectedServer === 1 
-      ? (movie.download_url || movie.server2_url) 
+  const handleMovieDownload = React.useCallback((serverId?: 1 | 2) => {
+    const srv = serverId ?? selectedServer;
+    const targetUrl = srv === 1
+      ? (movie.download_url || movie.server2_url)
       : (movie.server2_url || movie.download_url);
     if (!targetUrl) return;
     const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
     downloadWithName(targetUrl, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
   }, [movie, selectedServer]);
 
-  const handlePrimaryAction = React.useCallback(() => {
+  const handlePrimaryAction = React.useCallback((serverId?: 1 | 2) => {
+    const srv = serverId ?? selectedServer;
     if (isSeries) {
       if (series.episodes && series.episodes.length > 0) {
         if (resumeEpisode) {
@@ -1123,7 +1119,7 @@ function MobileMovieLayout({
             entry.episode_number === resumeEpisode.episode &&
             (entry.season_number || 1) === resumeEpisode.season
           );
-          const resumeTargetUrl = selectedServer === 1
+          const resumeTargetUrl = srv === 1
             ? (episode?.download_url || episode?.server2_url)
             : (episode?.server2_url || episode?.download_url);
           if (resumeTargetUrl) {
@@ -1133,7 +1129,7 @@ function MobileMovieLayout({
         }
 
         const firstEpisode = series.episodes[0];
-        const targetUrl = selectedServer === 1
+        const targetUrl = srv === 1
           ? (firstEpisode?.download_url || firstEpisode?.server2_url)
           : (firstEpisode?.server2_url || firstEpisode?.download_url);
 
@@ -1150,8 +1146,8 @@ function MobileMovieLayout({
       return;
     }
 
-    const targetUrl = selectedServer === 1 
-      ? (movie.download_url || movie.server2_url) 
+    const targetUrl = srv === 1
+      ? (movie.download_url || movie.server2_url)
       : (movie.server2_url || movie.download_url);
 
     if (targetUrl) {
@@ -1218,8 +1214,8 @@ function MobileMovieLayout({
     opacity: 0.2 + heroScrollProgress * 0.45,
   };
   const surfaceStyle: React.CSSProperties = {
-    boxShadow: `0 -20px 60px hsl(230 18% 5% / ${0.5 + heroScrollProgress * 0.18}), 0 -2px 0 hsl(${accentHue} 40% 40% / ${0.15 + heroScrollProgress * 0.12})`,
     transform: `translateY(${-Math.min(scrollTop * 0.08, 18)}px)`,
+    borderRadius: 0,
   };
 
   return (
@@ -1227,68 +1223,28 @@ function MobileMovieLayout({
       className="md:hidden flex min-h-0 flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark bg-background/95 backdrop-blur-md"
       data-testid="mobile-movie-layout"
     >
-      <div className="absolute inset-0 z-0">
-        {(!backgroundImage || !backdropLoaded) && (
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(230,20%,8%)] via-[hsl(240,15%,6%)] to-[hsl(220,18%,5%)]">
-            <div className="absolute inset-0 shimmer" />
-          </div>
-        )}
-
-        {backgroundImage && (
-          <>
-            <img
-              src={backgroundImage}
-              alt=""
-              className={cn(
-                "w-full h-full object-cover object-center scale-105 transition-opacity duration-700",
-                backdropLoaded ? "opacity-100" : "opacity-0"
-              )}
-            />
-            {deviceProfile.allowAmbientEffects && (
-              <img
-                src={backgroundImage}
-                alt=""
-                className={cn(
-                  "absolute inset-0 w-full h-full object-cover object-center scale-[1.45] blur-[60px] transition-opacity duration-700",
-                  backdropLoaded ? "opacity-60" : "opacity-0"
-                )}
-              />
-            )}
-          </>
-        )}
-        <div className={cn("absolute inset-0 bg-black/55", deviceProfile.allowAmbientEffects && "backdrop-blur-xl")} />
-        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(230,18%,5%)] via-transparent to-black/30" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
+      <div className="absolute inset-0 z-0 bg-background">
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background/90" />
 
         {deviceProfile.allowAmbientEffects && (
           <>
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
               <motion.div
                 className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[80px]"
                 style={{
-                  background: `hsl(${accentHue} 60% 50% / 0.12)`,
+                  background: `hsl(${accentHue} 60% 50% / 0.08)`,
                   animation: "liquidFloat 8s ease-in-out infinite",
                 }}
               />
               <motion.div
                 className="absolute top-1/3 -left-24 w-48 h-48 rounded-full blur-[60px]"
                 style={{
-                  background: `hsl(${accentAltHue} 48% 34% / 0.1)`,
+                  background: `hsl(${accentAltHue} 48% 34% / 0.06)`,
                   animation: "liquidFloat 12s ease-in-out infinite reverse",
                 }}
               />
-              <motion.div
-                className="absolute -bottom-24 right-1/4 w-56 h-56 rounded-full blur-[70px]"
-                style={{
-                  background: `hsl(${accentAltHue + 10} 56% 42% / 0.08)`,
-                  animation: "liquidFloat 15s ease-in-out infinite",
-                  animationDelay: "3s",
-                }}
-              />
             </div>
-
-            <div className="glass-noise-overlay" />
+            <div className="glass-noise-overlay opacity-[0.03]" />
           </>
         )}
       </div>
@@ -1328,19 +1284,33 @@ function MobileMovieLayout({
           </h2>
         )}
 
-        <div className="min-w-[76px] flex justify-end">
-          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/6 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleWatchlist}
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all border border-white/10",
+              inWatchlist ? "bg-primary text-white" : "bg-white/5 text-white/70"
+            )}
+          >
+            <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
+          </button>
+          <button
+            onClick={handleShare}
+            className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all border border-white/10 bg-white/5 text-white/70"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
+          <span className="ml-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/6 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75">
             {isSeries ? "Series" : "Movie"}
           </span>
         </div>
       </div>
 
       <div className="absolute top-0 left-0 right-0 z-10">
-        <div className="relative w-full aspect-[16/10] max-h-[360px] overflow-hidden bg-black/50">
+        <div className="relative w-full aspect-[16/10] overflow-hidden bg-black/50">
           {!backdropLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-br from-[hsl(230,20%,12%)] via-[hsl(240,15%,8%)] to-[hsl(220,18%,6%)]">
-              <div className="absolute inset-0 shimmer" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[hsl(230,18%,5%)] via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210,33%,90%)] via-[hsl(210,33%,95%)] to-[hsl(210,33%,98%)]">
+              <div className="absolute inset-0 shimmer opacity-20" />
             </div>
           )}
 
@@ -1353,7 +1323,7 @@ function MobileMovieLayout({
                 src={backgroundImage}
                 alt={movie.title}
                 className={cn(
-                  "w-full h-full object-contain object-center transition-opacity duration-700",
+                  "w-full h-full object-cover object-center transition-opacity duration-700",
                   backdropLoaded ? "opacity-100" : "opacity-0"
                 )}
               />
@@ -1366,25 +1336,15 @@ function MobileMovieLayout({
           <div className="absolute inset-0 bg-black/20" />
 
           <div
-            className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none modal-accent-bottom-gradient transition-[height,opacity] duration-300"
-            style={{
-              height: `${96 + heroScrollProgress * 34}px`,
-              opacity: 0.9 + heroScrollProgress * 0.1,
-            }}
-          />
-
-          <div
             className="absolute bottom-0 left-0 right-0 flex gap-4 items-end p-5 transition-[transform,opacity] duration-300 ease-out will-change-transform"
             style={heroContentStyle}
           >
-            <div className="w-24 h-36 flex-shrink-0 rounded-[22px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.45)] relative">
+            <div className="w-24 h-36 flex-shrink-0 rounded-none overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.45)] relative">
               <img
                 src={getImageUrl(movie.image_url)}
                 alt={movie.title}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 rounded-[22px] ring-1 ring-white/20 ring-inset pointer-events-none" />
-              <div className="absolute -inset-1 rounded-[22px] pointer-events-none modal-accent-box-shadow" />
             </div>
 
             <div className="flex-1 min-w-0 pb-1">
@@ -1403,35 +1363,21 @@ function MobileMovieLayout({
                   {movie.title}
                 </h1>
               )}
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-black/25 px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]">
-                  <Star className="h-3.5 w-3.5 fill-[#facc15] text-[#facc15]" />
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-bold text-white shadow-lg">
+                  <Star className="h-3 w-3 fill-current" />
                   {rating}
-                  </span>
-
-                <span className="hidden">
-                    {availableSeasons.length > 1 ? `${availableSeasons.length} Seasons` : ""}{availableSeasons.length > 1 ? " · " : ""}{allEpisodes.length} Episodes
-                  </span>
-                <span className="hidden rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-medium text-white/78">
-                  {isSeries
-                    ? `${availableSeasons.length > 1 ? `${availableSeasons.length} seasons` : "1 season"} • ${allEpisodes.length} episodes`
-                    : formattedReleaseDate || "Movie"}
                 </span>
-                <span className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-medium text-white/78">
-                  {isSeries
-                    ? `${availableSeasons.length > 1 ? `${availableSeasons.length} seasons` : "1 season"} - ${allEpisodes.length} episodes`
-                    : formattedReleaseDate || "Movie"}
-                </span>
-              </div>
-              <div className="mt-3 flex items-center gap-2 flex-wrap text-[12px] text-white/70">
-                {heroMeta.map((item, index) => (
-                  <React.Fragment key={`${item}-${index}`}>
-                    {index > 0 && <span className="h-1 w-1 rounded-full bg-white/28" />}
-                    <span className={cn("leading-none", index === 0 && "font-semibold text-white/86")}>
-                      {item}
-                    </span>
-                  </React.Fragment>
-                ))}
+                {formattedReleaseDate && (
+                  <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/80">
+                    {formattedReleaseDate}
+                  </span>
+                )}
+                {runtimeLabel && (
+                  <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/80">
+                    {runtimeLabel}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -1443,144 +1389,171 @@ function MobileMovieLayout({
         className="relative z-20 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="w-full aspect-[3/4] max-h-[525px]" />
+        <div className="w-full h-[330px] pointer-events-none" />
 
-        <div
-          className="relative min-h-[70vh] modal-surface-main"
-          style={surfaceStyle}
-        >
-          <div className="flex justify-center pt-3 pb-1">
-            <div
-              className="w-10 h-1 rounded-full modal-drag-indicator"
-              style={{ "--accent-hue": accentHue } as React.CSSProperties}
-            />
-          </div>
-
-          <div className="px-4 pb-2 pt-3">
-            <motion.section
-              variants={fadeInUp}
-              className="space-y-4 rounded-[28px] border border-white/8 px-4 py-4 modal-panel-surface"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">Watch</p>
-                  <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.03em] text-white">
-                    {activePlaybackSource?.label || "Playback"}
-                  </h3>
-                  <p className="mt-1 text-[12px] leading-5 text-white/54">
-                    {activePlaybackSource?.hint || primaryActionHint}
-                  </p>
-                </div>
-                {playbackSources.length > 1 && (
-                  <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/44">
-                    {playbackSources.length} sources
-                  </span>
-                )}
-              </div>
+        <div className="px-5 pt-1 pb-5 border-b border-white/5 relative z-30 bg-gradient-to-b from-black/20 via-background/95 to-background">
+          {actionStep === "none" && (
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                size="lg"
+                className="h-[52px] rounded-2xl border-0 bg-primary text-white active:scale-95 transition-all shadow-glow"
+                onClick={() => {
+                  const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                  if (versions.length > 1) {
+                    setActionStep("watch_vj");
+                  } else {
+                    setActionStep("watch_server");
+                  }
+                }}
+              >
+                <span className="text-[14px] font-bold uppercase tracking-wider">Watch</span>
+                <Play className="h-4 w-4 fill-current ml-2" />
+              </Button>
 
               <Button
                 size="lg"
-                data-testid="button-play"
-                className="h-auto min-h-[60px] w-full items-center justify-between gap-3 overflow-hidden rounded-[24px] border-0 px-4 py-3 text-left text-white active:scale-[0.985] transition-transform modal-primary-play-surface"
-                onClick={handlePrimaryAction}
+                className="h-[52px] rounded-2xl border border-white/10 bg-white/5 text-white active:scale-95 transition-all"
+                onClick={() => setActionStep("download_server")}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/18 via-transparent to-black/5 pointer-events-none" />
-                <div className="relative flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-                    <Play className="h-5 w-5 fill-current" />
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-bold tracking-[-0.02em]">{primaryActionLabel}</p>
-                    <p className="mt-0.5 text-[11px] font-medium text-white/68">{primaryActionHint}</p>
-                  </div>
-                </div>
-                {activePlaybackSource && (
-                  <span className="relative rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-semibold text-white/72">
-                    {activePlaybackSource.label}
-                  </span>
-                )}
+                <span className="text-[14px] font-bold uppercase tracking-wider">Download</span>
+                <Download className="h-4 w-4 ml-2" />
               </Button>
+            </div>
+          )}
 
-              {playbackSources.length > 1 && (
-                <div className="grid gap-2">
-                  {playbackSources.map((source) => (
+          {actionStep !== "none" && (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">
+                  {actionStep === "watch_vj" ? "Select Version" : "Select Server"}
+                </p>
+              </div>
+              <button
+                onClick={() => setActionStep("none")}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70"
+              >
+                Back
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div
+          className="relative min-h-0 modal-surface-main !rounded-none pb-12 bg-background"
+          style={surfaceStyle}
+        >
+          <div className="px-4 pb-2 pt-0">
+            <motion.section
+              variants={fadeInUp}
+              className="space-y-6 pt-0"
+            >
+              {actionStep !== "none" && (
+                <div className="space-y-4 px-4 relative z-10">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">Select Version</p>
+                    <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.03em] text-white">
+                      {actionStep === "watch_vj" ? "Select VJ" : "Select Server"}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setActionStep("none")}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70 active:scale-95 transition-transform"
+                  >
+                    Back to Overview
+                  </button>
+                </div>
+              )}
+
+              {actionStep === "watch_vj" && (
+                <div className="grid gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                  {(movie.vj_versions ?? []).filter(v => !!v.vj_name).map((version) => (
                     <button
-                      key={source.id}
-                      onClick={() => setSelectedServer(source.id)}
+                      key={version.mobifliks_id}
+                      onClick={() => {
+                        if (onMovieSelect) onMovieSelect(version);
+                        setActionStep("watch_server");
+                      }}
                       className={cn(
-                        "flex items-center justify-between gap-3 rounded-[20px] border px-4 py-3 text-left transition-transform active:scale-[0.985]",
-                        selectedServer === source.id
+                        "flex items-center justify-between gap-3 rounded-[20px] border px-4 py-4 text-left transition-transform active:scale-[0.985]",
+                        version.mobifliks_id === movie.mobifliks_id
                           ? "border-transparent text-white modal-active-utility-surface"
                           : "border-white/8 bg-white/[0.03] text-white/70"
                       )}
                     >
                       <div>
-                        <p className="text-[13px] font-semibold">{source.label}</p>
-                        <p className="mt-1 text-[11px] text-white/48">{source.hint}</p>
+                        <p className="text-[14px] font-bold">VJ {version.vj_name}</p>
+                        <p className="mt-1 text-[11px] text-white/40">
+                          {version.views ? `${(version.views / 1000).toFixed(1)}K views` : "Available version"}
+                        </p>
                       </div>
-                      <span
-                        className={cn(
-                          "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]",
-                          selectedServer === source.id
-                            ? "bg-white/12 text-white"
-                            : "bg-black/20 text-white/48"
-                        )}
-                      >
-                        {selectedServer === source.id ? "Active" : "Select"}
-                      </span>
+                      <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center">
+                        <ChevronRight className="w-4 h-4 opacity-40" />
+                      </div>
                     </button>
                   ))}
                 </div>
               )}
 
-              <div className={cn("grid gap-2.5", utilityGridClass)}>
-                {utilityActions.map((action) => {
-                  const Icon = action.icon;
-
-                  return (
+              {(actionStep === "watch_server" || actionStep === "download_server") && (
+                <div className="grid gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
+                  {playbackSources.map((source) => (
                     <button
-                      key={action.key}
-                      onClick={action.onClick}
-                      aria-label={action.label}
-                      data-testid={`button-${action.key}`}
-                      className={cn(
-                        "flex min-h-[52px] items-center justify-center gap-2 rounded-[20px] border px-3 py-3 text-[12px] font-semibold transition-transform active:scale-[0.97]",
-                        action.active
-                          ? "border-transparent text-white modal-active-utility-surface"
-                          : "border-white/8 bg-white/[0.035] text-white/72"
-                      )}
+                      key={source.id}
+                      onClick={() => {
+                        setSelectedServer(source.id);
+                        if (actionStep === "watch_server") {
+                          handlePrimaryAction(source.id);
+                        } else {
+                          handleMovieDownload(source.id);
+                        }
+                        setActionStep("none");
+                      }}
+                      className="group relative flex items-center gap-4 rounded-[24px] border border-white/8 bg-white/[0.04] p-4 text-left transition-all active:scale-[0.985] hover:bg-white/10"
                     >
-                      <Icon className={cn("h-4 w-4", action.active && "fill-current")} />
-                      <span>{action.label}</span>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 group-hover:bg-primary/20 transition-colors">
+                        {actionStep === "watch_server" ? <Play className="h-5 w-5" /> : <Download className="h-5 w-5" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[15px] font-bold text-white">{source.label}</p>
+                        <p className="mt-1 text-[11px] font-medium text-white/40">{source.hint}</p>
+                      </div>
+                      <div className="rounded-full bg-primary/10 px-3 py-1.5 text-[10px] font-bold text-primary">
+                        {source.id === 1 ? "S1" : "S2"}
+                      </div>
                     </button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Secondary actions removed from here (moved to header) */}
             </motion.section>
           </div>
 
-          <motion.div variants={fadeInUp} className="px-4 border-b border-white/8">
-            <div className="grid grid-cols-3 gap-2 rounded-[20px] border border-white/6 bg-white/[0.025] p-1">
+          <motion.div
+            variants={fadeInUp}
+            className="sticky top-[64px] z-30 px-4 mt-3 border-b border-white/5 bg-background/95 backdrop-blur-md"
+          >
+            <div className="flex gap-8">
               {(["overview", "casts", "related"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   data-testid={`tab-${tab}`}
                   className={cn(
-                    "relative rounded-2xl px-3 py-3 text-sm font-medium capitalize transition-colors duration-200",
+                    "relative pb-3 text-[13px] font-bold uppercase tracking-widest transition-colors duration-200",
                     activeTab === tab
-                      ? "text-white"
-                      : "text-white/55"
+                      ? "text-primary"
+                      : "text-white/40"
                   )}
                 >
                   {activeTab === tab && (
                     <motion.div
                       layoutId="mobile-tab-indicator"
-                      className="absolute inset-0 rounded-2xl modal-tab-surface"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full shadow-[0_-4px_12px_rgba(var(--primary-rgb),0.5)]"
                       transition={{ type: "spring", stiffness: 360, damping: 34 }}
                     />
                   )}
-                  <span className="relative z-10">{tab === "casts" ? "Casts" : tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+                  {tab === "casts" ? "Casts" : tab.toUpperCase()}
                 </button>
               ))}
             </div>
@@ -1598,7 +1571,7 @@ function MobileMovieLayout({
                     return (
                       <div
                         key={fact.label}
-                        className="rounded-[22px] border border-white/8 px-3.5 py-3.5 modal-tinted-panel-surface"
+                        className="rounded-[22px] border border-white/5 px-3.5 py-3.5 bg-white/[0.02]"
                       >
                         <div className="flex items-center gap-2 text-white/40">
                           <Icon className="h-3.5 w-3.5" />
@@ -1613,7 +1586,7 @@ function MobileMovieLayout({
                 {description && (
                   <motion.div
                     variants={fadeInUp}
-                    className="rounded-[24px] border border-white/8 px-4 py-4 modal-panel-surface"
+                    className="mt-6"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/38">Story</p>
@@ -1639,81 +1612,20 @@ function MobileMovieLayout({
                 )}
 
                 {movie.genres && movie.genres.length > 0 && (
-                  <motion.div variants={fadeInUp} className="space-y-3">
+                  <motion.div variants={fadeInUp} className="space-y-2 mt-6">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">Mood</p>
-                    <div className="flex flex-wrap gap-2">
-                      {movie.genres.map((genre) => (
-                        <span
-                          key={genre}
-                          className="modal-genre-chip rounded-full border px-3.5 py-2 text-[11px] font-medium"
-                        >
-                          {genre}
-                        </span>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] font-bold text-white/80">
+                      {movie.genres.map((genre, i) => (
+                        <React.Fragment key={genre}>
+                          {i > 0 && <span className="h-1 w-1 rounded-full bg-primary/50" />}
+                          <span className="tracking-tight">{genre}</span>
+                        </React.Fragment>
                       ))}
                     </div>
                   </motion.div>
                 )}
 
-                {cast.length > 0 && (
-                  <motion.div variants={fadeInUp} className="space-y-3">
-                    <div className="flex items-end justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">People</p>
-                        <h4 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-white">Cast highlights</h4>
-                      </div>
-                      <button
-                        onClick={() => setActiveTab("casts")}
-                        className="text-xs font-medium modal-accent-text"
-                      >
-                        See all
-                      </button>
-                    </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
-                      {cast.slice(0, 8).map((member) => (
-                        <button
-                          key={member.name}
-                          className="flex-none w-[74px] text-left active:scale-95 transition-transform"
-                          onClick={() => setActiveTab("casts")}
-                        >
-                          <div
-                            className="h-[88px] w-[74px] overflow-hidden rounded-[22px] border border-white/10 modal-panel-surface"
-                          >
-                            <img
-                              src={member.profile_url || `https://placehold.co/160x200/1a1a2e/ffffff?text=${member.name.charAt(0)}`}
-                              alt={member.name}
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = `https://placehold.co/160x200/1a1a2e/ffffff?text=${member.name.charAt(0)}`;
-                              }}
-                            />
-                          </div>
-                          <p className="mt-2 line-clamp-2 text-[11px] font-medium leading-tight text-white/82">{member.name}</p>
-                          {member.character && (
-                            <p className="mt-1 line-clamp-2 text-[9px] leading-tight text-white/36">{member.character}</p>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
 
-                {movie.vj_name && (
-                  <motion.div
-                    variants={fadeInUp}
-                    className="flex items-center justify-between gap-3 rounded-[22px] border border-white/8 px-4 py-3.5 modal-panel-surface"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/6 text-xs font-bold text-white">
-                        VJ
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">Translator</p>
-                        <p className="mt-1 text-sm font-semibold text-white/90">{movie.vj_name}</p>
-                      </div>
-                    </div>
-                    <Tag className="h-4 w-4 text-white/30" />
-                  </motion.div>
-                )}
 
                 <motion.div variants={fadeInUp}>
                   <VJVersionSwitcher movie={movie} onMovieSelect={onMovieSelect} compact />
@@ -1744,8 +1656,8 @@ function MobileMovieLayout({
                             toast.info(`Starting ${downloadable.length} downloads...`);
                             const seasonNum = currentSeasonEpisodes[0]?.season_number ?? 1;
                             downloadable.forEach((ep, i) => {
-                              const targetUrl = selectedServer === 1 
-                                ? (ep.download_url || ep.server2_url) 
+                              const targetUrl = selectedServer === 1
+                                ? (ep.download_url || ep.server2_url)
                                 : (ep.server2_url || ep.download_url);
                               if (targetUrl) {
                                 const epName = `${movie.title} - S${seasonNum}E${String(ep.episode_number).padStart(2, '0')}`;
@@ -1980,7 +1892,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
             const targetUrl = selectedServer === 1
               ? (episode.download_url || episode.server2_url)
               : (episode.server2_url || episode.download_url);
-            
+
             if (targetUrl) {
               onPlay(targetUrl, `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`);
             }
@@ -2057,11 +1969,11 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
               )}
             </div>
 
-              {progressPct > 0 && (
-                <div className="w-full h-[3px] bg-white/10">
-                  <div className="episode-progress-fill h-full rounded-r-full" style={{ width: `${progressPct}%` }} />
-                </div>
-              )}
+            {progressPct > 0 && (
+              <div className="w-full h-[3px] bg-white/10">
+                <div className="episode-progress-fill h-full rounded-r-full" style={{ width: `${progressPct}%` }} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -2076,8 +1988,8 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const tUrl = selectedServer === 1 
-                    ? (episode.download_url || episode.server2_url) 
+                  const tUrl = selectedServer === 1
+                    ? (episode.download_url || episode.server2_url)
                     : (episode.server2_url || episode.download_url);
                   if (tUrl) {
                     const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, "0")}`;

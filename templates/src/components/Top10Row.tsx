@@ -80,21 +80,19 @@ function Top10Card({
             />
           )}
           <span
-            className="text-[80px] md:text-[100px] font-black leading-none select-none metallic-number"
+            className="text-[100px] md:text-[140px] font-black leading-none select-none tracking-tighter text-transparent"
             style={{
-              fontFamily: "'Georgia', serif",
-              marginRight: "-16px",
+              WebkitTextStroke: "2px hsl(var(--foreground) / 0.15)",
+              marginRight: "-24px",
               zIndex: 0,
+              fontFamily: "'Outfit', sans-serif",
             }}
           >
             {rank}
           </span>
         </div>
 
-        <div className="relative w-[110px] md:w-[130px] aspect-[2/3] rounded-xl overflow-hidden shadow-card card-hover card-rim-light z-10"
-          style={{
-            boxShadow: "0 8px 32px hsl(230 60% 5% / 0.5), 0 2px 8px hsl(230 60% 5% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.05)",
-          }}
+        <div className="relative w-[120px] md:w-[150px] aspect-[2/3] rounded-[1.5rem] overflow-hidden shadow-card card-hover card-rim-light z-10 border border-black/[0.03]"
         >
           <BlurImage
             src={getImageUrl(movie.image_url)}
@@ -102,11 +100,11 @@ function Top10Card({
             loading={index < 4 ? "eager" : "lazy"}
           />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
 
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-            <div className="w-10 h-10 rounded-full bg-white/95 backdrop-blur flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300 shadow-[0_0_16px_hsl(210_100%_60%/0.3)]">
-              <Play className="w-4 h-4 text-primary fill-current ml-0.5" />
+            <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300 shadow-xl">
+              <Play className="w-5 h-5 fill-current ml-0.5" />
             </div>
           </div>
         </div>

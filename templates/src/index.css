@@ -8,51 +8,51 @@
 
 @layer base {
   :root {
-    /* Core colors - Soft blue-gray palette */
-    --background: 215 25% 70%;
-    --foreground: 220 25% 15%;
+    /* Core colors - Premium Light Theme (Clean & High Visibility) */
+    --background: 210 33% 99%; /* High-brightness neutral white with a hint of blue */
+    --foreground: 220 40% 10%; /* Deep professional charcoal for maximum readability */
 
-    --card: 215 30% 85%;
-    --card-foreground: 220 25% 15%;
+    --card: 0 0% 100%; /* Pure white for a clean, modern card feel */
+    --card-foreground: 220 40% 10%;
 
-    --popover: 215 35% 90%;
-    --popover-foreground: 220 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 40% 10%;
 
-    --primary: 215 60% 45%;
+    --primary: 215 90% 55%; /* Vibrant, premium blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 50% 55%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 215 15% 92%; /* Subtle off-white/gray */
+    --secondary-foreground: 215 50% 30%;
 
-    --muted: 215 20% 75%;
-    --muted-foreground: 220 15% 40%;
+    --muted: 215 20% 94%;
+    --muted-foreground: 215 15% 45%;
 
-    --accent: 215 30% 80%;
-    --accent-foreground: 220 25% 15%;
+    --accent: 215 80% 96%;
+    --accent-foreground: 215 90% 40%;
 
-    --destructive: 0 72% 50%;
-    --destructive-foreground: 0 85% 97%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 78%;
-    --input: 215 25% 82%;
-    --ring: 215 60% 45%;
+    --border: 215 25% 92%;
+    --input: 215 25% 92%;
+    --ring: 215 90% 55%;
 
-    --radius: 1.25rem;
+    --radius: 1.5rem; /* More modern, softer corners */
 
     /* Custom tokens */
     --glow-primary: 215 60% 45%;
     --glow-secondary: 215 50% 55%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
-    --gradient-light: linear-gradient(180deg, hsl(215 25% 72%), hsl(215 25% 68%));
-    --gradient-card: linear-gradient(160deg, hsl(215 30% 88% / 0.95), hsl(215 30% 82% / 0.95));
-    --gradient-hero: radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--primary) / 0.1), transparent 60%);
+    /* Gradients - Refined for Light Theme */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(210 100% 65%));
+    --gradient-light: linear-gradient(180deg, hsl(210 33% 99%), hsl(210 33% 97%));
+    --gradient-card: linear-gradient(160deg, hsl(0 0% 100%), hsl(210 30% 98%));
+    --gradient-hero: radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--primary) / 0.05), transparent 70%);
 
-    /* Shadows */
-    --shadow-soft: 0 4px 20px hsl(215 50% 30% / 0.08);
-    --shadow-card: 0 8px 30px hsl(215 50% 30% / 0.12);
-    --shadow-elevated: 0 20px 40px hsl(215 50% 30% / 0.15);
+    /* Shadows - Softer and more professional */
+    --shadow-soft: 0 2px 12px hsl(220 30% 10% / 0.04);
+    --shadow-card: 0 10px 40px hsl(220 30% 10% / 0.06);
+    --shadow-elevated: 0 24px 60px hsl(220 40% 10% / 0.12);
 
     /* Sidebar */
     --sidebar-background: 215 30% 85%;
@@ -200,16 +200,16 @@
   }
 
   body {
-    background-color: hsl(var(--background)); color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: var(--font-sans);
     font-size: var(--text-base);
     line-height: var(--leading-normal);
     letter-spacing: var(--tracking-normal);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     background-image:
-      radial-gradient(ellipse 120% 60% at 10% 0%, hsl(215 50% 65% / 0.25), transparent 50%),
-      radial-gradient(ellipse 100% 50% at 90% 20%, hsl(195 60% 70% / 0.2), transparent 50%),
-      radial-gradient(ellipse 80% 40% at 50% 100%, hsl(215 40% 60% / 0.15), transparent 60%);
+      radial-gradient(ellipse 100% 60% at 0% 0%, hsl(var(--primary) / 0.04), transparent 40%),
+      radial-gradient(ellipse 80% 50% at 100% 100%, hsl(var(--primary) / 0.03), transparent 40%);
     background-attachment: fixed;
     min-height: 100vh;
     min-height: 100dvh;
@@ -1314,3 +1314,72 @@ body::before {
 .hero-vignette {
   box-shadow: inset 0 0 120px 40px rgba(0, 0, 0, 0.5);
 }
+
+/* Premium Modal Custom Classes */
+.modal-hero-backdrop-gradient {
+  background: linear-gradient(to top, hsl(var(--background)) 0%, transparent 60%);
+}
+
+.modal-accent-bottom-gradient {
+  background: linear-gradient(to top, hsla(var(--primary-foreground), 0.1) 0%, transparent 100%);
+}
+
+.modal-surface-main {
+  background-color: hsl(var(--background));
+  border-top: 1px solid hsl(var(--border) / 0.1);
+}
+
+.modal-drag-indicator {
+  background-color: hsl(var(--foreground) / 0.1);
+}
+
+.modal-panel-surface {
+  background-color: hsl(var(--card) / 0.4);
+  backdrop-filter: blur(8px);
+}
+
+.modal-active-utility-surface {
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-glow);
+}
+
+.modal-tinted-panel-surface {
+  background-color: hsl(var(--primary) / 0.03);
+}
+
+.modal-tab-surface {
+  background-color: hsl(var(--card));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.modal-accent-text {
+  color: hsl(var(--primary));
+}
+
+.modal-genre-chip {
+  background-color: hsl(var(--secondary) / 0.1);
+  border-color: hsl(var(--secondary) / 0.2);
+  color: hsl(var(--secondary-foreground));
+}
+
+.modal-primary-play-surface {
+  background: var(--gradient-primary);
+  box-shadow: 0 8px 32px hsl(var(--primary) / 0.25);
+}
+
+.modal-accent-box-shadow {
+  box-shadow: 0 0 40px hsl(var(--primary) / 0.2);
+}
+
+.modal-timeline-line {
+  background: linear-gradient(to bottom, hsl(var(--primary) / 0.4), transparent);
+}
+
+.modal-episode-section-icon {
+  background-color: hsl(var(--primary) / 0.1);
+}
+
+.modal-season-btn-active {
+  background: var(--gradient-primary);
+}
+
