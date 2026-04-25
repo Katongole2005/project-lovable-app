@@ -1387,7 +1387,7 @@ function MobileMovieLayout({
         className="relative z-20 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="w-full h-[510px] pointer-events-none" />
+        <div className="w-full aspect-[16/15.5] pointer-events-none" />
 
         <div className="px-5 pt-1 pb-5 border-b border-white/5 relative z-30 bg-gradient-to-b from-black/20 via-background/95 to-background">
           {actionStep === "none" && (
