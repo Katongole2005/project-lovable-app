@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSeo } from "@/hooks/useSeo";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -683,14 +683,17 @@ const Auth = () => {
                   )}
 
                   {/* Footer text */}
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className="text-center text-[11px] text-white/15 mt-6 leading-relaxed"
-                  >
-                    By continuing, you agree to our Terms of Service and Privacy Policy
-                  </motion.p>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.8 }}
+                      className="text-center text-[11px] text-white/15 mt-6 leading-relaxed"
+                    >
+                      By continuing, you agree to our{" "}
+                      <Link to="/terms" className="text-white/30 hover:text-primary transition-colors hover:underline">Terms of Service</Link>
+                      {" "}and{" "}
+                      <Link to="/privacy" className="text-white/30 hover:text-primary transition-colors hover:underline">Privacy Policy</Link>
+                    </motion.p>
                 </div>
               </motion.div>
             </motion.div>

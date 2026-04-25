@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, startTransition } from "react";
-import { useSearchParams, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
@@ -1397,6 +1397,16 @@ export default function Index() {
             Press back again to exit
           </div>
         )}
+        {/* Minimal Footer for Verification & Navigation */}
+        <footer className="mt-20 py-12 border-t border-white/[0.05] flex flex-col items-center gap-6">
+          <div className="flex items-center gap-8">
+            <Link to="/privacy" className="text-xs font-medium text-white/30 hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="text-xs font-medium text-white/30 hover:text-primary transition-colors">Terms of Service</Link>
+          </div>
+          <p className="text-[10px] text-white/10 uppercase tracking-[0.2em]">
+            &copy; 2026 Movi Bay. All Rights Reserved.
+          </p>
+        </footer>
 
         {/* Lazy Loaded Heavy Modals */}
         <Suspense fallback={null}>
