@@ -179,11 +179,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
               HOT
             </span>
           )}
-          {hasMultipleVjs && (
-            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-sky-500/90 text-white shadow-sm">
-              {movie.vj_versions?.length} VJs
-            </span>
-          )}
+
           {movie.type === "series" && (
             <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-primary text-primary-foreground shadow-sm">
               SERIES

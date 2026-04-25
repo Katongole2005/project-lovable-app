@@ -202,6 +202,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
   const [entranceVisible, setEntranceVisible] = React.useState(false);
   const [movieS1Size, setMovieS1Size] = React.useState<string | null>(null);
   const [movieS2Size, setMovieS2Size] = React.useState<string | null>(null);
+  const [selectedServer, setSelectedServer] = React.useState<1 | 2>(2);
+  const [actionStep, setActionStep] = React.useState<"none" | "watch_vj" | "watch_server" | "download_vj" | "download_server">("none");
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch missing TMDB data (especially for series)
@@ -334,16 +336,123 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       : null;
   const releaseLabel = movie.release_date ? movie.release_date : null;
   const certificationLabel = movie.certification ? movie.certification : null;
-  const handlePlay = async (url: string, title: string) => {
+  const handlePlay = async (url: string, title: string, startTime: number = 0, mobifliksId?: string | null, detailsUrl?: string | null) => {
     const finalUrl = await buildMediaUrl({
       url,
       title,
-      detailsUrl: (movie as any).video_page_url || movie.details_url,
-      mobifliksId: movie.mobifliks_id,
+      detailsUrl: detailsUrl || (movie as any).video_page_url || movie.details_url,
+      mobifliksId: mobifliksId || movie.mobifliks_id,
       play: true,
     });
     onPlay(finalUrl, title);
   };
+
+  const continueWatching = useContinueWatching();
+
+  const resumeEpisode = React.useMemo(() => {
+    if (!isSeries || !series.episodes?.length) return null;
+    const found = continueWatching.find(
+      (entry) => entry.type === "series" && entry.seriesId === movie.mobifliks_id
+    );
+    if (found?.seasonNumber && found?.episodeNumber) {
+      return { season: found.seasonNumber, episode: found.episodeNumber };
+    }
+    if (found?.episodeInfo) {
+      const match = found.episodeInfo.match(/S(\d+):E(\d+)/i);
+      if (match) return { season: parseInt(match[1], 10), episode: parseInt(match[2], 10) };
+    }
+    return null;
+  }, [continueWatching, isSeries, movie.mobifliks_id, series.episodes]);
+
+  const playbackSources = React.useMemo(() => {
+    const hasPrimarySource = isSeries
+      ? series.episodes?.some((episode) => !!episode.download_url)
+      : !!movie.download_url;
+    const hasSecondarySource = isSeries
+      ? series.episodes?.some((episode) => !!episode.server2_url)
+      : !!movie.server2_url;
+
+    const sources: Array<{ id: 1 | 2; label: string; hint: string }> = [];
+
+    if (hasSecondarySource) {
+      sources.push({
+        id: 2,
+        label: "FHD Quality",
+        hint: movieS2Size || "High Definition",
+      });
+    }
+
+    if (hasPrimarySource) {
+      sources.push({
+        id: 1,
+        label: "SD Quality",
+        hint: movieS1Size || "Standard Definition",
+      });
+    }
+
+    return sources;
+  }, [isSeries, movie.download_url, movie.server2_url, movieS1Size, movieS2Size, series.episodes]);
+
+  React.useEffect(() => {
+    if (playbackSources.length === 0) return;
+    if (playbackSources.some((source) => source.id === selectedServer)) return;
+    setSelectedServer(playbackSources[0].id);
+  }, [playbackSources, selectedServer]);
+
+  const handleMovieDownload = React.useCallback((serverId?: 1 | 2) => {
+    const srv = serverId ?? selectedServer;
+    const targetUrl = srv === 1
+      ? (movie.download_url || movie.server2_url)
+      : (movie.server2_url || movie.download_url);
+    if (!targetUrl) return;
+    const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
+    downloadWithName(targetUrl, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
+  }, [movie, selectedServer]);
+
+  const handlePrimaryAction = React.useCallback((serverId?: 1 | 2) => {
+    const srv = serverId ?? selectedServer;
+    if (isSeries) {
+      if (series.episodes && series.episodes.length > 0) {
+        if (resumeEpisode) {
+          const episode = series.episodes.find((entry) =>
+            entry.episode_number === resumeEpisode.episode &&
+            (entry.season_number || 1) === resumeEpisode.season
+          );
+          const resumeTargetUrl = srv === 1
+            ? (episode?.download_url || episode?.server2_url)
+            : (episode?.server2_url || episode?.download_url);
+          if (resumeTargetUrl) {
+            handlePlay(resumeTargetUrl, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`, 0, episode?.mobifliks_id, episode?.video_page_url || movie.video_page_url || movie.details_url);
+            return;
+          }
+        }
+
+        const firstEpisode = series.episodes[0];
+        const targetUrl = srv === 1
+          ? (firstEpisode?.download_url || firstEpisode?.server2_url)
+          : (firstEpisode?.server2_url || firstEpisode?.download_url);
+
+        if (targetUrl) {
+          handlePlay(targetUrl, `${movie.title} - S1:E1`, 0, firstEpisode?.mobifliks_id, firstEpisode?.video_page_url || movie.video_page_url || movie.details_url);
+        } else {
+          toast.error("The first episode is not currently playable.");
+        }
+        return;
+      }
+
+      toast.error("No episodes available yet. Please refresh later.");
+      episodesSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    const targetUrl = srv === 1
+      ? (movie.download_url || movie.server2_url)
+      : (movie.server2_url || movie.download_url);
+
+    if (targetUrl) {
+      handlePlay(targetUrl, movie.title, 0, movie.mobifliks_id, (movie as any).video_page_url || movie.details_url);
+    }
+  }, [isSeries, series.episodes, resumeEpisode, movie, selectedServer, onPlay]);
 
   const [preloadUrl, setPreloadUrl] = React.useState<string | null>(null);
 
@@ -399,6 +508,97 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
             {movie.description || (isSeries ? "Series details and episodes." : "Movie details and playback.")}
           </DialogDescription>
 
+          <AnimatePresence>
+            {actionStep !== "none" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-8 md:pb-0 bg-black/80 backdrop-blur-sm"
+                onClick={() => setActionStep("none")}
+              >
+                <motion.div
+                  initial={{ y: "100%", opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: "100%", opacity: 0 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  className="w-full max-w-lg bg-[#141517] rounded-[40px] md:rounded-3xl overflow-hidden shadow-2xl border border-white/5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-center pt-4 pb-2 md:hidden">
+                    <div className="w-12 h-1.5 rounded-full bg-white/10" />
+                  </div>
+                  
+                  <div className="px-6 py-6 pb-12 md:pb-8 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-white">
+                        {actionStep.includes("vj") ? "Choose Version" : "Choose Quality"}
+                      </h3>
+                      <button 
+                        onClick={() => setActionStep("none")}
+                        className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                      >
+                        <X className="w-5 h-5 text-white/50" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(actionStep === "watch_vj" || actionStep === "download_vj") ? (
+                        (movie.vj_versions ?? []).filter(v => !!v.vj_name).map((version) => (
+                          <button
+                            key={version.mobifliks_id}
+                            onClick={() => {
+                              if (onMovieSelect) onMovieSelect(version);
+                              setActionStep(actionStep === "watch_vj" ? "watch_server" : "download_server");
+                            }}
+                            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
+                          >
+                            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary shadow-lg transition-colors group-hover:bg-primary/30">
+                              <Play className="h-6 w-6 fill-current" />
+                            </div>
+                            <div className="flex-1 text-left">
+                              <p className="font-bold text-base text-white">{version.vj_name}</p>
+                              <p className="text-[11px] font-bold uppercase tracking-widest text-white/20 mt-0.5">Watch in this version</p>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-white/10 group-hover:text-white/30 transition-colors" />
+                          </button>
+                        ))
+                      ) : (
+                        playbackSources.map((source) => (
+                          <button
+                            key={source.id}
+                            onClick={() => {
+                              setSelectedServer(source.id);
+                              if (actionStep === "watch_server") {
+                                handlePrimaryAction(source.id);
+                              } else {
+                                handleMovieDownload(source.id);
+                              }
+                              setActionStep("none");
+                            }}
+                            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
+                          >
+                            <div className={cn(
+                              "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-colors",
+                              source.id === 1 ? "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20" : "bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20"
+                            )}>
+                              {actionStep === "download_server" ? <Download className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
+                            </div>
+                            <div className="flex-1 text-left">
+                              <p className="font-bold text-base text-white">{source.label}</p>
+                              <p className="text-[11px] font-bold uppercase tracking-widest text-white/20 mt-0.5">MP4 • {source.hint}</p>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-white/10 group-hover:text-white/30 transition-colors" />
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Mobile Layout - completely separate, handles its own scroll */}
           <MobileMovieLayout
             movie={movie}
@@ -417,6 +617,14 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
             onMovieSelect={onMovieSelect}
             movieS1Size={movieS1Size}
             movieS2Size={movieS2Size}
+            selectedServer={selectedServer}
+            setSelectedServer={setSelectedServer}
+            actionStep={actionStep}
+            setActionStep={setActionStep}
+            handlePrimaryAction={handlePrimaryAction}
+            handleMovieDownload={handleMovieDownload}
+            playbackSources={playbackSources}
+            resumeEpisode={resumeEpisode}
           />
 
           {/* Desktop/Tablet Layout with glassmorphism */}
@@ -596,76 +804,24 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       </motion.div>
 
                       <motion.div variants={fadeInUp} className="flex items-center gap-3 pt-2">
-                        {!isSeries && movie.download_url && (
-                          <Button
-                            size="lg"
-                            className={cn(
-                              "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                              TRENDING_ACCENT_BUTTON_CLASS
-                            )}
-                            onClick={() => onPlay(movie.download_url!, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url)}
-                          >
-                            <Play className="w-5 h-5 fill-current" />
-                            {movie.server2_url ? "Server 1" : "Play"}
-                            {movieS1Size && <span className="text-sm opacity-70 ml-1.5">({movieS1Size})</span>}
-                          </Button>
-                        )}
-                        {!isSeries && movie.server2_url && (
-                          <Button
-                            size="lg"
-                            className={cn(
-                              "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                              !movie.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
-                            )}
-                            onClick={() => onPlay(movie.server2_url!, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url)}
-                          >
-                            <Play className="w-5 h-5 fill-current" />
-                            {movie.download_url ? "Server 2" : "Play"}
-                            {movieS2Size && <span className="text-sm opacity-70 ml-1.5">({movieS2Size})</span>}
-                          </Button>
-                        )}
-                        {isSeries && series.episodes && series.episodes.length > 0 && (
-                          <>
-                            {(series.episodes[0]?.download_url || !series.episodes[0]?.server2_url) && (
-                              <Button
-                                size="lg"
-                                className={cn(
-                                  "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                                  TRENDING_ACCENT_BUTTON_CLASS
-                                )}
-                                onClick={() => {
-                                  const firstEp = series.episodes?.[0];
-                                  if (firstEp?.download_url) {
-                                    onPlay(firstEp.download_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`, 0, firstEp.mobifliks_id, firstEp.video_page_url || movie.video_page_url || movie.details_url);
-                                  }
-                                }}
-                              >
-                                <Play className="w-5 h-5 fill-current" />
-                                {series.episodes[0]?.server2_url ? "Ep 1 (Server 1)" : "Play S1:E1"}
-                                {movieS1Size && <span className="text-sm opacity-70 ml-1.5">({movieS1Size})</span>}
-                              </Button>
-                            )}
-                            {series.episodes[0]?.server2_url && (
-                              <Button
-                                size="lg"
-                                className={cn(
-                                  "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                                  !series.episodes[0]?.download_url ? TRENDING_ACCENT_BUTTON_CLASS : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
-                                )}
-                                onClick={() => {
-                                  const firstEp = series.episodes?.[0];
-                                  if (firstEp?.server2_url) {
-                                    onPlay(firstEp.server2_url, `${movie.title} - S${firstEp.season_number || 1}:E${firstEp.episode_number || 1}`, 0, firstEp.mobifliks_id, firstEp.video_page_url || movie.video_page_url || movie.details_url);
-                                  }
-                                }}
-                              >
-                                <Play className="w-5 h-5 fill-current" />
-                                {series.episodes[0]?.download_url ? "Ep 1 (Server 2)" : "Play S1:E1"}
-                                {movieS2Size && <span className="text-sm opacity-70 ml-1.5">({movieS2Size})</span>}
-                              </Button>
-                            )}
-                          </>
-                        )}
+                        <Button
+                          size="lg"
+                          className={cn(
+                            "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
+                            TRENDING_ACCENT_BUTTON_CLASS
+                          )}
+                          onClick={() => {
+                            const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                            if (versions.length > 1) {
+                              setActionStep("watch_vj");
+                            } else {
+                              setActionStep("watch_server");
+                            }
+                          }}
+                        >
+                          <Play className="w-5 h-5 fill-current" />
+                          Watch
+                        </Button>
 
                         <button
                           onClick={handleToggleWatchlist}
@@ -714,20 +870,11 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                         {FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!(movie.download_url || movie.server2_url)) && (
                           <button
                             onClick={() => {
-                              if (isSeries) {
-                                const firstEp = allEpisodes[0];
-                                const firstTargetUrl = firstEp?.download_url || firstEp?.server2_url;
-                                if (firstTargetUrl) {
-                                  const name = `${movie.title} - S${firstEp.season_number || 1}E${String(firstEp.episode_number).padStart(2, '0')}`;
-                                  downloadWithName(firstTargetUrl, name, undefined, firstEp.mobifliks_id);
-                                } else {
-                                  toast.error("No episodes available to download yet.");
-                                  episodesSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-                                }
+                              const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                              if (versions.length > 1) {
+                                setActionStep("download_vj");
                               } else {
-                                const targetUrl = movie.download_url || movie.server2_url;
-                                const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-                                downloadWithName(targetUrl!, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
+                                setActionStep("download_server");
                               }
                             }}
                             aria-label="Download"
@@ -842,6 +989,14 @@ interface MobileMovieLayoutProps {
   onMovieSelect?: (movie: Movie) => void;
   movieS1Size?: string | null;
   movieS2Size?: string | null;
+  selectedServer: 1 | 2;
+  setSelectedServer: (id: 1 | 2) => void;
+  actionStep: string;
+  setActionStep: (step: any) => void;
+  handlePrimaryAction: (id?: 1 | 2) => void;
+  handleMovieDownload: (id?: 1 | 2) => void;
+  playbackSources: any[];
+  resumeEpisode: any;
 }
 
 function MobileMovieLayout({
@@ -861,6 +1016,14 @@ function MobileMovieLayout({
   onMovieSelect,
   movieS1Size,
   movieS2Size,
+  selectedServer,
+  setSelectedServer,
+  actionStep,
+  setActionStep,
+  handlePrimaryAction,
+  handleMovieDownload,
+  playbackSources,
+  resumeEpisode,
 }: MobileMovieLayoutProps) {
   const deviceProfile = useDeviceProfile();
   const [isExpanded, setIsExpanded] = React.useState(false);
@@ -868,8 +1031,6 @@ function MobileMovieLayout({
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
   const [showCompactHeader, setShowCompactHeader] = React.useState(false);
   const [backdropLoaded, setBackdropLoaded] = React.useState(false);
-  const [selectedServer, setSelectedServer] = React.useState<1 | 2>(2);
-  const [actionStep, setActionStep] = React.useState<"none" | "watch_vj" | "watch_server" | "download_server">("none");
   const [scrollTop, setScrollTop] = React.useState(0);
   const [relatedMovies, setRelatedMovies] = React.useState<Movie[]>([]);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -877,20 +1038,7 @@ function MobileMovieLayout({
   const scrollFrameRef = React.useRef<number | null>(null);
   const continueWatching = useContinueWatching();
 
-  const resumeEpisode = React.useMemo(() => {
-    if (!isSeries || !series.episodes?.length) return null;
-    const found = continueWatching.find(
-      (entry) => entry.type === "series" && entry.seriesId === movie.mobifliks_id
-    );
-    if (found?.seasonNumber && found?.episodeNumber) {
-      return { season: found.seasonNumber, episode: found.episodeNumber };
-    }
-    if (found?.episodeInfo) {
-      const match = found.episodeInfo.match(/S(\d+):E(\d+)/i);
-      if (match) return { season: parseInt(match[1], 10), episode: parseInt(match[2], 10) };
-    }
-    return null;
-  }, [continueWatching, isSeries, movie.mobifliks_id, series.episodes]);
+
 
   const cwProgressMap = React.useMemo(() => {
     const map = new Map<string, number>();
@@ -1026,50 +1174,18 @@ function MobileMovieLayout({
     : isSeries
       ? "Start Season 1"
       : "Play Now";
-  const playbackSources = React.useMemo(() => {
-    const hasPrimarySource = isSeries
-      ? series.episodes?.some((episode) => !!episode.download_url)
-      : !!movie.download_url;
-    const hasSecondarySource = isSeries
-      ? series.episodes?.some((episode) => !!episode.server2_url)
-      : !!movie.server2_url;
-
-    const sources: Array<{ id: 1 | 2; label: string; hint: string }> = [];
-
-    if (hasSecondarySource) {
-      sources.push({
-        id: 2,
-        label: hasPrimarySource ? "Primary stream" : "Ready to play",
-        hint: movieS2Size || "Faster stream",
-      });
-    }
-
-    if (hasPrimarySource) {
-      sources.push({
-        id: 1,
-        label: hasSecondarySource ? "Backup stream" : "Alternate source",
-        hint: movieS1Size || (isSeries ? "Use if the first source is slow" : runtimeLabel || "Use if the first source is slow"),
-      });
-    }
-
-    return sources;
-  }, [isSeries, movie.download_url, movie.server2_url, movieS1Size, movieS2Size, runtimeLabel, series.episodes]);
   const activePlaybackSource = playbackSources.find((source) => source.id === selectedServer) ?? playbackSources[0] ?? null;
-
-  React.useEffect(() => {
-    if (playbackSources.length === 0) return;
-    if (playbackSources.some((source) => source.id === selectedServer)) return;
-    setSelectedServer(playbackSources[0].id);
-  }, [playbackSources, selectedServer]);
 
   const primaryActionHint = React.useMemo(() => {
     if (isSeries) {
-      const sourceHint = activePlaybackSource?.hint;
+      const activeSource = playbackSources.find(s => s.id === selectedServer);
+      const sourceHint = activeSource?.hint;
       const episodesHint = `${allEpisodes.length} episode${allEpisodes.length === 1 ? "" : "s"} ready`;
       return sourceHint ? `${episodesHint} • ${sourceHint}` : episodesHint;
     }
-    return activePlaybackSource?.hint || movie.file_size || runtimeLabel || "Ready to stream";
-  }, [activePlaybackSource, isSeries, allEpisodes.length, movie.file_size, runtimeLabel]);
+    const activeSource = playbackSources.find(s => s.id === selectedServer);
+    return activeSource?.hint || movie.file_size || runtimeLabel || "Ready to stream";
+  }, [selectedServer, playbackSources, isSeries, allEpisodes.length, movie.file_size, runtimeLabel]);
 
   const handleShare = React.useCallback(async () => {
     const typeSlug = movie.type === "series" ? "series" : "movie";
@@ -1097,64 +1213,6 @@ function MobileMovieLayout({
       toast.success("Link copied!");
     }
   }, [movie.mobifliks_id, movie.title, movie.type, movie.year]);
-
-  const handleMovieDownload = React.useCallback((serverId?: 1 | 2) => {
-    const srv = serverId ?? selectedServer;
-    const targetUrl = srv === 1
-      ? (movie.download_url || movie.server2_url)
-      : (movie.server2_url || movie.download_url);
-    if (!targetUrl) return;
-    const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-    downloadWithName(targetUrl, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
-  }, [movie, selectedServer]);
-
-  const handlePrimaryAction = React.useCallback((serverId?: 1 | 2) => {
-    const srv = serverId ?? selectedServer;
-    if (isSeries) {
-      if (series.episodes && series.episodes.length > 0) {
-        if (resumeEpisode) {
-          const episode = series.episodes.find((entry) =>
-            entry.episode_number === resumeEpisode.episode &&
-            (entry.season_number || 1) === resumeEpisode.season
-          );
-          const resumeTargetUrl = srv === 1
-            ? (episode?.download_url || episode?.server2_url)
-            : (episode?.server2_url || episode?.download_url);
-          if (resumeTargetUrl) {
-            onPlay(resumeTargetUrl, `${movie.title} - S${resumeEpisode.season}:E${resumeEpisode.episode}`, 0, episode?.mobifliks_id, episode?.video_page_url || movie.video_page_url || movie.details_url);
-            return;
-          }
-        }
-
-        const firstEpisode = series.episodes[0];
-        const targetUrl = srv === 1
-          ? (firstEpisode?.download_url || firstEpisode?.server2_url)
-          : (firstEpisode?.server2_url || firstEpisode?.download_url);
-
-        if (targetUrl) {
-          onPlay(targetUrl, `${movie.title} - S1:E1`, 0, firstEpisode?.mobifliks_id, firstEpisode?.video_page_url || movie.video_page_url || movie.details_url);
-        } else {
-          toast.error("The first episode is not currently playable.");
-        }
-        return;
-      }
-
-      toast.error("No episodes available yet. Please refresh later.");
-      episodesSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-
-    const targetUrl = srv === 1
-      ? (movie.download_url || movie.server2_url)
-      : (movie.server2_url || movie.download_url);
-
-    if (targetUrl) {
-      onPlay(targetUrl, movie.title, 0, movie.mobifliks_id, movie.video_page_url || movie.details_url);
-      return;
-    }
-
-    toast.error("This title is not currently playable.");
-  }, [isSeries, movie.download_url, movie.server2_url, movie.title, onPlay, resumeEpisode, series.episodes, selectedServer]);
 
   const utilityActions = React.useMemo(() => {
     const actions: Array<{
@@ -1452,87 +1510,7 @@ function MobileMovieLayout({
               variants={fadeInUp}
               className="space-y-6 pt-0"
             >
-            <AnimatePresence>
-              {actionStep !== "none" && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-8 bg-black/80 backdrop-blur-sm"
-                  onClick={() => setActionStep("none")}
-                >
-                  <motion.div
-                    initial={{ y: "100%" }}
-                    animate={{ y: 0 }}
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="w-full max-w-lg bg-[#141517] rounded-[40px] overflow-hidden shadow-2xl border border-white/5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex justify-center pt-4 pb-2">
-                      <div className="w-12 h-1.5 rounded-full bg-white/10" />
-                    </div>
-                    
-                    <div className="px-6 py-6 pb-12 space-y-4">
-
-                      <div className="space-y-4">
-                        {(actionStep === "watch_vj" || actionStep === "download_vj") ? (
-                          (movie.vj_versions ?? []).filter(v => !!v.vj_name).map((version) => (
-                            <button
-                              key={version.mobifliks_id}
-                              onClick={() => {
-                                if (onMovieSelect) onMovieSelect(version);
-                                setActionStep(actionStep === "watch_vj" ? "watch_server" : "download_server");
-                              }}
-                              className="w-full flex items-center gap-5 p-5 rounded-[32px] bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
-                            >
-                              <div className="w-16 h-16 rounded-[24px] bg-primary/20 flex items-center justify-center text-primary shadow-lg transition-colors group-hover:bg-primary/30">
-                                <Play className="h-7 w-7 fill-current" />
-                              </div>
-                              <div className="flex-1 text-left">
-                                <p className="font-bold text-[18px] text-white">VJ {version.vj_name}</p>
-                                <p className="text-[12px] font-bold uppercase tracking-widest text-white/20 mt-1">MP4 • {movie.file_size || "HD Quality"}</p>
-                              </div>
-                              <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-white/30 transition-colors" />
-                            </button>
-                          ))
-                        ) : (
-                          playbackSources.map((source) => (
-                            <button
-                              key={source.id}
-                              onClick={() => {
-                                setSelectedServer(source.id);
-                                if (actionStep === "watch_server") {
-                                  handlePrimaryAction(source.id);
-                                } else {
-                                  handleMovieDownload(source.id);
-                                }
-                                setActionStep("none");
-                              }}
-                              className="w-full flex items-center gap-5 p-5 rounded-[32px] bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
-                            >
-                              <div className={cn(
-                                "w-16 h-16 rounded-[24px] flex items-center justify-center shadow-lg transition-colors",
-                                source.id === 1 ? "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20" : "bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20"
-                              )}>
-                                {actionStep === "download_server" ? <Download className="h-7 w-7" /> : <Play className="h-7 w-7 fill-current" />}
-                              </div>
-                              <div className="flex-1 text-left">
-                                <p className="font-bold text-[18px] text-white">{source.label}</p>
-                                <p className="text-[12px] font-bold uppercase tracking-widest text-white/20 mt-1">MP4 • {source.hint}</p>
-                              </div>
-                              <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-white/30 transition-colors" />
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-              {/* Secondary actions removed from here (moved to header) */}
+              {/* Content sections continue below */}
             </motion.section>
           </div>
 
@@ -2190,7 +2168,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                   }}
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  {episode.server2_url ? "S1" : "Play"}
+                  {episode.server2_url ? "SD" : "Play"}
                   {s1Size && <span className="text-[10px] opacity-70 ml-1">({s1Size})</span>}
                 </Button>
               )}
@@ -2210,7 +2188,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                   }}
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  {episode.download_url ? "S2" : "Play"}
+                  {episode.download_url ? "FHD" : "Play"}
                   {s2Size && <span className="text-[10px] opacity-70 ml-1">({s2Size})</span>}
                 </Button>
               )}
