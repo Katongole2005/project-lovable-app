@@ -547,26 +547,28 @@ export function HeroCarousel({
           </div>
         </div>
       </div>
-      {/* Hidden SVG Filter for Water Displacement Effect */}
+      {/* Hidden SVG Filter for Realistic Liquid "Shuffle" Effect */}
       <svg className="absolute w-0 h-0 invisible pointer-events-none" aria-hidden="true">
-        <filter id="water-distortion">
-          <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise">
-            <animate 
-              attributeName="baseFrequency" 
-              values="0.01;0.015;0.01" 
-              dur="10s" 
-              repeatCount="indefinite" 
-            />
+        <filter id="water-distortion" x="-20%" y="-20%" width="140%" height="140%">
+          {/* Base Turbulence for the "Ripple" waves */}
+          <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="4" result="baseNoise">
+            <animate attributeName="baseFrequency" values="0.01 0.02; 0.02 0.01; 0.01 0.02" dur="15s" repeatCount="indefinite" />
           </feTurbulence>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="50" xChannelSelector="R" yChannelSelector="G" result="displacement">
-            <animate 
-              attributeName="scale" 
-              values="80;40;0" 
-              dur="2.5s" 
-              begin="0s"
-              fill="freeze"
-            />
+          
+          {/* Shuffle Turbulence for the "Real" water churning */}
+          <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" result="shuffleNoise">
+            <animate attributeName="seed" values="1;100" dur="2s" repeatCount="indefinite" />
+          </feTurbulence>
+
+          <feDisplacementMap in="SourceGraphic" in2="baseNoise" scale="100" xChannelSelector="R" yChannelSelector="G" result="primaryDisplacement">
+             <animate attributeName="scale" values="120;60;0" dur="2.8s" fill="freeze" />
           </feDisplacementMap>
+
+          <feDisplacementMap in="primaryDisplacement" in2="shuffleNoise" scale="30" xChannelSelector="A" yChannelSelector="R" result="finalShuffle">
+             <animate attributeName="scale" values="50;10;0" dur="2.2s" fill="freeze" />
+          </feDisplacementMap>
+
+          <feColorMatrix in="finalShuffle" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1.1 0" />
         </filter>
       </svg>
     </div >
