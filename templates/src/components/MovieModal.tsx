@@ -1307,7 +1307,7 @@ function MobileMovieLayout({
       </div>
 
       <div className="absolute top-0 left-0 right-0 z-10">
-        <div className="relative w-full aspect-[16/12.5] overflow-hidden bg-black/50">
+        <div className="relative w-full aspect-[16/15.5] overflow-hidden bg-black/50">
           {!backdropLoaded && (
             <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210,33%,90%)] via-[hsl(210,33%,95%)] to-[hsl(210,33%,98%)]">
               <div className="absolute inset-0 shimmer opacity-20" />
@@ -1389,7 +1389,7 @@ function MobileMovieLayout({
         className="relative z-20 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="w-full h-[412px] pointer-events-none" />
+        <div className="w-full h-[510px] pointer-events-none" />
 
         <div className="px-5 pt-1 pb-5 border-b border-white/5 relative z-30 bg-gradient-to-b from-black/20 via-background/95 to-background">
           {actionStep === "none" && (
