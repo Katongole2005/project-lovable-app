@@ -12,7 +12,7 @@ import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, reso
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
 import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist } from "@/lib/storage";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
@@ -1307,7 +1307,7 @@ function MobileMovieLayout({
       </div>
 
       <div className="absolute top-0 left-0 right-0 z-10">
-        <div className="relative w-full aspect-[16/10] overflow-hidden bg-black/50">
+        <div className="relative w-full aspect-[16/12.5] overflow-hidden bg-black/50">
           {!backdropLoaded && (
             <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210,33%,90%)] via-[hsl(210,33%,95%)] to-[hsl(210,33%,98%)]">
               <div className="absolute inset-0 shimmer opacity-20" />
@@ -1389,7 +1389,7 @@ function MobileMovieLayout({
         className="relative z-20 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="w-full h-[330px] pointer-events-none" />
+        <div className="w-full h-[412px] pointer-events-none" />
 
         <div className="px-5 pt-1 pb-5 border-b border-white/5 relative z-30 bg-gradient-to-b from-black/20 via-background/95 to-background">
           {actionStep === "none" && (
@@ -1413,7 +1413,14 @@ function MobileMovieLayout({
               <Button
                 size="lg"
                 className="h-[52px] rounded-2xl border border-white/10 bg-white/5 text-white active:scale-95 transition-all"
-                onClick={() => setActionStep("download_server")}
+                onClick={() => {
+                  const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                  if (versions.length > 1) {
+                    setActionStep("download_vj");
+                  } else {
+                    setActionStep("download_server");
+                  }
+                }}
               >
                 <span className="text-[14px] font-bold uppercase tracking-wider">Download</span>
                 <Download className="h-4 w-4 ml-2" />
@@ -1447,83 +1454,85 @@ function MobileMovieLayout({
               variants={fadeInUp}
               className="space-y-6 pt-0"
             >
-              {actionStep !== "none" && (
-                <div className="space-y-4 px-4 relative z-10">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">Select Version</p>
-                    <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.03em] text-white">
-                      {actionStep === "watch_vj" ? "Select VJ" : "Select Server"}
-                    </h3>
-                  </div>
-                  <button
+              <AnimatePresence>
+                {actionStep !== "none" && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-8 bg-black/80 backdrop-blur-sm"
                     onClick={() => setActionStep("none")}
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70 active:scale-95 transition-transform"
                   >
-                    Back to Overview
-                  </button>
-                </div>
-              )}
-
-              {actionStep === "watch_vj" && (
-                <div className="grid gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
-                  {(movie.vj_versions ?? []).filter(v => !!v.vj_name).map((version) => (
-                    <button
-                      key={version.mobifliks_id}
-                      onClick={() => {
-                        if (onMovieSelect) onMovieSelect(version);
-                        setActionStep("watch_server");
-                      }}
-                      className={cn(
-                        "flex items-center justify-between gap-3 rounded-[20px] border px-4 py-4 text-left transition-transform active:scale-[0.985]",
-                        version.mobifliks_id === movie.mobifliks_id
-                          ? "border-transparent text-white modal-active-utility-surface"
-                          : "border-white/8 bg-white/[0.03] text-white/70"
-                      )}
+                    <motion.div
+                      initial={{ y: "100%" }}
+                      animate={{ y: 0 }}
+                      exit={{ y: "100%" }}
+                      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                      className="w-full max-w-lg bg-[#141517] rounded-[40px] overflow-hidden shadow-2xl border border-white/5"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <div>
-                        <p className="text-[14px] font-bold">VJ {version.vj_name}</p>
-                        <p className="mt-1 text-[11px] text-white/40">
-                          {version.views ? `${(version.views / 1000).toFixed(1)}K views` : "Available version"}
-                        </p>
+                      <div className="flex justify-center pt-4 pb-2">
+                        <div className="w-12 h-1.5 rounded-full bg-white/10" />
                       </div>
-                      <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center">
-                        <ChevronRight className="w-4 h-4 opacity-40" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
 
-              {(actionStep === "watch_server" || actionStep === "download_server") && (
-                <div className="grid gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
-                  {playbackSources.map((source) => (
-                    <button
-                      key={source.id}
-                      onClick={() => {
-                        setSelectedServer(source.id);
-                        if (actionStep === "watch_server") {
-                          handlePrimaryAction(source.id);
-                        } else {
-                          handleMovieDownload(source.id);
-                        }
-                        setActionStep("none");
-                      }}
-                      className="group relative flex items-center gap-4 rounded-[24px] border border-white/8 bg-white/[0.04] p-4 text-left transition-all active:scale-[0.985] hover:bg-white/10"
-                    >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 group-hover:bg-primary/20 transition-colors">
-                        {actionStep === "watch_server" ? <Play className="h-5 w-5" /> : <Download className="h-5 w-5" />}
+                      <div className="px-6 py-6 pb-12 space-y-4">
+
+                        <div className="space-y-4">
+                          {(actionStep === "watch_vj" || actionStep === "download_vj") ? (
+                            (movie.vj_versions ?? []).filter(v => !!v.vj_name).map((version) => (
+                              <button
+                                key={version.mobifliks_id}
+                                onClick={() => {
+                                  if (onMovieSelect) onMovieSelect(version);
+                                  setActionStep(actionStep === "watch_vj" ? "watch_server" : "download_server");
+                                }}
+                                className="w-full flex items-center gap-5 p-5 rounded-[32px] bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
+                              >
+                                <div className="w-16 h-16 rounded-[24px] bg-primary/20 flex items-center justify-center text-primary shadow-lg transition-colors group-hover:bg-primary/30">
+                                  <Play className="h-7 w-7 fill-current" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                  <p className="font-bold text-[18px] text-white">VJ {version.vj_name}</p>
+                                  <p className="text-[12px] font-bold uppercase tracking-widest text-white/20 mt-1">MP4 • {movie.file_size || "HD Quality"}</p>
+                                </div>
+                                <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-white/30 transition-colors" />
+                              </button>
+                            ))
+                          ) : (
+                            playbackSources.map((source) => (
+                              <button
+                                key={source.id}
+                                onClick={() => {
+                                  setSelectedServer(source.id);
+                                  if (actionStep === "watch_server") {
+                                    handlePrimaryAction(source.id);
+                                  } else {
+                                    handleMovieDownload(source.id);
+                                  }
+                                  setActionStep("none");
+                                }}
+                                className="w-full flex items-center gap-5 p-5 rounded-[32px] bg-white/[0.03] border border-white/5 active:scale-[0.98] transition-all hover:bg-white/[0.06] group"
+                              >
+                                <div className={cn(
+                                  "w-16 h-16 rounded-[24px] flex items-center justify-center shadow-lg transition-colors",
+                                  source.id === 1 ? "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20" : "bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20"
+                                )}>
+                                  {actionStep === "download_server" ? <Download className="h-7 w-7" /> : <Play className="h-7 w-7 fill-current" />}
+                                </div>
+                                <div className="flex-1 text-left">
+                                  <p className="font-bold text-[18px] text-white">{source.label}</p>
+                                  <p className="text-[12px] font-bold uppercase tracking-widest text-white/20 mt-1">MP4 • {source.hint}</p>
+                                </div>
+                                <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-white/30 transition-colors" />
+                              </button>
+                            ))
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-[15px] font-bold text-white">{source.label}</p>
-                        <p className="mt-1 text-[11px] font-medium text-white/40">{source.hint}</p>
-                      </div>
-                      <div className="rounded-full bg-primary/10 px-3 py-1.5 text-[10px] font-bold text-primary">
-                        {source.id === 1 ? "S1" : "S2"}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Secondary actions removed from here (moved to header) */}
             </motion.section>
@@ -1627,9 +1636,7 @@ function MobileMovieLayout({
 
 
 
-                <motion.div variants={fadeInUp}>
-                  <VJVersionSwitcher movie={movie} onMovieSelect={onMovieSelect} compact />
-                </motion.div>
+
 
                 {isSeries && (
                   <div ref={episodesSectionRef} className="space-y-0 pt-2">
