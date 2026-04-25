@@ -221,23 +221,47 @@ const Auth = () => {
     }
   }, [email, toast]);
 
+  const [socialLoading, setSocialLoading] = useState<string | null>(null);
+
   const handleGoogleLogin = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
-      toast({ title: "Google login failed", description: error.message, variant: "destructive" });
+    try {
+      setSocialLoading("google");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { 
+          redirectTo: window.location.origin,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast({ 
+        title: "Google login failed", 
+        description: error.message || "Please ensure Google Auth is enabled in your Supabase dashboard.", 
+        variant: "destructive" 
+      });
+      setSocialLoading(null);
     }
   }, [toast]);
 
   const handleAppleLogin = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "apple",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
-      toast({ title: "Apple login failed", description: error.message, variant: "destructive" });
+    try {
+      setSocialLoading("apple");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast({ 
+        title: "Apple login failed", 
+        description: error.message || "Please ensure Apple Auth is enabled in your Supabase dashboard.", 
+        variant: "destructive" 
+      });
+      setSocialLoading(null);
     }
   }, [toast]);
 
@@ -630,6 +654,7 @@ const Auth = () => {
                         <SocialButton
                           onClick={handleGoogleLogin}
                           testId="button-google"
+                          loading={socialLoading === "google"}
                           delay={0.65}
                           icon={
                             <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -644,6 +669,7 @@ const Auth = () => {
                         <SocialButton
                           onClick={handleAppleLogin}
                           testId="button-apple"
+                          loading={socialLoading === "apple"}
                           delay={0.72}
                           icon={
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -811,12 +837,14 @@ function SocialButton({
   icon,
   label,
   testId,
+  loading = false,
   delay = 0,
 }: {
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
   testId: string;
+  loading?: boolean;
   delay?: number;
 }) {
   return (
@@ -827,16 +855,18 @@ function SocialButton({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ scale: 1.02, backgroundColor: "hsl(0 0% 100% / 0.06)" }}
-      whileTap={{ scale: 0.97 }}
+      whileHover={loading ? {} : { scale: 1.02, backgroundColor: "hsl(0 0% 100% / 0.06)" }}
+      whileTap={loading ? {} : { scale: 0.97 }}
+      disabled={loading}
       className={cn(
         "flex items-center justify-center gap-2.5 h-11 rounded-2xl text-sm font-medium transition-colors duration-300",
         "bg-white/[0.03] border border-white/[0.06] text-white/70",
-        "hover:border-white/[0.1] hover:text-white"
+        "hover:border-white/[0.1] hover:text-white",
+        loading && "opacity-50 cursor-not-allowed"
       )}
     >
-      {icon}
-      <span>{label}</span>
+      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : icon}
+      <span>{loading ? "Connecting..." : label}</span>
     </motion.button>
   );
 }
