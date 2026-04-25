@@ -44,10 +44,14 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
             
             <button 
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('v', Date.now().toString());
+                window.location.href = currentUrl.toString();
+              }}
               className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3 px-8 rounded-xl transition-all shadow-lg active:scale-95 w-full mb-6"
             >
-              Reload Page
+              Reload & Force Update
             </button>
             
             {!isChunkLoadError && (
