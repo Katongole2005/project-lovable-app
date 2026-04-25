@@ -47,6 +47,14 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
   }, [query, fetchSuggestionsDebounced]);
 
   useEffect(() => {
+    // Focus the search input on mount to improve UX
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
