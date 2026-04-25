@@ -1003,11 +1003,9 @@ function MobileMovieLayout({
     if (movie.views >= 1000) return `${(movie.views / 1000).toFixed(1)}K`;
     return `${movie.views}`;
   }, [movie.views]);
-  const heroSupportLabel = movie.vj_name
-    ? `Translated by VJ ${movie.vj_name}`
-    : isSeries
-      ? `${availableSeasons.length > 1 ? `${availableSeasons.length} seasons` : "Series collection"}`
-      : "Feature presentation";
+  const heroSupportLabel = isSeries
+    ? `${availableSeasons.length > 1 ? `${availableSeasons.length} seasons` : "Series collection"}`
+    : "Feature presentation";
   const heroMeta = [
     movie.year ? `${movie.year}` : null,
     runtimeLabel,
