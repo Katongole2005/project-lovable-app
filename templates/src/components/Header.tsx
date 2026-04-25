@@ -140,7 +140,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               />
             </Link>
 
-            <nav className="hidden md:flex pill-nav relative rounded-lg">
+            <nav className="hidden md:flex pill-nav relative">
               {navItems.map((item) => (
                 <button
                   key={item.id}
@@ -161,7 +161,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               <button
                 onClick={() => handleTabNavigation("search")}
                 className={cn(
-                  "relative rounded-lg p-2 transition-all duration-300",
+                  "relative rounded-full p-2 transition-all duration-300",
                   currentTab === "search"
                     ? "text-white"
                     : "text-muted-foreground hover:text-foreground"
@@ -186,7 +186,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                 <button
                   onClick={toggleTheme}
                   className={cn(
-                    "rounded-lg p-2.5 backdrop-blur transition-all duration-300 hover:bg-card",
+                    "rounded-full p-2.5 backdrop-blur transition-all duration-300 hover:bg-card",
                     isDark
                       ? playButtonSurfaceClass
                       : "border border-border/40 bg-card/60 text-foreground"
@@ -205,7 +205,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               <Link
                 to="/profile"
                 onClick={() => handleTabNavigation("profile")}
-                className="hidden items-center gap-3 rounded-lg border border-border/40 bg-card/60 px-3 py-2 backdrop-blur md:flex"
+                className="hidden items-center gap-3 rounded-full border border-border/40 bg-card/60 px-3 py-2 backdrop-blur md:flex"
                 data-testid="link-profile"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
@@ -221,7 +221,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
           </div>
 
           <div className="mt-4 flex justify-center md:hidden">
-            <nav className="pill-nav relative rounded-lg">
+            <nav className="pill-nav relative">
               {navItems.map((item) => (
                 <button
                   key={item.id}
