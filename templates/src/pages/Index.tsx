@@ -1398,7 +1398,7 @@ export default function Index() {
           </div>
         )}
         {/* Minimal Footer for Verification & Navigation */}
-        <footer className="mt-20 py-12 border-t border-white/[0.05] flex flex-col items-center gap-6">
+        <footer className="mt-10 py-6 border-t border-white/[0.05] flex flex-col items-center gap-4">
           <div className="flex items-center gap-8">
             <Link to="/privacy" className="text-xs font-medium text-white/30 hover:text-primary transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="text-xs font-medium text-white/30 hover:text-primary transition-colors">Terms of Service</Link>
