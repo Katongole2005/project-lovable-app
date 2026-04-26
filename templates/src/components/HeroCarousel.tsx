@@ -4,6 +4,7 @@ import type { Movie } from "@/types/movie";
 import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
 import { Star, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -308,11 +309,30 @@ export function HeroCarousel({
 
           <div className="absolute inset-0 bg-[#0a0a0f]" />
 
-          {backdropSrc && (
-              <div key={`backdrop-${selectedIndex}`} className="absolute inset-0">
-                <img
+          <AnimatePresence mode="popLayout">
+            {backdropSrc && (
+              <motion.div
+                key={`backdrop-${selectedIndex}`}
+                initial={{ opacity: 0, scale: 1.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute inset-0"
+              >
+                <motion.img
                   src={backdropSrc}
                   alt=""
+                  initial={{ scale: 1 }}
+                  animate={deviceProfile.allowAmbientEffects && !deviceProfile.isMobile ? {
+                    scale: [1, 1.15, 1],
+                    x: [0, -20, 0],
+                    y: [0, -10, 0]
+                  } : {}}
+                  transition={{
+                    duration: 25,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
                   className={cn(
                     "w-full h-full object-cover will-change-transform",
                     deviceProfile.allowAmbientEffects && !deviceProfile.isMobile && "animate-water-ripple"
@@ -327,15 +347,20 @@ export function HeroCarousel({
                     <div className="ripple-ring animate-ripple-ring-3" />
                   </>
                 )}
-              </div>
-          )}
-          {!backdropSrc && (
-              <div
+              </motion.div>
+            )}
+            {!backdropSrc && (
+              <motion.div
                 key={`backdrop-fallback-${selectedIndex}`}
-                className="absolute inset-0 opacity-40 blur-[80px] pointer-events-none bg-cover bg-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.4 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+                className="absolute inset-0 blur-[80px] pointer-events-none bg-cover bg-center"
                 style={{ backgroundImage: `url(${getImageUrl(currentMovie.image_url)})` }}
               />
-          )}
+            )}
+          </AnimatePresence>
 
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/40" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
@@ -347,93 +372,150 @@ export function HeroCarousel({
           <div className="relative z-10 h-full flex hero-cinematic-container">
 
             <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 pb-8 lg:pb-12">
-                <div key={`info-${selectedIndex}`}>
-                  <div className="flex items-end gap-4 lg:gap-6 mb-4 lg:mb-5">
-                    <span
-                      className="text-6xl lg:text-8xl xl:text-9xl font-black text-white/10 leading-none font-display select-none hero-info-track-number"
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={`info-${selectedIndex}`}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: { 
+                        opacity: 1,
+                        transition: { 
+                          staggerChildren: 0.1,
+                          delayChildren: 0.2
+                        } 
+                      },
+                      exit: { opacity: 0, transition: { duration: 0.5 } }
+                    }}
+                  >
+                    <motion.div 
+                      variants={{
+                        hidden: { opacity: 0, y: 30, scale: 0.95 },
+                        visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
+                      }}
+                      className="flex items-end gap-4 lg:gap-6 mb-4 lg:mb-5"
                     >
-                      {String(selectedIndex + 1).padStart(2, "0")}
-                    </span>
-                    <div className="pb-1 lg:pb-2">
-                      {currentMovie.logo_url ? (
-                        <img
-                          src={currentMovie.logo_url}
-                          alt={currentMovie.title}
-                          className="h-16 lg:h-24 xl:h-28 w-auto max-w-[400px] object-contain object-left drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
-                          loading="eager"
-                        />
-                      ) : (
-                        <h2 className="text-2xl lg:text-4xl xl:text-5xl font-display font-bold text-white leading-tight tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                          {currentMovie.title}
-                        </h2>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 mb-4 lg:mb-5">
-                    <div className="flex items-center gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={cn(
-                            "w-4 h-4 lg:w-5 lg:h-5",
-                            i < getStarCount(currentMovie)
-                              ? "text-amber-400 fill-amber-400"
-                              : "text-white/20"
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <span className="px-3 py-1 text-xs font-bold rounded-md text-black bg-gradient-to-r from-amber-400 to-amber-500 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
-                      IMDB {getImdbRating(currentMovie)}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 mb-5 lg:mb-7">
-                    {currentMovie.genres && currentMovie.genres.length > 0 && (
-                      <>
-                        <span className="text-sm text-white/50 font-medium">Genre:</span>
-                        {currentMovie.genres.slice(0, 3).map(genre => (
-                          <span key={genre} className="text-sm text-white/80 font-medium">
-                            {genre}
-                          </span>
-                        ))}
-                      </>
-                    )}
-                    {currentMovie.year && (
-                      <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded bg-white/10 text-white/70 border border-white/10">
-                        {currentMovie.year}
+                      <span
+                        className="text-6xl lg:text-8xl xl:text-9xl font-black text-white/10 leading-none font-display select-none hero-info-track-number"
+                      >
+                        {String(selectedIndex + 1).padStart(2, "0")}
                       </span>
+                      <div className="pb-1 lg:pb-2">
+                        {currentMovie.logo_url ? (
+                          <motion.img
+                            src={currentMovie.logo_url}
+                            alt={currentMovie.title}
+                            animate={deviceProfile.allowAmbientEffects ? {
+                              y: [0, -8, 0],
+                              rotate: [0, 1, 0, -1, 0]
+                            } : {}}
+                            transition={{
+                              duration: 6,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                            className="h-16 lg:h-24 xl:h-28 w-auto max-w-[400px] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)]"
+                            loading="eager"
+                          />
+                        ) : (
+                          <h2 className="text-2xl lg:text-4xl xl:text-5xl font-display font-bold text-white leading-tight tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                            {currentMovie.title}
+                          </h2>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    <motion.div 
+                      variants={{
+                        hidden: { opacity: 0, x: -20 },
+                        visible: { opacity: 1, x: 0, transition: { duration: 0.6 } }
+                      }}
+                      className="flex items-center gap-3 mb-4 lg:mb-5"
+                    >
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "w-4 h-4 lg:w-5 lg:h-5",
+                              i < getStarCount(currentMovie)
+                                ? "text-amber-400 fill-amber-400"
+                                : "text-white/20"
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <span className="px-3 py-1 text-xs font-bold rounded-md text-black bg-gradient-to-r from-amber-400 to-amber-500 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
+                        IMDB {getImdbRating(currentMovie)}
+                      </span>
+                    </motion.div>
+
+                    <motion.div 
+                      variants={{
+                        hidden: { opacity: 0, x: -20 },
+                        visible: { opacity: 1, x: 0, transition: { duration: 0.6 } }
+                      }}
+                      className="flex flex-wrap items-center gap-2 mb-5 lg:mb-7"
+                    >
+                      {currentMovie.genres && currentMovie.genres.length > 0 && (
+                        <>
+                          <span className="text-sm text-white/50 font-medium">Genre:</span>
+                          {currentMovie.genres.slice(0, 3).map(genre => (
+                            <span key={genre} className="text-sm text-white/80 font-medium">
+                              {genre}
+                            </span>
+                          ))}
+                        </>
+                      )}
+                      {currentMovie.year && (
+                        <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded bg-white/10 text-white/70 border border-white/10">
+                          {currentMovie.year}
+                        </span>
+                      )}
+                      <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded bg-white/10 text-white/70 border border-white/10 uppercase">
+                        {currentMovie.type === "series" ? "Series" : "Movie"}
+                      </span>
+                    </motion.div>
+
+                    {currentMovie.description && (
+                      <motion.p 
+                        variants={{
+                          hidden: { opacity: 0, y: 10 },
+                          visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+                        }}
+                        className="text-sm lg:text-base text-white/50 max-w-lg line-clamp-2 mb-6 lg:mb-8 leading-relaxed"
+                      >
+                        {currentMovie.description}
+                      </motion.p>
                     )}
-                    <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded bg-white/10 text-white/70 border border-white/10 uppercase">
-                      {currentMovie.type === "series" ? "Series" : "Movie"}
-                    </span>
-                  </div>
 
-                  {currentMovie.description && (
-                    <p className="text-sm lg:text-base text-white/50 max-w-lg line-clamp-2 mb-6 lg:mb-8 leading-relaxed">
-                      {currentMovie.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
-                      data-testid="button-hero-play"
-                      className="btn-premium-red group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-semibold text-sm lg:text-base"
+                    <motion.div 
+                      variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.7 } }
+                      }}
+                      className="flex items-center gap-3"
                     >
-                      <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
-                      Watch Now
-                    </button>
-                    <button
-                      onClick={onViewAll}
-                      data-testid="button-hero-more"
-                      className="btn-glass px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-medium text-sm lg:text-base"
-                    >
-                      More
-                    </button>
-                  </div>
-                </div>
+                      <button
+                        onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
+                        data-testid="button-hero-play"
+                        className="btn-premium-red group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-semibold text-sm lg:text-base"
+                      >
+                        <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
+                        Watch Now
+                      </button>
+                      <button
+                        onClick={onViewAll}
+                        data-testid="button-hero-more"
+                        className="btn-glass px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-medium text-sm lg:text-base"
+                      >
+                        More
+                      </button>
+                    </motion.div>
+                  </motion.div>
+                </AnimatePresence>
 
               <div className="flex items-center gap-3 mt-6 lg:mt-8">
                 <button
@@ -510,31 +592,47 @@ export function HeroCarousel({
             </div>
 
             <div className="hidden lg:flex items-end pb-8 pr-6 xl:pr-10 min-w-[380px]">
-                <div key={`cards-${selectedIndex}`} className="flex items-end gap-4 xl:gap-5">
-                  {getSideCards().map(({ movie, originalIndex }, cardIdx) => (
-                    <button
-                      key={movie.mobifliks_id}
-                      className="relative flex flex-col items-center cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-xl hover:-translate-y-1 hover:scale-105 active:scale-95 transition-transform duration-300"
-                      style={{ transitionDelay: `${150 + cardIdx * 80}ms` }}
-                      onClick={() => scrollTo(originalIndex)}
-                      data-testid={`button-hero-side-card-${originalIndex}`}
-                      aria-label={`Go to ${movie.title}`}
-                    >
-                      <div className="relative w-[100px] xl:w-[120px] aspect-[2/3] rounded-xl xl:rounded-2xl overflow-hidden border border-white/10 group-hover:border-white/25 transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                        <img
-                          src={getImageUrl(movie.image_url)}
-                          alt={movie.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      </div>
-                      <p className="mt-2.5 text-xs text-white/60 text-center font-medium max-w-[100px] xl:max-w-[120px] truncate group-hover:text-white/90 transition-colors">
-                        {movie.title}
-                      </p>
-                    </button>
-                  ))}
-                </div>
+                <AnimatePresence mode="popLayout">
+                  <motion.div 
+                    key={`cards-${selectedIndex}`} 
+                    className="flex items-end gap-4 xl:gap-5"
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+                      exit: { opacity: 0, transition: { duration: 0.3 } }
+                    }}
+                  >
+                    {getSideCards().map(({ movie, originalIndex }, cardIdx) => (
+                      <motion.button
+                        key={movie.mobifliks_id}
+                        variants={{
+                          hidden: { opacity: 0, x: 20, scale: 0.9 },
+                          visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+                        }}
+                        className="relative flex flex-col items-center cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-xl hover:-translate-y-2 transition-all duration-300"
+                        onClick={() => scrollTo(originalIndex)}
+                        data-testid={`button-hero-side-card-${originalIndex}`}
+                        aria-label={`Go to ${movie.title}`}
+                      >
+                        <div className="relative w-[100px] xl:w-[120px] aspect-[2/3] rounded-xl xl:rounded-2xl overflow-hidden border border-white/10 group-hover:border-primary/50 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group-hover:shadow-[0_12px_48px_rgba(239,68,68,0.3)]">
+                          <img
+                            src={getImageUrl(movie.image_url)}
+                            alt={movie.title}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-115"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                        </div>
+                        <p className="mt-2.5 text-[10px] xl:text-xs text-white/40 text-center font-bold uppercase tracking-widest max-w-[100px] xl:max-w-[120px] truncate group-hover:text-primary transition-colors">
+                          {movie.title}
+                        </p>
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
             </div>
           </div>
 
@@ -551,24 +649,17 @@ export function HeroCarousel({
       <svg className="absolute w-0 h-0 invisible pointer-events-none" aria-hidden="true">
         <filter id={`water-distortion-${selectedIndex}`} key={selectedIndex} x="-20%" y="-20%" width="140%" height="140%">
           {/* Base Turbulence for the "Ripple" waves */}
-          <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="4" result="baseNoise">
-            <animate attributeName="baseFrequency" values="0.01 0.02; 0.02 0.01; 0.01 0.02" dur="15s" repeatCount="indefinite" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.01 0.015" numOctaves="3" result="noise">
+            <animate attributeName="baseFrequency" values="0.01 0.015; 0.015 0.01; 0.01 0.015" dur="10s" repeatCount="indefinite" />
           </feTurbulence>
           
-          {/* Shuffle Turbulence for the "Real" water churning */}
-          <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" result="shuffleNoise">
-            <animate attributeName="seed" values="1;100" dur="2s" repeatCount="indefinite" />
-          </feTurbulence>
-
-          <feDisplacementMap in="SourceGraphic" in2="baseNoise" scale="120" xChannelSelector="R" yChannelSelector="G" result="primaryDisplacement">
-             <animate attributeName="scale" values="120;60;0" dur="2.8s" fill="freeze" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G">
+            <animate attributeName="scale" values="0;120;0" dur="1.8s" keyTimes="0; 0.5; 1" />
           </feDisplacementMap>
-
-          <feDisplacementMap in="primaryDisplacement" in2="shuffleNoise" scale="50" xChannelSelector="A" yChannelSelector="R" result="finalShuffle">
-             <animate attributeName="scale" values="50;10;0" dur="2.2s" fill="freeze" />
-          </feDisplacementMap>
-
-          <feColorMatrix in="finalShuffle" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1.1 0" />
+          
+          <feGaussianBlur stdDeviation="0">
+            <animate attributeName="stdDeviation" values="0;12;0" dur="1.8s" keyTimes="0; 0.5; 1" />
+          </feGaussianBlur>
         </filter>
       </svg>
     </div >
