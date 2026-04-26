@@ -87,6 +87,32 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   </motion.div>
 );
 
+// Global Scroll Restoration (Pro Version)
+const ScrollRestoration = () => {
+  const { pathname } = useLocation();
+  const type = (window as any).navigation?.activation?.navigationType || 'push';
+
+  useEffect(() => {
+    // Only scroll to top on major section changes (PUSH)
+    // Don't scroll to top on movie/series details or when clicking "Back"
+    const isDetailRoute = /^\/(movie|series)\//.test(pathname);
+    
+    if (type === 'push' && !isDetailRoute) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [pathname]);
+
+  return null;
+};
+
+const IndexLayout = () => (
+  <ProtectedRoute>
+    <PageWrapper>
+      <Index />
+    </PageWrapper>
+  </ProtectedRoute>
+);
+
 function AppRoutes() {
   const { settings } = useSiteSettingsContext();
   const location = useLocation();
@@ -99,12 +125,17 @@ function AppRoutes() {
       if (view === 'home') return '/';
       if (view) return `/${view}`;
     }
+    // Shared key for all Index-related views keeps the component mounted
+    if (['/', '/movies', '/series', '/search', '/originals'].includes(location.pathname) || /^\/(movie|series)\//.test(location.pathname)) {
+      return 'index-layout';
+    }
     return location.pathname;
   };
 
   if (settings.maintenance_mode) {
     return (
       <Suspense fallback={<AppLoader />}>
+        <ScrollRestoration />
         <AnimatePresence mode="wait">
           <Routes location={location} key={getAnimationKey()}>
             <Route path="/admin" element={<ProtectedRoute><PageWrapper><Admin /></PageWrapper></ProtectedRoute>} />
@@ -118,22 +149,24 @@ function AppRoutes() {
 
   return (
     <Suspense fallback={<AppLoader />}>
+      <ScrollRestoration />
       <AnimatePresence mode="wait">
         <Routes location={location} key={getAnimationKey()}>
-          <Route path="/" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
-          <Route path="/movies" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
-          <Route path="/series" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
-          <Route path="/search" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
-          <Route path="/originals" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
-          <Route path="/movie/:id" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
-          <Route path="/series/:id" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
+          {/* Group Index routes under a single key to prevent remounting and scroll loss */}
+          <Route path="/" element={<IndexLayout />} />
+          <Route path="/movies" element={<IndexLayout />} />
+          <Route path="/series" element={<IndexLayout />} />
+          <Route path="/search" element={<IndexLayout />} />
+          <Route path="/originals" element={<IndexLayout />} />
+          <Route path="/movie/:id" element={<IndexLayout />} />
+          <Route path="/series/:id" element={<IndexLayout />} />
+          
           <Route path="/auth" element={<PageWrapper><Auth /></PageWrapper>} />
           <Route path="/admin" element={<ProtectedRoute><PageWrapper><Admin /></PageWrapper></ProtectedRoute>} />
           <Route path="/vj/:vjName" element={<ProtectedRoute><PageWrapper><VJPage /></PageWrapper></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><PageWrapper><Profile /></PageWrapper></ProtectedRoute>} />
           <Route path="/privacy" element={<PageWrapper><Privacy /></PageWrapper>} />
           <Route path="/terms" element={<PageWrapper><Terms /></PageWrapper>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<ProtectedRoute><PageWrapper><NotFound /></PageWrapper></ProtectedRoute>} />
         </Routes>
       </AnimatePresence>
