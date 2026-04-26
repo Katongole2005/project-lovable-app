@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, Monitor, Timer } from "lucide-react";
+import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, Monitor, Timer, Languages, Cast } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { buildPlaybackRecoveryUrl, getImageUrl } from "@/lib/api";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Movie, Series, SubtitleTrack, SkipSegment } from "@/types/movie";
 
 interface CinematicVideoPlayerProps {
@@ -59,7 +62,10 @@ export function CinematicVideoPlayer({
   const [isPipActive, setIsPipActive] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [lastTapTime, setLastTapTime] = useState(0);
-  const [tapSide, setTapSide] = useState<'left' | 'right' | null>(null);
+  const [tapSide, setTapSide] = useState<'left' | 'right' | 'center' | null>(null);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverPosition, setHoverPosition] = useState(0);
+  const [isVolumeHovered, setIsVolumeHovered] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -246,17 +252,92 @@ export function CinematicVideoPlayer({
   useEffect(() => {
     if (!isOpen) return;
     const handle = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { if (isFullscreen) document.exitFullscreen(); else handleClose(); }
-      if (e.key === "f") toggleFullscreen();
-      if (e.key === " ") {
-        e.preventDefault();
-        if (!isPlaying) beginPlayback();
-        else togglePlay();
+      // Prevent shortcut interference when typing in inputs (though there are few here)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key.toLowerCase()) {
+        case "escape":
+          if (isFullscreen) document.exitFullscreen();
+          else handleClose();
+          break;
+        case "f":
+          toggleFullscreen();
+          break;
+        case "i":
+          togglePip();
+          break;
+        case "m":
+          const nextMuted = !isMuted;
+          setIsMuted(nextMuted);
+          if (isEmbeddableVideo) sendCommand("muted", nextMuted);
+          else if (videoRef.current) videoRef.current.muted = nextMuted;
+          break;
+        case " ":
+        case "k":
+          e.preventDefault();
+          if (!isPlaying) beginPlayback();
+          else togglePlay();
+          break;
+        case "l":
+        case "arrowright":
+          e.preventDefault();
+          skip(e.key === "l" ? 10 : 5);
+          break;
+        case "j":
+        case "arrowleft":
+          e.preventDefault();
+          skip(e.key === "j" ? -10 : -5);
+          break;
+        case "arrowup":
+          e.preventDefault();
+          const upVol = Math.min(1, volume + 0.05);
+          setVolume(upVol);
+          if (isEmbeddableVideo) sendCommand("volume", upVol);
+          else if (videoRef.current) videoRef.current.volume = upVol;
+          break;
+        case "arrowdown":
+          e.preventDefault();
+          const downVol = Math.max(0, volume - 0.05);
+          setVolume(downVol);
+          if (isEmbeddableVideo) sendCommand("volume", downVol);
+          else if (videoRef.current) videoRef.current.volume = downVol;
+          break;
+        case "home":
+          e.preventDefault();
+          handleSeek([0]);
+          break;
+        case "end":
+          e.preventDefault();
+          handleSeek([duration]);
+          break;
+        case ">":
+        case ".":
+          if (e.shiftKey || e.key === ">") {
+            const rates = [0.5, 0.75, 1, 1.25, 1.5, 2];
+            const currentIndex = rates.indexOf(playbackRate);
+            if (currentIndex < rates.length - 1) changePlaybackRate(rates[currentIndex + 1]);
+          }
+          break;
+        case "<":
+        case ",":
+          if (e.shiftKey || e.key === "<") {
+            const rates = [0.5, 0.75, 1, 1.25, 1.5, 2];
+            const currentIndex = rates.indexOf(playbackRate);
+            if (currentIndex > 0) changePlaybackRate(rates[currentIndex - 1]);
+          }
+          break;
+      }
+
+      // 0-9 for percentage seek
+      if (/^[0-9]$/.test(e.key)) {
+        const percent = parseInt(e.key) * 10;
+        const time = (duration * percent) / 100;
+        handleSeek([time]);
       }
     };
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [beginPlayback, handleClose, isFullscreen, isOpen, isPlaying, toggleFullscreen]);
+  }, [beginPlayback, handleClose, isFullscreen, isOpen, isPlaying, toggleFullscreen, togglePlay, isMuted, volume, isEmbeddableVideo, duration, playbackRate, changePlaybackRate]);
 
   const iframeSrc = isPlaying && isEmbeddableVideo
     ? (() => {
@@ -287,6 +368,14 @@ export function CinematicVideoPlayer({
       pauseRequestedRef.current = videoRef.current.paused;
       videoRef.current.currentTime = time;
     }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, x / rect.width));
+    setHoverTime(percent * duration);
+    setHoverPosition(x);
   };
 
   function togglePlay() {
@@ -480,10 +569,14 @@ export function CinematicVideoPlayer({
     beginPlayback();
   };
 
-  const handleDoubleTap = (side: 'left' | 'right') => {
+  const handleDoubleTap = (side: 'left' | 'right' | 'center') => {
     const now = Date.now();
     if (now - lastTapTime < 300 && tapSide === side) {
-      skip(side === 'left' ? -10 : 10);
+      if (side === 'center') {
+        toggleFullscreen();
+      } else {
+        skip(side === 'left' ? -10 : 10);
+      }
       setLastTapTime(0);
       setTapSide(null);
     } else {
@@ -491,6 +584,17 @@ export function CinematicVideoPlayer({
       setTapSide(side);
     }
   };
+
+  const ControlTooltip = ({ children, content, side = "top" as const }: { children: React.ReactNode, content: string, side?: "top" | "bottom" | "left" | "right" }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {children}
+      </TooltipTrigger>
+      <TooltipContent side={side} className="bg-zinc-900 text-white border-zinc-800 text-[11px] font-medium px-2 py-1">
+        {content}
+      </TooltipContent>
+    </Tooltip>
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -789,144 +893,204 @@ export function CinematicVideoPlayer({
                         </div>
                       )}
                       
-                      {/* Timeline / Seek Bar */}
-                      <div className="group relative pt-4 pb-2 px-1">
-                        {/* Buffered Progress Background */}
-                        <div className="absolute top-[22px] left-1 right-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={false}
-                            animate={{ width: `${(bufferedTime / (duration || 1)) * 100}%` }}
-                            className="h-full bg-white/20"
+                      {/* Timeline / Seek Bar (Center Column) */}
+                      <div className="flex items-center gap-3 w-full px-2">
+                        <span className="text-[10px] font-medium text-white/50 tabular-nums min-w-[35px]">
+                          {formatTime(currentTime)}
+                        </span>
+                        
+                        <div 
+                          className="group relative flex-1 pt-4 pb-4 cursor-pointer"
+                          onMouseMove={handleMouseMove}
+                          onMouseLeave={() => setHoverTime(null)}
+                        >
+                          {/* Hover Preview Tooltip */}
+                          <AnimatePresence>
+                            {hoverTime !== null && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                                className="absolute bottom-full mb-4 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-white shadow-xl pointer-events-none z-50 whitespace-nowrap"
+                                style={{ left: hoverPosition, transform: 'translateX(-50%)' }}
+                              >
+                                {formatTime(hoverTime)}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {/* Buffered Progress Background */}
+                          <div className="absolute top-[22px] left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={false}
+                              animate={{ width: `${(bufferedTime / (duration || 1)) * 100}%` }}
+                              className="h-full bg-white/20"
+                            />
+                          </div>
+                          
+                          <Slider
+                            value={[currentTime]}
+                            max={duration || 100}
+                            step={0.1}
+                            onPointerDown={() => setIsSeeking(true)}
+                            onPointerUp={() => { setIsSeeking(false); }}
+                            onValueChange={handleSeek}
+                            className="relative z-10 cursor-pointer"
                           />
                         </div>
-                        
-                        <Slider
-                          value={[currentTime]}
-                          max={duration || 100}
-                          step={0.1}
-                          onPointerDown={() => setIsSeeking(true)}
-                          onPointerUp={() => { setIsSeeking(false); }}
-                          onValueChange={handleSeek}
-                          className="relative z-10 cursor-pointer"
-                        />
-                        <div className="flex justify-between mt-2 px-1 text-[11px] font-bold tracking-widest text-white/40 tabular-nums">
-                          <span>{formatTime(currentTime)}</span>
-                          <span>{formatTime(duration)}</span>
-                        </div>
+
+                        <span className="text-[10px] font-medium text-white/50 tabular-nums min-w-[35px]">
+                          {formatTime(duration)}
+                        </span>
                       </div>
 
                       {/* Control Buttons Row */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                           <button onClick={(e) => { e.stopPropagation(); skip(-10); }} className="text-white/70 hover:text-white transition-colors">
-                            <SkipBack className="h-6 w-6" />
-                          </button>
-                          
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-                            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-                          >
-                            {isPaused ? (
-                              <Play className="h-6 w-6 fill-black ml-0.5" />
-                            ) : (
-                              <Pause className="h-6 w-6 fill-black" />
-                            )}
-                          </button>
-
-                          <button onClick={(e) => { e.stopPropagation(); skip(10); }} className="text-white/70 hover:text-white transition-colors">
-                            <SkipForward className="h-6 w-6" />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-6">
-                          <div className="flex items-center gap-3 group">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextMuted = !isMuted;
-                                setIsMuted(nextMuted);
-                                if (isEmbeddableVideo) {
-                                  sendCommand("muted", nextMuted);
-                                } else if (videoRef.current) {
-                                  videoRef.current.muted = nextMuted;
-                                }
-                              }}
-                              className="text-white/70 hover:text-white transition-colors"
-                            >
-                              {isMuted || volume === 0 ? <VolumeX className="h-6 w-6 text-red-400" /> : <Volume2 className="h-6 w-6" />}
-                            </button>
-                            <div className="w-24 opacity-0 group-hover:opacity-100 transition-all origin-left">
-                              <Slider 
-                                value={[isMuted ? 0 : volume * 100]} 
-                                max={100} 
-                                onValueChange={(v) => {
-                                  const vol = v[0] / 100;
-                                  setVolume(vol);
-                                  setIsMuted(vol === 0);
-                                  if (isEmbeddableVideo) {
-                                    sendCommand("volume", vol);
-                                  } else if (videoRef.current) {
-                                    videoRef.current.volume = vol;
-                                    videoRef.current.muted = vol === 0;
-                                  }
-                                }}
-                              />
-                            </div>
-                          </div>
-
+                      <TooltipProvider>
+                        <div className="flex items-center justify-between pb-2">
+                          {/* Left Group */}
                           <div className="flex items-center gap-2">
-                            {/* PiP Button */}
-                            {isPipAvailable && (
+                            <ControlTooltip content={isPaused ? "Play (k)" : "Pause (k)"}>
                               <button 
-                                onClick={togglePip} 
-                                className={cn(
-                                  "p-2 rounded-lg transition-all active:scale-90",
-                                  isPipActive ? "bg-primary text-white" : "text-white/70 hover:text-white hover:bg-white/10"
-                                )}
-                                title="Picture in Picture"
+                                onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90"
                               >
-                                <Monitor className="h-5 w-5" />
+                                {isPaused ? (
+                                  <Play className="h-5 w-5 fill-white" />
+                                ) : (
+                                  <Pause className="h-5 w-5 fill-white" />
+                                )}
                               </button>
+                            </ControlTooltip>
+
+                            <ControlTooltip content="Seek Backward 10s (j)">
+                              <button onClick={(e) => { e.stopPropagation(); skip(-10); }} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90">
+                                <SkipBack className="h-5 w-5 text-white/80" />
+                              </button>
+                            </ControlTooltip>
+
+                            <ControlTooltip content="Seek Forward 10s (l)">
+                              <button onClick={(e) => { e.stopPropagation(); skip(10); }} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90">
+                                <SkipForward className="h-5 w-5 text-white/80" />
+                              </button>
+                            </ControlTooltip>
+                          </div>
+
+                          {/* Right Group */}
+                          <div className="flex items-center gap-1">
+                            {/* Playback Speed */}
+                            <div className="relative mr-1">
+                              <DropdownMenu>
+                                <ControlTooltip content="Playback Speed">
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-[10px] font-bold text-white/80 transition-all">
+                                      <Timer className="h-4 w-4" />
+                                      {playbackRate}x
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                </ControlTooltip>
+                                <DropdownMenuContent side="top" className="bg-zinc-900 border-zinc-800 text-white min-w-[100px]">
+                                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                                    <DropdownMenuItem 
+                                      key={rate} 
+                                      onClick={() => changePlaybackRate(rate)}
+                                      className={cn(
+                                        "text-xs font-medium focus:bg-white/10 focus:text-white cursor-pointer",
+                                        playbackRate === rate ? "bg-primary/20 text-primary" : "text-white/60"
+                                      )}
+                                    >
+                                      {rate}x {rate === 1 && "(Normal)"}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+
+                            {/* Volume Popover */}
+                            <div 
+                              className="relative flex items-center"
+                              onMouseEnter={() => setIsVolumeHovered(true)}
+                              onMouseLeave={() => setIsVolumeHovered(false)}
+                            >
+                              <Popover open={isVolumeHovered}>
+                                <ControlTooltip content="Mute (m)">
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const nextMuted = !isMuted;
+                                        setIsMuted(nextMuted);
+                                        if (isEmbeddableVideo) sendCommand("muted", nextMuted);
+                                        else if (videoRef.current) videoRef.current.muted = nextMuted;
+                                      }}
+                                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90"
+                                    >
+                                      {isMuted || volume === 0 ? <VolumeX className="h-5 w-5 text-red-400" /> : <Volume2 className="h-5 w-5 text-white/80" />}
+                                    </button>
+                                  </PopoverTrigger>
+                                </ControlTooltip>
+                                <PopoverContent 
+                                  side="top" 
+                                  sideOffset={15} 
+                                  className="w-10 p-3 bg-zinc-900 border-zinc-800 rounded-full shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+                                  onMouseEnter={() => setIsVolumeHovered(true)}
+                                  onMouseLeave={() => setIsVolumeHovered(false)}
+                                >
+                                  <div className="h-24">
+                                    <Slider 
+                                      orientation="vertical"
+                                      value={[isMuted ? 0 : volume * 100]} 
+                                      max={100} 
+                                      onValueChange={(v) => {
+                                        const vol = v[0] / 100;
+                                        setVolume(vol);
+                                        setIsMuted(vol === 0);
+                                        if (isEmbeddableVideo) sendCommand("volume", vol);
+                                        else if (videoRef.current) {
+                                          videoRef.current.volume = vol;
+                                          videoRef.current.muted = vol === 0;
+                                        }
+                                      }}
+                                      className="h-full py-2 cursor-pointer"
+                                    />
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+
+                            <ControlTooltip content="Captions (c)">
+                              <button className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90 text-white/40">
+                                <Languages className="h-5 w-5" />
+                              </button>
+                            </ControlTooltip>
+
+                            <ControlTooltip content="Cast">
+                              <button className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90 text-white/40">
+                                <Cast className="h-5 w-5" />
+                              </button>
+                            </ControlTooltip>
+
+                            {isPipAvailable && (
+                              <ControlTooltip content="Picture in Picture (i)">
+                                <button 
+                                  onClick={togglePip} 
+                                  className={cn(
+                                    "w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90",
+                                    isPipActive ? "text-primary" : "text-white/80 hover:bg-white/10"
+                                  )}
+                                >
+                                  <Monitor className="h-5 w-5" />
+                                </button>
+                              </ControlTooltip>
                             )}
 
-                            {/* Speed Selector */}
-                            <div className="relative">
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); setShowSpeedMenu(!showSpeedMenu); }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white"
-                              >
-                                <Timer className="h-3.5 w-3.5" />
-                                {playbackRate}x
+                            <ControlTooltip content={isFullscreen ? "Exit Fullscreen (f)" : "Fullscreen (f)"}>
+                              <button onClick={toggleFullscreen} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90">
+                                {isFullscreen ? <Minimize className="h-5 w-5 text-white/80" /> : <Maximize className="h-5 w-5 text-white/80" />}
                               </button>
-                              
-                              <AnimatePresence>
-                                {showSpeedMenu && (
-                                  <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute bottom-full right-0 mb-3 w-28 overflow-hidden rounded-2xl border border-white/10 bg-black/90 p-1.5 backdrop-blur-xl shadow-2xl pointer-events-auto"
-                                  >
-                                    {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
-                                      <button
-                                        key={rate}
-                                        onClick={(e) => { e.stopPropagation(); changePlaybackRate(rate); }}
-                                        className={cn(
-                                          "flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
-                                          playbackRate === rate ? "bg-primary text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
-                                        )}
-                                      >
-                                        {rate}x
-                                        {playbackRate === rate && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                                      </button>
-                                    ))}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
+                            </ControlTooltip>
                           </div>
                         </div>
-                      </div>
+                      </TooltipProvider>
 
                       {/* Gesture Overlays for Skipping (Mobile Only) */}
                       {isTouchDevice && (
@@ -935,7 +1099,10 @@ export function CinematicVideoPlayer({
                             className="w-1/3 h-full pointer-events-auto" 
                             onPointerDown={(e) => { e.stopPropagation(); handleDoubleTap('left'); }}
                           />
-                          <div className="w-1/3 h-full" />
+                          <div 
+                            className="w-1/3 h-full pointer-events-auto" 
+                            onPointerDown={(e) => { e.stopPropagation(); handleDoubleTap('center'); }}
+                          />
                           <div 
                             className="w-1/3 h-full pointer-events-auto" 
                             onPointerDown={(e) => { e.stopPropagation(); handleDoubleTap('right'); }}
