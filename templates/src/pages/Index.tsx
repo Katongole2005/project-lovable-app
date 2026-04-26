@@ -1462,6 +1462,7 @@ export default function Index() {
             onClose={() => setIsStayedAlertOpen(false)}
             onAuthClick={() => {
               setIsStayedAlertOpen(false);
+              navigateTo("/auth");
             }}
           />
         </Suspense>

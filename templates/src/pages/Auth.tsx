@@ -127,7 +127,7 @@ const Auth = () => {
       dy: -Math.random() * 0.2 - 0.05,
       opacity: 0,
       maxOpacity: Math.random() * 0.35 + 0.1,
-      hue: Math.random() > 0.5 ? 210 : 180,
+      hue: Math.random() > 0.5 ? 357 : 15,
       phase: Math.random() * Math.PI * 2,
     }));
 
@@ -279,7 +279,7 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="dark min-h-screen flex items-center justify-center bg-[hsl(230,18%,5%)]">
+      <div className="dark min-h-screen flex items-center justify-center bg-black">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
     );
@@ -287,7 +287,7 @@ const Auth = () => {
 
   return (
     <div className="dark" style={{ colorScheme: "dark" }}>
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center" style={{ background: "hsl(230 18% 5%)" }}>
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center bg-black">
 
         {/* === CINEMATIC BACKDROP with Ken Burns === */}
         <div className="absolute inset-0">
@@ -303,10 +303,10 @@ const Auth = () => {
             }}
           />
           <div className="absolute inset-0" style={{
-            background: "radial-gradient(ellipse 80% 60% at 50% 40%, transparent 0%, hsl(230 18% 5%) 70%)",
+            background: "radial-gradient(ellipse 80% 60% at 50% 40%, transparent 0%, #000 70%)",
           }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(230,18%,5%)] via-transparent to-[hsl(230,18%,5%)/0.6]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(230,18%,5%)/0.8] via-transparent to-[hsl(230,18%,5%)/0.8]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80" />
         </div>
 
         {/* === FLOATING PARTICLES (canvas) === */}
@@ -324,20 +324,20 @@ const Auth = () => {
             <motion.div
               animate={reducedMotion ? {} : { x: [0, 30, -20, 0], y: [0, -25, 15, 0], scale: [1, 1.1, 0.95, 1] }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute top-[10%] left-[8%] w-[500px] h-[500px] rounded-full opacity-[0.035]"
-              style={{ background: "radial-gradient(circle, hsl(210 100% 60%), transparent 65%)" }}
+              className="absolute top-[10%] left-[8%] w-[500px] h-[500px] rounded-full opacity-[0.05]"
+              style={{ background: "radial-gradient(circle, hsl(357 93% 47%), transparent 65%)" }}
             />
             <motion.div
               animate={reducedMotion ? {} : { x: [0, -25, 20, 0], y: [0, 20, -30, 0], scale: [1, 0.9, 1.1, 1] }}
               transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              className="absolute bottom-[5%] right-[10%] w-[450px] h-[450px] rounded-full opacity-[0.03]"
-              style={{ background: "radial-gradient(circle, hsl(180 70% 50%), transparent 65%)" }}
+              className="absolute bottom-[5%] right-[10%] w-[450px] h-[450px] rounded-full opacity-[0.04]"
+              style={{ background: "radial-gradient(circle, hsl(15 100% 50%), transparent 65%)" }}
             />
             <motion.div
               animate={reducedMotion ? {} : { x: [0, 15, -10, 0], y: [0, -15, 25, 0] }}
               transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-              className="absolute top-[50%] right-[30%] w-[300px] h-[300px] rounded-full opacity-[0.02]"
-              style={{ background: "radial-gradient(circle, hsl(260 60% 55%), transparent 65%)" }}
+              className="absolute top-[50%] right-[30%] w-[300px] h-[300px] rounded-full opacity-[0.03]"
+              style={{ background: "radial-gradient(circle, hsl(350 80% 40%), transparent 65%)" }}
             />
           </div>
         )}
@@ -433,7 +433,7 @@ const Auth = () => {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 className="relative rounded-3xl overflow-hidden"
                 style={{
-                  background: "linear-gradient(145deg, hsl(230 20% 10% / 0.8), hsl(230 20% 7% / 0.9))",
+                  background: "linear-gradient(145deg, rgba(20,20,20,0.8), rgba(0,0,0,0.95))",
                   backdropFilter: "blur(40px)",
                 }}
               >
@@ -594,23 +594,15 @@ const Auth = () => {
                             disabled={submitting}
                             data-testid="button-submit"
                             className={cn(
+                              "btn-premium-red",
                               "w-full h-12 rounded-2xl font-semibold text-[15px] transition-all duration-300 relative overflow-hidden group/btn mt-2",
                               "text-white",
                               "disabled:opacity-50 disabled:cursor-not-allowed"
                             )}
-                            style={{
-                              background: "linear-gradient(135deg, hsl(210 100% 55%), hsl(180 70% 50%))",
-                            }}
-                            whileHover={{ scale: 1.015, boxShadow: "0 0 40px hsl(210 100% 60% / 0.35)" }}
+                            whileHover={{ scale: 1.015 }}
                             whileTap={{ scale: 0.98 }}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/[0.12] to-white/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700" />
-                            <motion.div
-                              className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500"
-                              style={{
-                                background: "linear-gradient(135deg, hsl(210 100% 60%), hsl(180 80% 55%))",
-                              }}
-                            />
                             <span className="relative flex items-center justify-center gap-2">
                               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                               {submitting
@@ -712,10 +704,10 @@ const Auth = () => {
         .auth-gradient-text {
           background: linear-gradient(
             90deg,
-            hsl(210 100% 60%) 0%,
-            hsl(180 70% 55%) 30%,
-            hsl(210 100% 65%) 60%,
-            hsl(180 80% 50%) 100%
+            hsl(357 93% 47%) 0%,
+            hsl(15 100% 50%) 30%,
+            hsl(350 80% 60%) 60%,
+            hsl(10 90% 55%) 100%
           );
           background-size: 200% auto;
           -webkit-background-clip: text;
@@ -729,8 +721,8 @@ const Auth = () => {
             from var(--auth-beam, 0deg) at 50% 50%,
             transparent 0%,
             transparent 60%,
-            hsl(210 100% 60% / 0.5) 75%,
-            hsl(180 70% 50% / 0.3) 85%,
+            hsl(357 93% 47% / 0.8) 75%,
+            hsl(15 100% 50% / 0.5) 85%,
             transparent 100%
           );
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -794,7 +786,7 @@ function AuthInput({
       className={cn(
         "relative flex items-center h-12 rounded-2xl border transition-all duration-300",
         focused
-          ? "border-primary/40 bg-white/[0.04] shadow-[0_0_0_3px_hsl(210_100%_60%/0.08),0_0_20px_hsl(210_100%_60%/0.05)]"
+          ? "border-primary/40 bg-white/[0.04] shadow-[0_0_0_3px_hsl(357_93%_47%/0.15),0_0_20px_hsl(357_93%_47%/0.1)]"
           : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1] hover:bg-white/[0.03]"
       )}
       whileTap={{ scale: 0.995 }}

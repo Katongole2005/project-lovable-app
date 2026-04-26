@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -60,40 +61,56 @@ const App = () => {
   );
 };
 
+const PageWrapper = ({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+  >
+    {children}
+  </motion.div>
+);
+
 function AppRoutes() {
   const { settings } = useSiteSettingsContext();
+  const location = useLocation();
 
   if (settings.maintenance_mode) {
     return (
       <Suspense fallback={<AppLoader />}>
-        <Routes>
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="*" element={<Maintenance />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/admin" element={<ProtectedRoute><PageWrapper><Admin /></PageWrapper></ProtectedRoute>} />
+            <Route path="/auth" element={<PageWrapper><Auth /></PageWrapper>} />
+            <Route path="*" element={<PageWrapper><Maintenance /></PageWrapper>} />
+          </Routes>
+        </AnimatePresence>
       </Suspense>
     );
   }
 
   return (
     <Suspense fallback={<AppLoader />}>
-      <Routes>
-        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/movies" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/series" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/search" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/originals" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/movie/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/series/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-        <Route path="/vj/:vjName" element={<ProtectedRoute><VJPage /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
-      </Routes>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
+          <Route path="/movies" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
+          <Route path="/series" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
+          <Route path="/search" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
+          <Route path="/originals" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
+          <Route path="/movie/:id" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
+          <Route path="/series/:id" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
+          <Route path="/auth" element={<PageWrapper><Auth /></PageWrapper>} />
+          <Route path="/admin" element={<ProtectedRoute><PageWrapper><Admin /></PageWrapper></ProtectedRoute>} />
+          <Route path="/vj/:vjName" element={<ProtectedRoute><PageWrapper><VJPage /></PageWrapper></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><PageWrapper><Profile /></PageWrapper></ProtectedRoute>} />
+          <Route path="/privacy" element={<PageWrapper><Privacy /></PageWrapper>} />
+          <Route path="/terms" element={<PageWrapper><Terms /></PageWrapper>} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<ProtectedRoute><PageWrapper><NotFound /></PageWrapper></ProtectedRoute>} />
+        </Routes>
+      </AnimatePresence>
     </Suspense>
   );
 }

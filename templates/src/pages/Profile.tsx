@@ -463,12 +463,12 @@ export default function Profile() {
   const settingsItems = [
     {
       icon: User, label: "Account Details", desc: "Name, email, avatar",
-      onClick: () => setEditProfileOpen(true),
+      onClick: () => user ? setEditProfileOpen(true) : navigate("/auth"),
       color: "bg-blue-500/10", iconColor: "text-blue-400",
     },
     {
       icon: Shield, label: "Privacy & Security", desc: "Change password",
-      onClick: () => setChangePasswordOpen(true),
+      onClick: () => user ? setChangePasswordOpen(true) : navigate("/auth"),
       color: "bg-green-500/10", iconColor: "text-green-400",
     },
     {
@@ -527,12 +527,21 @@ export default function Profile() {
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <button 
-              onClick={handleSignOut}
-              className="px-5 py-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive hover:bg-destructive/20 transition-all text-sm font-bold"
-            >
-              Log Out
-            </button>
+            {user ? (
+              <button 
+                onClick={handleSignOut}
+                className="px-5 py-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive hover:bg-destructive/20 transition-all text-sm font-bold"
+              >
+                Log Out
+              </button>
+            ) : (
+              <button 
+                onClick={() => navigate("/auth")}
+                className="px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all text-sm font-bold shadow-glow"
+              >
+                Sign In
+              </button>
+            )}
           </div>
         </header>
 
@@ -558,12 +567,21 @@ export default function Profile() {
                       <AvatarImage src={user?.user_metadata?.avatar_url} />
                       <AvatarFallback className="bg-primary/20 text-primary text-4xl font-bold">{initials}</AvatarFallback>
                     </Avatar>
-                    <button 
-                      onClick={() => setEditProfileOpen(true)}
-                      className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center"
-                    >
-                      <Camera className="w-6 h-6 text-white" />
-                    </button>
+                    {user ? (
+                      <button 
+                        onClick={() => setEditProfileOpen(true)}
+                        className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center"
+                      >
+                        <Camera className="w-6 h-6 text-white" />
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => navigate("/auth")}
+                        className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center"
+                      >
+                        <Lock className="w-6 h-6 text-white" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
