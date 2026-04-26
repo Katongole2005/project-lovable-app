@@ -25,6 +25,17 @@ interface CinematicVideoPlayerProps {
 }
 
 
+const ControlTooltip = ({ children, content, side = "top" as const }: { children: React.ReactNode, content: string, side?: "top" | "bottom" | "left" | "right" }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      {children}
+    </TooltipTrigger>
+    <TooltipContent side={side} className="bg-zinc-900 text-white border-zinc-800 text-[11px] font-medium px-2 py-1">
+      {content}
+    </TooltipContent>
+  </Tooltip>
+);
+
 export function CinematicVideoPlayer({
   isOpen,
   onClose,
@@ -248,96 +259,7 @@ export function CinematicVideoPlayer({
     onClose();
   }, [isFullscreen, onClose]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (!isOpen) return;
-    const handle = (e: KeyboardEvent) => {
-      // Prevent shortcut interference when typing in inputs (though there are few here)
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      switch (e.key.toLowerCase()) {
-        case "escape":
-          if (isFullscreen) document.exitFullscreen();
-          else handleClose();
-          break;
-        case "f":
-          toggleFullscreen();
-          break;
-        case "i":
-          togglePip();
-          break;
-        case "m":
-          const nextMuted = !isMuted;
-          setIsMuted(nextMuted);
-          if (isEmbeddableVideo) sendCommand("muted", nextMuted);
-          else if (videoRef.current) videoRef.current.muted = nextMuted;
-          break;
-        case " ":
-        case "k":
-          e.preventDefault();
-          if (!isPlaying) beginPlayback();
-          else togglePlay();
-          break;
-        case "l":
-        case "arrowright":
-          e.preventDefault();
-          skip(e.key === "l" ? 10 : 5);
-          break;
-        case "j":
-        case "arrowleft":
-          e.preventDefault();
-          skip(e.key === "j" ? -10 : -5);
-          break;
-        case "arrowup":
-          e.preventDefault();
-          const upVol = Math.min(1, volume + 0.05);
-          setVolume(upVol);
-          if (isEmbeddableVideo) sendCommand("volume", upVol);
-          else if (videoRef.current) videoRef.current.volume = upVol;
-          break;
-        case "arrowdown":
-          e.preventDefault();
-          const downVol = Math.max(0, volume - 0.05);
-          setVolume(downVol);
-          if (isEmbeddableVideo) sendCommand("volume", downVol);
-          else if (videoRef.current) videoRef.current.volume = downVol;
-          break;
-        case "home":
-          e.preventDefault();
-          handleSeek([0]);
-          break;
-        case "end":
-          e.preventDefault();
-          handleSeek([duration]);
-          break;
-        case ">":
-        case ".":
-          if (e.shiftKey || e.key === ">") {
-            const rates = [0.5, 0.75, 1, 1.25, 1.5, 2];
-            const currentIndex = rates.indexOf(playbackRate);
-            if (currentIndex < rates.length - 1) changePlaybackRate(rates[currentIndex + 1]);
-          }
-          break;
-        case "<":
-        case ",":
-          if (e.shiftKey || e.key === "<") {
-            const rates = [0.5, 0.75, 1, 1.25, 1.5, 2];
-            const currentIndex = rates.indexOf(playbackRate);
-            if (currentIndex > 0) changePlaybackRate(rates[currentIndex - 1]);
-          }
-          break;
-      }
-
-      // 0-9 for percentage seek
-      if (/^[0-9]$/.test(e.key)) {
-        const percent = parseInt(e.key) * 10;
-        const time = (duration * percent) / 100;
-        handleSeek([time]);
-      }
-    };
-    window.addEventListener("keydown", handle);
-    return () => window.removeEventListener("keydown", handle);
-  }, [beginPlayback, handleClose, isFullscreen, isOpen, isPlaying, toggleFullscreen, togglePlay, isMuted, volume, isEmbeddableVideo, duration, playbackRate, changePlaybackRate]);
 
   const iframeSrc = isPlaying && isEmbeddableVideo
     ? (() => {
@@ -474,6 +396,99 @@ export function CinematicVideoPlayer({
     setShowSpeedMenu(false);
   };
 
+  // Keyboard shortcuts (Moved here to avoid TDZ issues with functions defined above)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handle = (e: KeyboardEvent) => {
+      // Prevent shortcut interference when typing in inputs (though there are few here)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key.toLowerCase()) {
+        case "escape":
+          if (isFullscreen) document.exitFullscreen();
+          else handleClose();
+          break;
+        case "f":
+          toggleFullscreen();
+          break;
+        case "i":
+          togglePip();
+          break;
+        case "m":
+          const nextMuted = !isMuted;
+          setIsMuted(nextMuted);
+          if (isEmbeddableVideo) sendCommand("muted", nextMuted);
+          else if (videoRef.current) videoRef.current.muted = nextMuted;
+          break;
+        case " ":
+        case "k":
+          e.preventDefault();
+          if (!isPlaying) beginPlayback();
+          else togglePlay();
+          break;
+        case "l":
+        case "arrowright":
+          e.preventDefault();
+          skip(e.key === "l" ? 10 : 5);
+          break;
+        case "j":
+        case "arrowleft":
+          e.preventDefault();
+          skip(e.key === "j" ? -10 : -5);
+          break;
+        case "arrowup":
+          e.preventDefault();
+          const upVol = Math.min(1, volume + 0.05);
+          setVolume(upVol);
+          if (isEmbeddableVideo) sendCommand("volume", upVol);
+          else if (videoRef.current) videoRef.current.volume = upVol;
+          break;
+        case "arrowdown":
+          e.preventDefault();
+          const downVol = Math.max(0, volume - 0.05);
+          setVolume(downVol);
+          if (isEmbeddableVideo) sendCommand("volume", downVol);
+          else if (videoRef.current) videoRef.current.volume = downVol;
+          break;
+        case "home":
+          e.preventDefault();
+          handleSeek([0]);
+          break;
+        case "end":
+          e.preventDefault();
+          handleSeek([duration]);
+          break;
+        case ">":
+        case ".":
+          if (e.shiftKey || e.key === ">") {
+            const rates = [0.5, 0.75, 1, 1.25, 1.5, 2];
+            const currentIndex = rates.indexOf(playbackRate);
+            if (currentIndex < rates.length - 1) changePlaybackRate(rates[currentIndex + 1]);
+          }
+          break;
+        case "<":
+        case ",":
+          if (e.shiftKey || e.key === "<") {
+            const rates = [0.5, 0.75, 1, 1.25, 1.5, 2];
+            const currentIndex = rates.indexOf(playbackRate);
+            if (currentIndex > 0) changePlaybackRate(rates[currentIndex - 1]);
+          }
+          break;
+      }
+
+      // 0-9 for percentage seek
+      if (/^[0-9]$/.test(e.key)) {
+        const percent = parseInt(e.key) * 10;
+        const time = (duration * percent) / 100;
+        handleSeek([time]);
+      }
+    };
+    window.addEventListener("keydown", handle);
+    // Note: React hooks exhaustive-deps might complain if we don't wrap all these functions in useCallback,
+    // but moving the effect below their declaration resolves the runtime crash.
+    return () => window.removeEventListener("keydown", handle);
+  }, [beginPlayback, handleClose, isFullscreen, isOpen, isPlaying, toggleFullscreen, togglePlay, isMuted, volume, isEmbeddableVideo, duration, playbackRate]);
+
   const handleDirectPlay = () => {
     pauseRequestedRef.current = false;
     setIsPaused(false);
@@ -584,17 +599,6 @@ export function CinematicVideoPlayer({
       setTapSide(side);
     }
   };
-
-  const ControlTooltip = ({ children, content, side = "top" as const }: { children: React.ReactNode, content: string, side?: "top" | "bottom" | "left" | "right" }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {children}
-      </TooltipTrigger>
-      <TooltipContent side={side} className="bg-zinc-900 text-white border-zinc-800 text-[11px] font-medium px-2 py-1">
-        {content}
-      </TooltipContent>
-    </Tooltip>
-  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
