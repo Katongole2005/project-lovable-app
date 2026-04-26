@@ -4,6 +4,7 @@ import { Search, User, ChevronDown, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 import logoLight from "@/assets/logo.png";
 import logoDark from "@/assets/logo-dark.png";
 
@@ -22,6 +23,7 @@ const navItems = [
 ];
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -209,11 +211,19 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                 data-testid="link-profile"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
-                  <User className="h-4 w-4 text-primary" />
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    <User className="h-4 w-4 text-primary" />
+                  )}
                 </div>
-                <div className="text-sm">
-                  <p className="font-medium leading-tight text-foreground">Guest</p>
-                  <p className="text-xs font-normal text-muted-foreground">Free</p>
+                <div className="text-left">
+                  <p className="max-w-[80px] truncate text-sm font-black leading-tight text-foreground">
+                    {user ? (user.display_name?.split(" ").pop() || "User") : "Guest"}
+                  </p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">
+                    {user ? "Pro" : "Free"}
+                  </p>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </Link>
