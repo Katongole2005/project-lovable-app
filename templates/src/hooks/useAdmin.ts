@@ -15,6 +15,13 @@ export function useAdmin() {
     }
 
     const checkAdmin = async () => {
+      // Hardcoded check for the main admin email
+      if (user.email === "shelvinjoe11@gmail.com") {
+        setIsAdmin(true);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
