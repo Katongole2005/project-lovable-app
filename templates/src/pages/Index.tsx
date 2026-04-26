@@ -1462,7 +1462,10 @@ export default function Index() {
             onClose={() => setIsStayedAlertOpen(false)}
             onAuthClick={() => {
               setIsStayedAlertOpen(false);
-              navigateTo("/auth");
+              // Small delay to let the modal closing state settle before navigating
+              setTimeout(() => {
+                navigateTo("/auth");
+              }, 100);
             }}
           />
         </Suspense>

@@ -76,11 +76,22 @@ function AppRoutes() {
   const { settings } = useSiteSettingsContext();
   const location = useLocation();
 
+  // Prevents AnimatePresence from unmounting the page (and losing scroll position) 
+  // when navigating to a movie modal over the current background view.
+  const getAnimationKey = () => {
+    if (location.pathname.startsWith('/movie/') || location.pathname.startsWith('/series/')) {
+      const view = location.state?.backgroundView;
+      if (view === 'home') return '/';
+      if (view) return `/${view}`;
+    }
+    return location.pathname;
+  };
+
   if (settings.maintenance_mode) {
     return (
       <Suspense fallback={<AppLoader />}>
         <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+          <Routes location={location} key={getAnimationKey()}>
             <Route path="/admin" element={<ProtectedRoute><PageWrapper><Admin /></PageWrapper></ProtectedRoute>} />
             <Route path="/auth" element={<PageWrapper><Auth /></PageWrapper>} />
             <Route path="*" element={<PageWrapper><Maintenance /></PageWrapper>} />
@@ -93,7 +104,7 @@ function AppRoutes() {
   return (
     <Suspense fallback={<AppLoader />}>
       <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
+        <Routes location={location} key={getAnimationKey()}>
           <Route path="/" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
           <Route path="/movies" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />
           <Route path="/series" element={<ProtectedRoute><PageWrapper><Index /></PageWrapper></ProtectedRoute>} />

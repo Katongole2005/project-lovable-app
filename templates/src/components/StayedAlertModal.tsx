@@ -84,7 +84,7 @@ export function StayedAlertModal({ isOpen, onClose, onAuthClick }: StayedAlertMo
 
           <div className="w-full space-y-3">
             <button
-              onClick={() => { onAuthClick(); onClose(); }}
+              onClick={onAuthClick}
               className="group flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white font-bold text-lg text-black shadow-[0_20px_40px_-12px_rgba(255,255,255,0.2)] transition-all hover:bg-white/90 active:scale-[0.98]"
             >
               Get Started

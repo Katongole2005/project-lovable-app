@@ -586,6 +586,8 @@ export function CinematicVideoPlayer({
 
   const handleDoubleTap = (side: 'left' | 'right' | 'center') => {
     const now = Date.now();
+    resetControlsTimeout();
+    
     if (now - lastTapTime < 300 && tapSide === side) {
       if (side === 'center') {
         toggleFullscreen();
@@ -613,13 +615,23 @@ export function CinematicVideoPlayer({
             if (!isPlaying || useNativeVideoControls) return;
             resetControlsTimeout();
           }}
-          onPointerDown={() => {
+          onPointerDown={(e) => {
             if (!isPlaying || useNativeVideoControls) return;
+            
+            // If we are clicking on a button or interactive element, don't toggle
+            if ((e.target as HTMLElement).closest('button, [role="slider"], [role="menuitem"]')) return;
+
             if (showControls) {
+              // On mobile, sometimes a tap should just reset the timer instead of hiding
+              if (isTouchDevice) {
+                resetControlsTimeout();
+              } else {
+                setShowControls(false);
+                if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+              }
+            } else {
               resetControlsTimeout();
-              return;
             }
-            setShowControls(true);
           }}
           onMouseLeave={() => {
             if (!isPlaying || isTouchDevice || isPaused || useNativeVideoControls) return;
@@ -845,7 +857,6 @@ export function CinematicVideoPlayer({
                     "absolute inset-0 z-30 transition-all duration-500",
                     showControls ? "opacity-100" : "opacity-0 cursor-none"
                   )}
-                  onClick={() => setShowControls(prev => !prev)}
                 >
                   {/* Top Bar (already mostly implemented, but polished) */}
                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-start justify-between px-6 pt-6 pointer-events-auto">
@@ -1105,7 +1116,7 @@ export function CinematicVideoPlayer({
                           />
                           <div 
                             className="w-1/3 h-full pointer-events-auto" 
-                            onPointerDown={(e) => { e.stopPropagation(); handleDoubleTap('center'); }}
+                            onPointerDown={(e) => { e.stopPropagation(); resetControlsTimeout(); handleDoubleTap('center'); }}
                           />
                           <div 
                             className="w-1/3 h-full pointer-events-auto" 
