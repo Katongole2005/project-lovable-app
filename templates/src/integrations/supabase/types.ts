@@ -227,6 +227,50 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          display_name: string | null
+          avatar_url: string | null
+          watch_time: number
+          downloads: number
+          activity_points: number
+          level: number
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          id: string
+          display_name?: string | null
+          avatar_url?: string | null
+          watch_time?: number
+          downloads?: number
+          activity_points?: number
+          level?: number
+          updated_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          display_name?: string | null
+          avatar_url?: string | null
+          watch_time?: number
+          downloads?: number
+          activity_points?: number
+          level?: number
+          updated_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -238,6 +282,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_user_stat: {
+        Args: {
+          user_id: string
+          metric_name: string
+          increment_by: number
+        }
+        Returns: Json
       }
     }
     Enums: {

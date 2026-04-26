@@ -50,7 +50,9 @@ const CinematicVideoPlayer = lazyWithRetry(loadCinematicVideoPlayer);
 const FilterModal = lazyWithRetry(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
 import { DynamicBackground } from "@/components/DynamicBackground";
 import { StayedAlertModal } from "@/components/StayedAlertModal";
+import { AuthGatedModal } from "@/components/AuthGatedModal";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { Button } from "@/components/ui/button";
@@ -225,6 +227,9 @@ export default function Index() {
   const lastBackPressRef = useRef(0);
   const exitToastTimerRef = useRef<number | null>(null);
   const [showExitToast, setShowExitToast] = useState(false);
+  const [isAuthGatedModalOpen, setIsAuthGatedModalOpen] = useState(false);
+  const [gatedAction, setGatedAction] = useState<"watch" | "download" | "general">("general");
+  const { user, loading: authLoading } = useAuth();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showDeferredHomeSections, setShowDeferredHomeSections] = useState(false);
   const [isStayedAlertOpen, setIsStayedAlertOpen] = useState(false);
@@ -249,11 +254,14 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
+    // Only show the "Enjoying MovieBay?" prompt to guests
+    if (user) return;
+
     const timer = setTimeout(() => {
       setIsStayedAlertOpen(true);
     }, 5 * 60 * 1000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const idleWindow = window as IdleWindow;
@@ -529,10 +537,9 @@ export default function Index() {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
   }, [showDeferredHomeSections]);
+
+
 
   useEffect(() => {
     const combinedSeries: Movie[] = [];
@@ -852,6 +859,12 @@ export default function Index() {
   }, [isModalOpen, isVideoOpen, viewMode]);
 
   const handleHeroPlay = useCallback(async (movie: Movie) => {
+    if (!user) {
+      localStorage.setItem("intendedAction", JSON.stringify({ type: "movie", data: movie, action: "play" }));
+      setGatedAction("watch");
+      setIsAuthGatedModalOpen(true);
+      return;
+    }
     const targetUrl = movie.server2_url || movie.download_url;
     if (targetUrl) {
       const mediaUrl = await buildMediaUrl({
@@ -875,7 +888,38 @@ export default function Index() {
     } else {
       handleMovieClick(movie);
     }
-  }, [handlePlayVideo, handleMovieClick]);
+  }, [handlePlayVideo, handleMovieClick, user]);
+
+  // Handle auto-resumption of intended actions after login
+  useEffect(() => {
+    if (!authLoading && user && !isLoading && trending.length > 0) {
+      const savedAction = localStorage.getItem("intendedAction");
+      if (savedAction) {
+        try {
+          const action = JSON.parse(savedAction);
+          localStorage.removeItem("intendedAction");
+          
+          toast.success(`Welcome back! Resuming your request...`);
+          
+          if (action.type === "movie") {
+            const movie = action.data as Movie;
+            
+            // If it was a direct play request (from hero)
+            if (action.action === "play") {
+              handleHeroPlay(movie);
+            } else {
+              handleMovieClick(movie);
+              if (action.action === "download") {
+                toast("Ready to download! Click the download button in the details.");
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Failed to resume intended action", e);
+        }
+      }
+    }
+  }, [user, authLoading, isLoading, trending, handleHeroPlay, handleMovieClick]);
 
   const videoUrlRef = useRef(videoUrl);
   videoUrlRef.current = videoUrl;
@@ -1419,6 +1463,15 @@ export default function Index() {
               onPlay={handlePlayVideo}
               detailsLoading={selectedMovieDetailsLoading}
               onMovieSelect={handleMovieClick}
+              onAuthRequired={(action) => {
+                if (selectedMovie) {
+                  // Close the details modal first so it doesn't block interactions on the auth prompt
+                  setIsModalOpen(false);
+                  localStorage.setItem("intendedAction", JSON.stringify({ type: "movie", data: selectedMovie, action: action === "watch" ? "play" : "download" }));
+                  setGatedAction(action);
+                  setIsAuthGatedModalOpen(true);
+                }
+              }}
             />
           )}
 
@@ -1456,16 +1509,27 @@ export default function Index() {
             />
           )}
 
+          {/* Auth Gated Modal */}
+          <AuthGatedModal
+            isOpen={isAuthGatedModalOpen}
+            onClose={() => setIsAuthGatedModalOpen(false)}
+            onAuthClick={() => {
+              setIsAuthGatedModalOpen(false);
+              setTimeout(() => {
+                navigateTo("/auth");
+              }, 50);
+            }}
+            actionType={gatedAction}
+            title={selectedMovie?.title}
+          />
+
           {/* Stayed Too Long Alert */}
           <StayedAlertModal
             isOpen={isStayedAlertOpen}
             onClose={() => setIsStayedAlertOpen(false)}
             onAuthClick={() => {
               setIsStayedAlertOpen(false);
-              // Small delay to let the modal closing state settle before navigating
-              setTimeout(() => {
-                navigateTo("/auth");
-              }, 100);
+              navigateTo("/auth");
             }}
           />
         </Suspense>

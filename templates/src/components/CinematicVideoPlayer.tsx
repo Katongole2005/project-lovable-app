@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, Monitor, Timer, Languages, Cast } from "lucide-react";
+import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, Monitor, Timer, Cast } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { buildPlaybackRecoveryUrl, getImageUrl } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { incrementUserStat } from "@/lib/stats";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,7 +20,6 @@ interface CinematicVideoPlayerProps {
   movie?: Movie | Series | null;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   startTime?: number;
-  subtitles?: SubtitleTrack[];
   skipSegments?: SkipSegment[];
   onPlayNext?: () => void;
   hasNextEpisode?: boolean;
@@ -72,8 +73,24 @@ export function CinematicVideoPlayer({
   const [isPipAvailable, setIsPipAvailable] = useState(false);
   const [isPipActive, setIsPipActive] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-  const [lastTapTime, setLastTapTime] = useState(0);
+  const [hasNextButtonVisible, setHasNextButtonVisible] = useState(false);
   const [tapSide, setTapSide] = useState<'left' | 'right' | 'center' | null>(null);
+  const [lastTapTime, setLastTapTime] = useState(0);
+  const { user } = useAuth();
+  
+  // Real-time stat tracking
+  useEffect(() => {
+    if (!isOpen || isPaused || !user) return;
+    
+    // Increment watch time and activity every 60 seconds
+    const interval = setInterval(() => {
+      incrementUserStat(user.id, 'watch_time', 1);
+      incrementUserStat(user.id, 'activity_points', 10); // Reward for watching
+    }, 60000);
+    
+    return () => clearInterval(interval);
+  }, [isOpen, isPaused, user]);
+  
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [isVolumeHovered, setIsVolumeHovered] = useState(false);
@@ -604,7 +621,7 @@ export function CinematicVideoPlayer({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-hidden rounded-none border-none bg-[#040404] p-0">
+      <DialogContent className="left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-hidden rounded-none border-none bg-[#040404] p-0 [&_.close-orb]:hidden">
         <DialogTitle className="sr-only">{activeTitle}</DialogTitle>
         <DialogDescription className="sr-only">Video player for {activeTitle}</DialogDescription>
 
@@ -850,6 +867,35 @@ export function CinematicVideoPlayer({
                   </div>
                 )}
 
+                {/* Interaction Overlays (Always Active) - Restricted to center area to not block bars */}
+                <div className="absolute inset-x-0 top-32 bottom-32 z-[45] flex pointer-events-none overflow-hidden">
+                  <div 
+                    className="w-1/3 h-full pointer-events-auto" 
+                    onPointerDown={(e) => { e.stopPropagation(); if (isTouchDevice) handleDoubleTap('left'); }}
+                    onMouseMove={resetControlsTimeout}
+                  />
+                  <div 
+                    className="w-1/3 h-full pointer-events-auto cursor-pointer" 
+                    onPointerDown={(e) => { 
+                      e.stopPropagation(); 
+                      resetControlsTimeout(); 
+                      if (isTouchDevice) handleDoubleTap('center'); 
+                    }}
+                    onClick={(e) => { 
+                      if (!isTouchDevice) { 
+                        e.stopPropagation(); 
+                        togglePlay(); 
+                      } 
+                    }}
+                    onMouseMove={resetControlsTimeout}
+                  />
+                  <div 
+                    className="w-1/3 h-full pointer-events-auto" 
+                    onPointerDown={(e) => { e.stopPropagation(); if (isTouchDevice) handleDoubleTap('right'); }}
+                    onMouseMove={resetControlsTimeout}
+                  />
+                </div>
+
                 {/* Custom Overlay Controls */}
                 {!useNativeVideoControls && (
                 <div
@@ -875,9 +921,6 @@ export function CinematicVideoPlayer({
                     <div className="flex items-center gap-3">
                       <button onClick={toggleFullscreen} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
                         {isFullscreen ? <Minimize className="h-5 w-5 text-white" /> : <Maximize className="h-5 w-5 text-white" />}
-                      </button>
-                      <button onClick={handleClose} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                        <X className="h-5 w-5 text-white" />
                       </button>
                     </div>
                   </div>
@@ -1072,11 +1115,7 @@ export function CinematicVideoPlayer({
                               </Popover>
                             </div>
 
-                            <ControlTooltip content="Captions (c)">
-                              <button className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90 text-white/40">
-                                <Languages className="h-5 w-5" />
-                              </button>
-                            </ControlTooltip>
+
 
                             <ControlTooltip content="Cast">
                               <button className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90 text-white/40">
@@ -1107,23 +1146,7 @@ export function CinematicVideoPlayer({
                         </div>
                       </TooltipProvider>
 
-                      {/* Gesture Overlays for Skipping (Mobile Only) */}
-                      {isTouchDevice && (
-                        <div className="absolute inset-x-0 top-32 bottom-32 flex pointer-events-none">
-                          <div 
-                            className="w-1/3 h-full pointer-events-auto" 
-                            onPointerDown={(e) => { e.stopPropagation(); handleDoubleTap('left'); }}
-                          />
-                          <div 
-                            className="w-1/3 h-full pointer-events-auto" 
-                            onPointerDown={(e) => { e.stopPropagation(); resetControlsTimeout(); handleDoubleTap('center'); }}
-                          />
-                          <div 
-                            className="w-1/3 h-full pointer-events-auto" 
-                            onPointerDown={(e) => { e.stopPropagation(); handleDoubleTap('right'); }}
-                          />
-                        </div>
-                      )}
+
                     </div>
                   </div>
                 </div>

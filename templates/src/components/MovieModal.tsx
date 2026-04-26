@@ -12,10 +12,12 @@ import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, reso
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
 import { getUserRating, setUserRating, isInWatchlist, toggleWatchlist } from "@/lib/storage";
+import { incrementUserStat } from "@/lib/stats";
 import { motion, AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
+import { useAuth } from "@/hooks/useAuth";
 
 export async function getProxiedPlayUrl(url: string, title: string, detailsUrl?: string | null, mobifliksId?: string | null) {
   return await buildMediaUrl({
@@ -31,7 +33,11 @@ export async function getProxiedPlayUrl(url: string, title: string, detailsUrl?:
  * Downloads a file with a clean, movie-title filename.
  * Routes through the proxy defined in buildMediaUrl for the best performance.
  */
-async function downloadWithName(url: string, filename: string, detailsUrl?: string | null, mobifliksId?: string | null): Promise<void> {
+async function downloadWithName(url: string, filename: string, detailsUrl?: string | null, mobifliksId?: string | null, userId?: string): Promise<void> {
+  if (userId) {
+    incrementUserStat(userId, 'downloads', 1);
+    incrementUserStat(userId, 'activity_points', 50); // Big reward for downloads
+  }
   // Strip site watermark / domain leftover from scraped titles
   const cleanFilename = filename
     .replace(/mobifliks\.com\s*[-–—|:]\s*/gi, "")
@@ -104,6 +110,7 @@ interface MovieModalProps {
   onPlay: (url: string, title: string) => void;
   detailsLoading?: boolean;
   onMovieSelect?: (movie: Movie) => void;
+  onAuthRequired?: (action: "watch" | "download") => void;
 }
 
 const fallbackCastAvatar = "https://placehold.co/160x160/1a1a2e/ffffff?text=Actor";
@@ -178,9 +185,10 @@ function VJVersionSwitcher({
   );
 }
 
-export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = false, onMovieSelect }: MovieModalProps) {
+export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = false, onMovieSelect, onAuthRequired }: MovieModalProps) {
   // NOTE: hooks must be called unconditionally; keep all hooks above the null-guard return.
   const deviceProfile = useDeviceProfile();
+  const { user } = useAuth();
   const [, setTmdbBackdrop] = React.useState<string | null>(null);
   const [tmdbCast, setTmdbCast] = React.useState<CastMember[] | null>(null);
   const backdrop = movie?.backdrop_url || null;
@@ -344,6 +352,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       mobifliksId: mobifliksId || movie.mobifliks_id,
       play: true,
     });
+    if (user?.id) {
+      incrementUserStat(user.id, 'activity_points', 5); // Points for starting playback
+    }
     onPlay(finalUrl, title);
   };
 
@@ -400,16 +411,24 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
   }, [playbackSources, selectedServer]);
 
   const handleMovieDownload = React.useCallback((serverId?: 1 | 2) => {
+    if (!user) {
+      if (onAuthRequired) onAuthRequired("download");
+      return;
+    }
     const srv = serverId ?? selectedServer;
     const targetUrl = srv === 1
       ? (movie.download_url || movie.server2_url)
       : (movie.server2_url || movie.download_url);
     if (!targetUrl) return;
     const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
-    downloadWithName(targetUrl, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id);
+    downloadWithName(targetUrl, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id, user?.id);
   }, [movie, selectedServer]);
 
   const handlePrimaryAction = React.useCallback((serverId?: 1 | 2) => {
+    if (!user) {
+      if (onAuthRequired) onAuthRequired("watch");
+      return;
+    }
     const srv = serverId ?? selectedServer;
     if (isSeries) {
       if (series.episodes && series.episodes.length > 0) {
@@ -809,6 +828,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                           size="lg"
                           className="btn-premium-red gap-2 rounded-full px-8 h-12 text-base font-semibold border-0"
                           onClick={() => {
+                            if (!user) {
+                              if (onAuthRequired) onAuthRequired("watch");
+                              return;
+                            }
                             const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                             if (versions.length > 1) {
                               setActionStep("watch_vj");
@@ -868,6 +891,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                         {FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!(movie.download_url || movie.server2_url)) && (
                           <button
                             onClick={() => {
+                              if (!user) {
+                                if (onAuthRequired) onAuthRequired("download");
+                                return;
+                              }
                               const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                               if (versions.length > 1) {
                                 setActionStep("download_vj");
@@ -1640,10 +1667,10 @@ function MobileMovieLayout({
                               const targetUrl = selectedServer === 1
                                 ? (ep.download_url || ep.server2_url)
                                 : (ep.server2_url || ep.download_url);
-                              if (targetUrl) {
-                                const epName = `${movie.title} - S${seasonNum}E${String(ep.episode_number).padStart(2, '0')}`;
-                                setTimeout(() => downloadWithName(targetUrl!, epName, undefined, ep.mobifliks_id), i * 800);
-                              }
+                                if (targetUrl) {
+                                  const epName = `${movie.title} - S${seasonNum}E${String(ep.episode_number).padStart(2, '0')}`;
+                                  setTimeout(() => downloadWithName(targetUrl!, epName, undefined, ep.mobifliks_id, user?.id), i * 800);
+                                }
                             });
                           }}
                           className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold text-white/76 active:scale-95 transition-transform"
@@ -1974,7 +2001,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
                     : (episode.server2_url || episode.download_url);
                   if (tUrl) {
                     const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, "0")}`;
-                    downloadWithName(tUrl, epName, undefined, episode.mobifliks_id);
+                    downloadWithName(tUrl, epName, undefined, episode.mobifliks_id, user?.id);
                   }
                 }}
                 className="modal-accent-text mt-2 flex items-center gap-1.5 text-[11px] font-semibold active:scale-95 transition-transform"
@@ -2200,7 +2227,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                     const tUrl = episode.download_url || episode.server2_url;
                     if (tUrl) {
                       const epName = `${seriesTitle} - S${episode.season_number ?? 1}E${String(episode.episode_number).padStart(2, '0')}`;
-                      downloadWithName(tUrl, epName, undefined, episode.mobifliks_id);
+                      downloadWithName(tUrl, epName, undefined, episode.mobifliks_id, user?.id);
                     }
                   }}
                 >

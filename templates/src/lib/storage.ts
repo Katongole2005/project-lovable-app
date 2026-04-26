@@ -336,3 +336,12 @@ export function setUserRating(id: string, rating: number): void {
   list.unshift({ id, rating, ratedAt: new Date().toISOString() });
   localStorage.setItem(RATINGS_KEY, JSON.stringify(list.slice(0, 200)));
 }
+
+export function clearAllStorageData(): void {
+  localStorage.removeItem(RECENT_KEY);
+  localStorage.removeItem(CONTINUE_KEY);
+  localStorage.removeItem(SEARCH_KEY);
+  localStorage.removeItem(WATCHLIST_KEY);
+  localStorage.removeItem(RATINGS_KEY);
+  emitContinueWatchingChange();
+}
