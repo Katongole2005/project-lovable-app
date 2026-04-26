@@ -24,10 +24,11 @@ CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE 
   USING (auth.uid() = id);
 
--- Function to handle profile creation on signup
+-- Function to handle profile creation and welcome email on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
+  -- 1. Create the user profile
   INSERT INTO public.profiles (id, display_name, avatar_url)
   VALUES (
     new.id, 
@@ -35,9 +36,28 @@ BEGIN
     new.raw_user_meta_data->>'avatar_url'
   )
   ON CONFLICT (id) DO NOTHING;
+
+  -- 2. Trigger welcome email only for manual (email) signups
+  -- Note: This requires the pg_net extension to be enabled in Supabase
+  IF new.raw_app_meta_data->>'provider' = 'email' THEN
+    PERFORM
+      net.http_post(
+        url := 'https://' || current_setting('request.headers')::json->>'host' || '/functions/v1/welcome-email',
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || current_setting('request.headers')::json->>'authorization'
+        ),
+        body := jsonb_build_object(
+          'email', new.email,
+          'display_name', COALESCE(new.raw_user_meta_data->>'full_name', 'Movie Lover')
+        )
+      );
+  END IF;
+
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 -- Trigger for new user
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
