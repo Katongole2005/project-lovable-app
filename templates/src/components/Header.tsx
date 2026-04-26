@@ -219,7 +219,13 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                 </div>
                 <div className="text-left">
                   <p className="max-w-[80px] truncate text-sm font-black leading-tight text-foreground">
-                    {user ? (user.display_name?.split(" ").pop() || "User") : "Guest"}
+                    {(() => {
+                      if (!user) return "Guest";
+                      const fullName = user.user_metadata?.full_name || user.user_metadata?.first_name || user.email?.split("@")[0];
+                      if (!fullName) return "Member";
+                      const nameParts = fullName.trim().split(/\s+/);
+                      return nameParts.length > 1 ? nameParts.pop() : nameParts[0];
+                    })()}
                   </p>
                   <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">
                     {user ? "Pro" : "Free"}
