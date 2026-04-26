@@ -55,6 +55,9 @@ import {
   Clock8,
   Download,
   Activity,
+  Users,
+  Gift,
+  Gem,
   Award,
 } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
@@ -108,20 +111,40 @@ function LeaderboardSection() {
   const [period, setPeriod] = useState<"weekly" | "allTime">("allTime");
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalRegistered: 0, totalParticipated: 0 });
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       setLoading(true);
       const dbMetric = metric === "watchTime" ? "watch_time" : metric === "downloads" ? "downloads" : "activity_points";
       const data = await getLeaderboard(dbMetric, period as any);
-      
-      // If no data (table might not be ready yet), show empty or keep loading
       setUsers(data);
+      
+      // Calculate global stats for the summary cards
+      if (data.length > 0) {
+        setStats({
+          totalRegistered: data.length * 25 + 1277, // Mocking growth based on image numbers
+          totalParticipated: data.length * 5 + 255
+        });
+      }
       setLoading(false);
     };
 
     fetchLeaderboard();
   }, [metric, period]);
+
+  // Countdown timer logic (mock for the season)
+  const [timeLeft, setTimeLeft] = useState("12 : 06 : 42");
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const hours = 23 - now.getHours();
+      const mins = 59 - now.getMinutes();
+      const secs = 59 - now.getSeconds();
+      setTimeLeft(`12 : ${String(hours).padStart(2, '0')} : ${String(mins).padStart(2, '0')}`);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const top1 = users[0];
   const top2 = users[1];
@@ -156,256 +179,184 @@ function LeaderboardSection() {
   }
 
   return (
-    <div className="space-y-12 pb-12">
-      {/* HEADER SECTION - Cinematic Vibe */}
-      <div className="relative overflow-hidden p-8 md:p-12 rounded-[2.5rem] bg-gradient-to-br from-primary/20 via-black/40 to-secondary/10 border border-white/10">
-        <div className="absolute top-0 right-0 w-[40%] h-full bg-primary/5 blur-[100px] -rotate-12 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-[30%] h-full bg-secondary/5 blur-[80px] rotate-12 -translate-x-1/2" />
+    <div className="space-y-8 pb-12 animate-in fade-in duration-700">
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-black text-white tracking-tight">Leaderboard</h2>
+          <div className="flex gap-2 p-1 rounded-xl bg-white/[0.02] border border-white/5">
+             {(["watchTime", "downloads", "activity"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMetric(m)}
+                className={cn(
+                  "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-wider",
+                  metric === m ? "bg-white/10 text-white" : "text-white/20 hover:text-white/40"
+                )}
+              >
+                {m === "watchTime" ? "Watcher" : m === "downloads" ? "Hoarders" : "Activity"}
+              </button>
+            ))}
+          </div>
+        </div>
         
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em]">
-              <Sparkles className="w-3 h-3" /> Hall of Fame
+        {/* TOP SUMMARY CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-3 p-6 rounded-2xl bg-white/[0.03] border border-white/5 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-4xl font-black text-white">{stats.totalRegistered}</span>
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <Users className="w-4 h-4 text-emerald-500" />
+              </div>
             </div>
-            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-tight">
-              THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] animate-gradient-x">LEGENDS</span><br />
-              LADDER
-            </h2>
-            <p className="text-white/40 text-sm max-w-xs font-medium">Competition breeds excellence. Only the top 50 users earn a spot in the MovieBay archives.</p>
+            <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Total Registered</p>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/5 shadow-2xl">
-              {(["watchTime", "downloads", "activity"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMetric(m)}
-                  className={cn(
-                    "px-5 py-2.5 rounded-xl text-xs font-black transition-all uppercase tracking-wider whitespace-nowrap",
-                    metric === m 
-                      ? "bg-primary text-white shadow-[0_0_20px_rgba(255,138,61,0.4)]" 
-                      : "text-white/30 hover:text-white/60 hover:bg-white/5"
-                  )}
-                >
-                  {m === "watchTime" ? "Watcher" : m === "downloads" ? "Hoarder" : "Active"}
-                </button>
-              ))}
+          <div className="md:col-span-3 p-6 rounded-2xl bg-white/[0.03] border border-white/5 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-4xl font-black text-white">{stats.totalParticipated}</span>
+              <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <Play className="w-4 h-4 text-blue-500 fill-current" />
+              </div>
             </div>
-            
-            <div className="flex justify-end gap-2">
-              {(["weekly", "allTime"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-[10px] font-black uppercase border transition-all",
-                    period === p ? "border-white/20 bg-white/10 text-white" : "border-white/5 text-white/20 hover:text-white/40"
-                  )}
-                >
-                  {p === "weekly" ? "Weekly" : "Overall"}
-                </button>
+            <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Total Participated</p>
+          </div>
+
+          <div className="md:col-span-6 p-6 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between gap-8">
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                Remaining time for completion🔥
+              </h3>
+              <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider">Only the first three positions will be awarded prizes</p>
+            </div>
+            <div className="flex gap-4">
+              {["DAYS", "HRS", "MINS"].map((label, i) => (
+                <div key={label} className="text-center">
+                  <span className="text-3xl font-black text-white">{timeLeft.split(" : ")[i]}</span>
+                  <p className="text-[8px] font-black text-white/30 mt-1">{label}</p>
+                </div>
               ))}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* THE PODIUM - 3D Cinematic Style */}
-      <div className="relative pt-20 pb-10">
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent z-10" />
-        
-        <div className="flex flex-col md:flex-row items-center md:items-end justify-center gap-4 md:gap-0 max-w-4xl mx-auto relative z-20">
-          
-          {/* SILVER - Rank 2 */}
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex-1 w-full md:w-auto order-2 md:order-1"
-          >
-            <div className="flex flex-col items-center group">
-              <div className="relative mb-6">
-                <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-slate-400 to-slate-600 p-1 rotate-6 group-hover:rotate-0 transition-transform duration-500 shadow-[0_0_30px_rgba(148,163,184,0.2)]">
-                  <div className="w-full h-full rounded-[1.8rem] bg-[#0a0a0f] p-1.5">
-                    <img src={top2.avatar} alt="" className="w-full h-full rounded-[1.4rem] bg-slate-400/10" />
-                  </div>
-                </div>
-                <div className="absolute -top-4 -right-2 w-10 h-10 rounded-full bg-slate-400 flex items-center justify-center border-4 border-[#0a0a0f] shadow-xl">
-                  <span className="text-black font-black italic text-sm">2</span>
-                </div>
-              </div>
-              <div className="text-center mb-6">
-                <h3 className="text-white font-black text-lg tracking-tight truncate max-w-[140px]">{top2.name}</h3>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-400/10 text-slate-400 font-black uppercase">Silver Tier</span>
-                </div>
-              </div>
-              <div className="w-full h-32 md:h-48 bg-gradient-to-b from-slate-400/20 to-transparent rounded-t-[2.5rem] border-x border-t border-slate-400/20 relative overflow-hidden backdrop-blur-sm">
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                  <span className="text-slate-400/50 text-[10px] font-black uppercase mb-1">Total Impact</span>
-                  <span className="text-xl font-black text-white">
-                    {metric === "watchTime" ? `${(top2.watchTime / 60).toFixed(0)}h` : top2[metric].toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* GOLD - Rank 1 (The King) */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 100 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.8, type: "spring" }}
-            className="flex-1 w-full md:w-auto order-1 md:order-2 z-30"
-          >
-            <div className="flex flex-col items-center">
-              <div className="relative mb-10">
-                <div className="absolute -inset-8 bg-primary/20 blur-[60px] animate-pulse" />
-                <div className="relative">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-gradient-to-br from-primary via-secondary to-primary p-1.5 shadow-[0_0_60px_rgba(255,138,61,0.4)] animate-float">
-                    <div className="w-full h-full rounded-[2.2rem] bg-[#0a0a0f] p-2">
-                      <img src={top1.avatar} alt="" className="w-full h-full rounded-[1.8rem] bg-primary/10" />
+        {/* TOP 3 CHAMPION CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+          {[top1, top2, top3].map((u, i) => u && (
+            <motion.div
+              key={u.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className={cn(
+                "relative p-6 rounded-3xl overflow-hidden border transition-all duration-300",
+                i === 0 
+                  ? "bg-gradient-to-br from-primary/10 to-transparent border-primary/40 shadow-[0_0_40px_rgba(255,138,61,0.1)]" 
+                  : "bg-white/[0.03] border-white/10"
+              )}
+            >
+              {/* Medal Overlay for #1 */}
+              {i === 0 && (
+                <div className="absolute top-4 right-4 z-20">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 shadow-2xl flex items-center justify-center border-4 border-black/20">
+                       <span className="text-black/80 font-black italic text-xl">1</span>
                     </div>
-                  </div>
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                    <Crown className="w-12 h-12 text-primary drop-shadow-[0_0_15px_rgba(255,138,61,0.8)] animate-bounce" />
-                  </div>
-                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center border-8 border-[#0a0a0f] shadow-2xl">
-                    <span className="text-white font-black italic text-xl">1</span>
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-12 bg-gradient-to-b from-blue-600 to-red-600 rounded-b-sm -z-10" />
                   </div>
                 </div>
-              </div>
-              <div className="text-center mb-8 relative">
-                <div className="absolute -inset-x-20 -top-4 bottom-0 bg-primary/5 blur-3xl rounded-full" />
-                <h3 className="text-white font-black text-2xl md:text-3xl tracking-tighter mb-1 relative z-10">{top1.name}</h3>
-                <div className="flex items-center justify-center gap-2 relative z-10">
-                  <span className="flex items-center gap-1.5 text-[10px] px-3 py-1 rounded-full bg-primary/20 text-primary font-black uppercase border border-primary/30">
-                    <Award className="w-3 h-3" /> Overlord
-                  </span>
-                </div>
-              </div>
-              <div className="w-full h-44 md:h-64 bg-gradient-to-b from-primary/30 via-primary/10 to-transparent rounded-t-[3rem] border-x border-t border-primary/30 relative overflow-hidden backdrop-blur-md shadow-[0_-20px_40px_rgba(255,138,61,0.1)]">
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-primary/5">
-                   <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-                      <Zap className="w-6 h-6 text-primary" />
-                   </div>
-                  <span className="text-primary/60 text-[11px] font-black uppercase mb-1 tracking-widest">Master Score</span>
-                  <span className="text-4xl font-black text-white drop-shadow-glow">
-                    {metric === "watchTime" ? `${(top1.watchTime / 60).toFixed(0)}h` : top1[metric].toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+              )}
 
-          {/* BRONZE - Rank 3 */}
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex-1 w-full md:w-auto order-3 md:order-3"
-          >
-            <div className="flex flex-col items-center group">
-              <div className="relative mb-6">
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-[1.8rem] bg-gradient-to-br from-amber-600 to-amber-900 p-1 -rotate-6 group-hover:rotate-0 transition-transform duration-500 shadow-[0_0_30px_rgba(146,64,14,0.2)]">
-                  <div className="w-full h-full rounded-[1.6rem] bg-[#0a0a0f] p-1.5">
-                    <img src={top3.avatar} alt="" className="w-full h-full rounded-[1.2rem] bg-amber-900/10" />
-                  </div>
-                </div>
-                <div className="absolute -top-4 -right-2 w-10 h-10 rounded-full bg-amber-700 flex items-center justify-center border-4 border-[#0a0a0f] shadow-xl">
-                  <span className="text-white font-black italic text-sm">3</span>
-                </div>
-              </div>
-              <div className="text-center mb-6">
-                <h3 className="text-white font-black text-lg tracking-tight truncate max-w-[120px]">{top3?.name}</h3>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-900/10 text-amber-600 font-black uppercase">Bronze Tier</span>
-                </div>
-              </div>
-              <div className="w-full h-20 md:h-32 bg-gradient-to-b from-amber-900/20 to-transparent rounded-t-[2.2rem] border-x border-t border-amber-900/20 relative overflow-hidden backdrop-blur-sm">
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                  <span className="text-amber-700/50 text-[10px] font-black uppercase mb-1">Impact</span>
-                  <span className="text-xl font-black text-white">
-                    {metric === "watchTime" ? `${((top3?.watchTime || 0) / 60).toFixed(0)}h` : (top3?.downloads || 0).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* THE LIST - Advanced Glassmorphism */}
-      <div className="grid grid-cols-1 gap-3 max-w-5xl mx-auto relative z-20">
-        {theRest.map((u, idx) => (
-          <motion.div 
-            key={u.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 + (idx % 10) * 0.05 }}
-            className={cn(
-              "group flex items-center justify-between p-1 pl-6 pr-6 md:pr-10 rounded-2xl border transition-all duration-500 hover:scale-[1.02]",
-              u.isYou 
-                ? "bg-primary/20 border-primary/40 shadow-[0_0_30px_rgba(255,138,61,0.15)] ring-1 ring-primary/30" 
-                : "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
-            )}
-          >
-            <div className="flex items-center gap-4 md:gap-8 py-3">
-              <div className={cn(
-                "w-10 text-center font-black italic text-xl md:text-2xl",
-                u.rank <= 10 ? "text-white/80" : "text-white/10 group-hover:text-white/20 transition-colors"
-              )}>
-                {u.rank}
-              </div>
-              
-              <div className="flex items-center gap-4">
+              <div className="flex items-start gap-4 mb-8">
                 <div className="relative">
+                  <Avatar className="w-14 h-14 rounded-2xl border-2 border-white/10">
+                    <AvatarImage src={u.avatar} />
+                    <AvatarFallback className="bg-white/5">{u.name[0]}</AvatarFallback>
+                  </Avatar>
                   <div className={cn(
-                    "w-12 h-12 md:w-14 md:h-14 rounded-xl p-0.5 transition-transform group-hover:rotate-6",
-                    u.isYou ? "bg-primary/40" : "bg-white/10"
+                    "absolute -bottom-1 -right-1 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black border border-black/50",
+                    i === 0 ? "bg-primary text-white" : i === 1 ? "bg-blue-500 text-white" : "bg-purple-500 text-white"
                   )}>
-                    <div className="w-full h-full rounded-[10px] bg-[#0a0a0f] overflow-hidden">
-                      <img src={u.avatar} alt="" className="w-full h-full object-cover opacity-80" />
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-md bg-black/80 border border-white/10 flex items-center justify-center text-[8px] font-black text-white/60">
-                    {u.level}
+                    {u.rank}
                   </div>
                 </div>
-                
-                <div>
-                  <p className="text-sm md:text-base font-black text-white flex items-center gap-2">
-                    {u.name}
-                    {u.isYou && <Sparkles className="w-4 h-4 text-primary animate-pulse" />}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-20 md:w-32 h-1 rounded-full bg-white/5 overflow-hidden">
-                       <div className="h-full bg-gradient-to-r from-primary/40 to-primary" style={{ width: `${Math.random() * 60 + 30}%` }} />
-                    </div>
-                    <span className="text-[8px] md:text-[9px] text-white/30 font-black uppercase tracking-widest">Mastery</span>
-                  </div>
+                <div className="max-w-[120px]">
+                  <h4 className="font-bold text-white text-lg leading-tight truncate">{u.name}</h4>
+                  <p className="text-[10px] text-white/30 font-black uppercase tracking-widest mt-1">@user_{u.id.slice(0, 4)}</p>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-2">
-                {metric === "watchTime" && <Clock8 className="w-3.5 h-3.5 text-secondary/60" />}
-                {metric === "downloads" && <Download className="w-3.5 h-3.5 text-blue-400/60" />}
-                {metric === "activity" && <Activity className="w-3.5 h-3.5 text-primary/60" />}
-                <span className="text-base md:text-xl font-black text-white tracking-tight">
-                  {metric === "watchTime" ? `${((u.watchTime || 0) / 60).toFixed(0)}h` : (u[metric] || 0).toLocaleString()}
-                </span>
+
+              <div className="grid grid-cols-3 gap-2 mb-6">
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Watched</p>
+                  <p className="text-sm font-black text-white">{(u.watchTime / 60).toFixed(0)}h</p>
+                </div>
+                <div className="space-y-1 text-center">
+                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Hoarded</p>
+                  <p className="text-sm font-black text-white">{u.downloads}</p>
+                </div>
+                <div className="space-y-1 text-right">
+                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Points</p>
+                  <p className="text-sm font-black text-white">{u.activity.toLocaleString()}</p>
+                </div>
               </div>
-              <span className={cn(
-                "text-[9px] md:text-[10px] font-black uppercase tracking-widest",
-                u.id === user?.id ? "text-primary/60" : "text-white/20 group-hover:text-white/40 transition-colors"
-              )}>
-                {metric === "watchTime" ? "Watcher Rating" : metric === "downloads" ? "Hoard Score" : "Activity Flow"}
-              </span>
+
+              <div className="flex items-center gap-4 pt-4 border-t border-white/5">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-orange-500/20 flex items-center justify-center">
+                    <Gift className="w-3 h-3 text-orange-500" />
+                  </div>
+                  <span className="text-[10px] font-black text-white/60">{i === 0 ? "32,421" : i === 1 ? "31,001" : "30,987"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
+                    <Gem className="w-3 h-3 text-blue-500" />
+                  </div>
+                  <span className="text-[10px] font-black text-white/60">{i === 0 ? "17,500" : i === 1 ? "17,421" : "17,224"}</span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* RANKING TABLE */}
+        <div className="pt-8 space-y-6">
+          <h3 className="text-2xl font-black text-white tracking-tight">Global Ranking</h3>
+          
+          <div className="rounded-3xl bg-white/[0.02] border border-white/5 overflow-hidden">
+            <div className="grid grid-cols-12 gap-4 p-6 border-b border-white/5 text-[9px] font-black text-white/20 uppercase tracking-widest">
+              <div className="col-span-1">Rank</div>
+              <div className="col-span-5">User name</div>
+              <div className="col-span-2 text-center">Watched</div>
+              <div className="col-span-2 text-center">Downloads</div>
+              <div className="col-span-2 text-right">Points</div>
             </div>
-          </motion.div>
-        ))}
+
+            <div className="divide-y divide-white/[0.03]">
+              {theRest.map((u, idx) => (
+                <div key={u.id} className="grid grid-cols-12 gap-4 p-6 items-center hover:bg-white/[0.01] transition-colors group">
+                  <div className="col-span-1">
+                    <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/5 flex items-center justify-center text-xs font-black italic text-white/40 group-hover:text-white group-hover:border-white/20 transition-all">
+                      {u.rank}
+                    </div>
+                  </div>
+                  <div className="col-span-5 flex items-center gap-4">
+                    <Avatar className="w-10 h-10 rounded-xl border border-white/10">
+                      <AvatarImage src={u.avatar} />
+                      <AvatarFallback className="bg-white/5">{u.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-bold text-white group-hover:text-primary transition-colors">{u.name}</p>
+                      <p className="text-[9px] text-white/20 font-bold uppercase tracking-wider mt-0.5">ID {u.id.slice(0, 8)}</p>
+                    </div>
+                  </div>
+                  <div className="col-span-2 text-center text-xs font-black text-white/60">{(u.watchTime / 60).toFixed(0)}h</div>
+                  <div className="col-span-2 text-center text-xs font-black text-white/60">{u.downloads}</div>
+                  <div className="col-span-2 text-right text-xs font-black text-white">{u.activity.toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -741,6 +692,29 @@ export default function Profile() {
   const headerBgOpacity = useTransform(scrollY, [0, 200], [0, 0.95]);
   const heroParallaxY = useTransform(scrollY, (v) => reducedMotion ? 0 : -v * 0.3);
   const [showCollapsedName, setShowCollapsedName] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (data) setProfile(data);
+    };
+    fetchProfile();
+    
+    // Subscribe to changes for real-time level ups
+    const channel = supabase
+      .channel('profile_changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, 
+        (payload) => setProfile(payload.new))
+      .subscribe();
+      
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   useEffect(() => {
     const unsub = scrollY.on("change", (v) => {
@@ -965,19 +939,39 @@ export default function Profile() {
                   <Mail className="w-3.5 h-3.5" /> {userEmail}
                 </p>
 
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <div className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40">
+                    {memberSince}
+                  </div>
+                  {profile && (
+                    <>
+                      <div className="px-2 py-1 rounded-md bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary">
+                        Level {profile.level}
+                      </div>
+                      <div className="px-2 py-1 rounded-md bg-secondary/10 border border-secondary/20 text-[10px] font-black uppercase tracking-widest text-secondary">
+                        {profile.activity_points} XP
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 <div className="space-y-4">
-                  <div className="flex justify-between items-end text-xs mb-1">
-                    <span className="text-white/60 font-bold uppercase tracking-wider">Level 12 Buff</span>
-                    <span className="text-primary font-bold">780 / 1000 XP</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: '78%' }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className="h-full bg-gradient-to-r from-primary to-secondary rounded-full" 
-                    />
-                  </div>
+                  {profile && (
+                    <>
+                      <div className="flex justify-between items-end text-xs mb-1">
+                        <span className="text-white/60 font-bold uppercase tracking-wider">Level {profile.level} Mastery</span>
+                        <span className="text-primary font-bold">{(profile.activity_points % 500)} / 500 XP</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, (profile.activity_points % 500) / 5)}%` }}
+                          transition={{ duration: 1.5, ease: "easeOut" }}
+                          className="h-full bg-gradient-to-r from-primary via-secondary to-primary"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

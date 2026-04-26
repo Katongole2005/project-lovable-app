@@ -45,11 +45,32 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- RPC Function to increment stats safely
+-- RPC Function to increment stats safely and update levels
 CREATE OR REPLACE FUNCTION public.increment_user_stat(user_id uuid, metric_name text, increment_by integer)
 RETURNS void AS $$
+DECLARE
+  current_points integer;
+  new_level integer;
 BEGIN
+  -- First, ensure the profile exists (safety for existing users who might have been missed)
+  INSERT INTO public.profiles (id, display_name, level)
+  SELECT id, COALESCE(raw_user_meta_data->>'full_name', 'Member'), 1
+  FROM auth.users WHERE id = user_id
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Update the specific metric
   EXECUTE format('UPDATE public.profiles SET %I = %I + $1, updated_at = now() WHERE id = $2', metric_name, metric_name)
   USING increment_by, user_id;
+
+  -- Recalculate level if activity points changed
+  IF metric_name = 'activity_points' THEN
+    SELECT activity_points INTO current_points FROM public.profiles WHERE id = user_id;
+    -- Formula: Level = floor(sqrt(points / 50)) + 1
+    -- This means Level 2 at 50pts, Level 3 at 200pts, Level 10 at 4050pts
+    new_level := floor(sqrt(current_points / 50)) + 1;
+    
+    UPDATE public.profiles SET level = new_level WHERE id = user_id;
+  END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
