@@ -25,6 +25,20 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+// Referral Tracker Component (Pro Version)
+const ReferralTracker = () => {
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      sessionStorage.setItem("moviebay_referral", ref);
+      console.log("Referral captured:", ref);
+    }
+  }, [location]);
+  return null;
+};
+
 const App = () => {
   const [showDeferredUi, setShowDeferredUi] = useState(false);
 
@@ -49,6 +63,7 @@ const App = () => {
           )}
           <Sonner />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <ReferralTracker />
             <AuthProvider>
               <SiteSettingsProvider>
                 <AppRoutes />

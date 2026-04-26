@@ -58,6 +58,7 @@ import {
   Users,
   Gift,
   Gem,
+  Share2,
   Award,
 } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
@@ -102,284 +103,6 @@ function ClearDataDialog({
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function LeaderboardSection() {
-  const { user } = useAuth();
-  const [metric, setMetric] = useState<"downloads" | "watchTime" | "activity">("watchTime");
-  const [period, setPeriod] = useState<"weekly" | "allTime">("allTime");
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalRegistered: 0, totalParticipated: 0 });
-
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true);
-      const dbMetric = metric === "watchTime" ? "watch_time" : metric === "downloads" ? "downloads" : "activity_points";
-      const data = await getLeaderboard(dbMetric, period as any);
-      setUsers(data);
-      
-      // Use real data counts
-      setStats({
-        totalRegistered: data.length,
-        totalParticipated: data.filter(u => u.activity > 0).length
-      });
-      setLoading(false);
-    };
-
-    fetchLeaderboard();
-  }, [metric, period]);
-
-  // Countdown to the end of the month
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
-  useEffect(() => {
-    const updateCountdown = () => {
-      const now = new Date();
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-      const diff = lastDay.getTime() - now.getTime();
-      
-      setTimeLeft({
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-        mins: Math.floor((diff / 1000 / 60) % 60),
-        secs: Math.floor((diff / 1000) % 60)
-      });
-    };
-
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const top1 = users[0];
-  const top2 = users[1];
-  const top3 = users[2];
-  const theRest = users.slice(3);
-
-  if (loading && users.length === 0) {
-    return (
-      <div className="py-20 flex flex-col items-center justify-center gap-4 text-white/20">
-        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-        <p className="text-sm font-bold animate-pulse">Loading Legends...</p>
-      </div>
-    );
-  }
-
-  // Handle case where leaderboard is empty
-  if (users.length === 0) {
-    return (
-      <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in duration-700">
-        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
-          <Trophy className="w-10 h-10 text-white/20" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-white">The Ladder is Empty</h3>
-          <p className="text-sm text-white/40">Be the first to claim a spot on the leaderboard!</p>
-        </div>
-        <Button onClick={() => window.location.reload()} variant="outline" className="rounded-xl border-white/10">
-          Refresh Page
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-700">
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-black text-white tracking-tight">Leaderboard</h2>
-          <div className="flex gap-2 p-1 rounded-xl bg-white/[0.02] border border-white/5">
-             {(["watchTime", "downloads", "activity"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMetric(m)}
-                className={cn(
-                  "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-wider",
-                  metric === m ? "bg-white/10 text-white" : "text-white/20 hover:text-white/40"
-                )}
-              >
-                {m === "watchTime" ? "Watchers" : m === "downloads" ? "Collectors" : "Most Active"}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* TOP SUMMARY CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl md:text-3xl font-black text-white">{stats.totalRegistered}</span>
-              <Users className="w-4 h-4 text-emerald-500/50" />
-            </div>
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Registered</p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl md:text-3xl font-black text-white">{stats.totalParticipated}</span>
-              <Play className="w-4 h-4 text-blue-500/50 fill-current" />
-            </div>
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Active</p>
-          </div>
-
-          <div className="col-span-2 p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 flex items-center justify-between">
-            <div className="hidden sm:block">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider">Reset In</h3>
-            </div>
-            <div className="flex gap-3 ml-auto">
-              {[
-                { val: timeLeft.days, label: "D" },
-                { val: timeLeft.hours, label: "H" },
-                { val: timeLeft.mins, label: "M" },
-                { val: timeLeft.secs, label: "S" }
-              ].map((item) => (
-                <div key={item.label} className="text-center">
-                  <div className="flex flex-col items-center">
-                    <span className={cn(
-                      "text-xl md:text-2xl font-black text-white tabular-nums",
-                      item.label === "S" && "text-primary"
-                    )}>{String(item.val).padStart(2, '0')}</span>
-                    <p className="text-[8px] font-black text-white/20">{item.label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* TOP 3 CHAMPION CARDS (Triangle Podium: 2, 1, 3) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 items-end">
-          {[top2, top1, top3].map((u, i) => {
-            if (!u) return <div key={i} />;
-            
-            const isFirst = u.rank === 1;
-            const isSecond = u.rank === 2;
-            const isThird = u.rank === 3;
-
-            return (
-              <motion.div
-                key={u.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className={cn(
-                  "relative p-6 rounded-3xl overflow-hidden border transition-all duration-500",
-                  isFirst 
-                    ? "bg-gradient-to-br from-primary/20 via-black/40 to-transparent border-primary/40 shadow-[0_0_50px_rgba(255,138,61,0.15)] order-1 md:order-2 md:pb-12" 
-                    : isSecond 
-                      ? "bg-white/[0.03] border-white/10 order-2 md:order-1" 
-                      : "bg-white/[0.03] border-white/10 order-3 md:order-3"
-                )}
-              >
-                {/* Clean Medal Badge (Doesn't cover name) */}
-                <div className="absolute top-4 right-4 z-20">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-black border-2",
-                    isFirst ? "bg-primary text-white border-white/20" : 
-                    isSecond ? "bg-slate-400 text-black border-white/20" : 
-                    "bg-amber-700 text-white border-white/20"
-                  )}>
-                    {u.rank}
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center text-center gap-4 mb-8">
-                  <div className="relative">
-                    <Avatar className={cn(
-                      "rounded-2xl border-2 transition-transform duration-500 hover:scale-110",
-                      isFirst ? "w-24 h-24 border-primary shadow-[0_0_20px_rgba(255,138,61,0.3)]" : "w-16 h-16 border-white/10"
-                    )}>
-                      <AvatarImage src={u.avatar} />
-                      <AvatarFallback className="bg-white/5">{u.name[0]}</AvatarFallback>
-                    </Avatar>
-                    {isFirst && (
-                       <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-                          <Crown className="w-8 h-8 text-primary animate-bounce" />
-                       </div>
-                    )}
-                  </div>
-                  <div>
-                    <h4 className={cn(
-                      "font-black text-white leading-tight",
-                      isFirst ? "text-2xl" : "text-lg"
-                    )}>{u.name}</h4>
-                    <p className="text-[10px] text-white/30 font-black uppercase tracking-widest mt-1">@member_{u.id.slice(0, 5)}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 mb-6 px-2">
-                  <div className="space-y-1">
-                    <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Watched</p>
-                    <p className="text-sm font-black text-white">{(u.watchTime / 60).toFixed(0)}h</p>
-                  </div>
-                  <div className="space-y-1 text-center border-x border-white/5">
-                    <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Downloads</p>
-                    <p className="text-sm font-black text-white">{u.downloads}</p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Points</p>
-                    <p className="text-sm font-black text-white">{u.activity.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                   <div className="flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-[10px] font-black text-white/60 uppercase tracking-wider">Level {u.level}</span>
-                   </div>
-                   <div className="px-2 py-0.5 rounded bg-white/5 border border-white/5">
-                      <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">
-                        {isFirst ? "Immortal" : isSecond ? "Elite" : "Gladiator"}
-                      </span>
-                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* RANKING TABLE */}
-        <div className="pt-8 space-y-6">
-          <h3 className="text-2xl font-black text-white tracking-tight">Global Ranking</h3>
-          
-          <div className="rounded-3xl bg-white/[0.02] border border-white/5 overflow-hidden">
-            <div className="grid grid-cols-12 gap-4 p-6 border-b border-white/5 text-[9px] font-black text-white/20 uppercase tracking-widest">
-              <div className="col-span-1">Rank</div>
-              <div className="col-span-5">User name</div>
-              <div className="col-span-2 text-center">Watched</div>
-              <div className="col-span-2 text-center">Downloads</div>
-              <div className="col-span-2 text-right">Points</div>
-            </div>
-
-            <div className="divide-y divide-white/[0.03]">
-              {theRest.map((u, idx) => (
-                <div key={u.id} className="grid grid-cols-12 gap-4 p-6 items-center hover:bg-white/[0.01] transition-colors group">
-                  <div className="col-span-1">
-                    <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/5 flex items-center justify-center text-xs font-black italic text-white/40 group-hover:text-white group-hover:border-white/20 transition-all">
-                      {u.rank}
-                    </div>
-                  </div>
-                  <div className="col-span-5 flex items-center gap-4">
-                    <Avatar className="w-10 h-10 rounded-xl border border-white/10">
-                      <AvatarImage src={u.avatar} />
-                      <AvatarFallback className="bg-white/5">{u.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-bold text-white group-hover:text-primary transition-colors">{u.name}</p>
-                      <p className="text-[9px] text-white/20 font-bold uppercase tracking-wider mt-0.5">ID {u.id.slice(0, 8)}</p>
-                    </div>
-                  </div>
-                  <div className="col-span-2 text-center text-xs font-black text-white/60">{(u.watchTime / 60).toFixed(0)}h</div>
-                  <div className="col-span-2 text-center text-xs font-black text-white/60">{u.downloads}</div>
-                  <div className="col-span-2 text-right text-xs font-black text-white">{u.activity.toLocaleString()}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -674,11 +397,6 @@ function PreferencesDialog({
   );
 }
 
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } },
-};
-
 const itemVariants = {
   hidden: { opacity: 0, y: 24, scale: 0.97 },
   visible: {
@@ -687,9 +405,234 @@ const itemVariants = {
   },
 };
 
-const cardHover = {
-  rest: { scale: 1, y: 0 },
-  hover: { scale: 1.03, y: -4, transition: { type: "spring", stiffness: 300, damping: 20 } },
+const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: number }) => {
+  const isFirst = rank === 1;
+  const isSecond = rank === 2;
+  const isThird = rank === 3;
+  
+  const colors = isFirst ? "from-yellow-400 to-yellow-600" : isSecond ? "from-slate-300 to-slate-500" : "from-orange-400 to-orange-600";
+  const h = isFirst ? 240 : isSecond ? 180 : 140;
+  const order = isFirst ? "order-2" : isSecond ? "order-1" : "order-3";
+
+  const hours = Math.round((user.watch_time || 0) / 60);
+  const downloads = user.downloads || 0;
+
+  return (
+    <div className={cn("flex flex-col items-center justify-end flex-1 max-w-[120px] md:max-w-[180px] gap-3 md:gap-5", order)}>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 * rank, type: "spring" }}
+        className="relative group mb-2"
+      >
+        <div className={cn("absolute -inset-1 rounded-full blur-md opacity-30 group-hover:opacity-60 transition duration-500 bg-gradient-to-r", colors)} />
+        <Avatar className={cn(
+          "w-16 h-16 md:w-24 md:h-24 border-4 relative z-10 transition-transform duration-500 group-hover:scale-110", 
+          isFirst ? "border-yellow-500" : isSecond ? "border-slate-400" : "border-orange-500"
+        )}>
+          <AvatarImage src={user.avatar_url} />
+          <AvatarFallback className="bg-white/5 text-xl md:text-2xl font-black text-white">{user.display_name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+        {isFirst && (
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20">
+            <motion.div
+              animate={{ y: [0, -5, 0], rotate: [0, -5, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            >
+              <Crown className="w-10 h-10 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] fill-yellow-500/20" />
+            </motion.div>
+          </div>
+        )}
+      </motion.div>
+
+      <div className="text-center space-y-1 mb-2 px-1">
+        <p className="text-[10px] md:text-sm font-black text-white truncate w-full">{user.display_name}</p>
+        <p className={cn("text-[10px] md:text-xs font-black uppercase tracking-widest", isFirst ? "text-yellow-500" : "text-white/40")}>{points.toLocaleString()} PTS</p>
+      </div>
+
+      <motion.div 
+        initial={{ height: 0 }}
+        animate={{ height: h }}
+        className={cn(
+          "w-full rounded-t-3xl relative overflow-hidden flex flex-col items-center justify-start pt-6 gap-4 border-t border-x border-white/10", 
+          isFirst ? "bg-white/[0.08]" : "bg-white/[0.04]"
+        )}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        <span className="text-4xl md:text-6xl font-black text-white/5 select-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 italic">#{rank}</span>
+        
+        <div className="relative z-10 flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center">
+            <span className="text-[9px] md:text-[10px] font-black text-white/20 uppercase tracking-widest mb-0.5">Watch Time</span>
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3 text-primary/40" />
+              <span className="text-xs md:text-sm font-black text-white">{hours}h</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-center">
+            <span className="text-[9px] md:text-[10px] font-black text-white/20 uppercase tracking-widest mb-0.5">Downloads</span>
+            <div className="flex items-center gap-1">
+              <Download className="w-3 h-3 text-primary/40" />
+              <span className="text-xs md:text-sm font-black text-white">{downloads}</span>
+            </div>
+          </div>
+        </div>
+
+        {isFirst && (
+          <>
+            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-yellow-500/0 via-yellow-500 to-yellow-500/0 shadow-[0_0_20px_rgba(234,179,8,0.4)]" />
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-4 h-4 bg-yellow-500 rotate-45 rounded-sm shadow-[0_0_15px_rgba(234,179,8,0.3)]" />
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+};
+
+const LeaderboardCard = ({ user, rank, points, isCurrentUser }: { user: any, rank: number, points: number, isCurrentUser: boolean }) => {
+  const hours = Math.round((user.watch_time || 0) / 60);
+  const downloads = user.downloads || 0;
+
+  return (
+    <motion.div
+      variants={itemVariants}
+      whileHover={{ scale: 1.03, y: -4 }}
+      initial="hidden"
+      animate="visible"
+      className={cn(
+        "group flex items-center justify-between p-4 rounded-xl border transition-all",
+        isCurrentUser 
+          ? "bg-primary/10 border-primary/30 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]" 
+          : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10"
+      )}
+    >
+      <div className="flex items-center gap-4">
+        <span className={cn(
+          "w-8 text-sm font-black italic",
+          rank <= 3 ? "text-primary" : "text-white/20"
+        )}>#{rank}</span>
+        
+        <div className="relative">
+          <Avatar className="w-10 h-10 border border-white/10">
+            <AvatarImage src={user.avatar_url} />
+            <AvatarFallback className="bg-white/5 text-xs font-black">{user.display_name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          {isCurrentUser && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-[#0a0a0f]" />
+          )}
+        </div>
+
+        <div className="flex flex-col">
+          <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{user.display_name}</span>
+          <div className="flex items-center gap-3 mt-1">
+             <div className="flex items-center gap-1 text-[9px] font-black text-white/30 uppercase tracking-widest">
+               <Clock className="w-2.5 h-2.5" />
+               <span>{hours}H</span>
+             </div>
+             <div className="flex items-center gap-1 text-[9px] font-black text-white/30 uppercase tracking-widest border-l border-white/5 pl-3">
+               <Download className="w-2.5 h-2.5" />
+               <span>{downloads}</span>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-right">
+        <p className="text-sm font-black text-white tracking-tight">{points.toLocaleString()} PTS</p>
+        <div className="flex items-center gap-1 justify-end mt-0.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+          <span className="text-[8px] text-white/20 font-black uppercase tracking-widest">Mastery</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const LeaderboardSection = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any[]>([]);
+  const [countdown, setCountdown] = useState("");
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      const { data: leaderboardData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('activity_points', { ascending: false })
+        .limit(50);
+      
+      if (!error && leaderboardData) setData(leaderboardData);
+      setLoading(false);
+    };
+
+    fetchLeaderboard();
+
+    const timer = setInterval(() => {
+      const now = new Date();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const diff = nextMonth.getTime() - now.getTime();
+      
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setCountdown(`${d}D ${h}H ${m}M ${s}S`);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  if (loading) return (
+    <div className="py-20 flex flex-col items-center justify-center gap-4 text-white/10">
+      <Loader2 className="w-10 h-10 animate-spin" />
+      <p className="text-xs font-black uppercase tracking-[0.2em]">Synchronizing Legends...</p>
+    </div>
+  );
+
+  const podium = data.slice(0, 3);
+  const list = data.slice(3);
+
+  return (
+    <div className="space-y-16">
+      {/* Header Info */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-white/5">
+        <div className="space-y-1 text-center md:text-left">
+          <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Legendary Ranking</h3>
+          <p className="text-[10px] text-white/20 font-black uppercase tracking-widest">Showing Top 50 Collectors of the Season</p>
+        </div>
+        <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl">
+          <Clock8 className="w-5 h-5 text-primary" />
+          <div className="flex flex-col">
+            <span className="text-[8px] text-white/30 font-black uppercase tracking-widest">Season Reset In</span>
+            <span className="text-sm font-black text-white tabular-nums tracking-wider">{countdown}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Podium */}
+      <div className="flex justify-center items-end gap-2 md:gap-8 px-2 pb-12">
+        {podium[1] && <PodiumItem user={podium[1]} rank={2} points={podium[1].activity_points} />}
+        {podium[0] && <PodiumItem user={podium[0]} rank={1} points={podium[0].activity_points} />}
+        {podium[2] && <PodiumItem user={podium[2]} rank={3} points={podium[2].activity_points} />}
+      </div>
+
+      {/* List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {list.map((item, idx) => (
+          <LeaderboardCard 
+            key={item.id} 
+            user={item} 
+            rank={idx + 4} 
+            points={item.activity_points} 
+            isCurrentUser={user?.id === item.id}
+          />
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default function Profile() {
@@ -710,10 +653,41 @@ export default function Profile() {
   const [refreshKey, setRefreshKey] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
-  const headerBgOpacity = useTransform(scrollY, [0, 200], [0, 0.95]);
-  const heroParallaxY = useTransform(scrollY, (v) => reducedMotion ? 0 : -v * 0.3);
   const [showCollapsedName, setShowCollapsedName] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [claiming, setClaiming] = useState(false);
+
+  const handleClaimDaily = async () => {
+    if (!user) return;
+    setClaiming(true);
+    try {
+      const { data, error } = await supabase.rpc("claim_daily_points", { user_id: user.id });
+      if (error) throw error;
+      const result = data as any;
+      if (result.success) {
+        toast.success(result.message);
+        setRefreshKey(k => k + 1);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const copyReferral = () => {
+    const code = profile?.referral_code || user?.id.slice(0, 8);
+    const link = `${window.location.origin}/auth?ref=${code}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Referral link copied!");
+  };
+
+  const nextClaimTime = profile?.last_claimed_at 
+    ? new Date(new Date(profile.last_claimed_at).getTime() + 24 * 60 * 60 * 1000)
+    : null;
+  const canClaim = !nextClaimTime || nextClaimTime < new Date();
 
   useEffect(() => {
     if (!user) return;
@@ -727,7 +701,6 @@ export default function Profile() {
     };
     fetchProfile();
     
-    // Subscribe to changes for real-time level ups
     const channel = supabase
       .channel('profile_changes')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, 
@@ -735,7 +708,7 @@ export default function Profile() {
       .subscribe();
       
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, refreshKey]);
 
   useEffect(() => {
     const unsub = scrollY.on("change", (v) => {
@@ -746,7 +719,6 @@ export default function Profile() {
   }, [scrollY]);
 
   const recentlyViewed = getRecentlyViewed();
-  const continueWatching = useContinueWatching();
   const watchlist = getWatchlist();
   const filteredWatchlist = useMemo(() => {
     const list = watchlistFilter === "all" 
@@ -793,20 +765,11 @@ export default function Profile() {
     navigate(`/${type === "series" ? "series" : "movie"}/${slug}-${id}`);
   }, [navigate]);
 
-  const handleRemoveContinueWatching = useCallback((e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    removeContinueWatching(id);
-    setRefreshKey((k) => k + 1);
-    toast.success("Removed from continue watching");
-  }, []);
-
-  const totalWatched = recentlyViewed.length;
-
   const stats = [
-    { icon: Film, label: "Movies", value: movieCount, color: "from-blue-500 to-blue-600", bg: "bg-blue-500/10" },
-    { icon: Tv, label: "Series", value: seriesCount, color: "from-purple-500 to-purple-600", bg: "bg-purple-500/10" },
-    { icon: Bookmark, label: "Saved", value: watchlist.length, color: "from-amber-500 to-orange-500", bg: "bg-amber-500/10" },
-    { icon: Star, label: "Rating", value: avgRating, color: "from-yellow-400 to-yellow-500", bg: "bg-yellow-500/10" },
+    { icon: Film, label: "Movies", value: movieCount },
+    { icon: Tv, label: "Series", value: seriesCount },
+    { icon: Bookmark, label: "Saved", value: watchlist.length },
+    { icon: Star, label: "Rating", value: avgRating },
   ];
 
   const tabs = [
@@ -836,7 +799,6 @@ export default function Profile() {
       icon: Bell, label: "Notifications", desc: "Push notification settings",
       onClick: () => {},
       color: "bg-orange-500/10", iconColor: "text-orange-400",
-      customContent: <PushNotificationButton />,
     },
     {
       icon: Trash2, label: "Storage & Data", desc: "Clear history and watchlist",
@@ -844,7 +806,6 @@ export default function Profile() {
       color: "bg-red-500/10", iconColor: "text-red-400",
     },
   ];
-
 
   if (loading) {
     return (
@@ -915,320 +876,295 @@ export default function Profile() {
           </div>
         </header>
 
-        {/* BENTO GRID LAYOUT */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* OPEN PROFILE LAYOUT */}
+        <div className="flex flex-col lg:flex-row gap-12 items-start">
           
-          {/* LEFT COLUMN: Identity & Stats (4 cols) */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* LEFT: IDENTITY & INTEGRATED ACTIONS */}
+          <div className="w-full lg:w-[380px] space-y-12 shrink-0">
             
-            {/* Identity Card */}
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-secondary/30 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000" />
-              <div className="relative p-8 rounded-lg bg-black/40 backdrop-blur-3xl border border-white/10 overflow-hidden">
-                <div className="absolute top-0 right-0 p-4">
-                  <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                    <Crown className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
-                
-                <div className="relative mb-6">
-                  <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-white/20 relative group/avatar">
-                    <Avatar className="w-full h-full rounded-none">
-                      <AvatarImage src={user?.user_metadata?.avatar_url} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-4xl font-bold">{initials}</AvatarFallback>
-                    </Avatar>
-                    {user ? (
-                      <button 
-                        onClick={() => setEditProfileOpen(true)}
-                        className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center"
-                      >
-                        <Camera className="w-6 h-6 text-white" />
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => navigate("/auth")}
-                        className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center"
-                      >
-                        <Lock className="w-6 h-6 text-white" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <h2 className="text-3xl font-bold text-white mb-1">{displayName}</h2>
-                <p className="text-white/40 text-sm mb-6 flex items-center gap-2">
-                  <Mail className="w-3.5 h-3.5" /> {userEmail}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <div className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40">
-                    {memberSince}
-                  </div>
-                  {profile && (
-                    <>
-                      <div className="px-2 py-1 rounded-md bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary">
-                        Level {profile.level}
-                      </div>
-                      <div className="px-2 py-1 rounded-md bg-secondary/10 border border-secondary/20 text-[10px] font-black uppercase tracking-widest text-secondary">
-                        {profile.activity_points} XP
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {profile && (
-                    <>
-                      <div className="flex justify-between items-end text-xs mb-1">
-                        <span className="text-white/60 font-bold uppercase tracking-wider">Level {profile.level} Mastery</span>
-                        <span className="text-primary font-bold">{(profile.activity_points % 500)} / 500 XP</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(100, (profile.activity_points % 500) / 5)}%` }}
-                          transition={{ duration: 1.5, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-primary via-secondary to-primary"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Stats Bento Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              {stats.map((stat, idx) => (
-                <motion.div 
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * idx }}
-                  className="p-5 rounded-lg bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all group"
+            {/* Identity (Open Design) */}
+            <div className="space-y-8">
+              <div className="relative group/avatar inline-block">
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-2xl blur-lg opacity-20 group-hover/avatar:opacity-40 transition duration-500" />
+                <Avatar className="w-24 h-24 md:w-32 md:h-32 rounded-2xl border border-white/10 relative z-10 bg-black/40 backdrop-blur-3xl">
+                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-white/5 text-4xl font-black text-primary">{initials}</AvatarFallback>
+                </Avatar>
+                <button 
+                  onClick={() => setEditProfileOpen(true)}
+                  className="absolute -bottom-2 -right-2 z-20 w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
                 >
-                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform", stat.bg)}>
-                    <stat.icon className="w-5 h-5 text-white/80" />
+                  <Camera className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none">{displayName}</h2>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest border border-primary/20">
+                    LEVEL {profile?.level || 1}
+                  </span>
+                  <span className="text-white/30 text-[9px] font-black uppercase tracking-widest">{memberSince}</span>
+                  <span className="text-white/20 text-[9px] font-bold truncate max-w-[150px]">{userEmail}</span>
+                </div>
+              </div>
+
+              {/* Progress (Integrated) */}
+              {profile && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-end text-[9px] font-black uppercase tracking-widest text-white/30">
+                    <span>Rank Mastery</span>
+                    <span className="text-white">{(profile.activity_points % 500)} / 500 XP</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-[10px] text-white/30 uppercase tracking-widest font-bold">{stat.label}</div>
-                </motion.div>
-              ))}
+                  <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, (profile.activity_points % 500) / 5)}%` }}
+                      className="h-full bg-primary"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Settings Bento Card */}
-            <div className="p-6 rounded-lg bg-white/[0.03] border border-white/5">
-              <h3 className="text-sm font-bold text-white/60 uppercase tracking-widest mb-6">Security & Preferences</h3>
-              <div className="space-y-3">
-                {settingsItems.map(item => (
-                  <button 
-                    key={item.label} 
-                    onClick={item.onClick}
-                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", item.color)}>
-                        <item.icon className={cn("w-4 h-4", item.iconColor)} />
-                      </div>
-                      <span className="text-sm font-medium text-white/80">{item.label}</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-                ))}
-              </div>
+            {/* QUICK ACTIONS (Integrated Grid) */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={handleClaimDaily}
+                disabled={!canClaim || claiming}
+                className={cn(
+                  "p-5 rounded-2xl flex flex-col items-center gap-2 transition-all border",
+                  canClaim 
+                    ? "bg-primary border-primary text-white shadow-glow" 
+                    : "bg-white/[0.02] border-white/5 text-white/20"
+                )}
+              >
+                <Gift className={cn("w-6 h-6", canClaim ? "animate-bounce" : "opacity-20")} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{canClaim ? "Claim Daily" : "Claimed"}</span>
+              </button>
+
+              <button
+                onClick={copyReferral}
+                className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col items-center gap-2 hover:bg-white/[0.05] transition-all"
+              >
+                <Users className="w-6 h-6 text-white/40 group-hover:text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Invite</span>
+              </button>
+            </div>
+
+            {/* SYSTEM SETTINGS (Integrated List) */}
+            <div className="space-y-1">
+               <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-4 px-2">Account Settings</h3>
+               {settingsItems.map((item, idx) => (
+                 <button 
+                  key={idx}
+                  onClick={item.onClick}
+                  className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.03] transition-all group"
+                 >
+                   <div className="flex items-center gap-4">
+                     <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", item.color)}>
+                       <item.icon className={cn("w-4 h-4", item.iconColor)} />
+                     </div>
+                     <div className="text-left">
+                       <p className="text-sm font-bold text-white/80 group-hover:text-white transition-colors">{item.label}</p>
+                       <p className="text-[10px] text-white/20 font-medium">{item.desc}</p>
+                     </div>
+                   </div>
+                   <ChevronRight className="w-4 h-4 text-white/10 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                 </button>
+               ))}
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Tabbed Content (8 cols) */}
-          <div className="lg:col-span-8 space-y-6">
+          {/* RIGHT: MAIN CONTENT AREA (Fluid & Spacious) */}
+          <div className="flex-1 w-full space-y-16">
             
-            {/* Tabs Header */}
-            <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all relative overflow-hidden",
-                    activeTab === tab.id 
-                      ? "text-white bg-primary shadow-glow" 
-                      : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                  )}
-                >
-                  <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "animate-pulse" : "")} />
-                  <span>{tab.label}</span>
-                </button>
+            {/* STATS STRIP (No Boxes, Pure Typography) */}
+            <div className="flex flex-wrap gap-x-12 gap-y-8">
+              {stats.map((stat, idx) => (
+                <div key={idx} className="space-y-2">
+                  <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">{stat.label}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-black text-white tracking-tighter leading-none">{stat.value}</span>
+                    <stat.icon className="w-4 h-4 text-primary/40" />
+                  </div>
+                </div>
               ))}
             </div>
 
-            {/* Tab Content Rendering */}
-            <AnimatePresence mode="wait">
-              {activeTab === "activity" && (
+            {/* TABS NAVIGATION (Modern Underline Style) */}
+            <div className="space-y-10">
+              <div className="flex items-center gap-10 overflow-x-auto pb-4 border-b border-white/5 scrollbar-none">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "flex items-center gap-2 transition-all whitespace-nowrap relative pb-4",
+                      activeTab === tab.id 
+                        ? "text-white" 
+                        : "text-white/20 hover:text-white/40"
+                    )}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    <span className="text-xs font-black uppercase tracking-widest">{tab.label}</span>
+                    {activeTab === tab.id && (
+                      <motion.div 
+                        layoutId="activeTabUnderline"
+                        className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-primary"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* FLUID TAB CONTENT */}
+              <AnimatePresence mode="wait">
                 <motion.div
-                  key="activity"
+                  key={activeTab}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
+                  transition={{ duration: 0.35, ease: "easeOut" }}
                 >
-                  {/* Recently Viewed Grid */}
-                  <div className="p-8 rounded-lg bg-white/[0.03] border border-white/5">
-                    <div className="flex items-center gap-3 mb-8">
-                      <Clock className="w-6 h-6 text-secondary" />
-                      <h3 className="text-xl font-bold">Recent History</h3>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      {recentlyViewed.length > 0 ? (
-                        recentlyViewed.slice(0, 10).map((item, idx) => (
-                          <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.05 * idx }}
-                            onClick={() => navigateToMovie(item.id, item.title, item.type)}
-                            className="flex items-center gap-4 p-4 rounded-lg bg-white/[0.02] border border-white/5 hover:bg-white/[0.06] transition-all cursor-pointer group"
-                          >
-                            <div className="w-14 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                              <img src={item.image} alt="" className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors">{item.title}</h4>
-                              <p className="text-[10px] text-white/30 uppercase tracking-widest mt-1 font-bold">{item.type} • {item.year || '2024'}</p>
-                            </div>
-                            <div className="flex items-center gap-4 pr-2">
-                              <div className="flex flex-col items-end">
-                                <span className="text-[10px] text-white/30 font-bold uppercase">Seen</span>
-                                <span className="text-xs text-white/60 font-medium">Recently</span>
+                  {activeTab === "activity" && (
+                    <div className="space-y-12">
+                      {/* Recently Viewed Grid */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-black text-white uppercase tracking-wider">Recently Viewed</h3>
+                          <button className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">View All History</button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {recentlyViewed.slice(0, 10).map((item) => (
+                            <motion.div
+                              key={item.id}
+                              whileHover={{ y: -5 }}
+                              onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                              className="group cursor-pointer space-y-3"
+                            >
+                              <div className="aspect-[2/3] rounded-xl overflow-hidden border border-white/5 bg-white/5 relative">
+                                <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
+                                    <Play className="w-4 h-4 fill-current" />
+                                  </div>
+                                </div>
                               </div>
-                              <ChevronRight className="w-5 h-5 text-white/10 group-hover:text-primary transition-colors" />
+                              <div className="space-y-0.5">
+                                <p className="text-[11px] font-black text-white truncate">{item.title}</p>
+                                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">{item.type}</p>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {isAdmin && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12 border-t border-white/5">
+                          <button 
+                            onClick={() => navigate("/admin")} 
+                            className="p-8 rounded-2xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all text-left group"
+                          >
+                            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                              <Shield className="w-6 h-6 text-primary" />
                             </div>
-                          </motion.div>
-                        ))
-                      ) : (
-                         <p className="text-center py-10 text-white/20 text-sm">No activity recorded yet.</p>
+                            <h4 className="text-xl font-black mb-2 uppercase tracking-tighter">Admin Dashboard</h4>
+                            <p className="text-sm text-white/40 leading-relaxed font-medium">Global system management, movie uploads, and site analytics.</p>
+                          </button>
+                          <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/5">
+                            <SendPushPanel />
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
+                  )}
 
-                  {isAdmin && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <button 
-                        onClick={() => navigate("/admin")} 
-                        className="p-8 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all text-left group"
-                      >
-                        <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                          <Shield className="w-6 h-6 text-primary" />
+                  {activeTab === "watchlist" && (
+                    <div className="space-y-10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Bookmark className="w-6 h-6 text-primary" />
+                          <h3 className="text-xl font-black uppercase tracking-wider">Your Watchlist</h3>
                         </div>
-                        <h4 className="text-xl font-bold mb-2">Admin Dashboard</h4>
-                        <p className="text-sm text-white/40 leading-relaxed">Global system management, movie uploads, and site analytics.</p>
-                      </button>
-                      <div className="p-8 rounded-lg bg-white/[0.03] border border-white/5">
-                        <SendPushPanel />
+                        <div className="flex gap-2">
+                          {["all", "movie", "series"].map(f => (
+                            <button 
+                              key={f} 
+                              onClick={() => setWatchlistFilter(f as any)} 
+                              className={cn(
+                                "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border",
+                                watchlistFilter === f ? "bg-primary border-primary text-black" : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                              )}
+                            >
+                              {f}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {filteredWatchlist.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {filteredWatchlist.map((item, idx) => (
+                            <motion.div
+                              key={item.id}
+                              whileHover={{ y: -5 }}
+                              onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                              className="group cursor-pointer space-y-3"
+                            >
+                              <div className="aspect-[2/3] rounded-xl overflow-hidden border border-white/5 bg-white/5 relative">
+                                <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                              </div>
+                              <p className="text-[11px] font-black text-white truncate px-1">{item.title}</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-20 flex flex-col items-center justify-center gap-4 text-white/10">
+                          <Bookmark className="w-16 h-16 stroke-[1]" />
+                          <p className="text-sm font-black uppercase tracking-widest">Empty Watchlist</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "leaderboard" && (
+                    <LeaderboardSection />
+                  )}
+
+                  {activeTab === "settings" && (
+                    <div className="max-w-2xl space-y-12">
+                      <div className="space-y-6">
+                        <h3 className="text-lg font-black text-white uppercase tracking-wider">Security & Preferences</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                          {settingsItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <button 
+                                key={item.label} 
+                                onClick={item.onClick}
+                                className="w-full flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all group"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", item.color)}>
+                                    <Icon className={cn("w-5 h-5", item.iconColor)} />
+                                  </div>
+                                  <div className="text-left">
+                                    <p className="text-sm font-black text-white leading-none mb-1">{item.label}</p>
+                                    <p className="text-[10px] text-white/30 font-medium">{item.desc}</p>
+                                  </div>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-white/10 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
                 </motion.div>
-              )}
-
-              {activeTab === "watchlist" && (
-                <motion.div
-                  key="watchlist"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="p-8 rounded-lg bg-white/[0.03] border border-white/5"
-                >
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-3">
-                      <Bookmark className="w-6 h-6 text-primary" />
-                      <h3 className="text-xl font-bold">Your Watchlist</h3>
-                    </div>
-                    <div className="flex gap-2">
-                      {["all", "movie", "series"].map(f => (
-                        <button 
-                          key={f} 
-                          onClick={() => setWatchlistFilter(f as any)} 
-                          className={cn(
-                            "px-4 py-1.5 rounded-lg text-xs font-bold transition-all border",
-                            watchlistFilter === f ? "bg-primary border-primary text-black" : "bg-white/5 border-white/10 text-white/40 hover:text-white"
-                          )}
-                        >
-                          {f.toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {filteredWatchlist.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {filteredWatchlist.map((item, idx) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.05 * idx }}
-                          onClick={() => navigateToMovie(item.id, item.title, item.type)}
-                          className="aspect-[2/3] rounded-lg overflow-hidden border border-white/10 cursor-pointer group relative"
-                        >
-                          <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                            <p className="text-[10px] font-bold text-white uppercase tracking-wider line-clamp-1">{item.title}</p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="py-20 flex flex-col items-center justify-center gap-4 text-white/20">
-                      <Bookmark className="w-16 h-16 stroke-[1]" />
-                      <p className="text-sm font-medium">Your watchlist is empty</p>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
-              {activeTab === "leaderboard" && (
-                <motion.div
-                  key="leaderboard"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <LeaderboardSection />
-                </motion.div>
-              )}
-
-              {activeTab === "settings" && (
-                <motion.div
-                  key="settings"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-4"
-                >
-                  <div className="p-6 rounded-lg bg-white/[0.03] border border-white/5">
-                    <h3 className="text-sm font-bold text-white/60 uppercase tracking-widest mb-6">Security & Preferences</h3>
-                    <div className="space-y-3">
-                      {settingsItems.map(item => (
-                        <button 
-                          key={item.label} 
-                          onClick={item.onClick}
-                          className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", item.color)}>
-                              <item.icon className={cn("w-4 h-4", item.iconColor)} />
-                            </div>
-                            <span className="text-sm font-medium text-white/80">{item.label}</span>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>

@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSeo } from "@/hooks/useSeo";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-
 import { useAuth } from "@/hooks/useAuth";
 import { fetchTrending, getOptimizedBackdropUrl } from "@/lib/api";
 import { sendBrandedEmail, getWelcomeEmailHtml } from "@/lib/email";
@@ -34,6 +33,8 @@ const staggerItem = {
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get("ref") || sessionStorage.getItem("moviebay_referral");
   const { user, loading } = useAuth();
   const { toast } = useToast();
   useSeo({ title: "Sign In", description: "Sign in or create an account to start streaming movies and series on Moviebay." });
@@ -188,7 +189,11 @@ const Auth = () => {
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { first_name: firstName, last_name: lastName },
+        data: { 
+          first_name: firstName, 
+          last_name: lastName,
+          referral_code: referralCode 
+        },
       },
     });
     setSubmitting(false);
@@ -206,7 +211,7 @@ const Auth = () => {
         console.error("Welcome email failed:", e);
       }
     }
-  }, [email, password, firstName, lastName, toast]);
+  }, [email, password, firstName, lastName, referralCode, toast]);
 
   const handleForgotPassword = useCallback(async () => {
     setSubmitting(true);
