@@ -807,10 +807,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       <motion.div variants={fadeInUp} className="flex items-center gap-3 pt-2">
                         <Button
                           size="lg"
-                          className={cn(
-                            "gap-2 rounded-md px-8 h-12 text-base font-semibold transition-all duration-200 hover:scale-[1.02]",
-                            TRENDING_ACCENT_BUTTON_CLASS
-                          )}
+                          className="btn-premium-red gap-2 rounded-full px-8 h-12 text-base font-semibold border-0"
                           onClick={() => {
                             const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                             if (versions.length > 1) {
@@ -1453,7 +1450,7 @@ function MobileMovieLayout({
             <div className="grid grid-cols-2 gap-3">
               <Button
                 size="lg"
-                className="h-[52px] rounded-lg border-0 bg-primary text-white active:scale-95 transition-all shadow-glow"
+                className="btn-premium-red h-[52px] rounded-full border-0 text-white font-semibold flex items-center justify-center"
                 onClick={() => {
                   const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                   if (versions.length > 1) {
@@ -1469,7 +1466,7 @@ function MobileMovieLayout({
 
               <Button
                 size="lg"
-                className="h-[52px] rounded-lg border border-white/10 bg-white/5 text-white active:scale-95 transition-all"
+                className="btn-glass h-[52px] rounded-full text-white font-semibold flex items-center justify-center"
                 onClick={() => {
                   const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                   if (versions.length > 1) {

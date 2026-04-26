@@ -82,16 +82,16 @@ export function HeroSection({ movie, onPlay, onInfo }: HeroSectionProps) {
           <div className="flex flex-wrap gap-3 pt-2">
             <Button
               size="lg"
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary font-semibold"
+              className="btn-premium-red gap-2 font-semibold border-0"
               onClick={() => onPlay(movie)}
             >
-              <Play className="w-5 h-5 fill-current" />
+              <Play className="w-5 h-5 fill-current drop-shadow-md" />
               Watch Now
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="gap-2 bg-card/50 backdrop-blur border-border/50 hover:bg-card/80"
+              className="btn-glass gap-2 border-0"
               onClick={() => onInfo(movie)}
             >
               <Info className="w-5 h-5" />
@@ -100,7 +100,7 @@ export function HeroSection({ movie, onPlay, onInfo }: HeroSectionProps) {
             <Button
               size="icon"
               variant="outline"
-              className="bg-card/50 backdrop-blur border-border/50 hover:bg-card/80"
+              className="btn-glass border-0"
             >
               <Plus className="w-5 h-5" />
             </Button>

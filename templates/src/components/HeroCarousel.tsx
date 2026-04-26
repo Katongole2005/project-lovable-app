@@ -420,15 +420,15 @@ export function HeroCarousel({
                     <button
                       onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
                       data-testid="button-hero-play"
-                      className="group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full bg-white text-black font-semibold text-sm lg:text-base hover:bg-white/90 active:scale-95 transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.15)]"
+                      className="btn-premium-red group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-semibold text-sm lg:text-base"
                     >
-                      <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current" />
+                      <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
                       Watch Now
                     </button>
                     <button
                       onClick={onViewAll}
                       data-testid="button-hero-more"
-                      className="px-6 py-3 lg:px-8 lg:py-3.5 rounded-full bg-white/10 backdrop-blur-sm text-white font-medium text-sm lg:text-base border border-white/15 hover:bg-white/20 active:scale-95 transition-all duration-200"
+                      className="btn-glass px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-medium text-sm lg:text-base"
                     >
                       More
                     </button>
