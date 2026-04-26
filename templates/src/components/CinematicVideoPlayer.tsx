@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings } from "lucide-react";
+import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, Monitor, Timer } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,12 @@ export function CinematicVideoPlayer({
   const [resumeTime, setResumeTime] = useState(startTime);
   const [hasRetriedPlayback, setHasRetriedPlayback] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [bufferedTime, setBufferedTime] = useState(0);
+  const [isPipAvailable, setIsPipAvailable] = useState(false);
+  const [isPipActive, setIsPipActive] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [lastTapTime, setLastTapTime] = useState(0);
+  const [tapSide, setTapSide] = useState<'left' | 'right' | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -69,9 +75,9 @@ export function CinematicVideoPlayer({
   const year = activeMovie?.year;
   const genres = activeMovie?.genres || [];
   const isEmbeddableVideo = /youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com/i.test(activeVideoUrl);
+  const useNativeVideoControls = false; // Always use custom UI for direct video files
+  const controlsHideDelayMs = isTouchDevice ? 3500 : 3000;
   const sessionKey = `${videoUrl}|${startTime}|${movie?.mobifliks_id ?? ""}`;
-  const useNativeVideoControls = !isEmbeddableVideo;
-  const controlsHideDelayMs = isTouchDevice ? 6500 : 4000;
 
   const beginPlayback = useCallback(() => {
     pauseRequestedRef.current = false;
@@ -134,6 +140,29 @@ export function CinematicVideoPlayer({
 
     return () => window.clearTimeout(timeoutId);
   }, [activeVideoUrl, isEmbeddableVideo, isPlaying, resumeTime]);
+
+  // Handle PiP availability and state
+  useEffect(() => {
+    if (typeof document === "undefined" || isEmbeddableVideo) return;
+    
+    const checkPip = () => {
+      setIsPipAvailable(document.pictureInPictureEnabled && !!videoRef.current);
+    };
+    
+    checkPip();
+    
+    const video = videoRef.current;
+    if (video) {
+      const onEnterPip = () => setIsPipActive(true);
+      const onLeavePip = () => setIsPipActive(false);
+      video.addEventListener("enterpictureinpicture", onEnterPip);
+      video.addEventListener("leavepictureinpicture", onLeavePip);
+      return () => {
+        video.removeEventListener("enterpictureinpicture", onEnterPip);
+        video.removeEventListener("leavepictureinpicture", onLeavePip);
+      };
+    }
+  }, [isEmbeddableVideo, isPlaying]);
 
   // Reset state when player opens/closes or URL changes
   useEffect(() => {
@@ -227,7 +256,7 @@ export function CinematicVideoPlayer({
     };
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [beginPlayback, handleClose, isFullscreen, isOpen, isPlaying, toggleFullscreen, togglePlay]);
+  }, [beginPlayback, handleClose, isFullscreen, isOpen, isPlaying, toggleFullscreen]);
 
   const iframeSrc = isPlaying && isEmbeddableVideo
     ? (() => {
@@ -305,27 +334,55 @@ export function CinematicVideoPlayer({
       video.currentTime = resumeTime;
     }
     setDuration(video.duration || 0);
+    video.playbackRate = playbackRate;
   };
 
   const handleDirectTimeUpdate = () => {
     const video = videoRef.current;
     if (!video) return;
-    // Keep native-control playback extremely quiet in React so the browser can
-    // spend its resources on decoding/rendering the video instead of repainting
-    // a custom overlay every second.
+
+    // Update buffered time
+    if (video.buffered.length > 0) {
+      const buffered = video.buffered.end(video.buffered.length - 1);
+      setBufferedTime(buffered);
+    }
+
     const now = Date.now();
-    const updateIntervalMs = useNativeVideoControls ? 5000 : 1000;
+    // Use faster updates for custom UI to ensure smooth progress bar
+    const updateIntervalMs = 100; 
     const shouldUpdate = now - lastTimeUpdateRef.current >= updateIntervalMs;
+    
     if (shouldUpdate) {
       lastTimeUpdateRef.current = now;
-      if (!useNativeVideoControls && !isSeeking) {
+      if (!isSeeking) {
         setCurrentTime(video.currentTime);
       }
-      if (!useNativeVideoControls) {
-        setDuration(video.duration || 0);
-      }
+      setDuration(video.duration || 0);
       onTimeUpdate?.(video.currentTime, video.duration || 0);
     }
+  };
+
+  const togglePip = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!videoRef.current || isEmbeddableVideo) return;
+    
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await videoRef.current.requestPictureInPicture();
+      }
+    } catch (error) {
+      console.error("PiP error:", error);
+    }
+  };
+
+  const changePlaybackRate = (rate: number) => {
+    setPlaybackRate(rate);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate;
+    }
+    setShowSpeedMenu(false);
   };
 
   const handleDirectPlay = () => {
@@ -421,6 +478,18 @@ export function CinematicVideoPlayer({
     setResumeTime(currentTime || startTime);
     setCurrentTime(currentTime || startTime);
     beginPlayback();
+  };
+
+  const handleDoubleTap = (side: 'left' | 'right') => {
+    const now = Date.now();
+    if (now - lastTapTime < 300 && tapSide === side) {
+      skip(side === 'left' ? -10 : 10);
+      setLastTapTime(0);
+      setTapSide(null);
+    } else {
+      setLastTapTime(now);
+      setTapSide(side);
+    }
   };
 
   return (
@@ -722,6 +791,15 @@ export function CinematicVideoPlayer({
                       
                       {/* Timeline / Seek Bar */}
                       <div className="group relative pt-4 pb-2 px-1">
+                        {/* Buffered Progress Background */}
+                        <div className="absolute top-[22px] left-1 right-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={false}
+                            animate={{ width: `${(bufferedTime / (duration || 1)) * 100}%` }}
+                            className="h-full bg-white/20"
+                          />
+                        </div>
+                        
                         <Slider
                           value={[currentTime]}
                           max={duration || 100}
@@ -796,35 +874,74 @@ export function CinematicVideoPlayer({
                             </div>
                           </div>
 
-                          <div className="relative group">
-                            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white">
-                              {playbackRate}x <Settings className="h-3 w-3" />
-                            </button>
-                            <div className="absolute bottom-full right-0 mb-2 invisible group-hover:visible bg-black/90 border border-white/10 rounded-xl overflow-hidden backdrop-blur-xl shadow-2xl min-w-[100px]">
-                              {[0.5, 0.75, 1, 1.25, 1.5, 2].map(rate => (
-                                <button
-                                  key={rate}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setPlaybackRate(rate);
-                                    if (isEmbeddableVideo) {
-                                      sendCommand("rate", rate);
-                                    } else if (videoRef.current) {
-                                      videoRef.current.playbackRate = rate;
-                                    }
-                                  }}
-                                  className={cn(
-                                    "w-full px-4 py-2.5 text-xs text-left transition-colors hover:bg-white/10",
-                                    playbackRate === rate ? "text-primary bg-primary/5" : "text-white/60"
-                                  )}
-                                >
-                                  {rate}x {rate === 1 && "(Normal)"}
-                                </button>
-                              ))}
+                          <div className="flex items-center gap-2">
+                            {/* PiP Button */}
+                            {isPipAvailable && (
+                              <button 
+                                onClick={togglePip} 
+                                className={cn(
+                                  "p-2 rounded-lg transition-all active:scale-90",
+                                  isPipActive ? "bg-primary text-white" : "text-white/70 hover:text-white hover:bg-white/10"
+                                )}
+                                title="Picture in Picture"
+                              >
+                                <Monitor className="h-5 w-5" />
+                              </button>
+                            )}
+
+                            {/* Speed Selector */}
+                            <div className="relative">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setShowSpeedMenu(!showSpeedMenu); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white"
+                              >
+                                <Timer className="h-3.5 w-3.5" />
+                                {playbackRate}x
+                              </button>
+                              
+                              <AnimatePresence>
+                                {showSpeedMenu && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    className="absolute bottom-full right-0 mb-3 w-28 overflow-hidden rounded-2xl border border-white/10 bg-black/90 p-1.5 backdrop-blur-xl shadow-2xl pointer-events-auto"
+                                  >
+                                    {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                                      <button
+                                        key={rate}
+                                        onClick={(e) => { e.stopPropagation(); changePlaybackRate(rate); }}
+                                        className={cn(
+                                          "flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
+                                          playbackRate === rate ? "bg-primary text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
+                                        )}
+                                      >
+                                        {rate}x
+                                        {playbackRate === rate && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
                           </div>
                         </div>
                       </div>
+
+                      {/* Gesture Overlays for Skipping (Mobile Only) */}
+                      {isTouchDevice && (
+                        <div className="absolute inset-x-0 top-32 bottom-32 flex pointer-events-none">
+                          <div 
+                            className="w-1/3 h-full pointer-events-auto" 
+                            onPointerDown={(e) => { e.stopPropagation(); handleDoubleTap('left'); }}
+                          />
+                          <div className="w-1/3 h-full" />
+                          <div 
+                            className="w-1/3 h-full pointer-events-auto" 
+                            onPointerDown={(e) => { e.stopPropagation(); handleDoubleTap('right'); }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
