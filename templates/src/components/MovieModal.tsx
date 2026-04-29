@@ -1560,6 +1560,7 @@ function MobileMovieLayout({
                               episode={episode}
                               seriesTitle={movie.title}
                               seriesImage={movie.image_url}
+                              seriesDetailsUrl={(movie as any).video_page_url || movie.details_url}
                               seasonNumber={selectedSeason}
                               onPlay={onPlay}
                               index={idx}
@@ -1673,15 +1674,17 @@ interface MobileTimelineEpisodeProps {
   episode: Episode;
   seriesTitle: string;
   seriesImage?: string;
+  seriesDetailsUrl?: string | null;
   seasonNumber?: number;
-  onPlay: (url: string, title: string) => void;
+  onPlay: (url: string, title: string, startTime?: number, mobifliksId?: string | null, detailsUrl?: string | null) => void;
   index: number;
   isResumeTarget: boolean;
   progressPct?: number;
   selectedServer?: 1 | 2;
 }
 
-function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber = 1, onPlay, index, isResumeTarget, progressPct = 0, selectedServer = 1 }: MobileTimelineEpisodeProps) {
+function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seriesDetailsUrl, seasonNumber = 1, onPlay, index, isResumeTarget, progressPct = 0, selectedServer = 1 }: MobileTimelineEpisodeProps) {
+  const { user } = useAuth();
   const [s1Size, setS1Size] = React.useState<string | null>(null);
   const [s2Size, setS2Size] = React.useState<string | null>(null);
 
@@ -1739,7 +1742,13 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
               : (episode.server2_url || episode.download_url);
 
             if (targetUrl) {
-              onPlay(targetUrl, `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`);
+              onPlay(
+                targetUrl,
+                `${seriesTitle} - S${seasonNumber}:E${episode.episode_number}`,
+                0,
+                episode.mobifliks_id,
+                episode.video_page_url || seriesDetailsUrl
+              );
             }
           }
         }}
@@ -1855,7 +1864,15 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seasonNumber
 }
 
 
-function DesktopEpisodeSection({ series, movie, onPlay }: { series: Series; movie: Movie; onPlay: (url: string, title: string) => void }) {
+function DesktopEpisodeSection({
+  series,
+  movie,
+  onPlay,
+}: {
+  series: Series;
+  movie: Movie | Series;
+  onPlay: (url: string, title: string, startTime?: number, mobifliksId?: string | null, detailsUrl?: string | null) => void;
+}) {
   const [selectedSeason, setSelectedSeason] = React.useState(1);
   const allEpisodes = series.episodes || [];
 
@@ -1918,6 +1935,7 @@ function DesktopEpisodeSection({ series, movie, onPlay }: { series: Series; movi
             episode={episode}
             seriesTitle={movie.title}
             seriesImage={movie.image_url}
+            seriesDetailsUrl={(movie as any).video_page_url || movie.details_url}
             onPlay={onPlay}
           />
         ))}
@@ -1930,11 +1948,13 @@ interface DesktopEpisodeCardProps {
   episode: Episode;
   seriesTitle: string;
   seriesImage?: string;
-  onPlay: (url: string, title: string) => void;
+  seriesDetailsUrl?: string | null;
+  onPlay: (url: string, title: string, startTime?: number, mobifliksId?: string | null, detailsUrl?: string | null) => void;
 }
 
 // Desktop episode card - Netflix-style horizontal layout with thumbnail
-function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: DesktopEpisodeCardProps) {
+function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, seriesDetailsUrl, onPlay }: DesktopEpisodeCardProps) {
+  const { user } = useAuth();
   const [s1Size, setS1Size] = React.useState<string | null>(null);
   const [s2Size, setS2Size] = React.useState<string | null>(null);
 
@@ -1964,7 +1984,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
               `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`,
               0,
               episode.mobifliks_id,
-              episode.video_page_url || movie.video_page_url || movie.details_url
+              episode.video_page_url || seriesDetailsUrl
             );
           }
         }
@@ -2025,7 +2045,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                       `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`,
                       0,
                       episode.mobifliks_id,
-                      episode.video_page_url || movie.video_page_url || movie.details_url
+                      episode.video_page_url || seriesDetailsUrl
                     );
                   }}
                 >
@@ -2045,7 +2065,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, onPlay }: Deskt
                       `${seriesTitle} - S${episode.season_number ?? 1}:E${episode.episode_number}`,
                       0,
                       episode.mobifliks_id,
-                      episode.video_page_url || movie.video_page_url || movie.details_url
+                      episode.video_page_url || seriesDetailsUrl
                     );
                   }}
                 >

@@ -75,8 +75,8 @@ export const preloadImage = (url: string): Promise<void> => {
   });
 };
 
-export const preloadMovieBackdrop = (movie: { backdrop_url?: string | null; image_url?: string }): void => {
-  const backdropUrl = movie.backdrop_url;
+export const preloadMovieBackdrop = (movie?: { backdrop_url?: string | null; image_url?: string } | null): void => {
+  const backdropUrl = movie?.backdrop_url;
   if (backdropUrl) {
     const optimizedUrl = getOptimizedBackdropUrl(backdropUrl);
     preloadImage(optimizedUrl).catch(() => { });

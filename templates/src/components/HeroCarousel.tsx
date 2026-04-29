@@ -26,34 +26,39 @@ export function HeroCarousel({
   const deviceProfile = useDeviceProfile();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [isTransitioning, setIsTransitioning] = React.useState(false);
+  const safeMovies = React.useMemo(
+    () => movies.filter((movie): movie is Movie => Boolean(movie?.mobifliks_id)),
+    [movies]
+  );
   const totalSlides = Math.min(
-    movies.length,
+    safeMovies.length,
     deviceProfile.isWeakDevice ? (deviceProfile.isMobile ? 6 : 12) : 25
   );
-  const displayMovies = React.useMemo(() => movies.slice(0, totalSlides), [movies, totalSlides]);
+  const displayMovies = React.useMemo(() => safeMovies.slice(0, totalSlides), [safeMovies, totalSlides]);
   const mobileDeck = displayMovies;
+  const activeIndex = totalSlides > 0 ? Math.min(selectedIndex, totalSlides - 1) : 0;
   const transitionDuration = deviceProfile.allowComplexAnimations ? 1300 : 650;
   const autoplayDelayMs = deviceProfile.autoplayDelayMs;
   const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
-  const shouldAutoplay = true;
+  const shouldAutoplay = totalSlides > 1;
 
 
   const scrollTo = React.useCallback((index: number) => {
-    if (isTransitioning) return;
+    if (isTransitioning || totalSlides === 0) return;
     setIsTransitioning(true);
-    setSelectedIndex(index);
+    setSelectedIndex(Math.max(0, Math.min(index, totalSlides - 1)));
     setTimeout(() => setIsTransitioning(false), transitionDuration);
-  }, [isTransitioning, transitionDuration]);
+  }, [isTransitioning, totalSlides, transitionDuration]);
 
   const scrollPrev = React.useCallback(() => {
-    if (isTransitioning) return;
+    if (isTransitioning || totalSlides === 0) return;
     setIsTransitioning(true);
     setSelectedIndex(prev => (prev - 1 + totalSlides) % totalSlides);
     setTimeout(() => setIsTransitioning(false), transitionDuration);
   }, [totalSlides, isTransitioning, transitionDuration]);
 
   const scrollNext = React.useCallback(() => {
-    if (isTransitioning) return;
+    if (isTransitioning || totalSlides === 0) return;
     setIsTransitioning(true);
     setSelectedIndex(prev => (prev + 1) % totalSlides);
     setTimeout(() => setIsTransitioning(false), transitionDuration);
@@ -69,13 +74,13 @@ export function HeroCarousel({
 
   React.useEffect(() => {
     if (totalSlides > 0 && selectedIndex >= totalSlides) {
-      setSelectedIndex(0);
+      setSelectedIndex(totalSlides - 1);
     }
   }, [selectedIndex, totalSlides]);
 
   const getBackdrop = React.useCallback(
-    (movie: Movie) => {
-      if (!movie.backdrop_url) return null;
+    (movie?: Movie) => {
+      if (!movie?.backdrop_url) return null;
       return deviceProfile.allowHighResImages
         ? movie.backdrop_url.replace('/original/', '/w1280/').replace('/w780/', '/w1280/')
         : getOptimizedBackdropUrl(movie.backdrop_url);
@@ -95,7 +100,7 @@ export function HeroCarousel({
   };
 
   const getImdbRating = (movie: Movie) => {
-    const hash = movie.mobifliks_id.split('').reduce((a, b) => {
+    const hash = (movie.mobifliks_id || movie.title || "movie").split('').reduce((a, b) => {
       a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
@@ -135,15 +140,15 @@ export function HeroCarousel({
     </div>;
   }
 
-  const currentMovie = displayMovies[selectedIndex];
+  const currentMovie = displayMovies[activeIndex];
   const backdropSrc = getBackdrop(currentMovie);
 
   const getSideCards = () => {
     if (totalSlides <= 1) return [];
     const cards: { movie: Movie; originalIndex: number }[] = [];
-    const seen = new Set<number>([selectedIndex]);
+    const seen = new Set<number>([activeIndex]);
     for (let i = 1; i <= totalSlides && cards.length < sideCardCount; i++) {
-      const idx = (selectedIndex + i) % totalSlides;
+      const idx = (activeIndex + i) % totalSlides;
       if (!seen.has(idx)) {
         seen.add(idx);
         cards.push({ movie: displayMovies[idx], originalIndex: idx });
@@ -165,12 +170,12 @@ export function HeroCarousel({
         <div className="relative flex items-center justify-center py-2 carousel-perspective" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <div className="relative w-[160px] h-[240px]">
             {mobileDeck.map((movie, index) => {
-              const offset = index - selectedIndex;
+              const offset = index - activeIndex;
               const numSlides = mobileDeck.length;
               let adjustedOffset = offset;
               if (offset > numSlides / 2) adjustedOffset = offset - numSlides;
               if (offset < -numSlides / 2) adjustedOffset = offset + numSlides;
-              const isSelected = index === selectedIndex;
+              const isSelected = index === activeIndex;
               const isVisible = Math.abs(adjustedOffset) <= 2;
               const rotateY = adjustedOffset * -25;
               const translateX = adjustedOffset * 28;
@@ -235,7 +240,7 @@ export function HeroCarousel({
                   onClick={() => scrollTo(index)}
                   className={cn(
                     "transition-all duration-500 rounded-full",
-                    index === selectedIndex
+                    index === activeIndex
                       ? "w-4 h-1.5 bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                       : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
                   )}
@@ -246,7 +251,7 @@ export function HeroCarousel({
             <div className="w-24 mx-auto h-0.5 rounded-full bg-white/20 overflow-hidden">
               {shouldAutoplay && (
                   <div
-                    key={`mobile-progress-${selectedIndex}`}
+                    key={`mobile-progress-${activeIndex}`}
                     className="hero-progress-bar-fill h-full bg-white rounded-full animate-progress"
                     style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
                   />
@@ -268,12 +273,12 @@ export function HeroCarousel({
           @keyframes waterRipple {
             0% {
               clip-path: circle(0% at 50% 50%);
-              filter: url(#water-distortion-${selectedIndex}) blur(15px);
+              filter: url(#water-distortion-${activeIndex}) blur(15px);
               transform: scale(1.1);
             }
             100% {
               clip-path: circle(150% at 50% 50%);
-              filter: url(#water-distortion-${selectedIndex}) blur(0px);
+              filter: url(#water-distortion-${activeIndex}) blur(0px);
               transform: scale(1);
             }
           }
@@ -326,7 +331,7 @@ export function HeroCarousel({
           <AnimatePresence mode="popLayout" initial={false}>
             {backdropSrc && (
               <motion.div
-                key={`backdrop-${selectedIndex}`}
+                key={`backdrop-${activeIndex}`}
                 initial={allowHeroMotion ? { opacity: 0, scale: 1.03 } : false}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={allowHeroMotion ? { opacity: 0 } : undefined}
@@ -358,7 +363,7 @@ export function HeroCarousel({
             )}
             {!backdropSrc && (
               <motion.div
-                key={`backdrop-fallback-${selectedIndex}`}
+                key={`backdrop-fallback-${activeIndex}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.4 }}
                 exit={{ opacity: 0 }}
@@ -381,7 +386,7 @@ export function HeroCarousel({
             <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 pb-8 lg:pb-12">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div 
-                    key={`info-${selectedIndex}`}
+                    key={`info-${activeIndex}`}
                     initial={allowHeroMotion ? "hidden" : false}
                     animate="visible"
                     exit={allowHeroMotion ? "exit" : undefined}
@@ -406,7 +411,7 @@ export function HeroCarousel({
                       <span
                         className="text-6xl lg:text-8xl xl:text-9xl font-black text-white/10 leading-none font-display select-none hero-info-track-number"
                       >
-                        {String(selectedIndex + 1).padStart(2, "0")}
+                        {String(activeIndex + 1).padStart(2, "0")}
                       </span>
                       <div className="pb-1 lg:pb-2">
                         {currentMovie.logo_url ? (
@@ -549,7 +554,7 @@ export function HeroCarousel({
                         data-testid={`button-hero-dot-${index}`}
                         className={cn(
                           "rounded-full transition-all duration-500",
-                          index === selectedIndex
+                          index === activeIndex
                             ? "w-6 h-1.5 bg-white shadow-[0_0_10px_rgba(255,255,255,0.4)]"
                             : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
                         )}
@@ -559,7 +564,7 @@ export function HeroCarousel({
                     : (() => {
                       const maxDots = 7;
                       const half = Math.floor(maxDots / 2);
-                      let start = Math.max(0, selectedIndex - half);
+                      let start = Math.max(0, activeIndex - half);
                       let end = start + maxDots;
                       if (end > totalSlides) { end = totalSlides; start = Math.max(0, end - maxDots); }
                       const dots = [];
@@ -572,7 +577,7 @@ export function HeroCarousel({
                             data-testid={`button-hero-dot-${i}`}
                             className={cn(
                               "rounded-full transition-all duration-500",
-                              i === selectedIndex
+                              i === activeIndex
                                 ? "w-6 h-1.5 bg-white shadow-[0_0_10px_rgba(255,255,255,0.4)]"
                                 : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
                             )}
@@ -588,7 +593,7 @@ export function HeroCarousel({
                 <div className="ml-3 w-20 h-1 rounded-full bg-white/10 overflow-hidden">
                   {shouldAutoplay && (
                     <div
-                      key={`desktop-progress-${selectedIndex}`}
+                      key={`desktop-progress-${activeIndex}`}
                       className="hero-progress-bar-fill h-full rounded-full bg-gradient-to-r from-white/60 to-white/90"
                       style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
                     />
@@ -600,7 +605,7 @@ export function HeroCarousel({
             <div className="hidden lg:flex items-end pb-8 pr-6 xl:pr-10 min-w-[380px]">
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.div 
-                    key={`cards-${selectedIndex}`} 
+                    key={`cards-${activeIndex}`} 
                     className="flex items-end gap-4 xl:gap-5"
                     initial={allowHeroMotion ? "hidden" : false}
                     animate="visible"
@@ -653,7 +658,7 @@ export function HeroCarousel({
       </div>
       {/* Hidden SVG Filter for Realistic Liquid "Shuffle" Effect */}
       <svg className="absolute w-0 h-0 invisible pointer-events-none" aria-hidden="true">
-        <filter id={`water-distortion-${selectedIndex}`} key={selectedIndex} x="-20%" y="-20%" width="140%" height="140%">
+        <filter id={`water-distortion-${activeIndex}`} key={activeIndex} x="-20%" y="-20%" width="140%" height="140%">
           {/* Base Turbulence for the "Ripple" waves */}
           <feTurbulence type="fractalNoise" baseFrequency="0.01 0.015" numOctaves="3" result="noise">
             <animate attributeName="baseFrequency" values="0.01 0.015; 0.015 0.01; 0.01 0.015" dur="10s" repeatCount="indefinite" />
