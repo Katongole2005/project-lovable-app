@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Play, Download, ExternalLink, Clock, Eye, ChevronLeft, ChevronRight, Tag, Star, CalendarDays, Plus, Heart, List, Share2, Layers } from "lucide-react";
+import { X, Play, Download, ExternalLink, Eye, ChevronLeft, ChevronRight, Star, CalendarDays, Heart, Share2, Layers, Bookmark, Flag, Send, Youtube, Cast } from "lucide-react";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { toSlug } from "@/lib/slug";
 import { toast } from "sonner";
@@ -465,54 +465,11 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     }
   }, [isSeries, series.episodes, resumeEpisode, movie, selectedServer, onPlay]);
 
-  const [preloadUrl, setPreloadUrl] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    let isMounted = true;
-    if (!isOpen || !movie) {
-      setPreloadUrl(null);
-      return;
-    }
-
-    if (typeof navigator !== 'undefined' && 'connection' in navigator) {
-      const conn = (navigator as any).connection;
-      if (conn.saveData || conn.effectiveType === '2g' || conn.effectiveType === '3g') {
-        setPreloadUrl(null);
-        return;
-      }
-    }
-
-    const targetUrl = movie.type === "series"
-      ? (series.episodes?.[0]?.download_url || series.episodes?.[0]?.server2_url)
-      : (movie.download_url || movie.server2_url);
-
-    if (!targetUrl) {
-      setPreloadUrl(null);
-      return;
-    }
-
-    buildMediaUrl({
-      url: targetUrl,
-      title: movie.title,
-      detailsUrl: (movie as any).video_page_url || movie.details_url,
-      mobifliksId: movie.mobifliks_id,
-      play: true,
-    }).then(url => {
-      if (isMounted) setPreloadUrl(url);
-    });
-
-    return () => { isMounted = false; };
-  }, [isOpen, movie, series.episodes]);
-
   return (
     <ErrorBoundary>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         {/* Mobile: Full screen sheet, Desktop: Centered modal */}
         <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none">
-
-          {preloadUrl && (
-            <video src={preloadUrl} preload="auto" className="hidden" playsInline muted />
-          )}
 
           <DialogTitle className="sr-only">{movie.title}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -1042,7 +999,6 @@ function MobileMovieLayout({
   playbackSources,
   resumeEpisode,
 }: MobileMovieLayoutProps) {
-  const deviceProfile = useDeviceProfile();
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [selectedSeason, setSelectedSeason] = React.useState(1);
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
@@ -1156,54 +1112,13 @@ function MobileMovieLayout({
 
   const currentSeasonEpisodes = seasons.get(selectedSeason) || allEpisodes;
 
-  const formattedReleaseDate = movie.release_date
-    ? new Date(movie.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-    : null;
-
-  const accentHue = 6;
-  const accentAltHue = 18;
   const viewsLabel = React.useMemo(() => {
     if (movie.views === undefined || movie.views <= 0) return null;
     if (movie.views >= 1000000) return `${(movie.views / 1000000).toFixed(1)}M`;
     if (movie.views >= 1000) return `${(movie.views / 1000).toFixed(1)}K`;
     return `${movie.views}`;
   }, [movie.views]);
-  const heroSupportLabel = isSeries
-    ? `${availableSeasons.length > 1 ? `${availableSeasons.length} seasons` : "Series collection"}`
-    : "Feature presentation";
-  const heroMeta = [
-    movie.year ? `${movie.year}` : null,
-    runtimeLabel,
-    certificationLabel,
-    viewsLabel ? `${viewsLabel} views` : null,
-  ].filter(Boolean) as string[];
-  const overviewFacts = [
-    viewsLabel ? { label: "Views", value: viewsLabel, icon: Eye } : null,
-    movie.file_size ? { label: "Size", value: movie.file_size, icon: Download } : null,
-    isSeries ? { label: "Episodes", value: `${allEpisodes.length}`, icon: Layers } : null,
-  ].filter(Boolean) as Array<{
-    label: string;
-    value: string;
-    icon: typeof Star;
-  }>;
-  const primaryActionLabel = isSeries && resumeEpisode
-    ? `Continue S${resumeEpisode.season}:E${resumeEpisode.episode}`
-    : isSeries
-      ? "Start Season 1"
-      : "Play Now";
-  const activePlaybackSource = playbackSources.find((source) => source.id === selectedServer) ?? playbackSources[0] ?? null;
-
-  const primaryActionHint = React.useMemo(() => {
-    if (isSeries) {
-      const activeSource = playbackSources.find(s => s.id === selectedServer);
-      const sourceHint = activeSource?.hint;
-      const episodesHint = `${allEpisodes.length} episode${allEpisodes.length === 1 ? "" : "s"} ready`;
-      return sourceHint ? `${episodesHint} • ${sourceHint}` : episodesHint;
-    }
-    const activeSource = playbackSources.find(s => s.id === selectedServer);
-    return activeSource?.hint || movie.file_size || runtimeLabel || "Ready to stream";
-  }, [selectedServer, playbackSources, isSeries, allEpisodes.length, movie.file_size, runtimeLabel]);
-
+  const accentHue = 6;
   const handleShare = React.useCallback(async () => {
     const typeSlug = movie.type === "series" ? "series" : "movie";
     const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
@@ -1231,48 +1146,6 @@ function MobileMovieLayout({
     }
   }, [movie.mobifliks_id, movie.title, movie.type, movie.year]);
 
-  const utilityActions = React.useMemo(() => {
-    const actions: Array<{
-      key: string;
-      label: string;
-      icon: typeof Heart;
-      onClick: () => void;
-      active?: boolean;
-    }> = [];
-
-    if (isSeries) {
-      actions.push({
-        key: "episodes",
-        label: "Episodes",
-        icon: List,
-        onClick: scrollToEpisodes,
-      });
-    } else if (FEATURE_FLAGS.DOWNLOAD_ENABLED && (movie.download_url || movie.server2_url)) {
-      actions.push({
-        key: "download",
-        label: "Download",
-        icon: Download,
-        onClick: handleMovieDownload,
-      });
-    }
-
-    actions.push({
-      key: "watchlist",
-      label: inWatchlist ? "Saved" : "My List",
-      icon: Heart,
-      onClick: onToggleWatchlist,
-      active: inWatchlist,
-    });
-    actions.push({
-      key: "share",
-      label: "Share",
-      icon: Share2,
-      onClick: handleShare,
-    });
-
-    return actions;
-  }, [allEpisodes.length, handleMovieDownload, handleShare, inWatchlist, isSeries, movie.download_url, movie.server2_url, onToggleWatchlist, scrollToEpisodes]);
-  const utilityGridClass = utilityActions.length === 3 ? "grid-cols-3" : "grid-cols-2";
   const heroScrollProgress = Math.min(scrollTop / 320, 1);
   const heroImageStyle: React.CSSProperties = {
     transform: `translateY(${scrollTop * 0.18}px) scale(${1.1 - heroScrollProgress * 0.08})`,
@@ -1293,90 +1166,33 @@ function MobileMovieLayout({
 
   return (
     <div
-      className="md:hidden flex min-h-0 flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark bg-background/95 backdrop-blur-md"
+      className="md:hidden flex min-h-0 flex-col h-[100dvh] w-full max-w-full overflow-hidden box-border relative dark bg-[#101116]"
       data-testid="mobile-movie-layout"
     >
-      <div className="absolute inset-0 z-0 bg-background">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background/90" />
-
-        {deviceProfile.allowAmbientEffects && (
-          <>
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <motion.div
-                className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[80px]"
-                style={{
-                  background: `hsl(${accentHue} 60% 50% / 0.08)`,
-                  animation: "liquidFloat 8s ease-in-out infinite",
-                }}
-              />
-              <motion.div
-                className="absolute top-1/3 -left-24 w-48 h-48 rounded-full blur-[60px]"
-                style={{
-                  background: `hsl(${accentAltHue} 48% 34% / 0.06)`,
-                  animation: "liquidFloat 12s ease-in-out infinite reverse",
-                }}
-              />
-            </div>
-            <div className="glass-noise-overlay opacity-[0.03]" />
-          </>
-        )}
-      </div>
+      <div className="absolute inset-0 z-0 bg-[#101116]" />
 
       <div
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pt-safe transition-colors duration-150",
-          showCompactHeader ? "bg-[hsl(230_18%_5%/0.96)] border-b border-white/6" : "bg-[linear-gradient(180deg,rgba(0,0,0,0.72)_0%,transparent_100%)]"
+          "fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 pb-3 pt-safe transition-colors duration-150",
+          showCompactHeader ? "bg-[#101116]" : "bg-[linear-gradient(180deg,rgba(0,0,0,0.64)_0%,rgba(0,0,0,0)_100%)]"
         )}
       >
         <button
           onClick={onClose}
           aria-label="Go back"
           data-testid="button-close-modal"
-          className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-[0_10px_30px_rgba(90,17,27,0.35)] border-none text-white modal-primary-play-surface"
+          className="w-11 h-11 appearance-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 flex items-center justify-center active:scale-90 transition-transform text-white focus:outline-none focus-visible:ring-0"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-9 h-9 stroke-[3]" />
         </button>
 
-        {movie.logo_url ? (
-          <img
-            src={movie.logo_url}
-            alt={movie.title}
-            className={cn(
-              "h-6 w-auto max-w-[40vw] object-contain transition-opacity duration-150",
-              showCompactHeader ? "opacity-100" : "opacity-0"
-            )}
-          />
-        ) : (
-          <h2
-            className={cn(
-              "text-sm font-semibold text-white truncate max-w-[50vw] transition-opacity duration-150",
-              showCompactHeader ? "opacity-100" : "opacity-0"
-            )}
-          >
-            {movie.title}
-          </h2>
-        )}
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onToggleWatchlist}
-            className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all border border-white/10",
-              inWatchlist ? "bg-primary text-white" : "bg-white/5 text-white/70"
-            )}
-          >
-            <Heart className={cn("w-5 h-5", inWatchlist && "fill-current")} />
-          </button>
-          <button
-            onClick={handleShare}
-            className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all border border-white/10 bg-white/5 text-white/70"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
-          <span className="ml-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/6 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75">
-            {isSeries ? "Series" : "Movie"}
-          </span>
-        </div>
+        <button
+          type="button"
+          aria-label="Cast"
+          className="w-11 h-11 appearance-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 flex items-center justify-center active:scale-90 transition-transform text-white/55 focus:outline-none focus-visible:ring-0"
+        >
+          <Cast className="w-8 h-8 stroke-[2.4]" />
+        </button>
       </div>
 
       <div className="absolute top-0 left-0 right-0 z-10">
@@ -1403,16 +1219,22 @@ function MobileMovieLayout({
             </div>
           )}
 
-          <div className="absolute inset-0 modal-hero-backdrop-gradient transition-opacity duration-300" style={heroOverlayStyle} />
+          <div
+            className="absolute inset-0 transition-opacity duration-300"
+            style={{
+              ...heroOverlayStyle,
+              background: "linear-gradient(180deg, rgba(16,17,22,0.08) 0%, rgba(16,17,22,0.05) 34%, rgba(16,17,22,0.72) 77%, #101116 100%)",
+            }}
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 transition-opacity duration-300" style={heroOverlayStyle} />
 
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-black/10" />
 
           <div
             className="absolute bottom-0 left-0 right-0 flex gap-4 items-end p-5 transition-[transform,opacity] duration-300 ease-out will-change-transform"
             style={heroContentStyle}
           >
-            <div className="w-24 h-36 flex-shrink-0 rounded-none overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.45)] relative">
+            <div className="w-24 h-36 flex-shrink-0 overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.45)] relative">
               <img
                 src={getImageUrl(movie.image_url)}
                 alt={movie.title}
@@ -1421,34 +1243,31 @@ function MobileMovieLayout({
             </div>
 
             <div className="flex-1 min-w-0 pb-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">
-                {heroSupportLabel}
-              </p>
               {movie.logo_url ? (
                 <img
                   src={movie.logo_url}
                   alt={movie.title}
-                  className="mt-2 h-12 w-auto max-w-[80vw] object-contain object-left drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)]"
+                  className="h-12 w-auto max-w-[80vw] object-contain object-left drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)]"
                   loading="eager"
                 />
               ) : (
-                <h1 className="mt-2 text-[31px] font-display font-bold text-white text-pretty drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)] leading-[1.02] line-clamp-2 tracking-[-0.03em]" data-testid="text-movie-title">
+                <h1 className="text-[31px] font-display font-medium text-white text-pretty drop-shadow-[0_6px_20px_rgba(0,0,0,0.38)] leading-[1.02] line-clamp-2 tracking-normal" data-testid="text-movie-title">
                   {movie.title}
                 </h1>
               )}
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-bold text-white shadow-lg">
-                  <Star className="h-3 w-3 fill-current" />
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                <span className="flex items-center gap-1.5 text-[15px] font-semibold text-[#d9ff2a]">
+                  <Star className="h-4 w-4 fill-current" />
                   {rating}
                 </span>
-                {formattedReleaseDate && (
-                  <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/80">
-                    {formattedReleaseDate}
+                {viewsLabel && (
+                  <span className="text-[15px] font-medium text-[#8d909c]">
+                    ({viewsLabel} voted)
                   </span>
                 )}
-                {runtimeLabel && (
-                  <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/80">
-                    {runtimeLabel}
+                {movie.year && (
+                  <span className="ml-auto text-[16px] font-semibold text-white/88">
+                    {movie.year}
                   </span>
                 )}
               </div>
@@ -1464,41 +1283,78 @@ function MobileMovieLayout({
       >
         <div className="w-full aspect-[16/15.5] pointer-events-none" />
 
-        <div className="px-5 pt-1 pb-5 border-b border-white/5 relative z-30 bg-gradient-to-b from-black/20 via-background/95 to-background">
+        <div className="px-6 pt-5 pb-6 relative z-30 bg-[#101116]">
           {actionStep === "none" && (
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                size="lg"
-                className="btn-premium-red h-[52px] rounded-full border-0 text-white font-semibold flex items-center justify-center"
-                onClick={() => {
-                  const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
-                  if (versions.length > 1) {
-                    setActionStep("watch_vj");
-                  } else {
-                    setActionStep("watch_server");
-                  }
-                }}
-              >
-                <span className="text-[14px] font-bold uppercase tracking-wider">Watch</span>
-                <Play className="h-4 w-4 fill-current ml-2" />
-              </Button>
+            <>
+              <div className="grid grid-cols-2 gap-8">
+                <Button
+                  size="lg"
+                  className="h-[58px] rounded-[13px] border-0 bg-[#d9ff21] text-[#050607] shadow-none hover:bg-[#d9ff21]/95 active:scale-[0.98] flex items-center justify-center gap-3"
+                  onClick={() => {
+                    const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                    if (versions.length > 1) {
+                      setActionStep("watch_vj");
+                    } else {
+                      setActionStep("watch_server");
+                    }
+                  }}
+                >
+                  <span className="text-[20px] font-black tracking-[-0.02em]">Watch</span>
+                  <Play className="h-6 w-6 fill-current" />
+                </Button>
 
-              <Button
-                size="lg"
-                className="btn-glass h-[52px] rounded-full text-white font-semibold flex items-center justify-center"
-                onClick={() => {
-                  const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
-                  if (versions.length > 1) {
-                    setActionStep("download_vj");
-                  } else {
-                    setActionStep("download_server");
-                  }
-                }}
-              >
-                <span className="text-[14px] font-bold uppercase tracking-wider">Download</span>
-                <Download className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
+                <Button
+                  size="lg"
+                  className="h-[58px] rounded-[13px] border border-[#282c37] bg-transparent text-white shadow-none hover:bg-white/[0.03] active:scale-[0.98] flex items-center justify-center gap-3"
+                  onClick={() => {
+                    const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                    if (versions.length > 1) {
+                      setActionStep("download_vj");
+                    } else {
+                      setActionStep("download_server");
+                    }
+                  }}
+                >
+                  <span className="text-[19px] font-black tracking-[-0.02em]">Download</span>
+                  <Download className="h-5 w-5 stroke-[3]" />
+                </Button>
+              </div>
+
+              <div className="mt-9 grid grid-cols-4 items-start gap-4">
+                <button
+                  type="button"
+                  onClick={onToggleWatchlist}
+                  className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
+                >
+                  <Bookmark className={cn("h-8 w-8 stroke-[2.2]", inWatchlist && "fill-[#d9ff21] text-[#d9ff21]")} />
+                  <span className="text-[14px] font-black leading-none text-white/88">Add List</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toast.info("Trailer is not available yet.")}
+                  className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
+                >
+                  <Youtube className="h-8 w-8 stroke-[2.2]" />
+                  <span className="text-[14px] font-black leading-none text-white/88">Trailer</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
+                >
+                  <Send className="h-8 w-8 stroke-[2.2]" />
+                  <span className="text-[14px] font-black leading-none text-white/88">Share</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toast.info("Thanks. We will review this title.")}
+                  className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
+                >
+                  <Flag className="h-8 w-8 stroke-[2.2]" />
+                  <span className="text-[14px] font-black leading-none text-white/88">Report</span>
+                </button>
+              </div>
+            </>
           )}
 
           {actionStep !== "none" && (
@@ -1519,7 +1375,7 @@ function MobileMovieLayout({
         </div>
 
         <div
-          className="relative min-h-0 modal-surface-main !rounded-none pb-12 bg-background"
+          className="relative min-h-0 !rounded-none pb-12 bg-[#101116]"
           style={surfaceStyle}
         >
           <div className="px-4 pb-2 pt-0">
@@ -1533,78 +1389,52 @@ function MobileMovieLayout({
 
           <motion.div
             variants={fadeInUp}
-            className="sticky top-[64px] z-30 px-4 mt-3 border-b border-white/5 bg-background/95 backdrop-blur-md"
+            className="sticky top-[68px] z-30 px-6 pt-6 bg-[#101116]"
           >
-            <div className="flex gap-8">
+            <div className="absolute left-6 right-6 top-0 h-px bg-[#252933]">
+              <div className="h-[3px] w-[48%] -translate-y-px rounded-full bg-[#d9ff21]" />
+            </div>
+            <div className="flex gap-12">
               {(["overview", "casts", "related"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   data-testid={`tab-${tab}`}
                   className={cn(
-                    "relative pb-3 text-[13px] font-bold uppercase tracking-widest transition-colors duration-200",
+                    "relative pb-4 text-[20px] font-black tracking-[-0.03em] transition-colors duration-200",
                     activeTab === tab
-                      ? "text-primary"
-                      : "text-white/40"
+                      ? "text-[#d9ff21]"
+                      : "text-white/90"
                   )}
                 >
                   {activeTab === tab && (
                     <motion.div
                       layoutId="mobile-tab-indicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full shadow-[0_-4px_12px_rgba(var(--primary-rgb),0.5)]"
+                      className="absolute bottom-0 left-0 h-0.5 w-full bg-[#d9ff21] rounded-full"
                       transition={{ type: "spring", stiffness: 360, damping: 34 }}
                     />
                   )}
-                  {tab === "casts" ? "Casts" : tab.toUpperCase()}
+                  {tab === "casts" ? "Casts" : tab[0].toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
           </motion.div>
 
-          <div className="px-4 py-5 space-y-5 pb-8">
+          <div className="px-6 py-7 space-y-5 pb-[45vh]">
             {activeTab === "overview" && (
               <>
-                <motion.div
-                  variants={fadeInUp}
-                  className="grid grid-cols-2 gap-2.5 content-visibility-auto"
-                >
-                  {overviewFacts.map((fact) => {
-                    const Icon = fact.icon;
-                    return (
-                      <div
-                        key={fact.label}
-                        className="rounded-[22px] border border-white/5 px-3.5 py-3.5 bg-white/[0.02]"
-                      >
-                        <div className="flex items-center gap-2 text-white/40">
-                          <Icon className="h-3.5 w-3.5" />
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.24em]">{fact.label}</span>
-                        </div>
-                        <p className="mt-3 text-[15px] font-semibold tracking-[-0.02em] text-white">{fact.value}</p>
-                      </div>
-                    );
-                  })}
-                </motion.div>
-
                 {description && (
                   <motion.div
                     variants={fadeInUp}
-                    className="mt-6"
+                    className="mt-1"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/38">Story</p>
-                      {movie.file_size && (
-                        <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-medium text-white/56">
-                          {movie.file_size}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-3 text-[14px] leading-7 text-white/66">
+                    <p className="text-[17px] leading-[1.28] text-[#8f919c]">
                       {displayDescription}
                       {shouldTruncate && !isExpanded && "... "}
                       {shouldTruncate && (
                         <button
                           onClick={() => setIsExpanded(!isExpanded)}
-                          className="ml-1 font-semibold modal-accent-text"
+                          className="ml-1 font-semibold text-[#d9ff21]"
                         >
                           {isExpanded ? "Show less" : "Read more"}
                         </button>
@@ -1614,16 +1444,29 @@ function MobileMovieLayout({
                 )}
 
                 {movie.genres && movie.genres.length > 0 && (
-                  <motion.div variants={fadeInUp} className="space-y-2 mt-6">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">Mood</p>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] font-bold text-white/80">
-                      {movie.genres.map((genre, i) => (
-                        <React.Fragment key={genre}>
-                          {i > 0 && <span className="h-1 w-1 rounded-full bg-primary/50" />}
-                          <span className="tracking-tight">{genre}</span>
-                        </React.Fragment>
-                      ))}
-                    </div>
+                  <motion.div variants={fadeInUp} className="space-y-3 pt-7">
+                    <h3 className="text-[20px] font-black tracking-[-0.03em] text-white">Genre</h3>
+                    <p className="text-[17px] leading-[1.35] text-[#8f919c]">
+                      {movie.genres.join(", ")}
+                    </p>
+                  </motion.div>
+                )}
+
+                {cast.length > 0 && (
+                  <motion.div variants={fadeInUp} className="space-y-3 pt-7">
+                    <h3 className="text-[20px] font-black tracking-[-0.03em] text-white">Casts</h3>
+                    <p className="text-[17px] leading-[1.22] text-[#8f919c]">
+                      {cast.map((member) => member.name).join(", ")}
+                    </p>
+                  </motion.div>
+                )}
+
+                {(((movie as any).director) || movie.language) && (
+                  <motion.div variants={fadeInUp} className="space-y-3 pt-7">
+                    <h3 className="text-[20px] font-black tracking-[-0.03em] text-white">Production</h3>
+                    <p className="text-[17px] leading-[1.35] text-[#8f919c]">
+                      {(movie as any).director || movie.language}
+                    </p>
                   </motion.div>
                 )}
 
