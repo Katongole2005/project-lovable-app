@@ -733,7 +733,7 @@ function applyFilters(query: any, filters?: FilterOptions) {
   if (!filters) return query;
   if (filters.vj) query = query.eq("vj_name", filters.vj);
   if (filters.year) query = query.eq("year", filters.year);
-  if (filters.genre) query = query.contains("genres", [filters.genre]);
+  if (filters.genre) query = query.filter("genres", "cs", JSON.stringify([filters.genre]));
   return query;
 }
 

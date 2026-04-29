@@ -106,17 +106,31 @@ export function HeroCarousel({
     const rating = parseFloat(getImdbRating(movie));
     return Math.round(rating / 2);
   };
+  const allowHeroMotion = deviceProfile.allowComplexAnimations && !deviceProfile.prefersReducedMotion;
 
   if (!displayMovies.length) {
-    return <div className="rounded-3xl p-6 overflow-hidden relative loading-gradient-complex">
-      <div className="flex justify-between items-center mb-6">
-        <div className="h-7 w-32 bg-white/8 rounded-lg shimmer" />
-        <div className="h-5 w-16 bg-white/8 rounded-lg shimmer" />
+    return <div className="overflow-hidden relative" aria-hidden="true">
+      <div className="md:hidden rounded-3xl p-4 overflow-hidden relative hero-mobile-gradient min-h-[350px]">
+        <div className="flex justify-between items-center mb-3">
+          <div className="h-6 w-32 bg-white/8 rounded-lg shimmer" />
+          <div className="h-5 w-14 bg-white/8 rounded-lg shimmer" />
+        </div>
+        <div className="flex justify-center py-2">
+          <div className="w-[160px] h-[240px] rounded-xl bg-white/8 shimmer" />
+        </div>
+        <div className="mt-3 mx-auto h-5 w-40 rounded-lg bg-white/8 shimmer" />
       </div>
-      <div className="flex justify-center gap-4">
-        <div className="w-36 h-52 bg-white/6 rounded-2xl shimmer" />
-        <div className="w-40 h-56 bg-white/8 rounded-2xl shimmer delay-150" />
-        <div className="w-36 h-52 bg-white/6 rounded-2xl shimmer delay-300" />
+      <div className="hidden md:block">
+        <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden hero-cinematic-container bg-[#0a0a0f]">
+          <div className="absolute inset-0 loading-gradient-complex shimmer opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-black/50" />
+          <div className="absolute left-10 bottom-12 space-y-5">
+            <div className="h-20 w-72 rounded-xl bg-white/8 shimmer" />
+            <div className="h-5 w-52 rounded-lg bg-white/8 shimmer" />
+            <div className="h-4 w-[34rem] max-w-[50vw] rounded-lg bg-white/6 shimmer" />
+            <div className="h-12 w-36 rounded-full bg-white/10 shimmer" />
+          </div>
+        </div>
       </div>
     </div>;
   }
@@ -309,21 +323,21 @@ export function HeroCarousel({
 
           <div className="absolute inset-0 bg-[#0a0a0f]" />
 
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="popLayout" initial={false}>
             {backdropSrc && (
               <motion.div
                 key={`backdrop-${selectedIndex}`}
-                initial={{ opacity: 0, scale: 1.1 }}
+                initial={allowHeroMotion ? { opacity: 0, scale: 1.03 } : false}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                exit={allowHeroMotion ? { opacity: 0 } : undefined}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 className="absolute inset-0"
               >
                 <motion.img
                   src={backdropSrc}
                   alt=""
                   initial={{ scale: 1 }}
-                  animate={deviceProfile.allowAmbientEffects && !deviceProfile.isMobile ? {
+                  animate={allowHeroMotion && deviceProfile.allowAmbientEffects && !deviceProfile.isMobile ? {
                     scale: [1, 1.15, 1],
                     x: [0, -20, 0],
                     y: [0, -10, 0]
@@ -334,19 +348,12 @@ export function HeroCarousel({
                     ease: "easeInOut"
                   }}
                   className={cn(
-                    "w-full h-full object-cover will-change-transform",
-                    deviceProfile.allowAmbientEffects && !deviceProfile.isMobile && "animate-water-ripple"
+                    "w-full h-full object-cover",
+                    allowHeroMotion && "will-change-transform"
                   )}
                   loading="eager"
                   fetchpriority="high"
                 />
-                {!deviceProfile.isMobile && deviceProfile.allowAmbientEffects && (
-                  <>
-                    <div className="ripple-ring animate-ripple-ring-1" />
-                    <div className="ripple-ring animate-ripple-ring-2" />
-                    <div className="ripple-ring animate-ripple-ring-3" />
-                  </>
-                )}
               </motion.div>
             )}
             {!backdropSrc && (
@@ -355,7 +362,7 @@ export function HeroCarousel({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.4 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 1 }}
+                transition={{ duration: 0.2 }}
                 className="absolute inset-0 blur-[80px] pointer-events-none bg-cover bg-center"
                 style={{ backgroundImage: `url(${getImageUrl(currentMovie.image_url)})` }}
               />
@@ -372,28 +379,27 @@ export function HeroCarousel({
           <div className="relative z-10 h-full flex hero-cinematic-container">
 
             <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 pb-8 lg:pb-12">
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait" initial={false}>
                   <motion.div 
                     key={`info-${selectedIndex}`}
-                    initial="hidden"
+                    initial={allowHeroMotion ? "hidden" : false}
                     animate="visible"
-                    exit="exit"
+                    exit={allowHeroMotion ? "exit" : undefined}
                     variants={{
                       hidden: { opacity: 0 },
                       visible: { 
                         opacity: 1,
                         transition: { 
-                          staggerChildren: 0.1,
-                          delayChildren: 0.2
+                          staggerChildren: 0.04
                         } 
                       },
-                      exit: { opacity: 0, transition: { duration: 0.5 } }
+                      exit: { opacity: 0, transition: { duration: 0.18 } }
                     }}
                   >
                     <motion.div 
                       variants={{
                         hidden: { opacity: 0, y: 30, scale: 0.95 },
-                        visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
+                        visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }
                       }}
                       className="flex items-end gap-4 lg:gap-6 mb-4 lg:mb-5"
                     >
@@ -407,7 +413,7 @@ export function HeroCarousel({
                           <motion.img
                             src={currentMovie.logo_url}
                             alt={currentMovie.title}
-                            animate={deviceProfile.allowAmbientEffects ? {
+                            animate={allowHeroMotion && deviceProfile.allowAmbientEffects ? {
                               y: [0, -8, 0],
                               rotate: [0, 1, 0, -1, 0]
                             } : {}}
@@ -430,7 +436,7 @@ export function HeroCarousel({
                     <motion.div 
                       variants={{
                         hidden: { opacity: 0, x: -20 },
-                        visible: { opacity: 1, x: 0, transition: { duration: 0.6 } }
+                        visible: { opacity: 1, x: 0, transition: { duration: 0.18 } }
                       }}
                       className="flex items-center gap-3 mb-4 lg:mb-5"
                     >
@@ -455,7 +461,7 @@ export function HeroCarousel({
                     <motion.div 
                       variants={{
                         hidden: { opacity: 0, x: -20 },
-                        visible: { opacity: 1, x: 0, transition: { duration: 0.6 } }
+                        visible: { opacity: 1, x: 0, transition: { duration: 0.18 } }
                       }}
                       className="flex flex-wrap items-center gap-2 mb-5 lg:mb-7"
                     >
@@ -483,7 +489,7 @@ export function HeroCarousel({
                       <motion.p 
                         variants={{
                           hidden: { opacity: 0, y: 10 },
-                          visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+                          visible: { opacity: 1, y: 0, transition: { duration: 0.18 } }
                         }}
                         className="text-sm lg:text-base text-white/50 max-w-lg line-clamp-2 mb-6 lg:mb-8 leading-relaxed"
                       >
@@ -494,7 +500,7 @@ export function HeroCarousel({
                     <motion.div 
                       variants={{
                         hidden: { opacity: 0, y: 20 },
-                        visible: { opacity: 1, y: 0, transition: { duration: 0.7 } }
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.2 } }
                       }}
                       className="flex items-center gap-3"
                     >
@@ -592,17 +598,17 @@ export function HeroCarousel({
             </div>
 
             <div className="hidden lg:flex items-end pb-8 pr-6 xl:pr-10 min-w-[380px]">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode="popLayout" initial={false}>
                   <motion.div 
                     key={`cards-${selectedIndex}`} 
                     className="flex items-end gap-4 xl:gap-5"
-                    initial="hidden"
+                    initial={allowHeroMotion ? "hidden" : false}
                     animate="visible"
-                    exit="exit"
+                    exit={allowHeroMotion ? "exit" : undefined}
                     variants={{
                       hidden: { opacity: 0 },
-                      visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
-                      exit: { opacity: 0, transition: { duration: 0.3 } }
+                      visible: { opacity: 1, transition: { staggerChildren: 0.04 } },
+                      exit: { opacity: 0, transition: { duration: 0.16 } }
                     }}
                   >
                     {getSideCards().map(({ movie, originalIndex }, cardIdx) => (
@@ -610,7 +616,7 @@ export function HeroCarousel({
                         key={movie.mobifliks_id}
                         variants={{
                           hidden: { opacity: 0, x: 20, scale: 0.9 },
-                          visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+                          visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }
                         }}
                         className="relative flex flex-col items-center cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-xl hover:-translate-y-2 transition-all duration-300"
                         onClick={() => scrollTo(originalIndex)}

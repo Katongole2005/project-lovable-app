@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
+import { HeroCarousel } from "@/components/HeroCarousel";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { FilterState } from "@/components/FilterModal";
@@ -38,9 +39,7 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
     }
   });
 
-const loadHeroCarousel = () => import("@/components/HeroCarousel").then(module => ({ default: module.HeroCarousel }));
 const loadCinematicVideoPlayer = () => import("@/components/CinematicVideoPlayer").then(module => ({ default: module.CinematicVideoPlayer }));
-const HeroCarousel = lazyWithRetry(loadHeroCarousel);
 const ContinueWatchingRow = lazyWithRetry(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
 const RecommendationRow = lazyWithRetry(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
 const Top10Row = lazyWithRetry(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
@@ -297,7 +296,7 @@ export default function Index() {
   }, []);
 
   // React Query for instant tab switching and caching
-  const { data: trendingData, isLoading: isTrendingLoading } = useQuery({
+  const { data: trendingData } = useQuery({
     queryKey: ["trending"],
     queryFn: () => fetchTrending(),
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -325,12 +324,6 @@ export default function Index() {
   });
 
   const shouldShowHero = siteSettings.hero_carousel_enabled;
-  const isHeroLoading = shouldShowHero && trending.length === 0 && (isTrendingLoading || isMoviesLoading || isSeriesLoading);
-
-  useEffect(() => {
-    if (!shouldShowHero || viewMode !== "home") return;
-    void loadHeroCarousel();
-  }, [shouldShowHero, viewMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1155,13 +1148,9 @@ export default function Index() {
         <main className="container mx-auto px-4 py-4">
           {/* Home View */}
           {viewMode === "home" && (
-            <PageTransition>
+            <div>
               {shouldShowHero && (
-                trending.length > 0 ? (
-                  MemoizedHero
-                ) : isHeroLoading ? (
-                  null
-                ) : null
+                MemoizedHero
               )}
 
               <div className="mt-8">
@@ -1255,7 +1244,7 @@ export default function Index() {
                   </div>
                 </Suspense>
               )}
-            </PageTransition>
+            </div>
           )}
 
           {/* Search View */}
