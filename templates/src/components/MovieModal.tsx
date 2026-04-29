@@ -100,6 +100,92 @@ const fadeInUp = {
 
 const TRENDING_ACCENT_BUTTON_CLASS = "bg-[linear-gradient(135deg,#ff8a3d_0%,#ff5b2e_52%,#ff4d6d_100%)] text-white shadow-[0_10px_26px_rgba(255,91,46,0.24),0_0_22px_rgba(255,138,61,0.18)]";
 
+type RgbColor = { r: number; g: number; b: number };
+
+const FALLBACK_MODAL_BORDER = "rgba(255,255,255,0.14)";
+
+function getSubtleArtworkBorder(color: RgbColor | null): string {
+  if (!color) return FALLBACK_MODAL_BORDER;
+
+  const lift = 0.2;
+  const r = Math.round(color.r + (255 - color.r) * lift);
+  const g = Math.round(color.g + (255 - color.g) * lift);
+  const b = Math.round(color.b + (255 - color.b) * lift);
+
+  return `rgba(${r},${g},${b},0.34)`;
+}
+
+function extractArtworkTint(imageUrl: string): Promise<RgbColor | null> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      resolve(null);
+      return;
+    }
+
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.referrerPolicy = "no-referrer";
+
+    image.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        const size = 24;
+        canvas.width = size;
+        canvas.height = size;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+
+        ctx.drawImage(image, 0, 0, size, size);
+        const pixels = ctx.getImageData(0, 0, size, size).data;
+
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let totalWeight = 0;
+
+        for (let i = 0; i < pixels.length; i += 16) {
+          const alpha = pixels[i + 3];
+          if (alpha < 160) continue;
+
+          const pr = pixels[i];
+          const pg = pixels[i + 1];
+          const pb = pixels[i + 2];
+          const max = Math.max(pr, pg, pb);
+          const min = Math.min(pr, pg, pb);
+          const saturation = max === 0 ? 0 : (max - min) / max;
+          const brightness = max / 255;
+          const weight = 0.35 + saturation * 1.5 + Math.max(0, brightness - 0.28);
+
+          r += pr * weight;
+          g += pg * weight;
+          b += pb * weight;
+          totalWeight += weight;
+        }
+
+        if (!totalWeight) {
+          resolve(null);
+          return;
+        }
+
+        resolve({
+          r: Math.round(r / totalWeight),
+          g: Math.round(g / totalWeight),
+          b: Math.round(b / totalWeight),
+        });
+      } catch {
+        resolve(null);
+      }
+    };
+
+    image.onerror = () => resolve(null);
+    image.src = imageUrl;
+  });
+}
+
 
 
 interface MovieModalProps {
@@ -211,6 +297,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
   const [movieS2Size, setMovieS2Size] = React.useState<string | null>(null);
   const [selectedServer, setSelectedServer] = React.useState<1 | 2>(2);
   const [actionStep, setActionStep] = React.useState<"none" | "watch_vj" | "watch_server" | "download_vj" | "download_server">("none");
+  const [artworkTint, setArtworkTint] = React.useState<RgbColor | null>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch missing TMDB data (especially for series)
@@ -302,6 +389,27 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       cancelled = true;
     };
   }, [backgroundImage]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const tintSource = backgroundImage || (movie?.image_url ? getImageUrl(movie.image_url) : null);
+    if (!tintSource) {
+      setArtworkTint(null);
+      return;
+    }
+
+    let cancelled = false;
+    setArtworkTint(null);
+
+    extractArtworkTint(tintSource).then((tint) => {
+      if (!cancelled) setArtworkTint(tint);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [backgroundImage, isOpen, movie?.image_url, movie?.mobifliks_id]);
 
   const handleRate = (rating: number) => {
     if (!movie) return;
@@ -465,11 +573,18 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     }
   }, [isSeries, series.episodes, resumeEpisode, movie, selectedServer, onPlay]);
 
+  const desktopBorderColor = getSubtleArtworkBorder(artworkTint);
+
   return (
     <ErrorBoundary>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         {/* Mobile: Full screen sheet, Desktop: Centered modal */}
-        <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 md:border md:border-white overflow-hidden shadow-none md:shadow-[0_24px_80px_rgba(0,0,0,0.62)] rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none">
+        <DialogContent
+          className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 md:border overflow-hidden shadow-none md:shadow-[0_24px_80px_rgba(0,0,0,0.62)] rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none"
+          style={{
+            borderColor: desktopBorderColor,
+          }}
+        >
 
           <DialogTitle className="sr-only">{movie.title}</DialogTitle>
           <DialogDescription className="sr-only">
