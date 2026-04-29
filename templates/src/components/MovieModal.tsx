@@ -84,18 +84,17 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
+      staggerChildren: 0.03,
     }
   }
 };
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as any }
+    transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] as any }
   }
 };
 
@@ -266,15 +265,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
 
   React.useEffect(() => {
     if (!isOpen) return;
-    if (!allowDesktopMotion) {
-      setEntranceVisible(true);
-      return;
-    }
-
-    setEntranceVisible(false);
-    const t = setTimeout(() => setEntranceVisible(true), 100);
-    return () => clearTimeout(t);
-  }, [allowDesktopMotion, isOpen, movie?.mobifliks_id]);
+    setEntranceVisible(true);
+  }, [isOpen, movie?.mobifliks_id]);
   React.useEffect(() => {
     if (movie) {
       setUserRatingState(getUserRating(movie.mobifliks_id));
@@ -516,7 +508,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     <ErrorBoundary>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         {/* Mobile: Full screen sheet, Desktop: Centered modal */}
-        <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-200 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] data-[state=open]:slide-in-from-bottom md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-bottom md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%]">
+        <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none">
 
           {preloadUrl && (
             <video src={preloadUrl} preload="auto" className="hidden" playsInline muted />

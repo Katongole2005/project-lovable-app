@@ -1,0 +1,6 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - region "Notifications alt+T"
+    - generic [ref=e3]:
+      - generic [ref=e5]: SJ
+      - paragraph [ref=e7]: Loading

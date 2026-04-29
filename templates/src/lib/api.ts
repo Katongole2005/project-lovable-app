@@ -938,7 +938,7 @@ export async function fetchByGenre(genre: string, contentType: "movie" | "series
   const request = (async () => {
     const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
     const offset = offsetOverride ?? ((page - 1) * fetchLimit);
-    let query = supabase.from("movies").select("*").contains("genres", [genre]).order("release_date", { ascending: false, nullsFirst: false }).order("views", { ascending: false, nullsFirst: false }).order("year", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).range(offset, offset + fetchLimit - 1);
+    let query = supabase.from("movies").select("*").filter("genres", "cs", JSON.stringify([genre])).order("release_date", { ascending: false, nullsFirst: false }).order("views", { ascending: false, nullsFirst: false }).order("year", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).range(offset, offset + fetchLimit - 1);
     if (contentType !== "all") query = query.eq("type", contentType);
     query = applyFilters(query, { vj: filters?.vj, year: filters?.year });
     const { data, error } = await query;

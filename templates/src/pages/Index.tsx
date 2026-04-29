@@ -45,7 +45,8 @@ const ContinueWatchingRow = lazyWithRetry(() => import("@/components/ContinueWat
 const RecommendationRow = lazyWithRetry(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
 const Top10Row = lazyWithRetry(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
 const SearchBar = lazyWithRetry(() => import("@/components/SearchBar").then(module => ({ default: module.SearchBar })));
-const MovieModal = lazyWithRetry(() => import("@/components/MovieModal").then(module => ({ default: module.MovieModal })));
+const loadMovieModal = () => import("@/components/MovieModal").then(module => ({ default: module.MovieModal }));
+const MovieModal = lazyWithRetry(loadMovieModal);
 const CinematicVideoPlayer = lazyWithRetry(loadCinematicVideoPlayer);
 const FilterModal = lazyWithRetry(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
 import { DynamicBackground } from "@/components/DynamicBackground";
@@ -64,7 +65,6 @@ import {
   fetchMovieDetails,
   fetchSeriesDetails,
   getCachedSeriesDetails,
-  hasPendingSeriesDetailsRequest,
   fetchStats,
   fetchByGenre,
   fetchOriginals,
@@ -242,6 +242,12 @@ export default function Index() {
   });
   const [nextLoadOffset, setNextLoadOffset] = useState(0);
   const [allVJs, setAllVJs] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    scheduleLowPriorityTask(() => {
+      loadMovieModal().catch(() => undefined);
+    });
+  }, []);
 
   const filterCategories = useMemo(() => [
     { id: "trending", label: "Latest Added" },
@@ -625,26 +631,6 @@ export default function Index() {
       const cachedDetails = getCachedSeriesDetails(movie.mobifliks_id);
       if (cachedDetails?.episodes?.length) {
         resolvedMovie = cachedDetails;
-      }
-
-      try {
-        if (resolvedMovie === movie) {
-          const fastDetails = await Promise.race<Series | null>([
-            fetchSeriesDetails(movie.mobifliks_id),
-            new Promise<null>((resolve) =>
-              window.setTimeout(
-                () => resolve(null),
-                hasPendingSeriesDetailsRequest(movie.mobifliks_id) ? 260 : 180
-              )
-            ),
-          ]);
-
-          if (fastDetails?.episodes?.length) {
-            resolvedMovie = fastDetails;
-          }
-        }
-      } catch (error) {
-        console.error("Error getting fast series details:", error);
       }
     }
 

@@ -1,0 +1,103 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e5]:
+    - banner [ref=e6]:
+      - generic [ref=e8]:
+        - link "MovieBay" [ref=e9] [cursor=pointer]:
+          - /url: /
+          - img "MovieBay" [ref=e10]
+        - navigation [ref=e11]:
+          - button "Movie" [ref=e12] [cursor=pointer]
+          - button "Series" [ref=e13] [cursor=pointer]
+          - button "Originals" [ref=e14] [cursor=pointer]
+          - button "Search" [ref=e15] [cursor=pointer]:
+            - img [ref=e16]
+        - generic [ref=e19]:
+          - button "Toggle theme" [ref=e20] [cursor=pointer]:
+            - img [ref=e21]
+          - link "Guest Free" [ref=e27] [cursor=pointer]:
+            - /url: /profile
+            - img [ref=e29]
+            - generic [ref=e32]:
+              - paragraph [ref=e33]: Guest
+              - paragraph [ref=e34]: Free
+            - img [ref=e35]
+    - main [ref=e37]:
+      - generic [ref=e38]:
+        - generic [ref=e41]:
+          - button "Latest Added" [ref=e42] [cursor=pointer]:
+            - generic [ref=e43]:
+              - img [ref=e44]
+              - generic [ref=e46]: Latest Added
+          - button "Action" [ref=e47] [cursor=pointer]:
+            - generic [ref=e48]:
+              - img [ref=e49]
+              - generic [ref=e54]: Action
+          - button "Adventure" [ref=e55] [cursor=pointer]:
+            - generic [ref=e56]:
+              - img [ref=e57]
+              - generic [ref=e60]: Adventure
+          - button "Crime" [ref=e61] [cursor=pointer]:
+            - generic [ref=e62]:
+              - img [ref=e63]
+              - generic [ref=e65]: Crime
+          - button "Drama" [ref=e66] [cursor=pointer]:
+            - generic [ref=e67]:
+              - img [ref=e68]
+              - generic [ref=e70]: Drama
+          - button "Fantasy" [ref=e71] [cursor=pointer]:
+            - generic [ref=e72]:
+              - img [ref=e73]
+              - generic [ref=e75]: Fantasy
+          - button "Horror" [ref=e76] [cursor=pointer]:
+            - generic [ref=e77]:
+              - img [ref=e78]
+              - generic [ref=e80]: Horror
+          - button "Romance" [ref=e81] [cursor=pointer]:
+            - generic [ref=e82]:
+              - img [ref=e83]
+              - generic [ref=e85]: Romance
+          - button "Sci-Fi" [ref=e86] [cursor=pointer]:
+            - generic [ref=e87]:
+              - img [ref=e88]
+              - generic [ref=e93]: Sci-Fi
+          - button "Thriller" [ref=e94] [cursor=pointer]:
+            - generic [ref=e95]:
+              - img [ref=e96]
+              - generic [ref=e98]: Thriller
+          - button "Animation" [ref=e99] [cursor=pointer]:
+            - generic [ref=e100]:
+              - img [ref=e101]
+              - generic [ref=e106]: Animation
+          - button "Special" [ref=e107] [cursor=pointer]:
+            - generic [ref=e108]:
+              - img [ref=e109]
+              - generic [ref=e111]: Special
+        - generic [ref=e114]:
+          - button "VJ Emmy" [ref=e115] [cursor=pointer]:
+            - img [ref=e116]
+            - generic [ref=e119]: VJ Emmy
+          - button "VJ Ice P" [ref=e120] [cursor=pointer]:
+            - img [ref=e121]
+            - generic [ref=e124]: VJ Ice P
+          - button "VJ Jingo" [ref=e125] [cursor=pointer]:
+            - img [ref=e126]
+            - generic [ref=e129]: VJ Jingo
+          - button "VJ Junior" [ref=e130] [cursor=pointer]:
+            - img [ref=e131]
+            - generic [ref=e134]: VJ Junior
+          - button "VJ Kevo" [ref=e135] [cursor=pointer]:
+            - img [ref=e136]
+            - generic [ref=e139]: VJ Kevo
+        - generic [ref=e143]:
+          - heading "Discover More" [level=2] [ref=e144]
+          - paragraph [ref=e145]: Hand-picked collections just for you
+    - contentinfo [ref=e150]:
+      - generic [ref=e151]:
+        - link "Privacy Policy" [ref=e152] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e153] [cursor=pointer]:
+          - /url: /terms
+      - paragraph [ref=e154]: © 2026 sj. All Rights Reserved.

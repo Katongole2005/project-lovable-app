@@ -182,7 +182,7 @@ export function HeroCarousel({
                       alt={movie.title}
                       className={cn("w-full h-full object-cover", isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns animate-10s")}
                       loading={index < 2 ? "eager" : "lazy"}
-                      fetchPriority={index === 0 ? "high" : "auto"}
+                      fetchpriority={index === 0 ? "high" : "auto"}
                     />
                     <div className={cn("absolute inset-0 bg-gradient-to-t from-black/40 to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-50")} />
                   </div>
@@ -338,7 +338,7 @@ export function HeroCarousel({
                     deviceProfile.allowAmbientEffects && !deviceProfile.isMobile && "animate-water-ripple"
                   )}
                   loading="eager"
-                  fetchPriority="high"
+                  fetchpriority="high"
                 />
                 {!deviceProfile.isMobile && deviceProfile.allowAmbientEffects && (
                   <>

@@ -1,0 +1,1458 @@
+- generic:
+  - generic:
+    - list
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - img [ref=e16]
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: Your privacy matters
+          - paragraph [ref=e20]: We use cookies to keep you signed in and improve your experience.
+        - button [ref=e1769] [cursor=pointer]:
+          - img [ref=e22]
+      - generic [ref=e25]:
+        - button [ref=e1770] [cursor=pointer]: Accept
+        - button [ref=e1771] [cursor=pointer]: Decline
+    - region "Notifications alt+T"
+    - generic:
+      - generic:
+        - generic:
+          - banner:
+            - generic:
+              - generic:
+                - link:
+                  - /url: /
+                  - img
+                - navigation:
+                  - button: Movie
+                  - button: Series
+                  - button: Originals
+                  - button:
+                    - img
+                - generic:
+                  - button:
+                    - img
+                  - link:
+                    - /url: /profile
+                    - generic:
+                      - img
+                    - generic:
+                      - paragraph: Guest
+                      - paragraph: Free
+                    - img
+          - main:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: "12"
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - img
+                              - img
+                              - img
+                              - img
+                            - generic: IMDB 7.1
+                          - generic:
+                            - generic: "Genre:"
+                            - generic: Comedy
+                            - generic: "2026"
+                            - generic: Movie
+                          - paragraph: "A group of college students go downstairs to their dorm lobby to get a delivery pizza. There's only one issue: They're insanely high on a homemade drug, turning their simple journey down two sets of stairs into a mind-bendingly transformative quest."
+                          - generic:
+                            - button:
+                              - img
+                              - text: Watch Now
+                            - button: More
+                        - generic:
+                          - button:
+                            - img
+                          - button:
+                            - img
+                          - generic:
+                            - button
+                            - button
+                            - button
+                            - button
+                            - button
+                            - button
+                            - button
+                      - generic:
+                        - generic:
+                          - button:
+                            - generic:
+                              - img
+                            - paragraph: Agent from Above
+                          - button:
+                            - generic:
+                              - img
+                            - paragraph: Young Sherlock (2026 - VJ Ulio - Luganda)
+                          - button:
+                            - generic:
+                              - img
+                            - paragraph: The Art of Sarah (2026 - VJ Ivo - Luganda)
+                    - generic:
+                      - img
+              - generic:
+                - generic:
+                  - generic:
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Latest Added
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Action
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Adventure
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Crime
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Drama
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Fantasy
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Horror
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Romance
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Sci-Fi
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Thriller
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Animation
+                    - button:
+                      - generic:
+                        - img
+                        - generic: Special
+              - generic:
+                - generic:
+                  - generic:
+                    - button:
+                      - img
+                      - generic: VJ Banks
+                    - button:
+                      - img
+                      - generic: VJ Emmy
+                    - button:
+                      - img
+                      - generic: VJ Ham
+                    - button:
+                      - img
+                      - generic: VJ Ice P
+                    - button:
+                      - img
+                      - generic: VJ IceP
+                    - button:
+                      - img
+                      - generic: VJ Ivo
+                    - button:
+                      - img
+                      - generic: VJ Jingo
+                    - button:
+                      - img
+                      - generic: VJ Jovan
+                    - button:
+                      - img
+                      - generic: VJ Junior
+                    - button:
+                      - img
+                      - generic: VJ Kevo
+                    - button:
+                      - img
+                      - generic: VJ Soul
+                    - button:
+                      - img
+                      - generic: VJ Tom
+                    - button:
+                      - img
+                      - generic: VJ Ulio
+                    - button:
+                      - img
+                      - generic: VJ Uncle T
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=2]: Latest Added
+                    - generic:
+                      - generic:
+                        - button:
+                          - img
+                      - button:
+                        - text: View All
+                        - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "7.7"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "7.4"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.5"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.1"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "7.6"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.2"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.8"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.3"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "7.1"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.7"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.2"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "7.1"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "7.0"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "7.2"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: NEW
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - heading [level=3]: Mexicali
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.3"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - heading [level=3]: Blade Warrior of Blade Action
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.2"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "8.4"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - heading [level=3]: Subedaar
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.2"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.3"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.2"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "8.0"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - heading [level=3]: Murder in the Highland Manor
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.3"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - heading [level=3]: Pushed Off a Plane and Survived
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "6.2"
+                          - generic: •
+                          - generic: "2026"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                        - button:
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "7.5"
+              - generic:
+                - generic:
+                  - heading [level=2]: Discover More
+                  - paragraph: Hand-picked collections just for you
+                - generic:
+                  - generic:
+                    - heading [level=2]: Latest 10
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                            - text: "1"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "2"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "3"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "4"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "5"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "6"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "7"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "8"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "9"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - generic: "10"
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                        - generic:
+                          - img
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=2]: Popular Series
+                      - generic:
+                        - button:
+                          - text: View All
+                          - img
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: NEW
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.3"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: NEW
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "7.9"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - heading [level=3]: Unfamiliar (2026 - VJ Junior - Luganda)
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.4"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "6.4"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.3"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "6.8"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "6.7"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                            - generic: •
+                            - generic: "2026"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "6.9"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "7.2"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "6.6"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "7.1"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "7.1"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.2"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "7.0"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "6.9"
+                            - generic: •
+                            - generic: "2025"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic:
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - img
+                              - text: HOT
+                            - generic: SERIES
+                          - button:
+                            - img
+                        - generic:
+                          - generic:
+                            - heading [level=3]: Blood River (2025 - VJ Banks - Luganda)
+                          - generic:
+                            - generic:
+                              - img
+                              - text: "8.5"
+                            - generic: •
+                            - generic: "2025"
+          - contentinfo:
+            - generic:
+              - link:
+                - /url: /privacy
+                - text: Privacy Policy
+              - link:
+                - /url: /terms
+                - text: Terms of Service
+            - paragraph: © 2026 sj. All Rights Reserved.
+  - dialog "Brothers Under Fire" [ref=e1773]:
+    - heading "Brothers Under Fire" [level=2] [ref=e1774]
+    - paragraph [ref=e1775]: Captain Jordan Wright's squadron on leave for a wedding in Mexico encounters a murderous cartel. As Jordan tries to lead survivors to safety, war erupts between his squad and the cartel, forcing him into a battle to save his men.
+    - generic [ref=e1776]:
+      - button "Close modal" [active] [ref=e1781] [cursor=pointer]:
+        - img [ref=e1782]
+      - generic [ref=e1788]:
+        - img "Brothers Under Fire backdrop" [ref=e1790]
+        - generic [ref=e1793]:
+          - generic [ref=e1794]:
+            - img "Brothers Under Fire poster" [ref=e1796]
+            - generic [ref=e1797]:
+              - img "Brothers Under Fire" [ref=e1799]
+              - generic [ref=e1800]:
+                - generic [ref=e1801]:
+                  - img [ref=e1802]
+                  - text: "4.5"
+                - generic [ref=e1804]: "2026"
+                - generic [ref=e1805]:
+                  - img [ref=e1806]
+                  - text: 2026-04-15
+                - generic [ref=e1808]: 1h 39m
+                - generic [ref=e1809]: VJ Junior
+              - generic [ref=e1810]:
+                - button "Watch" [ref=e1811] [cursor=pointer]:
+                  - img
+                  - text: Watch
+                - button "Add to My List" [ref=e1812] [cursor=pointer]:
+                  - img [ref=e1813]
+                - button "Share" [ref=e1815] [cursor=pointer]:
+                  - img [ref=e1816]
+                - button "Download" [ref=e1822] [cursor=pointer]:
+                  - img [ref=e1823]
+          - paragraph [ref=e1826]: Captain Jordan Wright's squadron on leave for a wedding in Mexico encounters a murderous cartel. As Jordan tries to lead survivors to safety, war erupts between his squad and the cartel, forcing him into a battle to save his men.
+          - generic [ref=e1827]:
+            - generic [ref=e1828]: "Rate this:"
+            - generic [ref=e1829]:
+              - button [ref=e1830] [cursor=pointer]:
+                - img [ref=e1831]
+              - button [ref=e1833] [cursor=pointer]:
+                - img [ref=e1834]
+              - button [ref=e1836] [cursor=pointer]:
+                - img [ref=e1837]
+              - button [ref=e1839] [cursor=pointer]:
+                - img [ref=e1840]
+              - button [ref=e1842] [cursor=pointer]:
+                - img [ref=e1843]
+          - generic [ref=e1845]:
+            - heading "Cast" [level=4] [ref=e1846]
+            - generic [ref=e1847]:
+              - generic [ref=e1848]:
+                - img "Kiefer Sutherland" [ref=e1850]
+                - paragraph [ref=e1851]: Kiefer Sutherland
+                - paragraph [ref=e1852]: as Capt. Jordan Wright
+              - generic [ref=e1853]:
+                - img "Tommy Martinez" [ref=e1855]
+                - paragraph [ref=e1856]: Tommy Martinez
+              - generic [ref=e1857]:
+                - img "Ashton Sanders" [ref=e1859]
+                - paragraph [ref=e1860]: Ashton Sanders
+              - generic [ref=e1861]:
+                - img "Solly McLeod" [ref=e1863]
+                - paragraph [ref=e1864]: Solly McLeod
+              - generic [ref=e1865]:
+                - img "Laura Osma" [ref=e1867]
+                - paragraph [ref=e1868]: Laura Osma
+              - generic [ref=e1869]:
+                - img "Omar Chaparro" [ref=e1871]
+                - paragraph [ref=e1872]: Omar Chaparro
+              - generic [ref=e1873]:
+                - img "Orlando Pineda" [ref=e1875]
+                - paragraph [ref=e1876]: Orlando Pineda
+              - generic [ref=e1877]:
+                - img "Laird Akeo" [ref=e1879]
+                - paragraph [ref=e1880]: Laird Akeo
+              - generic [ref=e1881]:
+                - img "Flora Martínez" [ref=e1883]
+                - paragraph [ref=e1884]: Flora Martínez
+                - paragraph [ref=e1885]: as Angelica
+              - generic [ref=e1886]:
+                - img "Gabriel Camero" [ref=e1888]
+                - paragraph [ref=e1889]: Gabriel Camero
+                - paragraph [ref=e1890]: as Stevie
+          - paragraph [ref=e1891]: "Genres: Action, Thriller, Mystery, Drama"

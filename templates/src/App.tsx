@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -90,17 +90,21 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => (
 // Global Scroll Restoration (Pro Version)
 const ScrollRestoration = () => {
   const { pathname } = useLocation();
-  const type = (window as any).navigation?.activation?.navigationType || 'push';
+  const navigationType = useNavigationType();
+  const previousPathRef = useRef(pathname);
 
   useEffect(() => {
     // Only scroll to top on major section changes (PUSH)
-    // Don't scroll to top on movie/series details or when clicking "Back"
+    // Don't scroll to top when opening or closing movie/series modal routes.
     const isDetailRoute = /^\/(movie|series)\//.test(pathname);
+    const wasDetailRoute = /^\/(movie|series)\//.test(previousPathRef.current);
     
-    if (type === 'push' && !isDetailRoute) {
+    if (navigationType === 'PUSH' && !isDetailRoute && !wasDetailRoute) {
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
-  }, [pathname]);
+
+    previousPathRef.current = pathname;
+  }, [navigationType, pathname]);
 
   return null;
 };
@@ -120,11 +124,6 @@ function AppRoutes() {
   // Prevents AnimatePresence from unmounting the page (and losing scroll position) 
   // when navigating to a movie modal over the current background view.
   const getAnimationKey = () => {
-    if (location.pathname.startsWith('/movie/') || location.pathname.startsWith('/series/')) {
-      const view = location.state?.backgroundView;
-      if (view === 'home') return '/';
-      if (view) return `/${view}`;
-    }
     // Shared key for all Index-related views keeps the component mounted
     if (['/', '/movies', '/series', '/search', '/originals'].includes(location.pathname) || /^\/(movie|series)\//.test(location.pathname)) {
       return 'index-layout';
