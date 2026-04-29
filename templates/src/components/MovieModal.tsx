@@ -1286,10 +1286,10 @@ function MobileMovieLayout({
         <div className="px-6 pt-5 pb-6 relative z-30 bg-[#101116]">
           {actionStep === "none" && (
             <>
-              <div className="grid grid-cols-2 gap-8">
+              <div className="grid grid-cols-2 gap-7">
                 <Button
                   size="lg"
-                  className="h-[58px] rounded-[13px] border-0 bg-[#d9ff21] text-[#050607] shadow-none hover:bg-[#d9ff21]/95 active:scale-[0.98] flex items-center justify-center gap-3"
+                  className="h-[49px] rounded-[11px] border-0 bg-[#d9ff21] text-[#050607] shadow-none hover:bg-[#d9ff21]/95 active:scale-[0.98] flex items-center justify-center gap-2.5"
                   onClick={() => {
                     const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                     if (versions.length > 1) {
@@ -1299,13 +1299,13 @@ function MobileMovieLayout({
                     }
                   }}
                 >
-                  <span className="text-[20px] font-black tracking-[-0.02em]">Watch</span>
-                  <Play className="h-6 w-6 fill-current" />
+                  <span className="text-[15.5px] font-black tracking-normal">Watch</span>
+                  <Play className="h-[18px] w-[18px] fill-current" />
                 </Button>
 
                 <Button
                   size="lg"
-                  className="h-[58px] rounded-[13px] border border-[#282c37] bg-transparent text-white shadow-none hover:bg-white/[0.03] active:scale-[0.98] flex items-center justify-center gap-3"
+                  className="h-[49px] rounded-[11px] border border-[#282c37] bg-transparent text-white shadow-none hover:bg-white/[0.03] active:scale-[0.98] flex items-center justify-center gap-2.5"
                   onClick={() => {
                     const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                     if (versions.length > 1) {
@@ -1315,43 +1315,43 @@ function MobileMovieLayout({
                     }
                   }}
                 >
-                  <span className="text-[19px] font-black tracking-[-0.02em]">Download</span>
-                  <Download className="h-5 w-5 stroke-[3]" />
+                  <span className="text-[15px] font-black tracking-normal">Download</span>
+                  <Download className="h-[17px] w-[17px] stroke-[3]" />
                 </Button>
               </div>
 
-              <div className="mt-9 grid grid-cols-4 items-start gap-4">
+              <div className="mt-8 grid grid-cols-4 items-start gap-4">
                 <button
                   type="button"
                   onClick={onToggleWatchlist}
                   className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
                 >
-                  <Bookmark className={cn("h-8 w-8 stroke-[2.2]", inWatchlist && "fill-[#d9ff21] text-[#d9ff21]")} />
-                  <span className="text-[14px] font-black leading-none text-white/88">Add List</span>
+                  <Bookmark className={cn("h-6 w-6 stroke-[2.1]", inWatchlist && "fill-[#d9ff21] text-[#d9ff21]")} />
+                  <span className="text-[11px] font-black leading-none text-white/88">Add List</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => toast.info("Trailer is not available yet.")}
                   className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
                 >
-                  <Youtube className="h-8 w-8 stroke-[2.2]" />
-                  <span className="text-[14px] font-black leading-none text-white/88">Trailer</span>
+                  <Youtube className="h-6 w-6 stroke-[2.1]" />
+                  <span className="text-[11px] font-black leading-none text-white/88">Trailer</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleShare}
                   className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
                 >
-                  <Send className="h-8 w-8 stroke-[2.2]" />
-                  <span className="text-[14px] font-black leading-none text-white/88">Share</span>
+                  <Send className="h-6 w-6 stroke-[2.1]" />
+                  <span className="text-[11px] font-black leading-none text-white/88">Share</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => toast.info("Thanks. We will review this title.")}
                   className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
                 >
-                  <Flag className="h-8 w-8 stroke-[2.2]" />
-                  <span className="text-[14px] font-black leading-none text-white/88">Report</span>
+                  <Flag className="h-6 w-6 stroke-[2.1]" />
+                  <span className="text-[11px] font-black leading-none text-white/88">Report</span>
                 </button>
               </div>
             </>
@@ -1394,14 +1394,14 @@ function MobileMovieLayout({
             <div className="absolute left-6 right-6 top-0 h-px bg-[#252933]">
               <div className="h-[3px] w-[48%] -translate-y-px rounded-full bg-[#d9ff21]" />
             </div>
-            <div className="flex gap-12">
+            <div className="flex gap-10">
               {(["overview", "casts", "related"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   data-testid={`tab-${tab}`}
                   className={cn(
-                    "relative pb-4 text-[20px] font-black tracking-[-0.03em] transition-colors duration-200",
+                    "relative pb-4 text-[17px] font-black tracking-normal transition-colors duration-200",
                     activeTab === tab
                       ? "text-[#d9ff21]"
                       : "text-white/90"
@@ -1428,7 +1428,7 @@ function MobileMovieLayout({
                     variants={fadeInUp}
                     className="mt-1"
                   >
-                    <p className="text-[17px] leading-[1.28] text-[#8f919c]">
+                    <p className="text-[16px] leading-[1.3] text-[#8f919c]">
                       {displayDescription}
                       {shouldTruncate && !isExpanded && "... "}
                       {shouldTruncate && (
@@ -1445,8 +1445,8 @@ function MobileMovieLayout({
 
                 {movie.genres && movie.genres.length > 0 && (
                   <motion.div variants={fadeInUp} className="space-y-3 pt-7">
-                    <h3 className="text-[20px] font-black tracking-[-0.03em] text-white">Genre</h3>
-                    <p className="text-[17px] leading-[1.35] text-[#8f919c]">
+                    <h3 className="text-[18px] font-black tracking-normal text-white">Genre</h3>
+                    <p className="text-[16px] leading-[1.35] text-[#8f919c]">
                       {movie.genres.join(", ")}
                     </p>
                   </motion.div>
@@ -1454,8 +1454,8 @@ function MobileMovieLayout({
 
                 {cast.length > 0 && (
                   <motion.div variants={fadeInUp} className="space-y-3 pt-7">
-                    <h3 className="text-[20px] font-black tracking-[-0.03em] text-white">Casts</h3>
-                    <p className="text-[17px] leading-[1.22] text-[#8f919c]">
+                    <h3 className="text-[18px] font-black tracking-normal text-white">Casts</h3>
+                    <p className="text-[16px] leading-[1.24] text-[#8f919c]">
                       {cast.map((member) => member.name).join(", ")}
                     </p>
                   </motion.div>
@@ -1463,8 +1463,8 @@ function MobileMovieLayout({
 
                 {(((movie as any).director) || movie.language) && (
                   <motion.div variants={fadeInUp} className="space-y-3 pt-7">
-                    <h3 className="text-[20px] font-black tracking-[-0.03em] text-white">Production</h3>
-                    <p className="text-[17px] leading-[1.35] text-[#8f919c]">
+                    <h3 className="text-[18px] font-black tracking-normal text-white">Production</h3>
+                    <p className="text-[16px] leading-[1.35] text-[#8f919c]">
                       {(movie as any).director || movie.language}
                     </p>
                   </motion.div>
