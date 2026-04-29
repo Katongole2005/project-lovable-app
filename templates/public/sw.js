@@ -1,5 +1,5 @@
 // Bump the cache whenever we change caching behavior
-const CACHE_NAME = "moviebay-v8";
+const CACHE_NAME = "moviebay-v9";
 const CORE_ASSETS = [
   "/",
   "/index.html",
@@ -44,7 +44,7 @@ const shouldNeverCache = (url) => {
 
 // Check if URL is a hashed asset (JS/CSS bundles from Vite)
 const isHashedAsset = (url) => {
-  return /\/assets\/.*-[a-f0-9]{8,}\.(js|css)$/i.test(url);
+  return /\/assets\/.*-[A-Za-z0-9_-]{6,}\.(js|css)$/i.test(url);
 };
 
 self.addEventListener("install", (event) => {

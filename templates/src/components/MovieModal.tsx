@@ -469,7 +469,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     <ErrorBoundary>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         {/* Mobile: Full screen sheet, Desktop: Centered modal */}
-        <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 overflow-hidden shadow-none rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none">
+        <DialogContent className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-card md:bg-transparent border-0 md:border md:border-white overflow-hidden shadow-none md:shadow-[0_24px_80px_rgba(0,0,0,0.62)] rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none">
 
           <DialogTitle className="sr-only">{movie.title}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -645,7 +645,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
               )}
             </div>
 
-            <div className="absolute inset-0 md:rounded-3xl pointer-events-none border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]" />
+            <div className="absolute inset-0 md:rounded-3xl pointer-events-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]" />
 
             {/* Close button — outside ScrollArea so it stays fixed */}
             <button
