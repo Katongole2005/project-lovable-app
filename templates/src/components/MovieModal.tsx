@@ -1276,106 +1276,108 @@ function MobileMovieLayout({
         </div>
       </div>
 
+      <div className="absolute left-0 right-0 top-[96.875vw] z-20 px-6 pt-5 pb-6 bg-[#101116]">
+        {actionStep === "none" && (
+          <>
+            <div className="grid grid-cols-2 gap-7">
+              <Button
+                size="lg"
+                className="h-[49px] rounded-[11px] border-0 bg-[#d9ff21] text-[#050607] shadow-none hover:bg-[#d9ff21]/95 active:scale-[0.98] flex items-center justify-center gap-2.5"
+                onClick={() => {
+                  const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                  if (versions.length > 1) {
+                    setActionStep("watch_vj");
+                  } else {
+                    setActionStep("watch_server");
+                  }
+                }}
+              >
+                <span className="text-[15.5px] font-black tracking-normal">Watch</span>
+                <Play className="h-[18px] w-[18px] fill-current" />
+              </Button>
+
+              <Button
+                size="lg"
+                className="h-[49px] rounded-[11px] border border-[#282c37] bg-transparent text-white shadow-none hover:bg-white/[0.03] active:scale-[0.98] flex items-center justify-center gap-2.5"
+                onClick={() => {
+                  const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                  if (versions.length > 1) {
+                    setActionStep("download_vj");
+                  } else {
+                    setActionStep("download_server");
+                  }
+                }}
+              >
+                <span className="text-[15px] font-black tracking-normal">Download</span>
+                <Download className="h-[17px] w-[17px] stroke-[3]" />
+              </Button>
+            </div>
+
+            <div className="mt-8 grid grid-cols-4 items-start gap-4">
+              <button
+                type="button"
+                onClick={onToggleWatchlist}
+                className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
+              >
+                <Bookmark className={cn("h-6 w-6 stroke-[2.1]", inWatchlist && "fill-[#d9ff21] text-[#d9ff21]")} />
+                <span className="text-[11px] font-black leading-none text-white/88">Add List</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.info("Trailer is not available yet.")}
+                className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
+              >
+                <Youtube className="h-6 w-6 stroke-[2.1]" />
+                <span className="text-[11px] font-black leading-none text-white/88">Trailer</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
+              >
+                <Send className="h-6 w-6 stroke-[2.1]" />
+                <span className="text-[11px] font-black leading-none text-white/88">Share</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.info("Thanks. We will review this title.")}
+                className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
+              >
+                <Flag className="h-6 w-6 stroke-[2.1]" />
+                <span className="text-[11px] font-black leading-none text-white/88">Report</span>
+              </button>
+            </div>
+          </>
+        )}
+
+        {actionStep !== "none" && (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">
+                {actionStep === "watch_vj" ? "Select Version" : "Select Server"}
+              </p>
+            </div>
+            <button
+              onClick={() => setActionStep("none")}
+              className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70"
+            >
+              Back
+            </button>
+          </div>
+        )}
+      </div>
+
       <div
         ref={scrollContainerRef}
-        className="relative z-20 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y"
+        className="pointer-events-none relative z-30 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         <div className="w-full aspect-[16/15.5] pointer-events-none" />
 
-        <div className="px-6 pt-5 pb-6 relative z-30 bg-[#101116]">
-          {actionStep === "none" && (
-            <>
-              <div className="grid grid-cols-2 gap-7">
-                <Button
-                  size="lg"
-                  className="h-[49px] rounded-[11px] border-0 bg-[#d9ff21] text-[#050607] shadow-none hover:bg-[#d9ff21]/95 active:scale-[0.98] flex items-center justify-center gap-2.5"
-                  onClick={() => {
-                    const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
-                    if (versions.length > 1) {
-                      setActionStep("watch_vj");
-                    } else {
-                      setActionStep("watch_server");
-                    }
-                  }}
-                >
-                  <span className="text-[15.5px] font-black tracking-normal">Watch</span>
-                  <Play className="h-[18px] w-[18px] fill-current" />
-                </Button>
-
-                <Button
-                  size="lg"
-                  className="h-[49px] rounded-[11px] border border-[#282c37] bg-transparent text-white shadow-none hover:bg-white/[0.03] active:scale-[0.98] flex items-center justify-center gap-2.5"
-                  onClick={() => {
-                    const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
-                    if (versions.length > 1) {
-                      setActionStep("download_vj");
-                    } else {
-                      setActionStep("download_server");
-                    }
-                  }}
-                >
-                  <span className="text-[15px] font-black tracking-normal">Download</span>
-                  <Download className="h-[17px] w-[17px] stroke-[3]" />
-                </Button>
-              </div>
-
-              <div className="mt-8 grid grid-cols-4 items-start gap-4">
-                <button
-                  type="button"
-                  onClick={onToggleWatchlist}
-                  className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
-                >
-                  <Bookmark className={cn("h-6 w-6 stroke-[2.1]", inWatchlist && "fill-[#d9ff21] text-[#d9ff21]")} />
-                  <span className="text-[11px] font-black leading-none text-white/88">Add List</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toast.info("Trailer is not available yet.")}
-                  className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
-                >
-                  <Youtube className="h-6 w-6 stroke-[2.1]" />
-                  <span className="text-[11px] font-black leading-none text-white/88">Trailer</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
-                >
-                  <Send className="h-6 w-6 stroke-[2.1]" />
-                  <span className="text-[11px] font-black leading-none text-white/88">Share</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toast.info("Thanks. We will review this title.")}
-                  className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
-                >
-                  <Flag className="h-6 w-6 stroke-[2.1]" />
-                  <span className="text-[11px] font-black leading-none text-white/88">Report</span>
-                </button>
-              </div>
-            </>
-          )}
-
-          {actionStep !== "none" && (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/34">
-                  {actionStep === "watch_vj" ? "Select Version" : "Select Server"}
-                </p>
-              </div>
-              <button
-                onClick={() => setActionStep("none")}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70"
-              >
-                Back
-              </button>
-            </div>
-          )}
-        </div>
+        <div className="h-[150px] pointer-events-none" />
 
         <div
-          className="relative min-h-0 !rounded-none pb-12 bg-[#101116]"
+          className="pointer-events-auto relative z-30 min-h-0 !rounded-none pb-12 bg-[#101116]"
           style={surfaceStyle}
         >
           <div className="px-4 pb-2 pt-0">
