@@ -84,9 +84,11 @@ export function useSeo({
  * Build JSON-LD for a Movie/Series detail page.
  */
 export function buildMovieJsonLd(movie: {
+  mobifliks_id?: string;
   title: string;
   description?: string;
   image_url?: string;
+  backdrop_url?: string;
   year?: number;
   type: string;
   genres?: string[];
@@ -94,12 +96,29 @@ export function buildMovieJsonLd(movie: {
   vj_name?: string;
   cast?: Array<{ name: string; character?: string | null }>;
 }) {
+  const cleanVj = movie.vj_name?.replace(/^VJ\s+/i, "").trim();
+  const typeSlug = movie.type === "series" ? "series" : "movie";
+  const slugTitle = movie.title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  const slugParts = [slugTitle || "movie"];
+  if (movie.year) slugParts.push(String(movie.year));
+  if (movie.mobifliks_id) slugParts.push(movie.mobifliks_id);
+  const canonicalUrl = `https://s-u.in/${typeSlug}/${slugParts.join("-")}`;
+  const description = movie.description || `Watch ${movie.title}${cleanVj ? ` translated by VJ ${cleanVj}` : ""} in Luganda on Moviebay.`;
+  const image = movie.image_url || movie.backdrop_url;
+
   return {
     "@context": "https://schema.org",
     "@type": movie.type === "series" ? "TVSeries" : "Movie",
     name: movie.title,
-    description: movie.description || `Watch ${movie.title} translated into Luganda by ${movie.vj_name ? `VJ ${movie.vj_name}` : "top VJs"} on Moviebay`,
-    image: movie.image_url,
+    alternateName: cleanVj ? `${movie.title} VJ ${cleanVj}` : movie.title,
+    description,
+    image,
+    thumbnailUrl: image,
     datePublished: movie.year ? `${movie.year}-01-01` : undefined,
     genre: movie.genres,
     contentRating: movie.certification,
@@ -108,7 +127,7 @@ export function buildMovieJsonLd(movie: {
       "@type": "Country",
       name: "Uganda",
     },
-    url: `https://s-u.in/${movie.type === "series" ? "series" : "movie"}/`,
+    url: canonicalUrl,
     provider: {
       "@type": "Organization",
       name: "Moviebay",
@@ -120,10 +139,10 @@ export function buildMovieJsonLd(movie: {
         name: c.name,
       })),
     } : {}),
-    ...(movie.vj_name ? {
+    ...(cleanVj ? {
       translator: {
         "@type": "Person",
-        name: `VJ ${movie.vj_name.replace(/^VJ\s+/i, "")}`,
+        name: `VJ ${cleanVj}`,
       },
     } : {}),
   };

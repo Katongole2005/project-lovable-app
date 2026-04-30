@@ -10,6 +10,9 @@ import sys
 import platform
 import os
 import time
+import html
+import json
+import re
 from urllib.parse import urlparse
 
 import requests
@@ -42,6 +45,9 @@ FRONTEND_NO_CACHE_HEADERS = {
     "Pragma": "no-cache",
     "Expires": "0",
 }
+
+SITE_URL = "https://s-u.in"
+DEFAULT_OG_IMAGE = f"{SITE_URL}/icon-512.png"
 
 # CORS configuration (set ALLOWED_ORIGINS as comma-separated list in .env)
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
@@ -740,6 +746,102 @@ async def english_originals(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
+def _slug_id(value: str) -> str:
+    return value.rsplit("-", 1)[-1] if "-" in value else value
+
+
+def _slugify(value: str) -> str:
+    cleaned = re.sub(r"[^a-z0-9\s-]", "", (value or "").lower())
+    cleaned = re.sub(r"\s+", "-", cleaned)
+    cleaned = re.sub(r"-+", "-", cleaned).strip("-")
+    return cleaned or "movie"
+
+
+def _to_slug(title: str, mobifliks_id: str, year: Optional[int] = None) -> str:
+    parts = [_slugify(title)]
+    if year:
+        parts.append(str(year))
+    parts.append(mobifliks_id)
+    return "-".join(parts)
+
+
+def _clean_vj(value: Optional[str]) -> str:
+    return re.sub(r"^VJ\s+", "", value or "", flags=re.I).strip()
+
+
+def _seo_title(movie: Dict[str, Any]) -> str:
+    vj = _clean_vj(movie.get("vj_name"))
+    return f"{movie.get('title') or 'Movie'}{f' - VJ {vj}' if vj else ''} | Luganda Translated Movies"
+
+
+def _seo_description(movie: Dict[str, Any]) -> str:
+    description = re.sub(r"\s+", " ", movie.get("description") or "").strip()
+    if description:
+        return description[:300]
+    vj = _clean_vj(movie.get("vj_name"))
+    title = movie.get("title") or "this movie"
+    return f"Watch {title}{f' translated by VJ {vj}' if vj else ''} in Luganda on Moviebay. Stream and download Uganda translated movies with SD and FHD options."
+
+
+def _replace_meta(html_text: str, attr: str, key: str, tag: str) -> str:
+    pattern = rf'<meta\s+{attr}="{re.escape(key)}"\s+content="[^"]*"\s*/?>'
+    if re.search(pattern, html_text, flags=re.I):
+        return re.sub(pattern, tag, html_text, count=1, flags=re.I)
+    return html_text.replace("</head>", f"  {tag}\n</head>", 1)
+
+
+def _render_seo_index(movie: Dict[str, Any], type_slug: str) -> HTMLResponse:
+    index_html = FRONTEND_INDEX_PATH.read_text(encoding="utf-8")
+    title = _seo_title(movie)
+    description = _seo_description(movie)
+    image = clean_image_url(movie.get("image_url")) or clean_image_url(movie.get("backdrop_url")) or DEFAULT_OG_IMAGE
+    canonical = f"{SITE_URL}/{type_slug}/{_to_slug(movie.get('title') or 'movie', movie.get('mobifliks_id'), movie.get('year'))}"
+    escaped_title = html.escape(title, quote=True)
+    escaped_description = html.escape(description, quote=True)
+    escaped_image = html.escape(image, quote=True)
+    escaped_canonical = html.escape(canonical, quote=True)
+    schema_type = "TVSeries" if type_slug == "series" else "Movie"
+    vj = _clean_vj(movie.get("vj_name"))
+    json_ld = {
+        "@context": "https://schema.org",
+        "@type": schema_type,
+        "name": movie.get("title"),
+        "alternateName": f"{movie.get('title')} VJ {vj}" if vj else movie.get("title"),
+        "description": description,
+        "image": image,
+        "thumbnailUrl": image,
+        "genre": movie.get("genres") or [],
+        "inLanguage": "lg",
+        "url": canonical,
+        "provider": {"@type": "Organization", "name": "Moviebay", "url": SITE_URL},
+    }
+    if movie.get("release_date"):
+        json_ld["datePublished"] = movie.get("release_date")
+    elif movie.get("year"):
+        json_ld["datePublished"] = f"{movie.get('year')}-01-01"
+    if vj:
+        json_ld["translator"] = {"@type": "Person", "name": f"VJ {vj}"}
+
+    index_html = re.sub(r"<title>.*?</title>", f"<title>{escaped_title}</title>", index_html, count=1, flags=re.I | re.S)
+    index_html = _replace_meta(index_html, "name", "description", f'<meta name="description" content="{escaped_description}" />')
+    index_html = re.sub(r'<link\s+rel="canonical"\s+href="[^"]*"\s*/?>', f'<link rel="canonical" href="{escaped_canonical}" />', index_html, count=1, flags=re.I)
+    index_html = _replace_meta(index_html, "property", "og:title", f'<meta property="og:title" content="{escaped_title}" />')
+    index_html = _replace_meta(index_html, "property", "og:description", f'<meta property="og:description" content="{escaped_description}" />')
+    index_html = _replace_meta(index_html, "property", "og:url", f'<meta property="og:url" content="{escaped_canonical}" />')
+    index_html = _replace_meta(index_html, "property", "og:image", f'<meta property="og:image" content="{escaped_image}" />')
+    index_html = _replace_meta(index_html, "property", "og:image:alt", f'<meta property="og:image:alt" content="{escaped_title}" />')
+    index_html = _replace_meta(index_html, "name", "twitter:title", f'<meta name="twitter:title" content="{escaped_title}" />')
+    index_html = _replace_meta(index_html, "name", "twitter:description", f'<meta name="twitter:description" content="{escaped_description}" />')
+    index_html = _replace_meta(index_html, "name", "twitter:image", f'<meta name="twitter:image" content="{escaped_image}" />')
+    index_html = _replace_meta(index_html, "name", "twitter:image:alt", f'<meta name="twitter:image:alt" content="{escaped_title}" />')
+    index_html = index_html.replace(
+        "</head>",
+        f'  <script type="application/ld+json" data-seo-jsonld="true">{html.escape(json.dumps(json_ld, ensure_ascii=False), quote=False)}</script>\n</head>',
+        1,
+    )
+    return HTMLResponse(index_html, headers=FRONTEND_NO_CACHE_HEADERS)
+
+
 @app.get("/{full_path:path}", include_in_schema=False)
 async def frontend_routes(full_path: str):
     if not FRONTEND_DIST_PATH.exists():
@@ -761,6 +863,15 @@ async def frontend_routes(full_path: str):
         return FileResponse(candidate, headers=FRONTEND_NO_CACHE_HEADERS)
 
     if FRONTEND_INDEX_PATH.exists():
+        parts = requested_path.split("/", 1)
+        if len(parts) == 2 and parts[0] in {"movie", "series"}:
+            db = MovieDatabase()
+            try:
+                movie = db.get_movie_by_id(_slug_id(parts[1]))
+                if movie:
+                    return _render_seo_index(movie, parts[0])
+            finally:
+                db.close()
         return FileResponse(FRONTEND_INDEX_PATH, headers=FRONTEND_NO_CACHE_HEADERS)
 
     raise HTTPException(status_code=404, detail="Frontend index not found")

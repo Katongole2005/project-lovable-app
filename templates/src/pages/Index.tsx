@@ -363,7 +363,7 @@ export default function Index() {
     originals: "Originals",
   };
   const seoTitle = selectedMovie && isModalOpen
-    ? `${selectedMovie.title}${selectedMovie.year ? ` (${selectedMovie.year})` : ""} - Translated by VJ`
+    ? selectedMovie.title
     : seoTitleMap[viewMode] || "";
   const seoDescription = selectedMovie && isModalOpen
     ? selectedMovie.description || `Watch ${selectedMovie.title} translated to Luganda by top VJs on Moviebay Uganda`
@@ -374,10 +374,10 @@ export default function Index() {
     vjName: selectedMovie?.vj_name,
     year: selectedMovie?.year,
     description: seoDescription,
-    imageUrl: selectedMovie?.backdrop_url || selectedMovie?.image_url || undefined,
+    imageUrl: selectedMovie?.image_url || selectedMovie?.backdrop_url || undefined,
     genres: selectedMovie?.genres,
     canonicalPath: selectedMovie && isModalOpen 
-      ? `/${selectedMovie.type === 'series' ? 'series' : 'movie'}/${selectedMovie.mobifliks_id}`
+      ? `/${selectedMovie.type === 'series' ? 'series' : 'movie'}/${toSlug(selectedMovie.title, selectedMovie.mobifliks_id, selectedMovie.year)}`
       : `/${viewMode === "home" ? "" : viewMode}`,
     jsonLd: selectedMovie && isModalOpen ? buildMovieJsonLd(selectedMovie) : undefined,
   });

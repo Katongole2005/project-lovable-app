@@ -8,6 +8,22 @@ const corsHeaders = {
 
 const BASE_URL = 'https://s-u.in'
 
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+}
+
+function toSlug(title: string, id: string, year?: number | null): string {
+  const parts = [slugify(title || "movie")]
+  if (year) parts.push(String(year))
+  parts.push(id)
+  return parts.join("-")
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -22,8 +38,8 @@ serve(async (req: Request) => {
     // Fetch all movies and series
     const { data: movies, error } = await supabase
       .from('movies')
-      .select('mobifliks_id, title, updated_at, type, vj_name')
-      .order('updated_at', { ascending: false })
+      .select('mobifliks_id, title, year, last_updated, created_at, type, vj_name')
+      .order('last_updated', { ascending: false })
 
     if (error) {
       throw error
@@ -44,7 +60,7 @@ serve(async (req: Request) => {
     const getLatestUpdateForVj = (vjNameLower: string): string => {
       for (const m of (movies || [])) {
         if (m.vj_name && m.vj_name.trim().replace(/^VJ\s+/i, '').toLowerCase() === vjNameLower) {
-          return (m.updated_at || today).split('T')[0]
+          return (m.last_updated || m.created_at || today).split('T')[0]
         }
       }
       return today
@@ -86,9 +102,9 @@ ${uniqueVjs.map(vj => `  <url>
   </url>`).join('\n')}
 
   <!-- Movies & Series -->
-${(movies || []).map((movie: { mobifliks_id: string; type: string; updated_at?: string }) => `  <url>
-    <loc>${BASE_URL}/${movie.type === 'series' ? 'series' : 'movie'}/${movie.mobifliks_id}</loc>
-    <lastmod>${(movie.updated_at || today).split('T')[0]}</lastmod>
+${(movies || []).map((movie: { mobifliks_id: string; title: string; year?: number; type: string; last_updated?: string; created_at?: string }) => `  <url>
+    <loc>${BASE_URL}/${movie.type === 'series' ? 'series' : 'movie'}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}</loc>
+    <lastmod>${(movie.last_updated || movie.created_at || today).split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>`).join('\n')}
