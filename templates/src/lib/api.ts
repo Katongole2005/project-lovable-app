@@ -539,6 +539,23 @@ const fixReleaseDate = (dateStr?: string): string | undefined => {
   return dateStr;
 };
 
+const inferYear = (movie: Movie): number | undefined => {
+  const directYear = fixYear(movie.year);
+  if (directYear) return directYear;
+
+  const rawData = (movie as any).raw_data;
+  const tmdbYear = Number(rawData?.tmdb?.year ?? rawData?.year);
+  if (Number.isInteger(tmdbYear) && tmdbYear > 0) return fixYear(tmdbYear);
+
+  const originalTitle = rawData?.original_title;
+  if (typeof originalTitle === "string") {
+    const match = originalTitle.match(/\b(?:19|20)\d{2}\b/);
+    if (match) return fixYear(Number(match[0]));
+  }
+
+  return undefined;
+};
+
 const normalize = (items: unknown[]): Movie[] =>
   Array.isArray(items)
     ? (items as Movie[])
@@ -546,7 +563,7 @@ const normalize = (items: unknown[]): Movie[] =>
       .map((m) => ({
         ...m,
         title: cleanTitle(m.title ?? ""),
-        year: fixYear(m.year),
+        year: inferYear(m),
         release_date: fixReleaseDate(m.release_date),
         logo_url: (m as any).raw_data?.tmdb?.details?.logo_url || m.logo_url,
       }))
@@ -588,6 +605,68 @@ function stripVariantMetadata(movie: Movie): Movie {
   return { ...rest };
 }
 
+function getVjVariantKey(movie: Movie): string {
+  return movie.vj_name?.trim().toLowerCase() || `id:${movie.mobifliks_id}`;
+}
+
+function compareVariantBase(left: Movie, right: Movie): number {
+  const leftHasPrimarySource = left.download_url ? 1 : 0;
+  const rightHasPrimarySource = right.download_url ? 1 : 0;
+  if (leftHasPrimarySource !== rightHasPrimarySource) {
+    return rightHasPrimarySource - leftHasPrimarySource;
+  }
+  return compareMoviePriority(left, right);
+}
+
+function fileSizeInMb(size?: string | null): number {
+  const match = (size ?? "").match(/([\d.]+)\s*(gb|mb)/i);
+  if (!match) return 0;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) return 0;
+  return match[2].toLowerCase() === "gb" ? value * 1024 : value;
+}
+
+function betterServer2Source(left: Movie, right: Movie): Movie {
+  const sizeDiff = fileSizeInMb(right.file_size) - fileSizeInMb(left.file_size);
+  if (sizeDiff !== 0) return sizeDiff > 0 ? right : left;
+  return compareMoviePriority(left, right) <= 0 ? left : right;
+}
+
+function mergeSameVjVariants(variants: Movie[]): Movie[] {
+  const groups = new Map<string, Movie[]>();
+
+  variants.forEach((variant) => {
+    const key = getVjVariantKey(variant);
+    groups.set(key, [...(groups.get(key) ?? []), variant]);
+  });
+
+  return Array.from(groups.values())
+    .map((items) => {
+      const [base, ...extras] = [...items].sort(compareVariantBase).map(stripVariantMetadata);
+      return extras.reduce<Movie>(
+        (merged, extra) => {
+          const preferredServer2 = merged.server2_url && extra.server2_url
+            ? betterServer2Source(merged, extra)
+            : merged.server2_url
+              ? merged
+              : extra;
+
+          return {
+            ...merged,
+            download_url: merged.download_url || extra.download_url,
+            server2_url: preferredServer2.server2_url || merged.server2_url || extra.server2_url,
+            file_size: preferredServer2.file_size || merged.file_size || extra.file_size,
+            details_url: merged.details_url || extra.details_url,
+            video_page_url: merged.video_page_url || extra.video_page_url,
+            views: Math.max(merged.views ?? 0, extra.views ?? 0),
+          };
+        },
+        base
+      );
+    })
+    .sort(compareMoviePriority);
+}
+
 function attachVariantVersions(movies: Movie[]): Movie[] {
   const groups = new Map<string, { items: Movie[]; firstIndex: number }>();
   const result: Array<{ item: Movie; index: number }> = [];
@@ -603,7 +682,7 @@ function attachVariantVersions(movies: Movie[]): Movie[] {
   });
 
   groups.forEach(({ items, firstIndex }) => {
-    const sortedVariants = [...items].sort(compareMoviePriority).map(stripVariantMetadata);
+    const sortedVariants = mergeSameVjVariants(items);
     const primary = sortedVariants[0];
     result.push({
       item: {
@@ -636,7 +715,7 @@ async function fetchMovieVariants(movie: Movie): Promise<Movie[]> {
     .limit(movie.type === "series" ? 60 : 20);
 
   if (movie.year) {
-    query = query.eq("year", movie.year);
+    query = query.or(`year.eq.${movie.year},year.is.null`);
   }
 
   const { data, error } = await query;
@@ -645,10 +724,10 @@ async function fetchMovieVariants(movie: Movie): Promise<Movie[]> {
     return [];
   }
 
-  return normalize(data ?? [])
-    .filter((candidate) => getVariantGroupKey(candidate) === getVariantGroupKey(movie))
-    .sort(compareMoviePriority)
-    .map(stripVariantMetadata);
+  const candidates = normalize(data ?? []).filter(
+    (candidate) => getVariantGroupKey(candidate) === getVariantGroupKey(movie)
+  );
+  return mergeSameVjVariants(candidates);
 }
 
 // ─── Series Grouping ─────────────────────────────────────────────────────────
@@ -844,8 +923,10 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
     const movie = normalize([data])[0];
     if (!movie) return null;
     const versions = await fetchMovieVariants(movie);
+    const mergedMovie = versions.find((version) => version.mobifliks_id === movie.mobifliks_id) ?? versions[0] ?? movie;
     const detailedMovie = {
       ...movie,
+      ...mergedMovie,
       vj_count: versions.length > 1 ? versions.length : undefined,
       vj_versions: versions.length > 1 ? versions : undefined,
     };

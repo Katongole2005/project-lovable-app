@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /auth
+Disallow: /profile
+Disallow: /api/
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+Sitemap: https://s-u.in/sitemap.xml

@@ -6,6 +6,7 @@ import random
 import logging
 from datetime import datetime
 import hashlib
+from urllib.parse import unquote
 
 import requests
 from bs4 import BeautifulSoup
@@ -52,6 +53,30 @@ def parse_title(title: str):
     clean = re.sub(r"\s*-\s*VJ.*$", "", clean, flags=re.I).strip()
     if clean: result["clean_title"] = clean
     return result
+
+def infer_vj_from_server2_url(url: str):
+    value = unquote(url or "").replace("+", " ")
+    markers = [
+        (r"(?i)\bvj[.\s_-]*junior\b", "Junior"),
+        (r"(?i)\bjunior\b", "Junior"),
+        (r"(?i)\bjr\b", "Junior"),
+        (r"(?i)\bvj[.\s_-]*emmy\b", "Emmy"),
+        (r"(?i)\bemmy\b", "Emmy"),
+        (r"(?i)\bvj[.\s_-]*ham\b", "Ham"),
+        (r"(?i)\bham\b", "Ham"),
+        (r"(?i)\bvj[.\s_-]*soul\b", "Soul"),
+        (r"(?i)\bsoul\b", "Soul"),
+        (r"(?i)\bvj[.\s_-]*(?:ice[.\s_-]*p|icep)\b", "Ice P"),
+        (r"(?i)\b(?:ice[.\s_-]*p|icep)\b", "Ice P"),
+        (r"(?i)\bvj[.\s_-]*ulio\b", "Ulio"),
+        (r"(?i)\bulio\b", "Ulio"),
+        (r"(?i)\bvj[.\s_-]*muba\b", "Muba"),
+        (r"(?i)\bmuba\b", "Muba"),
+    ]
+    for pattern, name in markers:
+        if re.search(pattern, value):
+            return name
+    return None
 
 class Server2Scraper:
     def __init__(self, email, password):
@@ -120,6 +145,12 @@ class Server2Scraper:
         parsed = parse_title(title)
         clean_title = parsed["clean_title"]
         vj_name = parsed["vj_name"]
+        url_vj_name = infer_vj_from_server2_url(video_url)
+        if url_vj_name and vj_name and url_vj_name.lower() != vj_name.lower():
+            logger.info(f"   [VJ FIX] URL suggests VJ '{url_vj_name}' instead of card label '{vj_name}' for '{clean_title}'.")
+            vj_name = url_vj_name
+        elif url_vj_name and not vj_name:
+            vj_name = url_vj_name
         
         # 1. Broad search for movies with this title
         results, count = self.db.search_movies(clean_title, limit=50, title_only=True)
