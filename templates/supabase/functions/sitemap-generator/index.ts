@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 const BASE_URL = 'https://s-u.in'
+const PAGE_SIZE = 1000
 
 function slugify(value: string): string {
   return value
@@ -35,19 +36,38 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch all movies and series
-    const { data: movies, error } = await supabase
-      .from('movies')
-      .select('mobifliks_id, title, year, last_updated, created_at, type, vj_name')
-      .order('last_updated', { ascending: false })
+    const movies: Array<{
+      mobifliks_id: string
+      title: string
+      year?: number | null
+      last_updated?: string | null
+      created_at?: string | null
+      type: string
+      vj_name?: string | null
+    }> = []
 
-    if (error) {
-      throw error
+    for (const contentType of ['movie', 'series']) {
+      let from = 0
+      while (true) {
+        const { data, error } = await supabase
+          .from('movies')
+          .select('mobifliks_id, title, year, last_updated, created_at, type, vj_name')
+          .eq('type', contentType)
+          .order('last_updated', { ascending: false, nullsFirst: false })
+          .range(from, from + PAGE_SIZE - 1)
+
+        if (error) throw error
+        if (!data || data.length === 0) break
+
+        movies.push(...data)
+        if (data.length < PAGE_SIZE) break
+        from += PAGE_SIZE
+      }
     }
 
     // Get unique VJs (for vj landing pages)
     const vjSet = new Set<string>()
-    for (const m of (movies || [])) {
+    for (const m of movies) {
       if (m.vj_name && m.vj_name.trim()) {
         vjSet.add(m.vj_name.trim().replace(/^VJ\s+/i, '').toLowerCase())
       }
@@ -58,7 +78,7 @@ serve(async (req: Request) => {
 
     // Find the most recent update date for VJ pages
     const getLatestUpdateForVj = (vjNameLower: string): string => {
-      for (const m of (movies || [])) {
+      for (const m of movies) {
         if (m.vj_name && m.vj_name.trim().replace(/^VJ\s+/i, '').toLowerCase() === vjNameLower) {
           return (m.last_updated || m.created_at || today).split('T')[0]
         }
@@ -102,7 +122,7 @@ ${uniqueVjs.map(vj => `  <url>
   </url>`).join('\n')}
 
   <!-- Movies & Series -->
-${(movies || []).map((movie: { mobifliks_id: string; title: string; year?: number; type: string; last_updated?: string; created_at?: string }) => `  <url>
+${movies.filter(movie => movie.mobifliks_id !== 'TEST_DELETE_ME').map((movie) => `  <url>
     <loc>${BASE_URL}/${movie.type === 'series' ? 'series' : 'movie'}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}</loc>
     <lastmod>${(movie.last_updated || movie.created_at || today).split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
