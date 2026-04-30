@@ -122,6 +122,19 @@ function extractArtworkTint(imageUrl: string): Promise<RgbColor | null> {
       return;
     }
 
+    const parsedUrl = (() => {
+      try {
+        return new URL(imageUrl, window.location.origin);
+      } catch {
+        return null;
+      }
+    })();
+
+    if (parsedUrl?.hostname === "image.tmdb.org") {
+      resolve(null);
+      return;
+    }
+
     const image = new Image();
     image.crossOrigin = "anonymous";
     image.referrerPolicy = "no-referrer";
