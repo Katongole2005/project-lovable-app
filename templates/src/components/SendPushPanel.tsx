@@ -18,17 +18,45 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
   const [sendingLatest, setSendingLatest] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  const invokePush = async (payload: { title: string; body: string; url: string }) => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      throw new Error("Please sign in again before sending push notifications.");
+    }
+
+    const { data, error } = await supabase.functions.invoke("send-push", {
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (error) {
+      const context = (error as any).context;
+      if (context?.json) {
+        let errorBody: any = null;
+        try {
+          errorBody = await context.json();
+        } catch {
+          errorBody = null;
+        }
+        throw new Error(errorBody?.error || errorBody?.message || error.message);
+      }
+      throw error;
+    }
+
+    return data;
+  };
+
   const handleSend = async () => {
     if (!title.trim() || !body.trim()) return;
     setSending(true);
     setResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("send-push", {
-        body: { title, body, url },
-      });
-
-      if (error) throw error;
+      const data = await invokePush({ title, body, url });
 
       if (data.success) {
         setResult({ success: true, message: `Sent to ${data.sent} subscriber(s)` });
@@ -60,15 +88,11 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
       const typeSlug = topMovie.type === "series" ? "series" : "movie";
       const targetUrl = `/${typeSlug}/${toSlug(topMovie.title, topMovie.mobifliks_id, topMovie.year)}`;
 
-      const { data, error } = await supabase.functions.invoke("send-push", {
-        body: {
-          title: `${movies.length} new movies on MovieBay`,
-          body: `Latest: ${movieNames}${movies.length > 5 ? " and more" : ""}`,
-          url: targetUrl,
-        },
+      const data = await invokePush({
+        title: `${movies.length} new movies on MovieBay`,
+        body: `Latest: ${movieNames}${movies.length > 5 ? " and more" : ""}`,
+        url: targetUrl,
       });
-
-      if (error) throw error;
 
       if (data.success) {
         setResult({ success: true, message: `Latest 20 notification sent to ${data.sent} subscriber(s)` });
