@@ -38,3 +38,4 @@ Thumbs.db
 # Lock & temp
 *.tmp
 *.swp
+.vercel

@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "npm --prefix templates/templates ci",
-  "buildCommand": "npm --prefix templates/templates run build",
-  "outputDirectory": "templates/templates/dist",
+  "installCommand": "npm --prefix templates ci",
+  "buildCommand": "npm --prefix templates run build",
+  "outputDirectory": "templates/dist",
   "rewrites": [
     {
       "source": "/movie/:id",
