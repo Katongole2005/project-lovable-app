@@ -577,7 +577,7 @@ const LeaderboardSection = () => {
         .select('*')
         .order('activity_points', { ascending: false })
         .order('watch_time', { ascending: false })
-        .limit(50);
+        .limit(100);
       
       if (!error && leaderboardData) setData(leaderboardData);
       setLoading(false);
@@ -617,7 +617,7 @@ const LeaderboardSection = () => {
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-white/5">
         <div className="space-y-1 text-center md:text-left">
           <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Legendary Ranking</h3>
-          <p className="text-[10px] text-white/20 font-black uppercase tracking-widest">Showing Top 50 Collectors of the Season</p>
+          <p className="text-[10px] text-white/20 font-black uppercase tracking-widest">Showing Top 100 Collectors of the Season</p>
         </div>
         <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl">
           <Clock8 className="w-5 h-5 text-primary" />

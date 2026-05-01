@@ -91,7 +91,49 @@ Deno.serve(async (req) => {
       last_sign_in_at: u.last_sign_in_at,
     }));
 
-    return new Response(JSON.stringify({ users }), {
+    const userIds = users.map((u) => u.id);
+    const { data: activeSessions, error: sessionsError } = userIds.length
+      ? await adminClient
+          .from("active_sessions")
+          .select("user_id, session_id, updated_at")
+          .in("user_id", userIds)
+      : { data: [], error: null };
+
+    if (sessionsError) throw sessionsError;
+
+    const now = Date.now();
+    const activeByUserId = new Map(
+      (activeSessions || []).map((session: any) => {
+        const lastActiveAt = session.updated_at || null;
+        const isActive = lastActiveAt
+          ? now - new Date(lastActiveAt).getTime() <= 5 * 60 * 1000
+          : false;
+        return [session.user_id, {
+          session_id: session.session_id,
+          last_active_at: lastActiveAt,
+          is_active: isActive,
+        }];
+      })
+    );
+
+    const usersWithActivity = users
+      .map((u) => {
+        const activity = activeByUserId.get(u.id);
+        return {
+          ...u,
+          session_id: activity?.session_id || null,
+          last_active_at: activity?.last_active_at || null,
+          is_active: Boolean(activity?.is_active),
+        };
+      })
+      .sort((a, b) => {
+        if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
+        const aTime = a.last_active_at ? new Date(a.last_active_at).getTime() : 0;
+        const bTime = b.last_active_at ? new Date(b.last_active_at).getTime() : 0;
+        return bTime - aTime;
+      });
+
+    return new Response(JSON.stringify({ users: usersWithActivity }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {

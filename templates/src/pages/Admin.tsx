@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -25,6 +25,7 @@ import {
   Megaphone,
   Crown,
   Trash2,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,25 @@ interface UserRow {
   email: string;
   created_at: string;
   last_sign_in_at: string | null;
+  last_active_at: string | null;
+  is_active: boolean;
+}
+
+function formatRelativeTime(value?: string | null) {
+  if (!value) return "Never active";
+
+  const diffMs = Date.now() - new Date(value).getTime();
+  if (diffMs < 0) return "Active now";
+
+  const diffMinutes = Math.floor(diffMs / 60000);
+  if (diffMinutes < 1) return "Active now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
 }
 
 export default function Admin() {
@@ -127,6 +147,8 @@ export default function Admin() {
     { key: "top10_enabled" as const, label: "Top 10 Section", description: "Show the Top 10 ranked section", icon: Trophy },
     { key: "push_notifications_enabled" as const, label: "Push Notifications", description: "Allow push notification subscriptions", icon: Bell },
   ];
+
+  const activeUsersCount = users.filter((u) => u.is_active).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -258,20 +280,35 @@ export default function Admin() {
               </div>
             ) : (
               <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-3 pb-2">
+                  <StatCard label="Active Now" value={String(activeUsersCount)} icon={Radio} />
+                  <StatCard label="Registered" value={String(users.length)} icon={Users} />
+                </div>
                 {users.map((u) => (
                   <div
                     key={u.id}
                     className="flex items-center justify-between p-4 rounded-xl bg-card border border-border/30"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Users className="w-4 h-4 text-primary" />
+                      <div className={cn(
+                        "w-9 h-9 rounded-full flex items-center justify-center",
+                        u.is_active ? "bg-emerald-500/10" : "bg-primary/10"
+                      )}>
+                        <Users className={cn("w-4 h-4", u.is_active ? "text-emerald-500" : "text-primary")} />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">{u.email || "No email"}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-foreground">{u.email || "No email"}</p>
+                          {u.is_active && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-500">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              Active
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           Joined {new Date(u.created_at).toLocaleDateString()}
-                          {u.last_sign_in_at && ` · Last seen ${new Date(u.last_sign_in_at).toLocaleDateString()}`}
+                          {` · Last active ${formatRelativeTime(u.last_active_at || u.last_sign_in_at)}`}
                         </p>
                       </div>
                     </div>
@@ -299,13 +336,14 @@ export default function Admin() {
               <BarChart3 className="w-4 h-4 text-primary" />
               Quick Stats
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard label="Total Users" value={String(users.length || "–")} icon={Users} />
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <StatCard label="Total Users" value={String(users.length || "â€“")} icon={Users} />
+              <StatCard label="Active Now" value={String(activeUsersCount)} icon={Radio} />
               <StatCard label="Download" value={settings.download_enabled ? "ON" : "OFF"} icon={Download} />
               <StatCard label="Maintenance" value={settings.maintenance_mode ? "ON" : "OFF"} icon={Wrench} />
               <StatCard label="Registration" value={settings.registration_enabled ? "ON" : "OFF"} icon={UserPlus} />
             </div>
-            <p className="text-xs text-muted-foreground">More analytics coming soon — user activity, popular content, etc.</p>
+            <p className="text-xs text-muted-foreground">More analytics coming soon â€” user activity, popular content, etc.</p>
           </div>
         )}
       </div>
