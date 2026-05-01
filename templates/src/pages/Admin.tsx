@@ -182,7 +182,11 @@ export default function Admin() {
         throw new Error(backendMessage);
       }
       setCampaignPreview(data);
-      toast.success(dryRun ? `Preview ready: ${data?.willSend || 0} users` : `Email sent to ${data?.sent || 0} users`);
+      if (!dryRun && (data?.failed || 0) > 0) {
+        toast.warning(`Sent ${data?.sent || 0}, failed ${data?.failed || 0}`);
+      } else {
+        toast.success(dryRun ? `Preview ready: ${data?.willSend || 0} users` : `Email sent to ${data?.sent || 0} users`);
+      }
     } catch (err: any) {
       toast.error("Marketing email failed: " + (err.message || "Unknown error"));
     } finally {

@@ -163,6 +163,67 @@ async function sendSmtpMail(conn: Deno.Conn, fromEmail: string, toEmail: string,
   assertSmtp(await readSmtpResponse(conn), [250], "SMTP message send");
 }
 
+async function sendResendMail(apiKey: string, fromEmail: string, toEmail: string, subject: string, html: string) {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: `MovieBay <${fromEmail}>`,
+      to: [toEmail],
+      subject,
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    let details = await response.text();
+    try {
+      const parsed = JSON.parse(details);
+      details = parsed?.message || parsed?.error || details;
+    } catch {
+      // Keep the raw provider response.
+    }
+    throw new Error(`Resend failed: ${response.status} ${details}`);
+  }
+}
+
+async function sendOneEmail(params: {
+  toEmail: string;
+  subject: string;
+  html: string;
+  fromEmail: string;
+  smtpPassword: string | null;
+  resendApiKey: string | null;
+}) {
+  if (params.resendApiKey) {
+    await sendResendMail(params.resendApiKey, params.fromEmail, params.toEmail, params.subject, params.html);
+    return;
+  }
+
+  if (!params.smtpPassword) throw new Error("SMTP_PASSWORD is not configured");
+  if (typeof Deno.connectTls !== "function") {
+    throw new Error("SMTP is not supported by this Edge runtime. Configure RESEND_API_KEY for HTTP email sending.");
+  }
+
+  const conn = await connectSmtp(
+    Deno.env.get("SMTP_HOSTNAME") || "mail.spacemail.com",
+    Number(Deno.env.get("SMTP_PORT") || 465),
+    params.fromEmail,
+    params.smtpPassword,
+  );
+
+  try {
+    await sendSmtpMail(conn, params.fromEmail, params.toEmail, params.subject, params.html);
+    await writeSmtpCommand(conn, "QUIT");
+    await readSmtpResponse(conn);
+  } finally {
+    conn.close();
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -279,9 +340,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const smtpPassword = Deno.env.get("SMTP_PASSWORD");
-    if (!smtpPassword) throw new Error("SMTP_PASSWORD is not configured");
-    const smtpUsername = Deno.env.get("SMTP_USERNAME") || "moviebay@s-u.in";
+    const smtpPassword = Deno.env.get("SMTP_PASSWORD") || null;
+    const resendApiKey = Deno.env.get("RESEND_API_KEY") || null;
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || Deno.env.get("SMTP_USERNAME") || "moviebay@s-u.in";
     if (recipients.length === 0) {
       return new Response(JSON.stringify({
         success: true,
@@ -298,19 +359,19 @@ Deno.serve(async (req) => {
     }
 
     const html = buildMarketingHtml(message, previewText, ctaLabel, ctaUrl);
-    const conn = await connectSmtp(
-      Deno.env.get("SMTP_HOSTNAME") || "mail.spacemail.com",
-      Number(Deno.env.get("SMTP_PORT") || 465),
-      smtpUsername,
-      smtpPassword,
-    );
-
     const sent: string[] = [];
     const failed: Array<{ email: string; error: string }> = [];
 
     for (const recipient of recipients) {
       try {
-        await sendSmtpMail(conn, smtpUsername, recipient.email, subject, html);
+        await sendOneEmail({
+          toEmail: recipient.email,
+          subject,
+          html,
+          fromEmail,
+          smtpPassword,
+          resendApiKey,
+        });
         sent.push(recipient.email);
       } catch (err) {
         failed.push({
@@ -320,11 +381,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    try {
-      await writeSmtpCommand(conn, "QUIT");
-      await readSmtpResponse(conn);
-    } finally {
-      conn.close();
+    if (sent.length === 0 && failed.length > 0) {
+      return new Response(JSON.stringify({
+        error: failed[0].error,
+        target,
+        inactiveDays: days,
+        totalMatched: candidates.length,
+        attempted: recipients.length,
+        sent: 0,
+        failed: failed.length,
+        failures: failed.slice(0, 20),
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({
