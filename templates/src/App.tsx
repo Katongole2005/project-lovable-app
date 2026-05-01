@@ -11,6 +11,7 @@ import { SiteSettingsProvider, useSiteSettingsContext } from "@/hooks/useSiteSet
 import Maintenance from "./pages/Maintenance";
 import { AppLoader } from "@/components/AppLoader";
 import { Analytics } from "@vercel/analytics/react";
+import { NotificationSubscribePrompt } from "@/components/NotificationSubscribePrompt";
 
 const Toaster = lazy(() => import("@/components/ui/toaster").then(module => ({ default: module.Toaster })));
 const CookieConsent = lazy(() => import("@/components/CookieConsent").then(module => ({ default: module.CookieConsent })));
@@ -147,7 +148,9 @@ function AppRoutes() {
   }
 
   return (
-    <Suspense fallback={<AppLoader />}>
+    <>
+      <NotificationSubscribePrompt />
+      <Suspense fallback={<AppLoader />}>
       <ScrollRestoration />
       <AnimatePresence mode="wait">
         <Routes location={location} key={getAnimationKey()}>
@@ -169,7 +172,8 @@ function AppRoutes() {
           <Route path="*" element={<ProtectedRoute><PageWrapper><NotFound /></PageWrapper></ProtectedRoute>} />
         </Routes>
       </AnimatePresence>
-    </Suspense>
+      </Suspense>
+    </>
   );
 }
 
