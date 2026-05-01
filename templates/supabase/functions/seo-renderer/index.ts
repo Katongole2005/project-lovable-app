@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apiKey, content-type",
 }
 
-const BASE_URL = "https://s-u.in"
+const BASE_URL = "https://www.s-u.in"
 const DEFAULT_IMAGE = `${BASE_URL}/icon-512.png`
 
 function cleanVjName(value?: string | null): string {
@@ -25,7 +25,7 @@ function slugify(value: string): string {
 function toSlug(title: string, id: string, year?: number | null): string {
   const parts = [slugify(title || "movie")]
   if (year) parts.push(String(year))
-  parts.push(id)
+  parts.push(encodeURIComponent(id))
   return parts.join("-")
 }
 
@@ -64,7 +64,8 @@ serve(async (req: Request) => {
     const rawId = url.searchParams.get("id")
     if (!rawId) return new Response("Missing ID", { status: 400 })
 
-    const id = rawId.includes("-") ? rawId.split("-").pop() || rawId : rawId
+    const encodedId = rawId.includes("-") ? rawId.split("-").pop() || rawId : rawId
+    const id = decodeURIComponent(encodedId)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",

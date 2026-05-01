@@ -12,7 +12,7 @@ export function toSlug(title: string, id: string, year?: number): string {
 
   const parts = [base];
   if (year) parts.push(String(year));
-  parts.push(id);
+  parts.push(encodeURIComponent(id));
 
   return parts.join("-");
 }
@@ -28,5 +28,5 @@ export function fromSlug(slug: string): string {
 
   // The ID is the last hyphen-separated segment
   const parts = slug.split("-");
-  return parts[parts.length - 1];
+  return decodeURIComponent(parts[parts.length - 1]);
 }

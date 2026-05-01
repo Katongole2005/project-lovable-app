@@ -11,7 +11,7 @@ interface SEOProps {
   jsonLd?: Record<string, any>;
 }
 
-const BASE_URL = "https://s-u.in";
+const BASE_URL = "https://www.s-u.in";
 const DEFAULT_IMAGE = `${BASE_URL}/icon-512.png`;
 
 const cleanVjName = (value?: string) => (value || "").replace(/^VJ\s+/i, "").trim();

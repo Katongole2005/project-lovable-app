@@ -11,8 +11,8 @@ interface SeoProps {
 
 const BASE_TITLE = "Moviebay";
 const DEFAULT_DESC = "Watch and download the best Uganda translated movies. Stream blockbuster films with Luganda translation by VJ Junior, VJ Jingo, VJ Ice P, and more top VJs. Free streaming, no subscription.";
-const DEFAULT_OG_IMAGE = "https://s-u.in/icon-512.png";
-const SITE_URL = "https://s-u.in";
+const DEFAULT_OG_IMAGE = "https://www.s-u.in/icon-512.png";
+const SITE_URL = "https://www.s-u.in";
 
 export function useSeo({
   title,
@@ -106,8 +106,8 @@ export function buildMovieJsonLd(movie: {
     .replace(/^-|-$/g, "");
   const slugParts = [slugTitle || "movie"];
   if (movie.year) slugParts.push(String(movie.year));
-  if (movie.mobifliks_id) slugParts.push(movie.mobifliks_id);
-  const canonicalUrl = `https://s-u.in/${typeSlug}/${slugParts.join("-")}`;
+  if (movie.mobifliks_id) slugParts.push(encodeURIComponent(movie.mobifliks_id));
+  const canonicalUrl = `${SITE_URL}/${typeSlug}/${slugParts.join("-")}`;
   const description = movie.description || `Watch ${movie.title}${cleanVj ? ` translated by VJ ${cleanVj}` : ""} in Luganda on Moviebay.`;
   const image = movie.image_url || movie.backdrop_url;
 
@@ -131,7 +131,7 @@ export function buildMovieJsonLd(movie: {
     provider: {
       "@type": "Organization",
       name: "Moviebay",
-      url: "https://s-u.in",
+      url: SITE_URL,
     },
     ...(movie.cast && movie.cast.length > 0 ? {
       actor: movie.cast.slice(0, 5).map(c => ({

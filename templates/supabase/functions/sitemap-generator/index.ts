@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apiKey, content-type',
 }
 
-const BASE_URL = 'https://s-u.in'
+const BASE_URL = 'https://www.s-u.in'
 const PAGE_SIZE = 1000
 
 function slugify(value: string): string {
@@ -21,8 +21,22 @@ function slugify(value: string): string {
 function toSlug(title: string, id: string, year?: number | null): string {
   const parts = [slugify(title || "movie")]
   if (year) parts.push(String(year))
-  parts.push(id)
+  parts.push(encodeURIComponent(id))
   return parts.join("-")
+}
+
+function escapeXml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&apos;",
+  }[char] || char))
+}
+
+function loc(path: string): string {
+  return escapeXml(`${BASE_URL}${path}`)
 }
 
 serve(async (req: Request) => {
@@ -90,32 +104,32 @@ serve(async (req: Request) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Static Pages -->
   <url>
-    <loc>${BASE_URL}/</loc>
+    <loc>${loc('/')}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${BASE_URL}/movies</loc>
+    <loc>${loc('/movies')}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${BASE_URL}/series</loc>
+    <loc>${loc('/series')}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${BASE_URL}/search</loc>
+    <loc>${loc('/search')}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <!-- VJ Translator Pages -->
 ${uniqueVjs.map(vj => `  <url>
-    <loc>${BASE_URL}/vj/${encodeURIComponent(vj)}</loc>
+    <loc>${loc(`/vj/${encodeURIComponent(vj)}`)}</loc>
     <lastmod>${getLatestUpdateForVj(vj)}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -123,7 +137,7 @@ ${uniqueVjs.map(vj => `  <url>
 
   <!-- Movies & Series -->
 ${movies.filter(movie => movie.mobifliks_id !== 'TEST_DELETE_ME').map((movie) => `  <url>
-    <loc>${BASE_URL}/${movie.type === 'series' ? 'series' : 'movie'}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}</loc>
+    <loc>${loc(`/${movie.type === 'series' ? 'series' : 'movie'}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`)}</loc>
     <lastmod>${(movie.last_updated || movie.created_at || today).split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
