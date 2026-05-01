@@ -1,68 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Minimal Web Push implementation using VAPID (no external library needed)
-async function importVAPIDKey(privateKeyBase64: string) {
-  const keyData = base64UrlToBuffer(privateKeyBase64);
-  return await crypto.subtle.importKey(
-    "pkcs8",
-    keyData,
-    { name: "ECDSA", namedCurve: "P-256" },
-    false,
-    ["sign"]
-  );
-}
-
-function base64UrlToBuffer(base64Url: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
-  const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const binary = atob(base64);
-  const buffer = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i);
-  return buffer.buffer;
-}
-
-function bufferToBase64Url(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-async function createVAPIDAuthHeader(
-  endpoint: string,
-  subject: string,
-  publicKeyBase64: string,
-  privateKeyBase64: string
-): Promise<string> {
-  const url = new URL(endpoint);
-  const audience = `${url.protocol}//${url.host}`;
-  const now = Math.floor(Date.now() / 1000);
-  const exp = now + 12 * 3600;
-
-  const headerB64 = bufferToBase64Url(
-    new TextEncoder().encode(JSON.stringify({ typ: "JWT", alg: "ES256" }))
-  );
-  const payloadB64 = bufferToBase64Url(
-    new TextEncoder().encode(JSON.stringify({ aud: audience, exp, sub: subject }))
-  );
-  const signingInput = `${headerB64}.${payloadB64}`;
-
-  const privateKey = await importVAPIDKey(privateKeyBase64);
-  const signature = await crypto.subtle.sign(
-    { name: "ECDSA", hash: "SHA-256" },
-    privateKey,
-    new TextEncoder().encode(signingInput)
-  );
-
-  const jwt = `${signingInput}.${bufferToBase64Url(signature)}`;
-  return `vapid t=${jwt},k=${publicKeyBase64}`;
-}
+const FALLBACK_ADMIN_EMAIL = "shelvinjoe11@gmail.com";
 
 async function sendPushNotification(
   subscription: { endpoint: string; p256dh: string; auth: string },
@@ -72,28 +18,19 @@ async function sendPushNotification(
   vapidSubject: string
 ): Promise<boolean> {
   try {
-    const authHeader = await createVAPIDAuthHeader(
-      subscription.endpoint,
-      vapidSubject,
-      vapidPublicKey,
-      vapidPrivateKey
-    );
-
-    const body = new TextEncoder().encode(payload);
-
-    const response = await fetch(subscription.endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: authHeader,
-        "Content-Type": "application/octet-stream",
-        "Content-Encoding": "aes128gcm",
-        TTL: "86400",
-        Urgency: "normal",
+    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+    await webpush.sendNotification(
+      {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.p256dh,
+          auth: subscription.auth,
+        },
       },
-      body,
-    });
-
-    return response.ok || response.status === 201;
+      payload,
+      { TTL: 86400, urgency: "normal" },
+    );
+    return true;
   } catch (err) {
     console.error("Push send error:", err);
     return false;
@@ -105,12 +42,47 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY") || "";
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") || "";
     const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:admin@example.com";
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getUser(token);
+    if (claimsError || !claimsData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", claimsData.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleData && claimsData.user.email?.toLowerCase() !== FALLBACK_ADMIN_EMAIL) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { title, body, url } = await req.json();
 

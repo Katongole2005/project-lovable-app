@@ -3,6 +3,8 @@ import { Send, Bell, Loader2, CheckCircle, AlertCircle, Info } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { fetchRecent } from "@/lib/api";
+import { toSlug } from "@/lib/slug";
 
 interface SendPushPanelProps {
   className?: string;
@@ -13,6 +15,7 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("/");
   const [sending, setSending] = useState(false);
+  const [sendingLatest, setSendingLatest] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleSend = async () => {
@@ -41,6 +44,44 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
     }
   };
 
+  const handleSendLatest20 = async () => {
+    setSendingLatest(true);
+    setResult(null);
+
+    try {
+      const movies = await fetchRecent("movie", 20, 1);
+      if (movies.length === 0) {
+        setResult({ success: false, message: "No recent movies found" });
+        return;
+      }
+
+      const topMovie = movies[0];
+      const movieNames = movies.slice(0, 5).map((movie) => movie.title).join(", ");
+      const typeSlug = topMovie.type === "series" ? "series" : "movie";
+      const targetUrl = `/${typeSlug}/${toSlug(topMovie.title, topMovie.mobifliks_id, topMovie.year)}`;
+
+      const { data, error } = await supabase.functions.invoke("send-push", {
+        body: {
+          title: `${movies.length} new movies on MovieBay`,
+          body: `Latest: ${movieNames}${movies.length > 5 ? " and more" : ""}`,
+          url: targetUrl,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setResult({ success: true, message: `Latest 20 notification sent to ${data.sent} subscriber(s)` });
+      } else {
+        setResult({ success: false, message: data.message || "Failed to send latest movies notification" });
+      }
+    } catch (err: any) {
+      setResult({ success: false, message: err.message || "An error occurred" });
+    } finally {
+      setSendingLatest(false);
+    }
+  };
+
   return (
     <div className={cn("rounded-2xl bg-card/60 backdrop-blur border border-border/30 p-4 space-y-4", className)}>
       <div className="flex items-center gap-2.5">
@@ -53,12 +94,10 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
         </div>
       </div>
 
-      {/* Info banner */}
       <div className="flex gap-2 p-3 rounded-xl bg-primary/5 border border-primary/10">
         <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Requires VAPID keys configured in your backend secrets. Generate them at{" "}
-          <span className="text-primary font-medium">vapidkeys.com</span>
+          Users receive these only after they enable notifications on their device.
         </p>
       </div>
 
@@ -77,7 +116,7 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Check out the latest content on MovieBay…"
+            placeholder="Check out the latest content on MovieBay..."
             rows={3}
             className="w-full px-3 py-2.5 rounded-xl bg-background border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all resize-none"
           />
@@ -113,7 +152,7 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
 
       <Button
         onClick={handleSend}
-        disabled={sending || !title.trim() || !body.trim()}
+        disabled={sending || sendingLatest || !title.trim() || !body.trim()}
         className="w-full h-10 rounded-xl gap-2"
       >
         {sending ? (
@@ -121,7 +160,20 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
         ) : (
           <Send className="w-4 h-4" />
         )}
-        {sending ? "Sending…" : "Send Notification"}
+        {sending ? "Sending..." : "Send Notification"}
+      </Button>
+      <Button
+        onClick={handleSendLatest20}
+        disabled={sending || sendingLatest}
+        variant="outline"
+        className="w-full h-10 rounded-xl gap-2"
+      >
+        {sendingLatest ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Bell className="w-4 h-4" />
+        )}
+        {sendingLatest ? "Sending latest movies..." : "Notify Latest 20 Movies"}
       </Button>
     </div>
   );
