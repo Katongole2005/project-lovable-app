@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchTrending, getOptimizedBackdropUrl } from "@/lib/api";
 import { sendBrandedEmail, getWelcomeEmailHtml } from "@/lib/email";
+import { isDisposableEmail } from "@/lib/emailValidation";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, Loader2, Film, Sparkles } from "lucide-react";
 import logoDark from "@/assets/logo-dark.png";
@@ -178,6 +179,15 @@ const Auth = () => {
   }, [email, password, toast]);
 
   const handleSignup = useCallback(async () => {
+    if (isDisposableEmail(email)) {
+      toast({
+        title: "Use a real email",
+        description: "Temporary or disposable email addresses are not allowed on MovieBay.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     const { error } = await supabase.auth.signUp({
       email,
