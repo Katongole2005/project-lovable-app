@@ -34,6 +34,8 @@ type Tab = "settings" | "users" | "notifications" | "analytics";
 interface UserRow {
   id: string;
   email: string;
+  display_name: string | null;
+  avatar_url: string | null;
   created_at: string;
   last_sign_in_at: string | null;
   last_active_at: string | null;
@@ -55,6 +57,16 @@ function formatRelativeTime(value?: string | null) {
 
   const diffDays = Math.floor(diffHours / 24);
   return `${diffDays}d ago`;
+}
+
+function getUserInitials(user: UserRow) {
+  const source = user.display_name || user.email || "U";
+  return source
+    .split(/\s+|@/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "U";
 }
 
 export default function Admin() {
@@ -291,14 +303,18 @@ export default function Admin() {
                   >
                     <div className="flex items-center gap-3">
                       <div className={cn(
-                        "w-9 h-9 rounded-full flex items-center justify-center",
+                        "w-9 h-9 rounded-full flex items-center justify-center overflow-hidden text-xs font-bold",
                         u.is_active ? "bg-emerald-500/10" : "bg-primary/10"
                       )}>
-                        <Users className={cn("w-4 h-4", u.is_active ? "text-emerald-500" : "text-primary")} />
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className={cn(u.is_active ? "text-emerald-500" : "text-primary")}>{getUserInitials(u)}</span>
+                        )}
                       </div>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-medium text-foreground">{u.email || "No email"}</p>
+                          <p className="text-sm font-medium text-foreground">{u.display_name || u.email || "No name"}</p>
                           {u.is_active && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-500">
                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -306,6 +322,9 @@ export default function Admin() {
                             </span>
                           )}
                         </div>
+                        {u.display_name && (
+                          <p className="text-xs text-muted-foreground">{u.email || "No email"}</p>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           Joined {new Date(u.created_at).toLocaleDateString()}
                           {` · Last active ${formatRelativeTime(u.last_active_at || u.last_sign_in_at)}`}

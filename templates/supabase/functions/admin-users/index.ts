@@ -9,6 +9,17 @@ const corsHeaders = {
 const FALLBACK_ADMIN_EMAIL = "shelvinjoe11@gmail.com";
 const USERS_PER_PAGE = 1000;
 
+function buildMetadataName(metadata: Record<string, any> | null | undefined): string {
+  const firstName = String(metadata?.first_name || "").trim();
+  const lastName = String(metadata?.last_name || "").trim();
+  return String(
+    metadata?.full_name ||
+    metadata?.name ||
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    ""
+  ).trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -87,11 +98,24 @@ Deno.serve(async (req) => {
     const users = allUsers.map((u: any) => ({
       id: u.id,
       email: u.email || "",
+      metadata_name: buildMetadataName(u.user_metadata),
+      avatar_url: u.user_metadata?.avatar_url || u.user_metadata?.picture || null,
       created_at: u.created_at,
       last_sign_in_at: u.last_sign_in_at,
     }));
 
     const userIds = users.map((u) => u.id);
+    const { data: profiles, error: profilesError } = userIds.length
+      ? await adminClient
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", userIds)
+      : { data: [], error: null };
+
+    if (profilesError) throw profilesError;
+
+    const profileByUserId = new Map((profiles || []).map((profile: any) => [profile.id, profile]));
+
     const { data: activeSessions, error: sessionsError } = userIds.length
       ? await adminClient
           .from("active_sessions")
@@ -119,8 +143,12 @@ Deno.serve(async (req) => {
     const usersWithActivity = users
       .map((u) => {
         const activity = activeByUserId.get(u.id);
+        const profile = profileByUserId.get(u.id);
+        const displayName = String(profile?.display_name || u.metadata_name || "").trim();
         return {
           ...u,
+          display_name: displayName || null,
+          avatar_url: profile?.avatar_url || u.avatar_url || null,
           session_id: activity?.session_id || null,
           last_active_at: activity?.last_active_at || null,
           is_active: Boolean(activity?.is_active),
