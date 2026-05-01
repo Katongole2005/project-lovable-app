@@ -78,19 +78,6 @@ export function CinematicVideoPlayer({
   const [lastTapTime, setLastTapTime] = useState(0);
   const { user } = useAuth();
   
-  // Real-time stat tracking
-  useEffect(() => {
-    if (!isOpen || isPaused || !user) return;
-    
-    // Increment watch time and activity every 60 seconds
-    const interval = setInterval(() => {
-      incrementUserStat(user.id, 'watch_time', 1);
-      incrementUserStat(user.id, 'activity_points', 10); // Reward for watching
-    }, 60000);
-    
-    return () => clearInterval(interval);
-  }, [isOpen, isPaused, user]);
-  
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [isVolumeHovered, setIsVolumeHovered] = useState(false);
@@ -102,6 +89,9 @@ export function CinematicVideoPlayer({
   const lastSessionKeyRef = useRef("");
   const pauseRequestedRef = useRef(false);
   const lastTimeUpdateRef = useRef(0);
+  const watchStatSecondsRef = useRef(0);
+  const lastTrackedPlaybackTimeRef = useRef<number | null>(null);
+  const iframeStatTimestampRef = useRef<number | null>(null);
 
   const activeTitle = sessionTitle || title;
   const activeMovie = sessionMovie ?? movie ?? null;
@@ -112,6 +102,17 @@ export function CinematicVideoPlayer({
   const useNativeVideoControls = false; // Always use custom UI for direct video files
   const controlsHideDelayMs = isTouchDevice ? 3500 : 3000;
   const sessionKey = `${videoUrl}|${startTime}|${movie?.mobifliks_id ?? ""}`;
+
+  const flushWatchStats = useCallback(() => {
+    if (!user?.id) return;
+
+    const minutes = Math.floor(watchStatSecondsRef.current / 60);
+    if (minutes <= 0) return;
+
+    watchStatSecondsRef.current -= minutes * 60;
+    void incrementUserStat(user.id, 'watch_time', minutes);
+    void incrementUserStat(user.id, 'activity_points', minutes * 10);
+  }, [user?.id]);
 
   const beginPlayback = useCallback(() => {
     pauseRequestedRef.current = false;
@@ -129,6 +130,66 @@ export function CinematicVideoPlayer({
     setSessionTitle(title);
     setSessionMovie(movie ?? null);
   }, [isOpen, movie, sessionKey, title]);
+
+  useEffect(() => {
+    watchStatSecondsRef.current = 0;
+    lastTrackedPlaybackTimeRef.current = null;
+    iframeStatTimestampRef.current = null;
+  }, [isOpen, sessionKey]);
+
+  useEffect(() => {
+    if (!isOpen || !user?.id || !isPlaying || isPaused || hasEnded) {
+      lastTrackedPlaybackTimeRef.current = videoRef.current?.currentTime ?? null;
+      iframeStatTimestampRef.current = null;
+      return;
+    }
+
+    const trackWatchedSeconds = (includeCurrentSnapshot = false) => {
+      if (isEmbeddableVideo) {
+        if (isBuffering) {
+          iframeStatTimestampRef.current = null;
+          return;
+        }
+
+        const now = Date.now();
+        const previous = iframeStatTimestampRef.current ?? now;
+        iframeStatTimestampRef.current = now;
+        const elapsedSeconds = (now - previous) / 1000;
+
+        if (elapsedSeconds > 0 && elapsedSeconds < 45) {
+          watchStatSecondsRef.current += elapsedSeconds;
+        }
+      } else {
+        const video = videoRef.current;
+
+        if (!video || video.ended || video.seeking || video.readyState < 2 || (!includeCurrentSnapshot && video.paused)) {
+          lastTrackedPlaybackTimeRef.current = video?.currentTime ?? null;
+          return;
+        }
+
+        const playbackTime = video.currentTime;
+        const previous = lastTrackedPlaybackTimeRef.current;
+        lastTrackedPlaybackTimeRef.current = playbackTime;
+
+        if (previous === null) return;
+
+        const elapsedSeconds = playbackTime - previous;
+        if (elapsedSeconds > 0 && elapsedSeconds < 45) {
+          watchStatSecondsRef.current += elapsedSeconds;
+        }
+      }
+
+      flushWatchStats();
+    };
+
+    trackWatchedSeconds();
+    const interval = window.setInterval(trackWatchedSeconds, 15000);
+
+    return () => {
+      window.clearInterval(interval);
+      trackWatchedSeconds(true);
+    };
+  }, [activeVideoUrl, flushWatchStats, hasEnded, isBuffering, isEmbeddableVideo, isOpen, isPaused, isPlaying, user?.id]);
 
   useEffect(() => {
     if (!isOpen || !activeVideoUrl || !isPlaying) return;

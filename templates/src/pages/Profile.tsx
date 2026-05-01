@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTheme } from "next-themes";
 import { getRecentlyViewed, getWatchlist, getUserRatings, removeContinueWatching, clearAllStorageData } from "@/lib/storage";
-import { getLeaderboard, incrementUserStat } from "@/lib/stats";
 import { supabase } from "@/integrations/supabase/client";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { AlertTriangle } from "lucide-react";
@@ -405,6 +404,22 @@ const itemVariants = {
   },
 };
 
+const formatWatchTime = (value: unknown) => {
+  const totalMinutes = Math.max(0, Math.floor(Number(value) || 0));
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours < 24) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+};
+
 const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: number }) => {
   const isFirst = rank === 1;
   const isSecond = rank === 2;
@@ -414,7 +429,7 @@ const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: n
   const h = isFirst ? 240 : isSecond ? 180 : 140;
   const order = isFirst ? "order-2" : isSecond ? "order-1" : "order-3";
 
-  const hours = Math.round((user.watch_time || 0) / 60);
+  const watchTime = formatWatchTime(user.watch_time);
   const downloads = user.downloads || 0;
 
   return (
@@ -464,9 +479,9 @@ const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: n
         <div className="relative z-10 flex flex-col items-center gap-3">
           <div className="flex flex-col items-center">
             <span className="text-[9px] md:text-[10px] font-black text-white/20 uppercase tracking-widest mb-0.5">Watch Time</span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1" title={`${Math.max(0, Math.floor(Number(user.watch_time) || 0)).toLocaleString()} minutes watched`}>
               <Clock className="w-3 h-3 text-primary/40" />
-              <span className="text-xs md:text-sm font-black text-white">{hours}h</span>
+              <span className="text-xs md:text-sm font-black text-white tabular-nums">{watchTime}</span>
             </div>
           </div>
           
@@ -491,7 +506,7 @@ const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: n
 };
 
 const LeaderboardCard = ({ user, rank, points, isCurrentUser }: { user: any, rank: number, points: number, isCurrentUser: boolean }) => {
-  const hours = Math.round((user.watch_time || 0) / 60);
+  const watchTime = formatWatchTime(user.watch_time);
   const downloads = user.downloads || 0;
 
   return (
@@ -526,9 +541,9 @@ const LeaderboardCard = ({ user, rank, points, isCurrentUser }: { user: any, ran
         <div className="flex flex-col">
           <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{user.display_name}</span>
           <div className="flex items-center gap-3 mt-1">
-             <div className="flex items-center gap-1 text-[9px] font-black text-white/30 uppercase tracking-widest">
+             <div className="flex items-center gap-1 text-[9px] font-black text-white/30 uppercase tracking-widest" title={`${Math.max(0, Math.floor(Number(user.watch_time) || 0)).toLocaleString()} minutes watched`}>
                <Clock className="w-2.5 h-2.5" />
-               <span>{hours}H</span>
+               <span className="tabular-nums">{watchTime}</span>
              </div>
              <div className="flex items-center gap-1 text-[9px] font-black text-white/30 uppercase tracking-widest border-l border-white/5 pl-3">
                <Download className="w-2.5 h-2.5" />
@@ -561,6 +576,7 @@ const LeaderboardSection = () => {
         .from('profiles')
         .select('*')
         .order('activity_points', { ascending: false })
+        .order('watch_time', { ascending: false })
         .limit(50);
       
       if (!error && leaderboardData) setData(leaderboardData);
