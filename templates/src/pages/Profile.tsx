@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -38,7 +38,6 @@ import {
   Play,
   Bookmark,
   Edit3,
-  Crown,
   Lock,
   X,
   Check,
@@ -420,155 +419,221 @@ const formatWatchTime = (value: unknown) => {
   return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
 };
 
+const getDisplayName = (user: any) =>
+  user?.display_name || user?.full_name || user?.username || "MovieBay Fan";
+
+const getInitials = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "MB";
+  return parts.slice(0, 2).map(part => part[0]).join("").toUpperCase();
+};
+
+const getNumber = (value: unknown) => Math.max(0, Number(value) || 0);
+
+const getRankStyle = (rank: number) => {
+  if (rank === 1) {
+    return {
+      ring: "border-amber-400 shadow-amber-500/30",
+      badge: "from-amber-300 to-amber-500",
+      icon: <Trophy className="w-4 h-4 text-white" />,
+      label: "Champion",
+    };
+  }
+
+  if (rank === 2) {
+    return {
+      ring: "border-slate-300 shadow-slate-300/20",
+      badge: "from-slate-200 to-slate-400",
+      icon: <Medal className="w-4 h-4 text-white" />,
+      label: "Runner Up",
+    };
+  }
+
+  return {
+    ring: "border-orange-400 shadow-orange-500/20",
+    badge: "from-orange-300 to-orange-500",
+    icon: <Award className="w-4 h-4 text-white" />,
+    label: "Top Three",
+  };
+};
+
+const LeaderboardStat = ({
+  icon,
+  label,
+  value,
+  title,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  title?: string;
+}) => (
+  <div
+    className="flex items-center justify-between gap-3 rounded-xl border border-cyan-400/10 bg-white/[0.07] px-3 py-2 backdrop-blur-sm"
+    title={title}
+  >
+    <span className="flex min-w-0 items-center gap-2 text-[11px] font-bold text-slate-200">
+      {icon}
+      <span className="truncate">{label}</span>
+    </span>
+    <span className="shrink-0 text-xs font-black tabular-nums text-white">{value}</span>
+  </div>
+);
+
 const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: number }) => {
   const isFirst = rank === 1;
-  const isSecond = rank === 2;
-  const isThird = rank === 3;
-  
-  const colors = isFirst ? "from-yellow-400 to-yellow-600" : isSecond ? "from-slate-300 to-slate-500" : "from-orange-400 to-orange-600";
-  const h = isFirst ? 240 : isSecond ? 180 : 140;
-  const order = isFirst ? "order-2" : isSecond ? "order-1" : "order-3";
-
+  const name = getDisplayName(user);
+  const rankStyle = getRankStyle(rank);
   const watchTime = formatWatchTime(user.watch_time);
-  const downloads = user.downloads || 0;
+  const rawWatchMinutes = Math.floor(getNumber(user.watch_time));
+  const downloads = Math.floor(getNumber(user.downloads));
 
   return (
-    <div className={cn("flex flex-col items-center justify-end flex-1 max-w-[120px] md:max-w-[180px] gap-3 md:gap-5", order)}>
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 * rank, type: "spring" }}
-        className="relative group mb-2"
-      >
-        <div className={cn("absolute -inset-1 rounded-full blur-md opacity-30 group-hover:opacity-60 transition duration-500 bg-gradient-to-r", colors)} />
-        <Avatar className={cn(
-          "w-16 h-16 md:w-24 md:h-24 border-4 relative z-10 transition-transform duration-500 group-hover:scale-110", 
-          isFirst ? "border-yellow-500" : isSecond ? "border-slate-400" : "border-orange-500"
-        )}>
-          <AvatarImage src={user.avatar_url} />
-          <AvatarFallback className="bg-white/5 text-xl md:text-2xl font-black text-white">{user.display_name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+    <motion.div
+      className={cn(
+        "flex min-w-0 flex-col items-center gap-3",
+        rank === 2 && "pt-8 md:pt-12",
+        rank === 3 && "pt-8 md:pt-12"
+      )}
+      initial={{ opacity: 0, y: 20, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: 0.1 * rank, type: "spring", stiffness: 120, damping: 18 }}
+    >
+      <div className={cn("relative", isFirst ? "w-24 h-24 md:w-28 md:h-28" : "w-20 h-20 md:w-24 md:h-24")}>
+        <div className={cn("absolute -inset-2 rounded-full bg-gradient-to-br opacity-20 blur-xl", rankStyle.badge)} />
+        <Avatar className={cn("h-full w-full border-4 shadow-2xl", rankStyle.ring)}>
+          <AvatarImage src={user.avatar_url} alt={name} />
+          <AvatarFallback className="bg-slate-800 text-lg font-black text-cyan-100">{getInitials(name)}</AvatarFallback>
         </Avatar>
-        {isFirst && (
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20">
-            <motion.div
-              animate={{ y: [0, -5, 0], rotate: [0, -5, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            >
-              <Crown className="w-10 h-10 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] fill-yellow-500/20" />
-            </motion.div>
-          </div>
-        )}
-      </motion.div>
-
-      <div className="text-center space-y-1 mb-2 px-1">
-        <p className="text-[10px] md:text-sm font-black text-white truncate w-full">{user.display_name}</p>
-        <p className={cn("text-[10px] md:text-xs font-black uppercase tracking-widest", isFirst ? "text-yellow-500" : "text-white/40")}>{points.toLocaleString()} PTS</p>
+        <div className={cn(
+          "absolute -right-2 -top-2 flex items-center justify-center rounded-full bg-gradient-to-br shadow-lg",
+          rankStyle.badge,
+          isFirst ? "h-9 w-9" : "h-8 w-8"
+        )}>
+          {rankStyle.icon}
+        </div>
       </div>
 
-      <motion.div 
-        initial={{ height: 0 }}
-        animate={{ height: h }}
-        className={cn(
-          "w-full rounded-t-3xl relative overflow-hidden flex flex-col items-center justify-start pt-6 gap-4 border-t border-x border-white/10", 
-          isFirst ? "bg-white/[0.08]" : "bg-white/[0.04]"
-        )}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-        <span className="text-4xl md:text-6xl font-black text-white/5 select-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 italic">#{rank}</span>
-        
-        <div className="relative z-10 flex flex-col items-center gap-3">
-          <div className="flex flex-col items-center">
-            <span className="text-[9px] md:text-[10px] font-black text-white/20 uppercase tracking-widest mb-0.5">Watch Time</span>
-            <div className="flex items-center gap-1" title={`${Math.max(0, Math.floor(Number(user.watch_time) || 0)).toLocaleString()} minutes watched`}>
-              <Clock className="w-3 h-3 text-primary/40" />
-              <span className="text-xs md:text-sm font-black text-white tabular-nums">{watchTime}</span>
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-center">
-            <span className="text-[9px] md:text-[10px] font-black text-white/20 uppercase tracking-widest mb-0.5">Downloads</span>
-            <div className="flex items-center gap-1">
-              <Download className="w-3 h-3 text-primary/40" />
-              <span className="text-xs md:text-sm font-black text-white">{downloads}</span>
-            </div>
-          </div>
-        </div>
+      <div className="w-full min-w-0 text-center">
+        <p className={cn("truncate font-black text-white", isFirst ? "text-base md:text-lg" : "text-sm md:text-base")}>{name}</p>
+        <p className={cn(
+          "bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text font-black text-transparent tabular-nums",
+          isFirst ? "text-xl md:text-2xl" : "text-lg md:text-xl"
+        )}>
+          {points.toLocaleString()}
+        </p>
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{rankStyle.label}</p>
+      </div>
 
-        {isFirst && (
-          <>
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-yellow-500/0 via-yellow-500 to-yellow-500/0 shadow-[0_0_20px_rgba(234,179,8,0.4)]" />
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-4 h-4 bg-yellow-500 rotate-45 rounded-sm shadow-[0_0_15px_rgba(234,179,8,0.3)]" />
-          </>
-        )}
-      </motion.div>
-    </div>
+      <div className="flex w-full flex-col gap-2 px-1">
+        <LeaderboardStat
+          icon={<Clock className="h-3.5 w-3.5 text-cyan-300" />}
+          label="Watch"
+          value={watchTime}
+          title={`${rawWatchMinutes.toLocaleString()} minutes watched`}
+        />
+        <LeaderboardStat
+          icon={<Download className="h-3.5 w-3.5 text-emerald-300" />}
+          label="Downloads"
+          value={downloads.toLocaleString()}
+        />
+      </div>
+    </motion.div>
   );
 };
 
 const LeaderboardCard = ({ user, rank, points, isCurrentUser }: { user: any, rank: number, points: number, isCurrentUser: boolean }) => {
+  const name = getDisplayName(user);
   const watchTime = formatWatchTime(user.watch_time);
-  const downloads = user.downloads || 0;
+  const rawWatchMinutes = Math.floor(getNumber(user.watch_time));
+  const downloads = Math.floor(getNumber(user.downloads));
 
   return (
     <motion.div
       variants={itemVariants}
-      whileHover={{ scale: 1.03, y: -4 }}
+      whileHover={{ scale: 1.015, y: -2 }}
       initial="hidden"
       animate="visible"
       className={cn(
-        "group flex items-center justify-between p-4 rounded-xl border transition-all",
-        isCurrentUser 
-          ? "bg-primary/10 border-primary/30 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]" 
-          : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10"
+        "group rounded-2xl border bg-gradient-to-br from-slate-800/70 to-slate-950/70 p-4 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-300",
+        isCurrentUser
+          ? "border-emerald-300/50 shadow-emerald-500/10"
+          : "border-cyan-500/10 hover:border-cyan-400/35 hover:shadow-cyan-500/10"
       )}
     >
-      <div className="flex items-center gap-4">
-        <span className={cn(
-          "w-8 text-sm font-black italic",
-          rank <= 3 ? "text-primary" : "text-white/20"
-        )}>#{rank}</span>
-        
-        <div className="relative">
-          <Avatar className="w-10 h-10 border border-white/10">
-            <AvatarImage src={user.avatar_url} />
-            <AvatarFallback className="bg-white/5 text-xs font-black">{user.display_name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+      <div className="flex min-w-0 items-center gap-3">
+        <div className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-gradient-to-br from-slate-700 to-slate-900",
+          isCurrentUser ? "border-emerald-300/50" : "border-cyan-400/20 group-hover:border-cyan-300/40"
+        )}>
+          <span className="text-sm font-black tabular-nums text-cyan-300">{rank}</span>
+        </div>
+
+        <div className="relative shrink-0">
+          <Avatar className="h-12 w-12 border-2 border-cyan-500/20 transition-all group-hover:border-cyan-300/40 md:h-14 md:w-14">
+            <AvatarImage src={user.avatar_url} alt={name} />
+            <AvatarFallback className="bg-slate-800 text-xs font-black text-cyan-100">{getInitials(name)}</AvatarFallback>
           </Avatar>
           {isCurrentUser && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-[#0a0a0f]" />
+            <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-slate-950 bg-emerald-300" />
           )}
         </div>
 
-        <div className="flex flex-col">
-          <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{user.display_name}</span>
-          <div className="flex items-center gap-3 mt-1">
-             <div className="flex items-center gap-1 text-[9px] font-black text-white/30 uppercase tracking-widest" title={`${Math.max(0, Math.floor(Number(user.watch_time) || 0)).toLocaleString()} minutes watched`}>
-               <Clock className="w-2.5 h-2.5" />
-               <span className="tabular-nums">{watchTime}</span>
-             </div>
-             <div className="flex items-center gap-1 text-[9px] font-black text-white/30 uppercase tracking-widest border-l border-white/5 pl-3">
-               <Download className="w-2.5 h-2.5" />
-               <span>{downloads}</span>
-             </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="truncate text-sm font-black text-white md:text-base">{name}</p>
+            {isCurrentUser && (
+              <span className="shrink-0 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-200">
+                You
+              </span>
+            )}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-300">
+            <span className="flex items-center gap-1" title={`${rawWatchMinutes.toLocaleString()} minutes watched`}>
+              <Clock className="h-3 w-3 text-cyan-300" />
+              {watchTime}
+            </span>
+            <span className="flex items-center gap-1">
+              <Download className="h-3 w-3 text-emerald-300" />
+              {downloads.toLocaleString()}
+            </span>
           </div>
         </div>
-      </div>
 
-      <div className="text-right">
-        <p className="text-sm font-black text-white tracking-tight">{points.toLocaleString()} PTS</p>
-        <div className="flex items-center gap-1 justify-end mt-0.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-          <span className="text-[8px] text-white/20 font-black uppercase tracking-widest">Mastery</span>
+        <div className="shrink-0 text-right">
+          <p className="bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-lg font-black text-transparent tabular-nums md:text-xl">
+            {points.toLocaleString()}
+          </p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">points</p>
         </div>
       </div>
     </motion.div>
   );
 };
 
+const LeaderboardLoading = () => (
+  <div className="rounded-[2rem] border border-cyan-500/10 bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950 px-6 py-20 shadow-2xl shadow-black/30">
+    <div className="flex flex-col items-center justify-center gap-4 text-cyan-200/80">
+      <Loader2 className="h-10 w-10 animate-spin" />
+      <p className="text-xs font-black uppercase tracking-[0.22em]">Loading the leaderboard</p>
+    </div>
+  </div>
+);
+
+const LeaderboardEmpty = () => (
+  <div className="rounded-[2rem] border border-cyan-500/10 bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950 px-6 py-16 text-center shadow-2xl shadow-black/30">
+    <Trophy className="mx-auto mb-4 h-10 w-10 text-cyan-300/70" />
+    <p className="text-lg font-black text-white">No leaderboard data yet</p>
+    <p className="mt-2 text-sm text-slate-400">Watch movies and collect points to appear here.</p>
+  </div>
+);
+
 const LeaderboardSection = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
   const [countdown, setCountdown] = useState("");
+  const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<"all" | "top">("all");
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -585,10 +650,10 @@ const LeaderboardSection = () => {
 
     fetchLeaderboard();
 
-    const timer = setInterval(() => {
+    const updateCountdown = () => {
       const now = new Date();
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const diff = nextMonth.getTime() - now.getTime();
+      const diff = Math.max(0, nextMonth.getTime() - now.getTime());
       
       const d = Math.floor(diff / (1000 * 60 * 60 * 24));
       const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -596,56 +661,93 @@ const LeaderboardSection = () => {
       const s = Math.floor((diff % (1000 * 60)) / 1000);
       
       setCountdown(`${d}D ${h}H ${m}M ${s}S`);
-    }, 1000);
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(timer);
   }, []);
 
-  if (loading) return (
-    <div className="py-20 flex flex-col items-center justify-center gap-4 text-white/10">
-      <Loader2 className="w-10 h-10 animate-spin" />
-      <p className="text-xs font-black uppercase tracking-[0.2em]">Synchronizing Legends...</p>
-    </div>
-  );
+  if (loading) return <LeaderboardLoading />;
+  if (data.length === 0) return <LeaderboardEmpty />;
 
-  const podium = data.slice(0, 3);
-  const list = data.slice(3);
+  const rankedData = data.map((entry) => ({
+    ...entry,
+    activity_points: Math.floor(getNumber(entry.activity_points)),
+  }));
+  const visibleData = activeLeaderboardTab === "top" ? rankedData.slice(0, 20) : rankedData;
+  const podium = visibleData.slice(0, 3);
+  const list = visibleData.slice(3);
 
   return (
-    <div className="space-y-16">
-      {/* Header Info */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-white/5">
-        <div className="space-y-1 text-center md:text-left">
-          <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Legendary Ranking</h3>
-          <p className="text-[10px] text-white/20 font-black uppercase tracking-widest">Showing Top 100 Collectors of the Season</p>
-        </div>
-        <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl">
-          <Clock8 className="w-5 h-5 text-primary" />
-          <div className="flex flex-col">
-            <span className="text-[8px] text-white/30 font-black uppercase tracking-widest">Season Reset In</span>
-            <span className="text-sm font-black text-white tabular-nums tracking-wider">{countdown}</span>
+    <div className="rounded-[2rem] border border-cyan-500/15 bg-gradient-to-br from-slate-950 via-cyan-950/60 to-slate-950 p-4 shadow-2xl shadow-black/35 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
+        <div className="flex flex-col gap-5 text-center md:flex-row md:items-end md:justify-between md:text-left">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-300/80">MovieBay rankings</p>
+            <h3 className="mt-2 bg-gradient-to-r from-cyan-300 via-emerald-300 to-cyan-300 bg-clip-text text-3xl font-black tracking-tight text-transparent md:text-4xl">
+              Leaderboard
+            </h3>
+            <p className="mt-2 text-sm font-medium text-slate-300">Compete with MovieBay fans by watch time, downloads, and points.</p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center md:justify-end">
+            <div className="inline-grid grid-cols-2 rounded-xl border border-cyan-500/20 bg-slate-900/70 p-1 backdrop-blur-sm">
+              {[
+                { value: "all" as const, label: "All Time" },
+                { value: "top" as const, label: "Top 20" },
+              ].map(tab => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setActiveLeaderboardTab(tab.value)}
+                  className={cn(
+                    "h-9 rounded-lg px-4 text-sm font-black transition-all",
+                    activeLeaderboardTab === tab.value
+                      ? "bg-gradient-to-r from-cyan-600 to-emerald-600 text-white shadow-lg shadow-cyan-500/20"
+                      : "text-slate-300 hover:text-white"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-center gap-3 rounded-xl border border-cyan-500/20 bg-white/[0.06] px-4 py-3 backdrop-blur-sm">
+              <Clock8 className="h-5 w-5 text-cyan-300" />
+              <div className="text-left">
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">Season resets in</p>
+                <p className="text-sm font-black tabular-nums text-white">{countdown}</p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Podium */}
-      <div className="flex justify-center items-end gap-2 md:gap-8 px-2 pb-12">
-        {podium[1] && <PodiumItem user={podium[1]} rank={2} points={podium[1].activity_points} />}
-        {podium[0] && <PodiumItem user={podium[0]} rank={1} points={podium[0].activity_points} />}
-        {podium[2] && <PodiumItem user={podium[2]} rank={3} points={podium[2].activity_points} />}
-      </div>
+        <div className="rounded-[1.5rem] border border-cyan-500/20 bg-gradient-to-br from-cyan-900/30 via-slate-900/70 to-emerald-900/30 p-5 shadow-2xl shadow-cyan-950/20 backdrop-blur-sm md:p-8">
+          <div className="grid grid-cols-3 gap-3 md:gap-6 lg:gap-8">
+            {podium[1] && <PodiumItem user={podium[1]} rank={2} points={podium[1].activity_points} />}
+            {podium[0] && <PodiumItem user={podium[0]} rank={1} points={podium[0].activity_points} />}
+            {podium[2] && <PodiumItem user={podium[2]} rank={3} points={podium[2].activity_points} />}
+          </div>
+          <div className="mt-6 border-t border-cyan-500/20 pt-4 text-center">
+            <p className="bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-xs font-black uppercase tracking-[0.22em] text-transparent">
+              Showing {visibleData.length.toLocaleString()} ranked user{visibleData.length === 1 ? "" : "s"}
+            </p>
+          </div>
+        </div>
 
-      {/* List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {list.map((item, idx) => (
-          <LeaderboardCard 
-            key={item.id} 
-            user={item} 
-            rank={idx + 4} 
-            points={item.activity_points} 
-            isCurrentUser={user?.id === item.id}
-          />
-        ))}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+          {list.map((item, idx) => (
+            <LeaderboardCard 
+              key={item.id} 
+              user={item} 
+              rank={idx + 4} 
+              points={item.activity_points} 
+              isCurrentUser={user?.id === item.id}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
