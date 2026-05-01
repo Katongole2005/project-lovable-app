@@ -26,6 +26,9 @@ import {
   Crown,
   Trash2,
   Radio,
+  Mail,
+  Send,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +72,8 @@ function getUserInitials(user: UserRow) {
     .join("") || "U";
 }
 
+type MarketingTarget = "inactive" | "all";
+
 export default function Admin() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -79,6 +84,13 @@ export default function Admin() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
+  const [marketingTarget, setMarketingTarget] = useState<MarketingTarget>("inactive");
+  const [inactiveDays, setInactiveDays] = useState(30);
+  const [sendLimit, setSendLimit] = useState(200);
+  const [emailSubject, setEmailSubject] = useState("New Luganda translated movies are waiting");
+  const [emailMessage, setEmailMessage] = useState("Hi MovieBay fan,\n\nWe have added fresh Luganda translated movies for you. Come back and continue watching your favorites today.");
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [campaignPreview, setCampaignPreview] = useState<any>(null);
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -130,6 +142,38 @@ export default function Admin() {
       toast.error("Failed to save announcement");
     } finally {
       setSavingAnnouncement(false);
+    }
+  };
+
+  const runMarketingCampaign = async (dryRun: boolean) => {
+    if (!emailSubject.trim() || !emailMessage.trim()) {
+      toast.error("Add an email subject and message first");
+      return;
+    }
+
+    setCampaignLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-marketing-email", {
+        body: {
+          subject: emailSubject.trim(),
+          message: emailMessage.trim(),
+          target: marketingTarget,
+          inactiveDays,
+          limit: sendLimit,
+          dryRun,
+          ctaLabel: "Watch on MovieBay",
+          ctaUrl: "https://www.s-u.in",
+          previewText: emailMessage.trim().slice(0, 120),
+        },
+      });
+
+      if (error) throw error;
+      setCampaignPreview(data);
+      toast.success(dryRun ? `Preview ready: ${data?.willSend || 0} users` : `Email sent to ${data?.sent || 0} users`);
+    } catch (err: any) {
+      toast.error("Marketing email failed: " + (err.message || "Unknown error"));
+    } finally {
+      setCampaignLoading(false);
     }
   };
 
@@ -343,8 +387,97 @@ export default function Admin() {
 
         {/* Notifications Tab */}
         {activeTab === "notifications" && (
-          <div className="max-w-lg pb-8">
-            <SendPushPanel />
+          <div className="grid gap-6 pb-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)]">
+            <div className="space-y-4">
+              <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                Marketing Email
+              </h2>
+              <div className="rounded-xl bg-card border border-border/30 p-4 space-y-4">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">Audience</span>
+                    <select
+                      value={marketingTarget}
+                      onChange={(e) => setMarketingTarget(e.target.value as MarketingTarget)}
+                      className="w-full h-10 rounded-lg bg-background border border-border/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="inactive">Inactive users</option>
+                      <option value="all">All users</option>
+                    </select>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">Inactive days</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={inactiveDays}
+                      onChange={(e) => setInactiveDays(Number(e.target.value) || 30)}
+                      disabled={marketingTarget === "all"}
+                      className="w-full h-10 rounded-lg bg-background border border-border/50 px-3 text-sm text-foreground disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">Max send</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={1000}
+                      value={sendLimit}
+                      onChange={(e) => setSendLimit(Math.min(1000, Math.max(1, Number(e.target.value) || 200)))}
+                      className="w-full h-10 rounded-lg bg-background border border-border/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </label>
+                </div>
+
+                <label className="space-y-1.5 block">
+                  <span className="text-xs font-medium text-muted-foreground">Subject</span>
+                  <input
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="w-full h-10 rounded-lg bg-background border border-border/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </label>
+
+                <label className="space-y-1.5 block">
+                  <span className="text-xs font-medium text-muted-foreground">Message</span>
+                  <textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    rows={7}
+                    className="w-full rounded-lg bg-background border border-border/50 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  />
+                </label>
+
+                {campaignPreview && (
+                  <div className="rounded-lg bg-background border border-border/40 p-3 text-sm">
+                    <p className="font-medium text-foreground">
+                      {campaignPreview.dryRun ? "Preview" : "Last send"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Matched {campaignPreview.totalMatched ?? 0} users. {campaignPreview.dryRun
+                        ? `Will send to ${campaignPreview.willSend ?? 0}.`
+                        : `Sent ${campaignPreview.sent ?? 0}, failed ${campaignPreview.failed ?? 0}.`}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => runMarketingCampaign(true)} disabled={campaignLoading} className="gap-2">
+                    {campaignLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                    Preview Audience
+                  </Button>
+                  <Button size="sm" onClick={() => runMarketingCampaign(false)} disabled={campaignLoading} className="gap-2">
+                    {campaignLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                    Send Email
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="max-w-lg">
+              <SendPushPanel />
+            </div>
           </div>
         )}
 
