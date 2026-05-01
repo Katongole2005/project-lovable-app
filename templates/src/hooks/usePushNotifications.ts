@@ -21,8 +21,40 @@ export type PushStatus = "idle" | "loading" | "subscribed" | "denied" | "unsuppo
 export function usePushNotifications() {
   const [status, setStatus] = useState<PushStatus>("idle");
 
+  const saveSubscription = async (subscription: PushSubscription) => {
+    const sub = subscription.toJSON();
+    const keys = sub.keys as { p256dh?: string; auth?: string } | undefined;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+
+    if (!userId) {
+      throw new Error("Please sign in before enabling notifications.");
+    }
+
+    if (!sub.endpoint || !keys?.p256dh || !keys?.auth) {
+      throw new Error("Browser did not return a valid push subscription.");
+    }
+
+    const { error } = await supabase.from("push_subscriptions").upsert(
+      {
+        endpoint: sub.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        user_id: userId,
+      },
+      { onConflict: "endpoint" }
+    );
+
+    if (error) throw error;
+  };
+
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setStatus("unsupported");
+      return;
+    }
+    if (!VAPID_PUBLIC_KEY) {
+      console.error("VITE_VAPID_PUBLIC_KEY is not set");
       setStatus("unsupported");
       return;
     }
@@ -30,10 +62,21 @@ export function usePushNotifications() {
     if (perm === "denied") {
       setStatus("denied");
     } else if (perm === "granted") {
-      // Check if actually subscribed
+      // Check if actually subscribed, then make sure Supabase also has the row.
       navigator.serviceWorker.ready.then((reg: any) => {
-        reg.pushManager.getSubscription().then((sub: any) => {
-          setStatus(sub ? "subscribed" : "idle");
+        reg.pushManager.getSubscription().then(async (sub: PushSubscription | null) => {
+          if (!sub) {
+            setStatus("idle");
+            return;
+          }
+
+          try {
+            await saveSubscription(sub);
+            setStatus("subscribed");
+          } catch (err) {
+            console.error("Push subscription sync error:", err);
+            setStatus("idle");
+          }
         });
       });
     }
@@ -65,24 +108,7 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      const sub = subscription.toJSON();
-      const keys = sub.keys as { p256dh: string; auth: string };
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user?.id;
-
-      if (!userId) {
-        throw new Error("Please sign in before enabling notifications.");
-      }
-
-      await supabase.from("push_subscriptions").upsert(
-        {
-          endpoint: sub.endpoint!,
-          p256dh: keys.p256dh,
-          auth: keys.auth,
-          user_id: userId,
-        },
-        { onConflict: "endpoint" }
-      );
+      await saveSubscription(subscription);
 
       setStatus("subscribed");
     } catch (err) {
