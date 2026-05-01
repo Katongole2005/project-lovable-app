@@ -189,13 +189,14 @@ Deno.serve(async (req) => {
 
     const smtpPassword = Deno.env.get("SMTP_PASSWORD");
     if (!smtpPassword) throw new Error("SMTP_PASSWORD is not configured");
+    const smtpUsername = Deno.env.get("SMTP_USERNAME") || "moviebay@s-u.in";
 
     const html = buildMarketingHtml(message, previewText, ctaLabel, ctaUrl);
     const client = new SmtpClient();
     await client.connectTLS({
       hostname: Deno.env.get("SMTP_HOSTNAME") || "mail.spacemail.com",
       port: Number(Deno.env.get("SMTP_PORT") || 465),
-      username: Deno.env.get("SMTP_USERNAME") || "moviebay@s-u.in",
+      username: smtpUsername,
       password: smtpPassword,
     });
 
@@ -205,7 +206,7 @@ Deno.serve(async (req) => {
     for (const recipient of recipients) {
       try {
         await client.send({
-          from: "MovieBay <moviebay@s-u.in>",
+          from: `MovieBay <${smtpUsername}>`,
           to: recipient.email,
           subject,
           content: "text/html",

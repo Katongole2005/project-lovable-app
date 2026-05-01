@@ -153,6 +153,7 @@ export default function Admin() {
 
     setCampaignLoading(true);
     try {
+      setCampaignPreview(null);
       const { data, error } = await supabase.functions.invoke("admin-marketing-email", {
         body: {
           subject: emailSubject.trim(),
@@ -167,7 +168,19 @@ export default function Admin() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        let backendMessage = error.message || "Unknown error";
+        const response = (error as any).context;
+        if (response && typeof response.json === "function") {
+          try {
+            const payload = await response.json();
+            backendMessage = payload?.error || backendMessage;
+          } catch {
+            // Keep the original Supabase error message.
+          }
+        }
+        throw new Error(backendMessage);
+      }
       setCampaignPreview(data);
       toast.success(dryRun ? `Preview ready: ${data?.willSend || 0} users` : `Email sent to ${data?.sent || 0} users`);
     } catch (err: any) {
@@ -467,7 +480,13 @@ export default function Admin() {
                     {campaignLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
                     Preview Audience
                   </Button>
-                  <Button size="sm" onClick={() => runMarketingCampaign(false)} disabled={campaignLoading} className="gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => runMarketingCampaign(false)}
+                    disabled={campaignLoading || !campaignPreview?.dryRun}
+                    className="gap-2"
+                    title={!campaignPreview?.dryRun ? "Preview the audience before sending" : undefined}
+                  >
                     {campaignLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
                     Send Email
                   </Button>
