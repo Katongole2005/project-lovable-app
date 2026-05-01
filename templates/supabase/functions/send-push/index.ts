@@ -10,6 +10,23 @@ const corsHeaders = {
 
 const FALLBACK_ADMIN_EMAIL = "shelvinjoe11@gmail.com";
 
+function errorToMessage(value: unknown): string {
+  if (!value) return "Unknown error";
+  if (typeof value === "string") return value;
+  if (value instanceof Error) return value.message;
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const nested = record.message || record.error || record.details || record.hint || record.code;
+    if (nested && nested !== value) return errorToMessage(nested);
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return "Unknown error";
+    }
+  }
+  return String(value);
+}
+
 async function sendPushNotification(
   subscription: { endpoint: string; p256dh: string; auth: string },
   payload: string,
@@ -98,7 +115,15 @@ serve(async (req) => {
       .from("push_subscriptions")
       .select("endpoint, p256dh, auth");
 
-    if (error) throw error;
+    if (error) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: `Could not read push subscriptions: ${errorToMessage(error)}`,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     if (!subscriptions || subscriptions.length === 0) {
       return new Response(
         JSON.stringify({ success: true, sent: 0, message: "No subscribers" }),
@@ -150,7 +175,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("send-push error:", err);
     return new Response(
-      JSON.stringify({ error: String(err) }),
+      JSON.stringify({ error: errorToMessage(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

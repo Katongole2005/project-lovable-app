@@ -67,12 +67,19 @@ export function usePushNotifications() {
 
       const sub = subscription.toJSON();
       const keys = sub.keys as { p256dh: string; auth: string };
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+
+      if (!userId) {
+        throw new Error("Please sign in before enabling notifications.");
+      }
 
       await supabase.from("push_subscriptions").upsert(
         {
           endpoint: sub.endpoint!,
           p256dh: keys.p256dh,
           auth: keys.auth,
+          user_id: userId,
         },
         { onConflict: "endpoint" }
       );

@@ -10,6 +10,23 @@ interface SendPushPanelProps {
   className?: string;
 }
 
+function errorToMessage(value: unknown): string {
+  if (!value) return "An error occurred";
+  if (typeof value === "string") return value;
+  if (value instanceof Error) return value.message;
+  if (typeof value === "object") {
+    const record = value as Record<string, any>;
+    const nested = record.error || record.message || record.details || record.hint || record.code;
+    if (nested && nested !== value) return errorToMessage(nested);
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return "An error occurred";
+    }
+  }
+  return String(value);
+}
+
 export function SendPushPanel({ className }: SendPushPanelProps) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -42,9 +59,9 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
         } catch {
           errorBody = null;
         }
-        throw new Error(errorBody?.error || errorBody?.message || error.message);
+        throw new Error(errorToMessage(errorBody || error));
       }
-      throw error;
+      throw new Error(errorToMessage(error));
     }
 
     return data;
@@ -66,7 +83,7 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
         setResult({ success: false, message: data.message || "Failed to send" });
       }
     } catch (err: any) {
-      setResult({ success: false, message: err.message || "An error occurred" });
+      setResult({ success: false, message: errorToMessage(err) });
     } finally {
       setSending(false);
     }
@@ -100,7 +117,7 @@ export function SendPushPanel({ className }: SendPushPanelProps) {
         setResult({ success: false, message: data.message || "Failed to send latest movies notification" });
       }
     } catch (err: any) {
-      setResult({ success: false, message: err.message || "An error occurred" });
+      setResult({ success: false, message: errorToMessage(err) });
     } finally {
       setSendingLatest(false);
     }
