@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const PROMPT_DELAY_MS = 1800;
 const SNOOZE_MS = 3 * 24 * 60 * 60 * 1000;
@@ -52,9 +53,17 @@ export function NotificationSubscribePrompt() {
   if (!user || status !== "idle") return null;
 
   const handleSubscribe = async () => {
-    setHasInteracted(true);
-    await subscribe();
-    setVisible(false);
+    const subscribed = await subscribe();
+    if (subscribed) {
+      setHasInteracted(true);
+      setVisible(false);
+      toast.success("Movie alerts enabled");
+      return;
+    }
+
+    setHasInteracted(false);
+    setVisible(true);
+    toast.error("Notifications did not enable. Please try again.");
   };
 
   const handleLater = () => {
@@ -77,7 +86,7 @@ export function NotificationSubscribePrompt() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 18, scale: 0.98 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed bottom-5 left-4 right-4 z-[70] mx-auto max-w-[420px] md:left-auto md:right-6 md:mx-0"
+          className="fixed bottom-5 left-4 right-4 z-[1000000] mx-auto max-w-[420px] pointer-events-auto md:left-auto md:right-6 md:mx-0"
           role="dialog"
           aria-live="polite"
           aria-label="Enable movie notifications"

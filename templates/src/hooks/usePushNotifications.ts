@@ -85,25 +85,42 @@ export function usePushNotifications() {
   const subscribe = async () => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       setStatus("unsupported");
-      return;
+      return false;
     }
 
     if (!VAPID_PUBLIC_KEY) {
       console.error("VITE_VAPID_PUBLIC_KEY is not set");
-      return;
+      setStatus("unsupported");
+      return false;
     }
 
     setStatus("loading");
     try {
-      const reg: any = await navigator.serviceWorker.ready;
+      // Ask permission immediately from the click/tap handler. Waiting for SW readiness
+      // first can lose the browser's required user activation on some routes/devices.
       const permission = await Notification.requestPermission();
 
       if (permission !== "granted") {
         setStatus("denied");
-        return;
+        return false;
       }
 
-      const subscription = await reg.pushManager.subscribe({
+      const reg: any =
+        (await navigator.serviceWorker.getRegistration("/")) ??
+        (await navigator.serviceWorker.register("/sw.js"));
+
+      await reg.update?.().catch?.(() => {});
+      const readyReg: any = await navigator.serviceWorker.ready;
+      const activeReg = readyReg || reg;
+      const existingSubscription = await activeReg.pushManager.getSubscription();
+
+      if (existingSubscription) {
+        await saveSubscription(existingSubscription);
+        setStatus("subscribed");
+        return true;
+      }
+
+      const subscription = await activeReg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
@@ -111,9 +128,11 @@ export function usePushNotifications() {
       await saveSubscription(subscription);
 
       setStatus("subscribed");
+      return true;
     } catch (err) {
       console.error("Push subscription error:", err);
       setStatus("idle");
+      return false;
     }
   };
 

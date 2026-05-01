@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, Monitor, Timer, Cast } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, Monitor, Timer, Cast, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,123 @@ const ControlTooltip = ({ children, content, side = "top" as const }: { children
     </TooltipContent>
   </Tooltip>
 );
+
+const formatRuntimeLabel = (minutes?: number) => {
+  if (!minutes || minutes <= 0) return null;
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+};
+
+type PosterGradient = {
+  top: string;
+  middle: string;
+  bottom: string;
+  surface: string;
+};
+
+const fallbackPosterGradient: PosterGradient = {
+  top: "rgba(0,0,0,0.24)",
+  middle: "rgba(0,0,0,0.10)",
+  bottom: "rgba(0,0,0,0.88)",
+  surface: "#05070d",
+};
+
+const toRgba = (color: { r: number; g: number; b: number }, alpha: number) =>
+  `rgba(${color.r},${color.g},${color.b},${alpha})`;
+
+const mixWithBlack = (color: { r: number; g: number; b: number }, amount: number) => ({
+  r: Math.round(color.r * (1 - amount)),
+  g: Math.round(color.g * (1 - amount)),
+  b: Math.round(color.b * (1 - amount)),
+});
+
+const extractPosterGradient = (imageUrl: string): Promise<PosterGradient | null> => {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      resolve(null);
+      return;
+    }
+
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.referrerPolicy = "no-referrer";
+
+    image.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        const width = 24;
+        const height = 36;
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+
+        ctx.drawImage(image, 0, 0, width, height);
+        const pixels = ctx.getImageData(0, 0, width, height).data;
+
+        const sampleBand = (fromY: number, toY: number) => {
+          let r = 0;
+          let g = 0;
+          let b = 0;
+          let total = 0;
+
+          for (let y = fromY; y < toY; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+              const index = (y * width + x) * 4;
+              const alpha = pixels[index + 3];
+              if (alpha < 150) continue;
+
+              const pr = pixels[index];
+              const pg = pixels[index + 1];
+              const pb = pixels[index + 2];
+              const max = Math.max(pr, pg, pb);
+              const min = Math.min(pr, pg, pb);
+              const saturation = max === 0 ? 0 : (max - min) / max;
+              const brightness = max / 255;
+              const weight = 0.55 + saturation * 1.7 + Math.max(0, brightness - 0.18);
+
+              r += pr * weight;
+              g += pg * weight;
+              b += pb * weight;
+              total += weight;
+            }
+          }
+
+          if (!total) return { r: 6, g: 8, b: 14 };
+
+          return {
+            r: Math.round(r / total),
+            g: Math.round(g / total),
+            b: Math.round(b / total),
+          };
+        };
+
+        const topColor = sampleBand(0, Math.floor(height * 0.35));
+        const middleColor = sampleBand(Math.floor(height * 0.35), Math.floor(height * 0.68));
+        const bottomColor = sampleBand(Math.floor(height * 0.68), height);
+        const surfaceColor = mixWithBlack(bottomColor, 0.72);
+
+        resolve({
+          top: toRgba(mixWithBlack(topColor, 0.18), 0.36),
+          middle: toRgba(mixWithBlack(middleColor, 0.1), 0.18),
+          bottom: toRgba(surfaceColor, 0.96),
+          surface: `rgb(${surfaceColor.r},${surfaceColor.g},${surfaceColor.b})`,
+        });
+      } catch {
+        resolve(null);
+      }
+    };
+
+    image.onerror = () => resolve(null);
+    image.src = imageUrl;
+  });
+};
 
 export function CinematicVideoPlayer({
   isOpen,
@@ -74,6 +191,8 @@ export function CinematicVideoPlayer({
   const [isPipActive, setIsPipActive] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [hasNextButtonVisible, setHasNextButtonVisible] = useState(false);
+  const [showSplashDetails, setShowSplashDetails] = useState(false);
+  const [posterGradient, setPosterGradient] = useState<PosterGradient>(fallbackPosterGradient);
   const [tapSide, setTapSide] = useState<'left' | 'right' | 'center' | null>(null);
   const [lastTapTime, setLastTapTime] = useState(0);
   const { user } = useAuth();
@@ -98,10 +217,28 @@ export function CinematicVideoPlayer({
   const posterUrl = activeMovie?.image_url ? getImageUrl(activeMovie.image_url) : null;
   const year = activeMovie?.year;
   const genres = activeMovie?.genres || [];
+  const runtimeLabel = formatRuntimeLabel(activeMovie?.runtime_minutes);
+  const rating = activeMovie?.views ? Math.min(4.5 + (activeMovie.views / 100000) * 0.5, 5).toFixed(1) : "4.5";
+  const primaryGenre = genres[0] || (activeMovie?.type === "series" ? "Series" : "Movie");
   const isEmbeddableVideo = /youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com/i.test(activeVideoUrl);
   const useNativeVideoControls = false; // Always use custom UI for direct video files
   const controlsHideDelayMs = isTouchDevice ? 3500 : 3000;
   const sessionKey = `${videoUrl}|${startTime}|${movie?.mobifliks_id ?? ""}`;
+  const splashGradientStyle = {
+    "--poster-gradient-top": posterGradient.top,
+    "--poster-gradient-middle": posterGradient.middle,
+    "--poster-gradient-bottom": posterGradient.bottom,
+    "--poster-gradient-surface": posterGradient.surface,
+  } as CSSProperties;
+
+  const shouldUseMobilePosterIntro = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.innerWidth < 768 ||
+      window.matchMedia("(pointer: coarse)").matches ||
+      navigator.maxTouchPoints > 0
+    );
+  }, []);
 
   const flushWatchStats = useCallback(() => {
     if (!user?.id) return;
@@ -199,10 +336,10 @@ export function CinematicVideoPlayer({
   useEffect(() => {
     if (!isOpen || !activeVideoUrl || isEmbeddableVideo || isPlaying) return;
 
-    // Direct video playback should start immediately after the user picks a title
-    // instead of waiting on an extra splash-screen interaction.
+    // Desktop starts quickly; mobile gets the poster-first intro after quality selection.
+    if (shouldUseMobilePosterIntro()) return;
     beginPlayback();
-  }, [activeVideoUrl, beginPlayback, isEmbeddableVideo, isOpen, isPlaying]);
+  }, [activeVideoUrl, beginPlayback, isEmbeddableVideo, isOpen, isPlaying, shouldUseMobilePosterIntro]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -235,6 +372,22 @@ export function CinematicVideoPlayer({
 
     return () => window.clearTimeout(timeoutId);
   }, [activeVideoUrl, isEmbeddableVideo, isPlaying, resumeTime]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    setPosterGradient(fallbackPosterGradient);
+
+    if (!posterUrl) return;
+
+    extractPosterGradient(posterUrl).then((gradient) => {
+      if (isCancelled) return;
+      setPosterGradient(gradient ?? fallbackPosterGradient);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [posterUrl]);
 
   // Handle PiP availability and state
   useEffect(() => {
@@ -276,6 +429,7 @@ export function CinematicVideoPlayer({
       setDuration(0);
       setIsBuffering(false);
       setIsSeeking(false);
+      setShowSplashDetails(false);
     } else {
       lastSessionKeyRef.current = "";
       pauseRequestedRef.current = false;
@@ -290,6 +444,7 @@ export function CinematicVideoPlayer({
       setDuration(0);
       setIsBuffering(false);
       setIsSeeking(false);
+      setShowSplashDetails(false);
     }
   }, [isOpen, startTime, videoUrl]);
 
@@ -725,7 +880,8 @@ export function CinematicVideoPlayer({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, scale: 1.04 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
+                className="absolute inset-0 z-20 flex flex-col items-center justify-end overflow-hidden bg-[var(--poster-gradient-surface)] px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] md:justify-center"
+                style={splashGradientStyle}
               >
                 {/* Blurred poster background */}
                 {posterUrl && (
@@ -734,88 +890,113 @@ export function CinematicVideoPlayer({
                       src={posterUrl}
                       alt=""
                       aria-hidden
-                      className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
+                      className="absolute inset-0 h-full w-full object-cover md:scale-110 md:blur-2xl"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/30" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/50" />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--poster-gradient-top)_0%,var(--poster-gradient-middle)_42%,var(--poster-gradient-bottom)_100%)] md:bg-[linear-gradient(180deg,rgba(0,0,0,0.64)_0%,var(--poster-gradient-middle)_42%,var(--poster-gradient-bottom)_100%)]" />
+                    <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/45 to-transparent" />
                   </>
                 )}
                 {!posterUrl && (
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,122,24,0.18),transparent_60%),linear-gradient(180deg,#090909,#050505)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(19,160,255,0.45),transparent_42%),linear-gradient(180deg,#06a4df_0%,#0551b8_58%,#03143e_100%)]" />
                 )}
 
                 {/* Close button */}
                 <button
                   onClick={handleClose}
                   aria-label="Close player"
-                  className="absolute top-4 left-4 z-10 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/50 text-white backdrop-blur-xl transition-all hover:bg-white/10 active:scale-95"
+                  className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/28 text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all hover:bg-white/10 active:scale-95"
                 >
                   <ChevronDown className="h-5 w-5" />
                 </button>
 
                 {/* Title row */}
-                <div className="absolute top-4 left-16 right-16 z-10 text-center flex flex-col items-center">
+                <div className="pointer-events-none absolute left-0 right-0 top-[8vh] z-10 flex flex-col items-center px-8 text-center md:top-10">
                   {activeMovie?.logo_url ? (
                     <img
                       src={activeMovie.logo_url}
                       alt={activeTitle}
-                      className="h-8 w-auto max-w-full object-contain drop-shadow-md"
+                      className="max-h-28 w-auto max-w-[82vw] object-contain drop-shadow-[0_10px_34px_rgba(0,0,0,0.5)] md:max-h-16"
                     />
                   ) : (
-                    <p className="truncate text-sm font-semibold text-white/80 tracking-wide">{activeTitle}</p>
+                    <h2 className="max-w-[82vw] text-5xl font-black leading-[0.92] tracking-tight text-white drop-shadow-[0_10px_34px_rgba(0,0,0,0.42)] md:text-3xl">
+                      {activeTitle}
+                    </h2>
                   )}
-                  <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/40">
-                    {activeMovie?.type === "series" ? (
-                      <span className="rounded bg-primary/20 px-1.5 py-0.5 text-primary text-[9px] font-bold uppercase tracking-widest">Series</span>
-                    ) : (
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 font-bold uppercase tracking-widest">Movie</span>
-                    )}
-                    {year && <span>· {year}</span>}
-                    {genres[0] && <span>· {genres[0]}</span>}
-                  </div>
                 </div>
 
-                {/* Poster */}
-                {posterUrl && (
-                  <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="relative z-10 mb-8 w-40 sm:w-52 rounded-2xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.7)] border border-white/10"
-                  >
-                    <img src={posterUrl} alt={activeTitle} className="w-full aspect-[2/3] object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                  </motion.div>
-                )}
-
-                {/* BIG PLAY BUTTON */}
-                <motion.button
-                  initial={{ scale: 0.85, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.94 }}
-                  onClick={beginPlayback}
-                  aria-label="Play"
-                  className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full shadow-[0_0_60px_rgba(255,138,61,0.45),0_0_0_1px_rgba(255,138,61,0.3)] transition-shadow hover:shadow-[0_0_80px_rgba(255,138,61,0.6)] btn-cinematic-play"
-                >
-                  <Play className="ml-1.5 h-9 w-9 fill-white text-white drop-shadow-lg" />
-
-                  {/* Pulse ring */}
-                  <span className="absolute inset-0 rounded-full border-2 border-[#ff8a3d]/40 animate-ping [animation-duration:1.8s]" />
-                </motion.button>
-
-                <motion.p
-                  initial={{ opacity: 0, y: 8 }}
+                <motion.div
+                  initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25, duration: 0.4 }}
-                  className="relative z-10 mt-5 text-sm font-semibold text-white/60 tracking-widest uppercase"
+                  transition={{ delay: 0.08, duration: 0.46, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative z-10 flex w-full max-w-sm flex-col items-center text-center md:max-w-md"
                 >
-                  Tap to Play
-                </motion.p>
+                  <h1 className="max-w-full truncate text-[22px] font-black leading-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.42)] md:text-2xl">
+                    {activeTitle}
+                  </h1>
 
-                {/* Subtle bottom gradient */}
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+                  <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[13px] font-semibold text-white/82">
+                    {year && <span>{year}</span>}
+                    {year && <span className="text-white/45">|</span>}
+                    <span>{primaryGenre}</span>
+                    {runtimeLabel && <span className="text-white/45">|</span>}
+                    {runtimeLabel && <span>{runtimeLabel}</span>}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star
+                        key={index}
+                        className={cn(
+                          "h-4 w-4",
+                          index < Math.round(Number(rating))
+                            ? "fill-[#ff9f1c] text-[#ff9f1c]"
+                            : "fill-slate-400/70 text-slate-400/70"
+                        )}
+                      />
+                    ))}
+                  </div>
+
+                  <motion.button
+                    initial={{ scale: 0.85, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.16, duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={beginPlayback}
+                    aria-label={`Play ${activeTitle}`}
+                    className="mt-8 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/75 text-[#6f8bc8] shadow-[0_18px_45px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-md transition-all hover:bg-white active:scale-95"
+                  >
+                    <Play className="ml-1 h-8 w-8 fill-current" />
+                  </motion.button>
+
+                  {activeMovie?.description && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowSplashDetails(value => !value)}
+                        className="mt-8 flex flex-col items-center gap-1 text-[10px] font-semibold text-white/76 transition-colors hover:text-white"
+                      >
+                        <span>{showSplashDetails ? "Show Less" : "Show More"}</span>
+                        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showSplashDetails && "rotate-180")} />
+                      </button>
+
+                      <AnimatePresence>
+                        {showSplashDetails && (
+                          <motion.p
+                            initial={{ opacity: 0, y: 8, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: "auto" }}
+                            exit={{ opacity: 0, y: 8, height: 0 }}
+                            className="mt-3 line-clamp-4 max-w-xs overflow-hidden text-xs font-medium leading-relaxed text-white/78"
+                          >
+                            {activeMovie.description}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </>
+                  )}
+                </motion.div>
+
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(0deg,var(--poster-gradient-surface)_0%,transparent_100%)] md:bg-gradient-to-t md:from-black md:to-transparent" />
               </motion.div>
             )}
           </AnimatePresence>
