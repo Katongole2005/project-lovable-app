@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,6 +68,99 @@ function buildMarketingHtml(message: string, previewText: string, ctaLabel: stri
   </div>
 </body>
 </html>`;
+}
+
+function toBase64(value: string): string {
+  return btoa(String.fromCharCode(...new TextEncoder().encode(value)));
+}
+
+function encodeHeader(value: string): string {
+  return /^[\x00-\x7F]*$/.test(value) ? value.replace(/[\r\n]+/g, " ") : `=?UTF-8?B?${toBase64(value)}?=`;
+}
+
+function escapeAddressName(value: string): string {
+  return value.replace(/["\r\n]/g, "");
+}
+
+async function readSmtpResponse(conn: Deno.Conn): Promise<{ code: number; text: string }> {
+  const decoder = new TextDecoder();
+  const buffer = new Uint8Array(4096);
+  let text = "";
+
+  while (true) {
+    const count = await conn.read(buffer);
+    if (count === null) throw new Error("SMTP connection closed unexpectedly");
+    text += decoder.decode(buffer.subarray(0, count), { stream: true });
+
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    const lastLine = lines[lines.length - 1] || "";
+    const match = lastLine.match(/^(\d{3})\s/);
+    if (match) {
+      return { code: Number(match[1]), text: text.trim() };
+    }
+  }
+}
+
+async function writeSmtpCommand(conn: Deno.Conn, command: string) {
+  await conn.write(new TextEncoder().encode(`${command}\r\n`));
+}
+
+function assertSmtp(response: { code: number; text: string }, expected: number[], action: string) {
+  if (!expected.includes(response.code)) {
+    throw new Error(`${action} failed: ${response.text}`);
+  }
+}
+
+function buildRawEmail(fromEmail: string, toEmail: string, subject: string, html: string) {
+  const safeSubject = encodeHeader(subject);
+  const safeFromName = escapeAddressName("MovieBay");
+  const safeTo = toEmail.replace(/[\r\n<>]/g, "");
+  const safeFrom = fromEmail.replace(/[\r\n<>]/g, "");
+  const body = html.replace(/^\./gm, "..");
+
+  return [
+    `From: "${safeFromName}" <${safeFrom}>`,
+    `To: <${safeTo}>`,
+    `Subject: ${safeSubject}`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    body,
+  ].join("\r\n");
+}
+
+async function connectSmtp(hostname: string, port: number, username: string, password: string) {
+  const conn = await Deno.connectTls({ hostname, port });
+  assertSmtp(await readSmtpResponse(conn), [220], "SMTP greeting");
+
+  await writeSmtpCommand(conn, "EHLO www.s-u.in");
+  assertSmtp(await readSmtpResponse(conn), [250], "SMTP EHLO");
+
+  await writeSmtpCommand(conn, "AUTH LOGIN");
+  assertSmtp(await readSmtpResponse(conn), [334], "SMTP auth username prompt");
+
+  await writeSmtpCommand(conn, toBase64(username));
+  assertSmtp(await readSmtpResponse(conn), [334], "SMTP auth password prompt");
+
+  await writeSmtpCommand(conn, toBase64(password));
+  assertSmtp(await readSmtpResponse(conn), [235], "SMTP auth");
+
+  return conn;
+}
+
+async function sendSmtpMail(conn: Deno.Conn, fromEmail: string, toEmail: string, subject: string, html: string) {
+  await writeSmtpCommand(conn, `MAIL FROM:<${fromEmail}>`);
+  assertSmtp(await readSmtpResponse(conn), [250], "SMTP MAIL FROM");
+
+  await writeSmtpCommand(conn, `RCPT TO:<${toEmail}>`);
+  assertSmtp(await readSmtpResponse(conn), [250, 251], "SMTP RCPT TO");
+
+  await writeSmtpCommand(conn, "DATA");
+  assertSmtp(await readSmtpResponse(conn), [354], "SMTP DATA");
+
+  await conn.write(new TextEncoder().encode(`${buildRawEmail(fromEmail, toEmail, subject, html)}\r\n.\r\n`));
+  assertSmtp(await readSmtpResponse(conn), [250], "SMTP message send");
 }
 
 Deno.serve(async (req) => {
@@ -190,28 +282,35 @@ Deno.serve(async (req) => {
     const smtpPassword = Deno.env.get("SMTP_PASSWORD");
     if (!smtpPassword) throw new Error("SMTP_PASSWORD is not configured");
     const smtpUsername = Deno.env.get("SMTP_USERNAME") || "moviebay@s-u.in";
+    if (recipients.length === 0) {
+      return new Response(JSON.stringify({
+        success: true,
+        target,
+        inactiveDays: days,
+        totalMatched: candidates.length,
+        attempted: 0,
+        sent: 0,
+        failed: 0,
+        failures: [],
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const html = buildMarketingHtml(message, previewText, ctaLabel, ctaUrl);
-    const client = new SmtpClient();
-    await client.connectTLS({
-      hostname: Deno.env.get("SMTP_HOSTNAME") || "mail.spacemail.com",
-      port: Number(Deno.env.get("SMTP_PORT") || 465),
-      username: smtpUsername,
-      password: smtpPassword,
-    });
+    const conn = await connectSmtp(
+      Deno.env.get("SMTP_HOSTNAME") || "mail.spacemail.com",
+      Number(Deno.env.get("SMTP_PORT") || 465),
+      smtpUsername,
+      smtpPassword,
+    );
 
     const sent: string[] = [];
     const failed: Array<{ email: string; error: string }> = [];
 
     for (const recipient of recipients) {
       try {
-        await client.send({
-          from: `MovieBay <${smtpUsername}>`,
-          to: recipient.email,
-          subject,
-          content: "text/html",
-          html,
-        });
+        await sendSmtpMail(conn, smtpUsername, recipient.email, subject, html);
         sent.push(recipient.email);
       } catch (err) {
         failed.push({
@@ -221,7 +320,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    await client.close();
+    try {
+      await writeSmtpCommand(conn, "QUIT");
+      await readSmtpResponse(conn);
+    } finally {
+      conn.close();
+    }
 
     return new Response(JSON.stringify({
       success: true,
