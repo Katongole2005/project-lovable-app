@@ -29,6 +29,7 @@ import {
   Mail,
   Send,
   Eye,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,7 +73,25 @@ function getUserInitials(user: UserRow) {
     .join("") || "U";
 }
 
-type MarketingTarget = "inactive" | "all";
+type MarketingTarget = "inactive" | "all" | "specific";
+
+function formatMarketingProvider(provider?: string | null) {
+  if (!provider) return "email provider";
+  if (provider === "brevo") return "Brevo";
+  if (provider === "resend") return "Resend";
+  if (provider === "smtp") return "SMTP";
+  return provider;
+}
+
+const SUPABASE_FUNCTIONS_URL = (
+  import.meta.env.VITE_SUPABASE_URL ||
+  "https://qiwwokfqunzgnbmfvgxo.supabase.co"
+).replace(/\/+$/, "");
+
+const SUPABASE_FUNCTIONS_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  "sb_publishable_CLc5N9WUBLOAw5kFT_f-mQ_UzmUl_bV";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -86,11 +105,14 @@ export default function Admin() {
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
   const [marketingTarget, setMarketingTarget] = useState<MarketingTarget>("inactive");
   const [inactiveDays, setInactiveDays] = useState(30);
-  const [sendLimit, setSendLimit] = useState(200);
-  const [emailSubject, setEmailSubject] = useState("New Luganda translated movies are waiting");
-  const [emailMessage, setEmailMessage] = useState("Hi MovieBay fan,\n\nWe have added fresh Luganda translated movies for you. Come back and continue watching your favorites today.");
+  const [sendLimit, setSendLimit] = useState(50);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [specificUserSearch, setSpecificUserSearch] = useState("");
+  const [emailSubject, setEmailSubject] = useState("{{name}}, new Luganda translated movies are waiting");
+  const [emailMessage, setEmailMessage] = useState("Hi {{name}},\n\nWe have added fresh Luganda translated movies for you. Come back and continue watching your favorites today.");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignPreview, setCampaignPreview] = useState<any>(null);
+  const [campaignError, setCampaignError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -124,6 +146,12 @@ export default function Admin() {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab === "notifications" && marketingTarget === "specific" && users.length === 0 && !usersLoading) {
+      fetchUsers();
+    }
+  }, [activeTab, marketingTarget, users.length, usersLoading]);
+
   const handleToggle = async (key: keyof typeof settings, value: boolean) => {
     try {
       await updateSetting(key, value);
@@ -150,45 +178,96 @@ export default function Admin() {
       toast.error("Add an email subject and message first");
       return;
     }
+    if (marketingTarget === "specific" && selectedUserIds.length === 0) {
+      toast.error("Select at least one user first");
+      return;
+    }
+    const campaignLimit = marketingTarget === "specific" ? selectedUserIds.length : sendLimit;
+    if (!dryRun && !campaignPreview?.dryRun) {
+      toast.info("Preview the audience first, then send the email.");
+      return;
+    }
+    if (!dryRun && campaignPreview?.providerReady === false) {
+      const message = "No email provider is configured. Add BREVO_API_KEY or RESEND_API_KEY in Supabase secrets before sending.";
+      setCampaignError(message);
+      toast.error(message);
+      return;
+    }
+    if (!dryRun && campaignPreview?.provider === "smtp" && campaignLimit > (campaignPreview?.providerLimit || 10)) {
+      const message = "SMTP is only safe for 10 test emails. Add BREVO_API_KEY or RESEND_API_KEY before sending 120 users.";
+      setCampaignError(message);
+      toast.error(message);
+      return;
+    }
 
     setCampaignLoading(true);
     try {
       setCampaignPreview(null);
-      const { data, error } = await supabase.functions.invoke("admin-marketing-email", {
-        body: {
+      setCampaignError(null);
+      const sessionResult = await supabase.auth.getSession();
+      const accessToken = sessionResult.data.session?.access_token;
+      if (!accessToken) {
+        throw new Error("Your admin session expired. Sign in again and retry.");
+      }
+
+      const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/functions/v1/admin-marketing-email`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "apikey": SUPABASE_FUNCTIONS_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           subject: emailSubject.trim(),
           message: emailMessage.trim(),
           target: marketingTarget,
+          selectedUserIds: marketingTarget === "specific" ? selectedUserIds : [],
           inactiveDays,
-          limit: sendLimit,
+          limit: Math.max(1, campaignLimit),
           dryRun,
           ctaLabel: "Watch on MovieBay",
           ctaUrl: "https://www.s-u.in",
           previewText: emailMessage.trim().slice(0, 120),
-        },
+        }),
       });
 
-      if (error) {
-        let backendMessage = error.message || "Unknown error";
-        const response = (error as any).context;
-        if (response && typeof response.json === "function") {
-          try {
-            const payload = await response.json();
-            backendMessage = payload?.error || backendMessage;
-          } catch {
-            // Keep the original Supabase error message.
-          }
-        }
+      const responseText = await response.text();
+      let data: any = null;
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        const backendMessage =
+          data?.error ||
+          data?.message ||
+          responseText ||
+          `Marketing email failed with HTTP ${response.status}`;
         throw new Error(backendMessage);
       }
+
       setCampaignPreview(data);
-      if (!dryRun && (data?.failed || 0) > 0) {
-        toast.warning(`Sent ${data?.sent || 0}, failed ${data?.failed || 0}`);
+      if (dryRun && data && data.providerReady === false) {
+        toast.error("Audience preview worked, but no email provider is configured. Add BREVO_API_KEY or RESEND_API_KEY in Supabase secrets.");
+        return;
+      }
+      if (dryRun && data?.provider === "smtp" && campaignLimit > (data?.providerLimit || 10)) {
+        toast.error("SMTP is only safe for 10 test emails. Add BREVO_API_KEY or RESEND_API_KEY before sending 120 users.");
+        return;
+      }
+      if (!dryRun && data?.queued) {
+        toast.success(`Email campaign queued for up to ${data?.requestedLimit || data?.attempted || 0} users`);
+      } else if (!dryRun && (data?.failed || 0) > 0) {
+        toast.warning(`${formatMarketingProvider(data?.provider)} accepted ${data?.providerAccepted ?? data?.sent ?? 0}, failed ${data?.failed || 0}`);
       } else {
-        toast.success(dryRun ? `Preview ready: ${data?.willSend || 0} users` : `Email sent to ${data?.sent || 0} users`);
+        toast.success(dryRun ? `Preview ready: ${data?.willSend || 0} users` : `${formatMarketingProvider(data?.provider)} accepted ${data?.providerAccepted ?? data?.sent ?? 0} emails`);
       }
     } catch (err: any) {
-      toast.error("Marketing email failed: " + (err.message || "Unknown error"));
+      const message = err.message || "Unknown error";
+      setCampaignError(message);
+      toast.error("Marketing email failed: " + message);
     } finally {
       setCampaignLoading(false);
     }
@@ -222,6 +301,24 @@ export default function Admin() {
   ];
 
   const activeUsersCount = users.filter((u) => u.is_active).length;
+  const selectedUserIdSet = new Set(selectedUserIds);
+  const selectedSpecificUsers = users.filter((u) => selectedUserIdSet.has(u.id));
+  const specificSearchQuery = specificUserSearch.trim().toLowerCase();
+  const filteredSpecificUsers = (specificSearchQuery
+    ? users.filter((u) => {
+        const haystack = `${u.display_name || ""} ${u.email || ""}`.toLowerCase();
+        return haystack.includes(specificSearchQuery);
+      })
+    : users
+  ).slice(0, 12);
+
+  const toggleSpecificUser = (userId: string) => {
+    setSelectedUserIds((current) =>
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId]
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -421,31 +518,128 @@ export default function Admin() {
                     >
                       <option value="inactive">Inactive users</option>
                       <option value="all">All users</option>
+                      <option value="specific">Specific users</option>
                     </select>
                   </label>
                   <label className="space-y-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">Inactive days</span>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {marketingTarget === "specific" ? "Inactive days" : "Inactive days"}
+                    </span>
                     <input
                       type="number"
                       min={1}
                       value={inactiveDays}
                       onChange={(e) => setInactiveDays(Number(e.target.value) || 30)}
-                      disabled={marketingTarget === "all"}
+                      disabled={marketingTarget !== "inactive"}
                       className="w-full h-10 rounded-lg bg-background border border-border/50 px-3 text-sm text-foreground disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </label>
                   <label className="space-y-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">Max send</span>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {marketingTarget === "specific" ? "Selected" : "Max send"}
+                    </span>
                     <input
                       type="number"
                       min={1}
                       max={1000}
-                      value={sendLimit}
-                      onChange={(e) => setSendLimit(Math.min(1000, Math.max(1, Number(e.target.value) || 200)))}
+                      value={marketingTarget === "specific" ? selectedUserIds.length : sendLimit}
+                      onChange={(e) => setSendLimit(Math.min(1000, Math.max(1, Number(e.target.value) || 50)))}
+                      disabled={marketingTarget === "specific"}
                       className="w-full h-10 rounded-lg bg-background border border-border/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </label>
                 </div>
+
+                {marketingTarget === "specific" && (
+                  <div className="rounded-lg border border-border/40 bg-background/70 p-3 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Choose users</p>
+                        <p className="text-xs text-muted-foreground">
+                          Selected {selectedUserIds.length}. Only these users will receive the email.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={fetchUsers}
+                        disabled={usersLoading}
+                        className="h-8"
+                      >
+                        {usersLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Refresh"}
+                      </Button>
+                    </div>
+
+                    <input
+                      value={specificUserSearch}
+                      onChange={(e) => setSpecificUserSearch(e.target.value)}
+                      placeholder="Search by name or email"
+                      className="w-full h-10 rounded-lg bg-card border border-border/50 px-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+
+                    {selectedSpecificUsers.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSpecificUsers.slice(0, 8).map((selectedUser) => (
+                          <button
+                            key={selectedUser.id}
+                            type="button"
+                            onClick={() => toggleSpecificUser(selectedUser.id)}
+                            className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-foreground hover:bg-primary/15"
+                          >
+                            {(selectedUser.display_name || selectedUser.email || "Selected user")} x
+                          </button>
+                        ))}
+                        {selectedSpecificUsers.length > 8 && (
+                          <span className="rounded-full border border-border/50 px-3 py-1 text-xs text-muted-foreground">
+                            +{selectedSpecificUsers.length - 8} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="max-h-72 overflow-y-auto rounded-lg border border-border/30">
+                      {usersLoading ? (
+                        <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading users
+                        </div>
+                      ) : filteredSpecificUsers.length > 0 ? (
+                        filteredSpecificUsers.map((specificUser) => {
+                          const checked = selectedUserIdSet.has(specificUser.id);
+                          return (
+                            <button
+                              key={specificUser.id}
+                              type="button"
+                              onClick={() => toggleSpecificUser(specificUser.id)}
+                              className={cn(
+                                "flex w-full items-center gap-3 border-b border-border/20 px-3 py-2.5 text-left last:border-b-0 hover:bg-muted/40",
+                                checked && "bg-primary/10"
+                              )}
+                            >
+                              <span className={cn(
+                                "flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[11px] font-bold",
+                                checked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-transparent"
+                              )}>
+                                <Check className="h-3 w-3" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-medium text-foreground">
+                                  {specificUser.display_name || specificUser.email || "No name"}
+                                </span>
+                                <span className="block truncate text-xs text-muted-foreground">
+                                  {specificUser.email || "No email"} · {formatRelativeTime(specificUser.last_active_at || specificUser.last_sign_in_at)}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <p className="py-8 text-center text-sm text-muted-foreground">No users found</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <label className="space-y-1.5 block">
                   <span className="text-xs font-medium text-muted-foreground">Subject</span>
@@ -464,7 +658,25 @@ export default function Admin() {
                     rows={7}
                     className="w-full rounded-lg bg-background border border-border/50 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                   />
+                  <span className="block text-[11px] text-muted-foreground">
+                    Use {"{{name}}"} or {"{{first_name}}"} to insert each user's saved name.
+                  </span>
                 </label>
+
+                <div className="rounded-lg border border-border/40 bg-background/70 p-3 text-xs leading-relaxed text-muted-foreground">
+                  <p className="font-medium text-foreground">Writing guide</p>
+                  <p className="mt-1">
+                    Use <span className="font-mono text-foreground">{"{{name}}"}</span> for the full saved name, like
+                    {" "}<span className="font-mono text-foreground">Hi {"{{name}},"}</span>
+                  </p>
+                  <p>
+                    Use <span className="font-mono text-foreground">{"{{first_name}}"}</span> for only the first name, like
+                    {" "}<span className="font-mono text-foreground">Hello {"{{first_name}},"}</span>
+                  </p>
+                  <p>
+                    These work in both the subject and message. If a user has no saved name, MovieBay uses the email name before @.
+                  </p>
+                </div>
 
                 {campaignPreview && (
                   <div className="rounded-lg bg-background border border-border/40 p-3 text-sm">
@@ -474,8 +686,48 @@ export default function Admin() {
                     <p className="text-xs text-muted-foreground mt-1">
                       Matched {campaignPreview.totalMatched ?? 0} users. {campaignPreview.dryRun
                         ? `Will send to ${campaignPreview.willSend ?? 0}.`
-                        : `Sent ${campaignPreview.sent ?? 0}, failed ${campaignPreview.failed ?? 0}.`}
+                        : campaignPreview.queued
+                          ? `Queued up to ${campaignPreview.requestedLimit ?? campaignPreview.attempted ?? 0} emails.`
+                          : `${formatMarketingProvider(campaignPreview.provider)} accepted ${campaignPreview.providerAccepted ?? campaignPreview.sent ?? 0}, failed ${campaignPreview.failed ?? 0}.`}
+                      {campaignPreview.provider && ` Provider: ${campaignPreview.provider}.`}
+                      {campaignPreview.fromEmail && ` From: ${campaignPreview.fromEmail}.`}
+                      {campaignPreview.scanLimited && " Audience scan was limited for speed."}
+                      {campaignPreview.version && ` Function: ${campaignPreview.version}.`}
                     </p>
+                    {!campaignPreview.dryRun && (campaignPreview.providerMessageIds?.length || 0) > 0 && (
+                      <p className="mt-2 break-words text-[11px] leading-relaxed text-muted-foreground">
+                        Brevo message IDs: {campaignPreview.providerMessageIds.slice(0, 3).join(", ")}
+                        {campaignPreview.providerMessageIds.length > 3 ? " ..." : ""}
+                      </p>
+                    )}
+                    {!campaignPreview.dryRun && campaignPreview.provider === "brevo" && (
+                      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                        Check Brevo Transactional logs for delivered, bounced, blocked, or delayed status.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {campaignError && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-[11px] font-bold text-destructive">
+                        !
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-destructive">Marketing email failed</p>
+                        <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground/80">
+                          {campaignError}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCampaignError(null)}
+                        className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-background/70 hover:text-foreground"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -487,7 +739,7 @@ export default function Admin() {
                   <Button
                     size="sm"
                     onClick={() => runMarketingCampaign(false)}
-                    disabled={campaignLoading || !campaignPreview?.dryRun}
+                    disabled={campaignLoading}
                     className="gap-2"
                     title={!campaignPreview?.dryRun ? "Preview the audience before sending" : undefined}
                   >

@@ -74,7 +74,8 @@ import {
   getOptimizedBackdropUrl,
   buildMediaUrl,
   getCachedMediaAvailability,
-  primeMediaAvailability
+  primeMediaAvailability,
+  normalizeVjName
 } from "@/lib/api";
 import type { FilterOptions } from "@/lib/api";
 import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
@@ -492,10 +493,11 @@ export default function Index() {
       ];
 
       const vjSet = new Set<string>();
-      ["Junior", "Jingo", "Ice P", "Emmy", "Kevo"].forEach(vj => vjSet.add(vj));
+      ["Junior", "Jingo", "Ice P", "Emmy", "Kevo"].forEach(vj => vjSet.add(normalizeVjName(vj)));
       allAvailable.forEach((movie: Movie) => {
         if (movie.vj_name && movie.vj_name.trim()) {
-          vjSet.add(movie.vj_name.trim());
+          const normalizedVj = normalizeVjName(movie.vj_name);
+          if (normalizedVj) vjSet.add(normalizedVj);
         }
       });
 

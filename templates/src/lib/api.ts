@@ -808,9 +808,39 @@ export interface FilterOptions {
   genre?: string | null;
 }
 
+export function normalizeVjName(value?: string | null): string {
+  return String(value || "")
+    .trim()
+    .replace(/^vj\s+/i, "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildVjFilterVariants(value: string): string[] {
+  const normalized = normalizeVjName(value);
+  const compact = normalized.replace(/\s+/g, "");
+  const variants = [
+    value.trim(),
+    normalized,
+    compact,
+    `VJ ${normalized}`,
+    `VJ ${compact}`,
+  ].filter(Boolean);
+
+  return Array.from(new Set(variants));
+}
+
+function escapePostgrestValue(value: string): string {
+  return value.replace(/([,%*])/g, "\\$1");
+}
+
 function applyFilters(query: any, filters?: FilterOptions) {
   if (!filters) return query;
-  if (filters.vj) query = query.eq("vj_name", filters.vj);
+  if (filters.vj) {
+    const variants = buildVjFilterVariants(filters.vj);
+    query = query.or(variants.map((variant) => `vj_name.ilike.${escapePostgrestValue(variant)}`).join(","));
+  }
   if (filters.year) query = query.eq("year", filters.year);
   if (filters.genre) query = query.filter("genres", "cs", JSON.stringify([filters.genre]));
   return query;
