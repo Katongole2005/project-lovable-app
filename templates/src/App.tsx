@@ -12,6 +12,7 @@ import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import Maintenance from "./pages/Maintenance";
 import { AppLoader } from "@/components/AppLoader";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { NotificationSubscribePrompt } from "@/components/NotificationSubscribePrompt";
 
 const Toaster = lazy(() => import("@/components/ui/toaster").then(module => ({ default: module.Toaster })));
@@ -65,6 +66,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Analytics />
+      <SpeedInsights />
       <ErrorBoundary>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <GlobalPerformanceTuning />
