@@ -41,7 +41,7 @@ export default function VJPage() {
     title: `VJ ${formattedVjName} Translated Movies & Series`,
     vjName: formattedVjName,
     description: `Watch all ${movies.length || ''} movies and series translated by VJ ${formattedVjName} in Luganda. Stream VJ ${formattedVjName}'s best Hollywood, Bollywood & African movie translations free on Moviebay Uganda. No subscription required.`,
-    canonicalPath: `/vj/${vjName}`,
+    canonicalPath: `/vj/${encodeURIComponent((vjName || "").toLowerCase())}`,
     genres: ["Action", "Romance", "Drama", "Horror", "Animation"],
   });
 

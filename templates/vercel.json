@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "s-u.in" }],
+      "destination": "https://www.s-u.in/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/movie/:id",
