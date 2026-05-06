@@ -1529,6 +1529,191 @@ body::before {
 .modal-episode-section-icon {
   background-color: hsl(var(--primary) / 0.1);
 }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.024;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 192px 192px;
+  mix-blend-mode: overlay;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .group:hover .play-ring-pulse::before {
+    content: none;
+  }
+
+  .card-rim-light:hover::before {
+    opacity: 0;
+  }
+
+  .group:hover .card-image-zoom {
+    transform: none;
+  }
+}
+
+@media (max-width: 767px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  body::before {
+    display: none;
+  }
+
+  .hero-vignette {
+    box-shadow: inset 0 0 60px 20px rgba(0, 0, 0, 0.38);
+  }
+}
+
+@keyframes liquidFloat {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate(10px, -15px) scale(1.05);
+  }
+
+  50% {
+    transform: translate(-5px, 10px) scale(0.95);
+  }
+
+  75% {
+    transform: translate(15px, 5px) scale(1.02);
+  }
+}
+
+@keyframes kenBurnsMobile {
+  0% {
+    transform: scale(1.15) translate(0, 0);
+  }
+
+  33% {
+    transform: scale(1.25) translate(-2%, -1%);
+  }
+
+  66% {
+    transform: scale(1.2) translate(1%, 1.5%);
+  }
+
+  100% {
+    transform: scale(1.15) translate(0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Glowing custom scrollbar — desktop only */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.45);
+    border-radius: 99px;
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.35);
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.75);
+    box-shadow: 0 0 16px hsl(var(--primary) / 0.5);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+.hero-vignette {
+  box-shadow: inset 0 0 120px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Premium Modal Custom Classes */
+.modal-hero-backdrop-gradient {
+  background: linear-gradient(to top, hsl(var(--background)) 0%, transparent 60%);
+}
+
+.modal-accent-bottom-gradient {
+  background: linear-gradient(to top, hsla(var(--primary-foreground), 0.1) 0%, transparent 100%);
+}
+
+.modal-surface-main {
+  background-color: hsl(var(--background));
+  border-top: 1px solid hsl(var(--border) / 0.1);
+}
+
+.modal-drag-indicator {
+  background-color: hsl(var(--foreground) / 0.1);
+}
+
+.modal-panel-surface {
+  background-color: hsl(var(--card) / 0.4);
+  backdrop-filter: blur(8px);
+}
+
+.modal-active-utility-surface {
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-glow);
+}
+
+.modal-tinted-panel-surface {
+  background-color: hsl(var(--primary) / 0.03);
+}
+
+.modal-tab-surface {
+  background-color: hsl(var(--card));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.modal-accent-text {
+  color: hsl(var(--primary));
+}
+
+.modal-genre-chip {
+  background-color: hsl(var(--secondary) / 0.1);
+  border-color: hsl(var(--secondary) / 0.2);
+  color: hsl(var(--secondary-foreground));
+}
+
+.modal-primary-play-surface {
+  background: var(--gradient-primary);
+  box-shadow: 0 8px 32px hsl(var(--primary) / 0.25);
+}
+
+.modal-accent-box-shadow {
+  box-shadow: 0 0 40px hsl(var(--primary) / 0.2);
+}
+
+.modal-timeline-line {
+  background: linear-gradient(to bottom, hsl(var(--primary) / 0.4), transparent);
+}
+
+.modal-episode-section-icon {
+  background-color: hsl(var(--primary) / 0.1);
+}
 
 .modal-season-btn-active {
   background: var(--gradient-primary);
@@ -1539,3 +1724,47 @@ body::before {
   100% { background-position: -200% 0%; }
 }
 
+/* ============================================================
+   Hero Carousel Keyframes
+   Previously injected as inline <style> on every render.
+   Now parsed once at stylesheet load — zero per-render cost.
+   ============================================================ */
+
+@keyframes kenBurns {
+  0%   { transform: scale(1) translate(0, 0); }
+  50%  { transform: scale(1.08) translate(-1.5%, -1%); }
+  100% { transform: scale(1) translate(0, 0); }
+}
+
+.animate-ken-burns {
+  animation: kenBurns 12s ease-in-out infinite;
+}
+
+@keyframes waveScale {
+  0%   { transform: scale(0); opacity: 0.8; }
+  100% { transform: scale(5); opacity: 0; }
+}
+
+.ripple-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  z-index: 5;
+  transform-origin: center;
+}
+
+.animate-ripple-ring-1 {
+  width: 100px; height: 100px;
+  animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) forwards;
+}
+.animate-ripple-ring-2 {
+  width: 100px; height: 100px;
+  animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) 0.3s forwards;
+}
+.animate-ripple-ring-3 {
+  width: 100px; height: 100px;
+  animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) 0.6s forwards;
+}

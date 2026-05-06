@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, memo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, User, ChevronDown, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -26,7 +26,7 @@ const preloadProfilePage = () => {
   void import("@/pages/Profile");
 };
 
-export function Header({ activeTab, onTabChange }: HeaderProps) {
+function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -294,3 +294,5 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
     </>
   );
 }
+
+export const Header = memo(HeaderComponent);

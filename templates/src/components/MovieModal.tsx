@@ -803,7 +803,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                         src={backgroundImage}
                         alt={`${movie.title} backdrop`}
                         className={cn(
-                          "w-full h-full object-cover object-[center_top] transition-opacity duration-500",
+                          "w-full h-full object-cover object-center transition-opacity duration-500",
                           desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                         )}
                       />

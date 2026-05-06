@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Search, X, TrendingUp, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { fetchSuggestions } from "@/lib/api";
@@ -23,7 +23,8 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  const recentSearches = getRecentSearches();
+  // Memoized to avoid hitting localStorage on every render
+  const recentSearches = useMemo(() => getRecentSearches(), []);
 
   const fetchSuggestionsDebounced = useCallback((searchQuery: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

@@ -97,13 +97,25 @@ export function useDeviceProfile() {
     const updateProfile = () => setProfile(readProfile());
     const connection = getConnection();
 
+    // RAF-debounced resize: batches resize events to once per animation frame
+    // instead of firing hundreds of times per second while dragging the window.
+    let rafId: number | null = null;
+    const handleResize = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        updateProfile();
+      });
+    };
+
     updateProfile();
-    window.addEventListener("resize", updateProfile, { passive: true });
+    window.addEventListener("resize", handleResize, { passive: true });
     mediaQuery.addEventListener("change", updateProfile);
     connection?.addEventListener?.("change", updateProfile);
 
     return () => {
-      window.removeEventListener("resize", updateProfile);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", handleResize);
       mediaQuery.removeEventListener("change", updateProfile);
       connection?.removeEventListener?.("change", updateProfile);
     };

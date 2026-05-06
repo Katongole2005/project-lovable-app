@@ -25,7 +25,17 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+// Configured QueryClient: retry once (not 3x) with 1s delay.
+// Default behavior caused UI to feel frozen for 30+ seconds on API failures.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      retryDelay: 1000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Referral Tracker Component (Pro Version)
 const ReferralTracker = () => {

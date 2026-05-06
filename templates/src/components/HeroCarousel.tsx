@@ -263,67 +263,7 @@ export function HeroCarousel({
           </div>
         </div>
 
-        <style>{`
-          @keyframes kenBurns {
-            0% { transform: scale(1) translate(0, 0); }
-            50% { transform: scale(1.08) translate(-1.5%, -1%); }
-            100% { transform: scale(1) translate(0, 0); }
-          }
-          .animate-ken-burns {
-            animation: kenBurns 12s ease-in-out infinite;
-          }
-          
-          @keyframes waterRipple {
-            0% {
-              clip-path: circle(0% at 50% 50%);
-              filter: url(#water-distortion-${activeIndex}) blur(15px);
-              transform: scale(1.1);
-            }
-            100% {
-              clip-path: circle(150% at 50% 50%);
-              filter: url(#water-distortion-${activeIndex}) blur(0px);
-              transform: scale(1);
-            }
-          }
-          
-          @keyframes rippleDisplacement {
-            0% { stop-color: rgba(255,255,255,0.5); }
-            100% { stop-color: rgba(255,255,255,0); }
-          }
-          
-          @keyframes waveScale {
-            0% { transform: scale(0); opacity: 0.8; }
-            100% { transform: scale(5); opacity: 0; }
-          }
-          
-          .animate-water-ripple {
-            animation: waterRipple 2s cubic-bezier(0.1, 0, 0.2, 1) forwards;
-          }
-          
-          .ripple-ring {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            border-radius: 50%;
-            border: 1.5px solid rgba(255, 255, 255, 0.3);
-            pointer-events: none;
-            z-index: 5;
-            transform-origin: center;
-          }
-          
-          .animate-ripple-ring-1 {
-            width: 100px; height: 100px;
-            animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) forwards;
-          }
-          .animate-ripple-ring-2 {
-            width: 100px; height: 100px;
-            animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) 0.3s forwards;
-          }
-          .animate-ripple-ring-3 {
-            width: 100px; height: 100px;
-            animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) 0.6s forwards;
-          }
-        `}</style>
+
       </div >
 
       <div className="hidden md:block">
@@ -659,9 +599,9 @@ export function HeroCarousel({
           </div>
         </div>
       </div>
-      {/* Hidden SVG Filter for Realistic Liquid "Shuffle" Effect */}
+      {/* Hidden SVG Filter for Realistic Liquid "Shuffle" Effect — static ID, mounted once */}
       <svg className="absolute w-0 h-0 invisible pointer-events-none" aria-hidden="true">
-        <filter id={`water-distortion-${activeIndex}`} key={activeIndex} x="-20%" y="-20%" width="140%" height="140%">
+        <filter id="hero-water-distortion" x="-20%" y="-20%" width="140%" height="140%">
           {/* Base Turbulence for the "Ripple" waves */}
           <feTurbulence type="fractalNoise" baseFrequency="0.01 0.015" numOctaves="3" result="noise">
             <animate attributeName="baseFrequency" values="0.01 0.015; 0.015 0.01; 0.01 0.015" dur="10s" repeatCount="indefinite" />

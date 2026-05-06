@@ -17,10 +17,10 @@ export function PageTransition({ children, className }: PageTransitionProps) {
   return (
     <div
       className={cn(
-        "transition-all duration-700 ease-out",
+        "transition-all duration-500 ease-out",
         mounted
-          ? "opacity-100 translate-y-0 blur-0 scale-100"
-          : "opacity-0 translate-y-6 blur-[2px] scale-[0.99]",
+          ? "opacity-100 translate-y-0"
+          : "opacity-0 translate-y-4",
         className
       )}
     >
@@ -69,10 +69,12 @@ export const SectionReveal = forwardRef<HTMLDivElement, SectionRevealProps>(
       const el = elRef.current;
       if (!el) return;
 
+      let timer: ReturnType<typeof setTimeout> | null = null;
+
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
-            setTimeout(() => setIsVisible(true), delay);
+            timer = setTimeout(() => setIsVisible(true), delay);
             observer.unobserve(el);
           }
         },
@@ -80,7 +82,10 @@ export const SectionReveal = forwardRef<HTMLDivElement, SectionRevealProps>(
       );
 
       observer.observe(el);
-      return () => observer.disconnect();
+      return () => {
+        if (timer !== null) clearTimeout(timer);
+        observer.disconnect();
+      };
     }, [delay]);
 
     const v = variantClasses[variant] ?? variantClasses["slide-up"];

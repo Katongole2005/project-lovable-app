@@ -1100,39 +1100,6 @@ export default function Index() {
     return `Trending in ${titles[activeCategory] || "All"}`;
   };
 
-  const MemoizedHeader = useMemo(() => (
-    <Header
-      onSearch={handleSearch}
-      onMovieSelect={handleMovieClick}
-      popularSearches={popularSearches}
-      activeTab={activeTab}
-      onTabChange={handleTabChange}
-    />
-  ), [handleSearch, handleMovieClick, popularSearches, activeTab, handleTabChange]);
-
-  const MemoizedHero = useMemo(() => (
-    <Suspense fallback={null}>
-      <HeroCarousel
-        movies={trending}
-        onPlay={handleHeroPlay}
-        onMovieClick={handleMovieClick}
-        title="Latest on Moviebay"
-        onViewAll={() => handleTabChange("movies")}
-      />
-    </Suspense>
-  ), [trending, handleHeroPlay, handleMovieClick, handleTabChange]);
-
-  const MemoizedMovieRow = useMemo(() => (
-    <MovieRow
-      title={getCategoryTitle()}
-      movies={recentMovies}
-      onMovieClick={handleMovieClick}
-      onViewAll={() => handleTabChange("movies")}
-      isLoading={isLoading && recentMovies.length === 0}
-      showFilters
-      onFilterClick={() => setIsFilterOpen(true)}
-    />
-  ), [getCategoryTitle, recentMovies, handleMovieClick, handleTabChange, isLoading, setIsFilterOpen]);
 
   return (
     <div className="min-h-screen pb-safe relative">
@@ -1143,8 +1110,14 @@ export default function Index() {
       <div className="relative z-10">
         <AnnouncementBanner />
 
-        {/* Header */}
-        {MemoizedHeader}
+        {/* Header — memo'd at component level, properly bails out on unchanged props */}
+        <Header
+          onSearch={handleSearch}
+          onMovieSelect={handleMovieClick}
+          popularSearches={popularSearches}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+        />
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-4">
@@ -1152,7 +1125,15 @@ export default function Index() {
           {viewMode === "home" && (
             <div>
               {shouldShowHero && (
-                MemoizedHero
+                <Suspense fallback={null}>
+                  <HeroCarousel
+                    movies={trending}
+                    onPlay={handleHeroPlay}
+                    onMovieClick={handleMovieClick}
+                    title="Latest on Moviebay"
+                    onViewAll={() => handleTabChange("movies")}
+                  />
+                </Suspense>
               )}
 
               <div className="mt-8">
@@ -1201,7 +1182,15 @@ export default function Index() {
 
               <div className="mt-4">
                 <div className="section-divider mb-2" />
-                {MemoizedMovieRow}
+                <MovieRow
+                  title={getCategoryTitle()}
+                  movies={recentMovies}
+                  onMovieClick={handleMovieClick}
+                  onViewAll={() => handleTabChange("movies")}
+                  isLoading={isLoading && recentMovies.length === 0}
+                  showFilters
+                  onFilterClick={() => setIsFilterOpen(true)}
+                />
               </div>
 
               {showDeferredHomeSections && (

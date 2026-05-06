@@ -39,7 +39,7 @@ function AmbientParticlesInner() {
       hue: number;
     }
 
-    const particles: Particle[] = Array.from({ length: deviceProfile.isCompact ? 12 : 18 }, () => ({
+    const particles: Particle[] = Array.from({ length: deviceProfile.isCompact ? 6 : 14 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       r: Math.random() * 60 + 20,
@@ -49,9 +49,15 @@ function AmbientParticlesInner() {
       hue: Math.random() > 0.5 ? 215 : 195,
     }));
 
+    // Pre-compute color strings to avoid string allocations every frame
+    const colorStrings = particles.map(
+      (p) => `hsla(${p.hue}, 60%, 55%, ${p.opacity})`
+    );
+
     function draw() {
       ctx!.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      for (const p of particles) {
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         p.x += p.dx;
         p.y += p.dy;
         if (p.x < -p.r) p.x = window.innerWidth + p.r;
@@ -60,7 +66,7 @@ function AmbientParticlesInner() {
         if (p.y > window.innerHeight + p.r) p.y = -p.r;
 
         const gradient = ctx!.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
-        gradient.addColorStop(0, `hsla(${p.hue}, 60%, 55%, ${p.opacity})`);
+        gradient.addColorStop(0, colorStrings[i]);
         gradient.addColorStop(1, `hsla(${p.hue}, 60%, 55%, 0)`);
         ctx!.beginPath();
         ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
