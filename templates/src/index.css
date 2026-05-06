@@ -130,7 +130,22 @@
     -moz-osx-font-smoothing: grayscale;
     color-scheme: light dark;
     scroll-padding-top: env(safe-area-inset-top);
-    scroll-behavior: smooth;
+  }
+
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   /* Respect user preference for reduced motion */
@@ -1232,6 +1247,101 @@
 /* =============================================
    GLOBAL UI POLISH — Film Grain + Custom Scrollbar
    ============================================= */
+
+/* Site-wide smoothness controls. React adds these classes from the live device profile. */
+html.perf-touch {
+  scroll-behavior: auto;
+}
+
+html.perf-touch * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.perf-touch .backdrop-blur-3xl,
+html.perf-touch .backdrop-blur-2xl,
+html.perf-touch .backdrop-blur-xl {
+  -webkit-backdrop-filter: blur(10px) saturate(135%) !important;
+  backdrop-filter: blur(10px) saturate(135%) !important;
+}
+
+html.perf-touch .backdrop-blur-lg,
+html.perf-touch .backdrop-blur-md,
+html.perf-touch .backdrop-blur {
+  -webkit-backdrop-filter: blur(7px) !important;
+  backdrop-filter: blur(7px) !important;
+}
+
+html.perf-touch .backdrop-blur-sm {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+html.perf-low body {
+  background-attachment: scroll;
+}
+
+html.perf-low body::before {
+  display: none;
+}
+
+html.perf-low .glass,
+html.perf-low .glass-strong,
+html.perf-low .pill-nav,
+html.perf-low .hero-card,
+html.perf-low .category-chip,
+html.perf-low .glass-card-premium,
+html.perf-low .section-gradient,
+html.perf-low .btn-glass,
+html.perf-low .close-orb,
+html.perf-low .modal-panel-surface,
+html.perf-low .modal-footer-container,
+html.perf-low [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.perf-low .animate-float,
+html.perf-low .animate-glow-pulse,
+html.perf-low .animate-subtle-bounce,
+html.perf-low .animate-scale-bounce,
+html.perf-low .animate-blur-in,
+html.perf-low .animate-ken-burns-mobile,
+html.perf-low .crown-float,
+html.perf-low .pill-nav::after,
+html.perf-low .border-beam::after,
+html.perf-low .play-ring-pulse::before {
+  animation: none !important;
+}
+
+html.perf-low .animate-slide-up,
+html.perf-low .animate-slide-down,
+html.perf-low .animate-slide-in-left,
+html.perf-low .animate-slide-in-right,
+html.perf-low .animate-fade-in,
+html.perf-low .animate-scale-in,
+html.perf-low .animate-rotate-in {
+  animation-duration: 180ms !important;
+  animation-delay: 0ms !important;
+}
+
+html.perf-low .card-hover,
+html.perf-low .hover-lift,
+html.perf-low .hover-glow,
+html.perf-low .btn-premium-red,
+html.perf-low .btn-glass,
+html.perf-low .dynamic-card,
+html.perf-low .reveal-hidden,
+html.perf-low .card-image-zoom {
+  transition-duration: 140ms !important;
+}
+
+html.perf-low .will-change-transform {
+  will-change: auto !important;
+}
+
+html.perf-low .hero-vignette {
+  box-shadow: inset 0 0 48px 16px rgba(0, 0, 0, 0.4);
+}
 
 /* Film grain noise texture overlay — subtle cinematic texture across the whole app */
 body::before {

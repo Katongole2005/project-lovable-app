@@ -43,6 +43,10 @@ const pathToTab: Record<string, string> = {
   "/profile": "profile",
 };
 
+const preloadProfilePage = () => {
+  void import("@/pages/Profile");
+};
+
 export function BottomNav({ activeTab: activeTabProp, onTabChange }: BottomNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -69,6 +73,10 @@ export function BottomNav({ activeTab: activeTabProp, onTabChange }: BottomNavPr
           return (
             <button
               key={tab.id}
+              onPointerDown={tab.id === "profile" ? preloadProfilePage : undefined}
+              onTouchStart={tab.id === "profile" ? preloadProfilePage : undefined}
+              onMouseEnter={tab.id === "profile" ? preloadProfilePage : undefined}
+              onFocus={tab.id === "profile" ? preloadProfilePage : undefined}
               onClick={() => handleTabClick(tab.id)}
               data-testid={`button-nav-bottom-${tab.id}`}
               className={cn(

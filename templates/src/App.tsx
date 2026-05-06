@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SiteSettingsProvider, useSiteSettingsContext } from "@/hooks/useSiteSettings";
+import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import Maintenance from "./pages/Maintenance";
 import { AppLoader } from "@/components/AppLoader";
 import { Analytics } from "@vercel/analytics/react";
@@ -56,6 +57,7 @@ const App = () => {
       <Analytics />
       <ErrorBoundary>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <GlobalPerformanceTuning />
           {showDeferredUi && (
             <Suspense fallback={null}>
               <Toaster />
@@ -77,16 +79,51 @@ const App = () => {
   );
 };
 
-const PageWrapper = ({ children }: { children: React.ReactNode }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-  >
-    {children}
-  </motion.div>
-);
+const GlobalPerformanceTuning = () => {
+  const deviceProfile = useDeviceProfile();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const isTouchDevice = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    const classes = {
+      "perf-low": deviceProfile.isWeakDevice,
+      "perf-touch": deviceProfile.isMobile || isTouchDevice,
+      "perf-reduced-motion": deviceProfile.prefersReducedMotion,
+      "perf-rich": !deviceProfile.isWeakDevice && !deviceProfile.prefersReducedMotion,
+    };
+
+    Object.entries(classes).forEach(([className, enabled]) => {
+      root.classList.toggle(className, enabled);
+    });
+
+    return () => {
+      Object.keys(classes).forEach((className) => root.classList.remove(className));
+    };
+  }, [deviceProfile.isMobile, deviceProfile.isWeakDevice, deviceProfile.prefersReducedMotion]);
+
+  return null;
+};
+
+const PageWrapper = ({ children }: { children: React.ReactNode }) => {
+  const { pathname } = useLocation();
+  const deviceProfile = useDeviceProfile();
+  const isProfileRoute = pathname === "/profile";
+  const shouldUseLightMotion = deviceProfile.isWeakDevice || deviceProfile.isMobile || deviceProfile.prefersReducedMotion;
+  const enterOffset = shouldUseLightMotion ? 0 : isProfileRoute ? 8 : 14;
+  const exitOffset = shouldUseLightMotion ? 0 : -14;
+  const duration = shouldUseLightMotion ? 0.1 : isProfileRoute ? 0.12 : 0.24;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: enterOffset }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={isProfileRoute || shouldUseLightMotion ? { opacity: 0 } : { opacity: 0, y: exitOffset }}
+      transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 // Global Scroll Restoration (Pro Version)
 const ScrollRestoration = () => {

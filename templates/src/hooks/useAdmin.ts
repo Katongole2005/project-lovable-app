@@ -2,12 +2,19 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export function useAdmin() {
+export function useAdmin(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
+  const enabled = options.enabled ?? true;
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsAdmin(false);
+      setLoading(false);
+      return;
+    }
+
     if (!user) {
       setIsAdmin(false);
       setLoading(false);
@@ -34,7 +41,7 @@ export function useAdmin() {
     };
 
     checkAdmin();
-  }, [user]);
+  }, [enabled, user]);
 
   return { isAdmin, loading };
 }

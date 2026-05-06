@@ -22,6 +22,10 @@ const navItems = [
   { id: "originals", label: "Originals", path: "/originals" },
 ];
 
+const preloadProfilePage = () => {
+  void import("@/pages/Profile");
+};
+
 export function Header({ activeTab, onTabChange }: HeaderProps) {
   const { user } = useAuth();
   const location = useLocation();
@@ -206,6 +210,10 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
 
               <Link
                 to="/profile"
+                onMouseEnter={preloadProfilePage}
+                onFocus={preloadProfilePage}
+                onPointerDown={preloadProfilePage}
+                onTouchStart={preloadProfilePage}
                 onClick={() => handleTabNavigation("profile")}
                 className="hidden items-center gap-3 rounded-full border border-border/40 bg-card/60 px-3 py-2 backdrop-blur md:flex"
                 data-testid="link-profile"

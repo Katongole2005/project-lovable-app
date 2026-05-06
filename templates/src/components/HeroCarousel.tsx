@@ -37,10 +37,10 @@ export function HeroCarousel({
   const displayMovies = React.useMemo(() => safeMovies.slice(0, totalSlides), [safeMovies, totalSlides]);
   const mobileDeck = displayMovies;
   const activeIndex = totalSlides > 0 ? Math.min(selectedIndex, totalSlides - 1) : 0;
-  const transitionDuration = deviceProfile.allowComplexAnimations ? 1300 : 650;
+  const transitionDuration = deviceProfile.allowComplexAnimations ? 420 : 180;
   const autoplayDelayMs = deviceProfile.autoplayDelayMs;
   const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
-  const shouldAutoplay = totalSlides > 1;
+  const shouldAutoplay = totalSlides > 1 && !deviceProfile.prefersReducedMotion;
 
 
   const scrollTo = React.useCallback((index: number) => {
@@ -187,7 +187,10 @@ export function HeroCarousel({
               return (
                 <div
                   key={movie.mobifliks_id}
-                  className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out preserve-3d dynamic-card"
+                  className={cn(
+                    "absolute inset-0 cursor-pointer transition-all ease-out preserve-3d dynamic-card",
+                    deviceProfile.isWeakDevice ? "duration-200" : "duration-300"
+                  )}
                   style={{
                     transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
                     opacity: opacity,
@@ -195,7 +198,7 @@ export function HeroCarousel({
                   } as React.CSSProperties}
                   onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}
                 >
-                  <div className={cn("w-full h-full rounded-xl overflow-hidden shadow-2xl transition-shadow duration-500", isSelected && "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]")}>
+                    <div className={cn("w-full h-full rounded-xl overflow-hidden shadow-2xl transition-shadow duration-300", isSelected && "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]")}>
                     <img
                       src={getImageUrl(movie.image_url)}
                       alt={movie.title}

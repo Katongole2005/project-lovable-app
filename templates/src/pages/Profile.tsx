@@ -1,16 +1,13 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
+import { lazy, Suspense, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTheme } from "next-themes";
-import { getRecentlyViewed, getWatchlist, getUserRatings, removeContinueWatching, clearAllStorageData } from "@/lib/storage";
+import { getRecentlyViewed, getWatchlist, getUserRatings, clearAllStorageData } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
-import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PushNotificationButton } from "@/components/PushNotificationButton";
-import { SendPushPanel } from "@/components/SendPushPanel";
 import {
   Dialog,
   DialogContent,
@@ -43,9 +40,7 @@ import {
   Check,
   Loader2,
   Trash2,
-  Zap,
   TrendingUp,
-  Sparkles,
   Bell,
   Camera,
   Trophy,
@@ -55,12 +50,18 @@ import {
   Activity,
   Users,
   Gift,
-  Gem,
-  Share2,
   Award,
 } from "lucide-react";
-import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+const SendPushPanel = lazy(() =>
+  import("@/components/SendPushPanel").then((module) => ({ default: module.SendPushPanel }))
+);
+
+const preloadHomePage = () => {
+  void import("./Index");
+};
 
 function ClearDataDialog({
   open,
@@ -756,10 +757,10 @@ const LeaderboardSection = () => {
 export default function Profile() {
   const navigate = useNavigate();
   const { user, loading, signOut } = useAuth();
-  const { isAdmin } = useAdmin();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const reducedMotion = useReducedMotion();
+  const [shouldCheckAdmin, setShouldCheckAdmin] = useState(false);
+  const { isAdmin } = useAdmin({ enabled: shouldCheckAdmin });
 
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -774,6 +775,21 @@ export default function Profile() {
   const [showCollapsedName, setShowCollapsedName] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [claiming, setClaiming] = useState(false);
+  const [localProfileData, setLocalProfileData] = useState(() => ({
+    recentlyViewed: getRecentlyViewed(),
+    watchlist: getWatchlist(),
+    ratings: getUserRatings(),
+  }));
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShouldCheckAdmin(true), 350);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(preloadHomePage, 100);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const handleClaimDaily = async () => {
     if (!user) return;
@@ -836,8 +852,7 @@ export default function Profile() {
     return unsub;
   }, [scrollY]);
 
-  const recentlyViewed = getRecentlyViewed();
-  const watchlist = getWatchlist();
+  const { recentlyViewed, watchlist, ratings } = localProfileData;
   const filteredWatchlist = useMemo(() => {
     const list = watchlistFilter === "all" 
       ? [...watchlist] 
@@ -848,7 +863,6 @@ export default function Profile() {
       return watchlistSort === "newest" ? dateB - dateA : dateA - dateB;
     });
   }, [watchlist, watchlistFilter, watchlistSort]);
-  const ratings = getUserRatings();
 
   const movieCount = recentlyViewed.filter((m) => m.type === "movie").length;
   const seriesCount = recentlyViewed.filter((m) => m.type === "series").length;
@@ -946,6 +960,7 @@ export default function Profile() {
         onOpenChange={setClearDataOpen} 
         onClear={() => {
           clearAllStorageData();
+          setLocalProfileData({ recentlyViewed: [], watchlist: [], ratings: [] });
           setRefreshKey(k => k + 1);
           toast.success("All local data has been cleared.");
         }} 
@@ -962,6 +977,10 @@ export default function Profile() {
         {/* Navigation Header */}
         <header className="flex items-center justify-between mb-10">
           <button 
+            onPointerDown={preloadHomePage}
+            onTouchStart={preloadHomePage}
+            onMouseEnter={preloadHomePage}
+            onFocus={preloadHomePage}
             onClick={() => navigate("/")} 
             className="group flex items-center gap-3 px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all"
           >
@@ -1191,7 +1210,9 @@ export default function Profile() {
                             <p className="text-sm text-white/40 leading-relaxed font-medium">Global system management, movie uploads, and site analytics.</p>
                           </button>
                           <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/5">
-                            <SendPushPanel />
+                            <Suspense fallback={null}>
+                              <SendPushPanel />
+                            </Suspense>
                           </div>
                         </div>
                       )}
