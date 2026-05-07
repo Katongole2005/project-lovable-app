@@ -58,6 +58,7 @@ import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { Button } from "@/components/ui/button";
 import {
   fetchTrending,
+  fetchHeroLatest,
   fetchRecent,
   fetchSeries,
   searchMovies,
@@ -297,6 +298,13 @@ export default function Index() {
   }, []);
 
   // React Query for instant tab switching and caching
+  const { data: heroData, isLoading: isHeroLoading } = useQuery({
+    queryKey: ["hero", "latest", heroMovieLimit],
+    queryFn: () => fetchHeroLatest(heroMovieLimit),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "home",
+  });
+
   const { data: trendingData } = useQuery({
     queryKey: ["trending"],
     queryFn: () => fetchTrending(),
@@ -459,31 +467,39 @@ export default function Index() {
   // Load initial data
   useEffect(() => {
     async function loadData() {
-      if (trendingData || moviesQueryData) {
-        const tData = trendingData || [];
-        const mData = moviesQueryData || [];
-
-        const latestAddedMovies = tData.length > 0 ? [...tData] : sortByLatestAdded(mData);
-
-        const heroMovies = latestAddedMovies.filter((m: Movie) => m.type === 'movie').slice(0, heroMovieLimit);
-        const heroSeries = (seriesQueryData && seriesQueryData.length > 0)
+      if (heroData) {
+        const heroMovies = heroData
+          .filter((m: Movie) => m.type === "movie")
+          .slice(0, heroMovieLimit);
+        const heroSeries = seriesQueryData && seriesQueryData.length > 0
           ? seriesQueryData.slice(0, heroSeriesLimit)
-          : latestAddedMovies.filter((m: Movie) => m.type === 'series').slice(0, heroSeriesLimit);
+          : [];
 
         const newTrending = [...heroMovies, ...heroSeries].slice(0, heroMovieLimit + heroSeriesLimit);
         preloadHeroAssets(newTrending);
         startTransition(() => {
           setTrending(newTrending);
-          setRecentMovies(latestAddedMovies.length > 0 ? latestAddedMovies : sortByYearDesc(mData));
-
-          if (seriesQueryData) {
-            setRecentSeries(sortByYearDesc(seriesQueryData));
-          }
         });
 
         if (newTrending.length > 0) {
           preloadMovieBackdrop(newTrending[0]);
         }
+      }
+
+      if (trendingData) {
+        startTransition(() => {
+          setRecentMovies([...trendingData]);
+        });
+      } else if (moviesQueryData) {
+        startTransition(() => {
+          setRecentMovies(sortByLatestAdded(moviesQueryData));
+        });
+      }
+
+      if (seriesQueryData) {
+        startTransition(() => {
+          setRecentSeries(sortByYearDesc(seriesQueryData));
+        });
       }
 
       const allAvailable = [
@@ -513,7 +529,7 @@ export default function Index() {
       });
     }
     loadData();
-  }, [heroMovieLimit, heroSeriesLimit, moviesQueryData, preloadHeroAssets, seriesQueryData, sortByLatestAdded, sortByYearDesc, trendingData]);
+  }, [heroData, heroMovieLimit, heroSeriesLimit, moviesQueryData, preloadHeroAssets, seriesQueryData, sortByLatestAdded, sortByYearDesc, trendingData]);
 
   useEffect(() => {
     if (!showDeferredHomeSections) return;
@@ -1132,6 +1148,7 @@ export default function Index() {
                     onMovieClick={handleMovieClick}
                     title="Latest on Moviebay"
                     onViewAll={() => handleTabChange("movies")}
+                    isLoading={isHeroLoading}
                   />
                 </Suspense>
               )}

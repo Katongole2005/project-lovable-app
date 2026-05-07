@@ -12,6 +12,7 @@ interface HeroCarouselProps {
   title?: string;
   showViewAll?: boolean;
   onViewAll?: () => void;
+  isLoading?: boolean;
 }
 
 export function HeroCarousel({
@@ -20,7 +21,8 @@ export function HeroCarousel({
   onMovieClick,
   title = "Top Movies",
   showViewAll = true,
-  onViewAll
+  onViewAll,
+  isLoading = false
 }: HeroCarouselProps) {
   const deviceProfile = useDeviceProfile();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -110,8 +112,8 @@ export function HeroCarousel({
     const rating = parseFloat(getImdbRating(movie));
     return Math.round(rating / 2);
   };
-  if (!displayMovies.length) {
-    return <div className="overflow-hidden relative" aria-hidden="true">
+  if (isLoading || !displayMovies.length) {
+    return <div className="overflow-hidden relative" aria-busy={isLoading} aria-label="Loading latest movies">
       <div className="md:hidden rounded-3xl p-4 overflow-hidden relative hero-mobile-gradient min-h-[350px]">
         <div className="flex justify-between items-center mb-3">
           <div className="h-6 w-32 bg-white/8 rounded-lg shimmer" />

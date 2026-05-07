@@ -18,6 +18,31 @@ const mediaAvailabilityRequests = new Map<string, Promise<MediaAvailability>>();
 const preconnectedOrigins = new Set<string>();
 const warmedMediaUrls = new Set<string>();
 
+const BROWSE_MOVIE_SELECT = [
+  "mobifliks_id",
+  "title",
+  "year",
+  "created_at",
+  "language",
+  "type",
+  "image_url",
+  "backdrop_url",
+  "logo_url",
+  "genres",
+  "description",
+  "runtime_minutes",
+  "certification",
+  "release_date",
+  "download_url",
+  "server2_url",
+  "views",
+  "vj_name",
+  "file_size",
+  "details_url",
+  "video_page_url",
+  "raw_data",
+].join(",");
+
 // ─── Bounded-cache helpers ────────────────────────────────────────────────────
 const MAX_DETAIL_CACHE = 60;
 const MAX_GENRE_CACHE  = 8;
@@ -852,7 +877,7 @@ export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
   const targetLimit = filters?.vj || filters?.year ? 60 : 30;
   let query = supabase
     .from("movies")
-    .select("*")
+    .select(BROWSE_MOVIE_SELECT)
     .eq("type", "movie")
     .order("release_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false, nullsFirst: false })
@@ -863,12 +888,30 @@ export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
   return finalizeBrowseResults(normalize(data ?? []), targetLimit);
 }
 
+export async function fetchHeroLatest(limit: number = 12): Promise<Movie[]> {
+  const targetLimit = Math.max(1, Math.min(limit, 24));
+  const { data, error } = await supabase
+    .from("movies")
+    .select(BROWSE_MOVIE_SELECT)
+    .eq("type", "movie")
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .limit(Math.min(targetLimit * 2, 48));
+
+  if (error) {
+    console.error("fetchHeroLatest error:", error);
+    return [];
+  }
+
+  return finalizeBrowseResults(normalize(data ?? []), targetLimit);
+}
+
 export async function fetchRecent(contentType: string = "movie", limit: number = 20, page: number = 1): Promise<Movie[]> {
   const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
   const offset = (page - 1) * limit;
   const { data, error } = await supabase
     .from("movies")
-    .select("*")
+    .select(BROWSE_MOVIE_SELECT)
     .eq("type", contentType)
     .order("release_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -882,7 +925,7 @@ export async function fetchMoviesSorted(contentType: string = "movie", limit: nu
   const offset = offsetOverride ?? ((page - 1) * limit);
   let query = supabase
     .from("movies")
-    .select("*")
+    .select(BROWSE_MOVIE_SELECT)
     .eq("type", contentType)
     .order("release_date", { ascending: false, nullsFirst: false })
     .order("year", { ascending: false, nullsFirst: false })
@@ -899,7 +942,7 @@ export async function fetchSeries(limit: number = 20, page: number = 1, language
   const offset = offsetOverride ?? ((page - 1) * fetchLimit);
   let query = supabase
     .from("movies")
-    .select("*")
+    .select(BROWSE_MOVIE_SELECT)
     .eq("type", "series")
     .order("release_date", { ascending: false, nullsFirst: false })
     .order("views", { ascending: false })
@@ -1035,7 +1078,7 @@ export async function fetchStats(): Promise<{ popular_searches: string[] }> {
 
 export async function fetchOriginals(limit: number = 50, page: number = 1): Promise<Movie[]> {
   const offset = (page - 1) * limit;
-  const { data, error } = await supabase.from("movies").select("*").eq("type", "movie").is("vj_name", null).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+  const { data, error } = await supabase.from("movies").select(BROWSE_MOVIE_SELECT).eq("type", "movie").is("vj_name", null).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
   if (error) { console.error("fetchOriginals error:", error); return []; }
   return normalize(data ?? []);
 }
