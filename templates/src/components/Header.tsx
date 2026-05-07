@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, User, ChevronDown, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import logoLight from "@/assets/logo.png";
 import logoDark from "@/assets/logo-dark.png";
@@ -155,10 +154,8 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                   data-testid={`button-nav-${item.id}`}
                 >
                   {currentTab === item.id && (
-                    <motion.div
-                      layoutId="nav-pill"
+                    <div
                       className="pill-nav-indicator"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
                   <span className="relative z-10">{item.label}</span>
@@ -177,10 +174,8 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                 data-testid="button-nav-search"
               >
                 {currentTab === "search" && (
-                  <motion.div
-                    layoutId="nav-pill"
+                  <div
                     className="pill-nav-indicator"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
                 <Search className={cn("relative z-10 h-5 w-5", currentTab === "search" && "animate-pulse")} />
@@ -257,10 +252,8 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                   data-testid={`button-nav-mobile-${item.id}`}
                 >
                   {currentTab === item.id && (
-                    <motion.div
-                      layoutId="nav-pill-mobile"
+                    <div
                       className="pill-nav-indicator"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
                   <span className="relative z-10">{item.label}</span>
@@ -279,10 +272,8 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                 data-testid="button-nav-mobile-search"
               >
                 {currentTab === "search" && (
-                  <motion.div
-                    layoutId="nav-pill-mobile"
+                  <div
                     className="pill-nav-indicator"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
                 <Search className={cn("relative z-10 h-4 w-4", currentTab === "search" && "animate-pulse")} />

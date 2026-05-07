@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, BellRing, Check, Clock, X } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -79,13 +78,9 @@ export function NotificationSubscribePrompt() {
   };
 
   return (
-    <AnimatePresence>
+    <>
       {visible && (
-        <motion.aside
-          initial={{ opacity: 0, y: 24, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 18, scale: 0.98 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        <aside
           className="fixed bottom-5 left-4 right-4 z-[1000000] mx-auto max-w-[420px] pointer-events-auto md:left-auto md:right-6 md:mx-0"
           role="dialog"
           aria-live="polite"
@@ -143,8 +138,8 @@ export function NotificationSubscribePrompt() {
               </div>
             </div>
           </div>
-        </motion.aside>
+        </aside>
       )}
-    </AnimatePresence>
+    </>
   );
 }

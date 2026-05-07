@@ -4,7 +4,6 @@ import type { Movie } from "@/types/movie";
 import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
 import { Star, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -111,8 +110,6 @@ export function HeroCarousel({
     const rating = parseFloat(getImdbRating(movie));
     return Math.round(rating / 2);
   };
-  const allowHeroMotion = deviceProfile.allowComplexAnimations && !deviceProfile.prefersReducedMotion;
-
   if (!displayMovies.length) {
     return <div className="overflow-hidden relative" aria-hidden="true">
       <div className="md:hidden rounded-3xl p-4 overflow-hidden relative hero-mobile-gradient min-h-[350px]">
@@ -271,51 +268,29 @@ export function HeroCarousel({
 
           <div className="absolute inset-0 bg-[#0a0a0f]" />
 
-          <AnimatePresence mode="popLayout" initial={false}>
+          <>
             {backdropSrc && (
-              <motion.div
+              <div
                 key={`backdrop-${activeIndex}`}
-                initial={allowHeroMotion ? { opacity: 0, scale: 1.03 } : false}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={allowHeroMotion ? { opacity: 0 } : undefined}
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 className="absolute inset-0"
               >
-                <motion.img
+                <img
                   src={backdropSrc}
                   alt=""
-                  initial={{ scale: 1 }}
-                  animate={allowHeroMotion && deviceProfile.allowAmbientEffects && !deviceProfile.isMobile ? {
-                    scale: [1, 1.15, 1],
-                    x: [0, -20, 0],
-                    y: [0, -10, 0]
-                  } : {}}
-                  transition={{
-                    duration: 25,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className={cn(
-                    "w-full h-full object-cover",
-                    allowHeroMotion && "will-change-transform"
-                  )}
+                  className="w-full h-full object-cover"
                   loading="eager"
                   fetchpriority="high"
                 />
-              </motion.div>
+              </div>
             )}
             {!backdropSrc && (
-              <motion.div
+              <div
                 key={`backdrop-fallback-${activeIndex}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.4 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0 blur-[80px] pointer-events-none bg-cover bg-center"
+                className="absolute inset-0 blur-[80px] pointer-events-none bg-cover bg-center opacity-40"
                 style={{ backgroundImage: `url(${getImageUrl(currentMovie.image_url)})` }}
               />
             )}
-          </AnimatePresence>
+          </>
 
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/40" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
@@ -327,28 +302,11 @@ export function HeroCarousel({
           <div className="relative z-10 h-full flex hero-cinematic-container">
 
             <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 pb-8 lg:pb-12">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div 
+                <>
+                  <div 
                     key={`info-${activeIndex}`}
-                    initial={allowHeroMotion ? "hidden" : false}
-                    animate="visible"
-                    exit={allowHeroMotion ? "exit" : undefined}
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: { 
-                        opacity: 1,
-                        transition: { 
-                          staggerChildren: 0.04
-                        } 
-                      },
-                      exit: { opacity: 0, transition: { duration: 0.18 } }
-                    }}
                   >
-                    <motion.div 
-                      variants={{
-                        hidden: { opacity: 0, y: 30, scale: 0.95 },
-                        visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }
-                      }}
+                    <div 
                       className="flex items-end gap-4 lg:gap-6 mb-4 lg:mb-5"
                     >
                       <span
@@ -358,18 +316,9 @@ export function HeroCarousel({
                       </span>
                       <div className="pb-1 lg:pb-2">
                         {currentMovie.logo_url ? (
-                          <motion.img
+                          <img
                             src={currentMovie.logo_url}
                             alt={currentMovie.title}
-                            animate={allowHeroMotion && deviceProfile.allowAmbientEffects ? {
-                              y: [0, -8, 0],
-                              rotate: [0, 1, 0, -1, 0]
-                            } : {}}
-                            transition={{
-                              duration: 6,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
                             className="h-16 lg:h-24 xl:h-28 w-auto max-w-[400px] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)]"
                             loading="eager"
                           />
@@ -379,13 +328,9 @@ export function HeroCarousel({
                           </h2>
                         )}
                       </div>
-                    </motion.div>
+                    </div>
 
-                    <motion.div 
-                      variants={{
-                        hidden: { opacity: 0, x: -20 },
-                        visible: { opacity: 1, x: 0, transition: { duration: 0.18 } }
-                      }}
+                    <div 
                       className="flex items-center gap-3 mb-4 lg:mb-5"
                     >
                       <div className="flex items-center gap-0.5">
@@ -404,13 +349,9 @@ export function HeroCarousel({
                       <span className="px-3 py-1 text-xs font-bold rounded-md text-black bg-gradient-to-r from-amber-400 to-amber-500 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
                         IMDB {getImdbRating(currentMovie)}
                       </span>
-                    </motion.div>
+                    </div>
 
-                    <motion.div 
-                      variants={{
-                        hidden: { opacity: 0, x: -20 },
-                        visible: { opacity: 1, x: 0, transition: { duration: 0.18 } }
-                      }}
+                    <div 
                       className="flex flex-wrap items-center gap-2 mb-5 lg:mb-7"
                     >
                       {currentMovie.genres && currentMovie.genres.length > 0 && (
@@ -431,25 +372,17 @@ export function HeroCarousel({
                       <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded bg-white/10 text-white/70 border border-white/10 uppercase">
                         {currentMovie.type === "series" ? "Series" : "Movie"}
                       </span>
-                    </motion.div>
+                    </div>
 
                     {currentMovie.description && (
-                      <motion.p 
-                        variants={{
-                          hidden: { opacity: 0, y: 10 },
-                          visible: { opacity: 1, y: 0, transition: { duration: 0.18 } }
-                        }}
+                      <p 
                         className="text-sm lg:text-base text-white/50 max-w-lg line-clamp-2 mb-6 lg:mb-8 leading-relaxed"
                       >
                         {currentMovie.description}
-                      </motion.p>
+                      </p>
                     )}
 
-                    <motion.div 
-                      variants={{
-                        hidden: { opacity: 0, y: 20 },
-                        visible: { opacity: 1, y: 0, transition: { duration: 0.2 } }
-                      }}
+                    <div 
                       className="flex items-center gap-3"
                     >
                       <button
@@ -467,9 +400,9 @@ export function HeroCarousel({
                       >
                         More
                       </button>
-                    </motion.div>
-                  </motion.div>
-                </AnimatePresence>
+                    </div>
+                  </div>
+                </>
 
               <div className="flex items-center gap-3 mt-6 lg:mt-8">
                 <button
@@ -546,26 +479,14 @@ export function HeroCarousel({
             </div>
 
             <div className="hidden lg:flex items-end pb-8 pr-6 xl:pr-10 min-w-[380px]">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div 
+                <>
+                  <div 
                     key={`cards-${activeIndex}`} 
                     className="flex items-end gap-4 xl:gap-5"
-                    initial={allowHeroMotion ? "hidden" : false}
-                    animate="visible"
-                    exit={allowHeroMotion ? "exit" : undefined}
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: { opacity: 1, transition: { staggerChildren: 0.04 } },
-                      exit: { opacity: 0, transition: { duration: 0.16 } }
-                    }}
                   >
                     {getSideCards().map(({ movie, originalIndex }, cardIdx) => (
-                      <motion.button
+                      <button
                         key={movie.mobifliks_id}
-                        variants={{
-                          hidden: { opacity: 0, x: 20, scale: 0.9 },
-                          visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }
-                        }}
                         className="relative flex flex-col items-center cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-xl hover:-translate-y-2 transition-all duration-300"
                         onClick={() => scrollTo(originalIndex)}
                         data-testid={`button-hero-side-card-${originalIndex}`}
@@ -583,10 +504,10 @@ export function HeroCarousel({
                         <p className="mt-2.5 text-[10px] xl:text-xs text-white/40 text-center font-bold uppercase tracking-widest max-w-[100px] xl:max-w-[120px] truncate group-hover:text-primary transition-colors">
                           {movie.title}
                         </p>
-                      </motion.button>
+                      </button>
                     ))}
-                  </motion.div>
-                </AnimatePresence>
+                  </div>
+                </>
             </div>
           </div>
 
