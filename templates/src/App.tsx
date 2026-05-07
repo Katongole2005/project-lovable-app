@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -117,24 +116,7 @@ const GlobalPerformanceTuning = () => {
 };
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => {
-  const { pathname } = useLocation();
-  const deviceProfile = useDeviceProfile();
-  const isProfileRoute = pathname === "/profile";
-  const shouldUseLightMotion = deviceProfile.isWeakDevice || deviceProfile.isMobile || deviceProfile.prefersReducedMotion;
-  const enterOffset = shouldUseLightMotion ? 0 : isProfileRoute ? 8 : 14;
-  const exitOffset = shouldUseLightMotion ? 0 : -14;
-  const duration = shouldUseLightMotion ? 0.1 : isProfileRoute ? 0.12 : 0.24;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: enterOffset }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={isProfileRoute || shouldUseLightMotion ? { opacity: 0 } : { opacity: 0, y: exitOffset }}
-      transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <>{children}</>;
 };
 
 // Global Scroll Restoration (Pro Version)
@@ -169,29 +151,16 @@ const IndexLayout = () => (
 
 function AppRoutes() {
   const { settings } = useSiteSettingsContext();
-  const location = useLocation();
-
-  // Prevents AnimatePresence from unmounting the page (and losing scroll position) 
-  // when navigating to a movie modal over the current background view.
-  const getAnimationKey = () => {
-    // Shared key for all Index-related views keeps the component mounted
-    if (['/', '/movies', '/series', '/search', '/originals'].includes(location.pathname) || /^\/(movie|series)\//.test(location.pathname)) {
-      return 'index-layout';
-    }
-    return location.pathname;
-  };
 
   if (settings.maintenance_mode) {
     return (
       <Suspense fallback={<AppLoader />}>
         <ScrollRestoration />
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={getAnimationKey()}>
-            <Route path="/admin" element={<ProtectedRoute><PageWrapper><Admin /></PageWrapper></ProtectedRoute>} />
-            <Route path="/auth" element={<PageWrapper><Auth /></PageWrapper>} />
-            <Route path="*" element={<PageWrapper><Maintenance /></PageWrapper>} />
-          </Routes>
-        </AnimatePresence>
+        <Routes>
+          <Route path="/admin" element={<ProtectedRoute><PageWrapper><Admin /></PageWrapper></ProtectedRoute>} />
+          <Route path="/auth" element={<PageWrapper><Auth /></PageWrapper>} />
+          <Route path="*" element={<PageWrapper><Maintenance /></PageWrapper>} />
+        </Routes>
       </Suspense>
     );
   }
@@ -200,10 +169,8 @@ function AppRoutes() {
     <>
       <NotificationSubscribePrompt />
       <Suspense fallback={<AppLoader />}>
-      <ScrollRestoration />
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={getAnimationKey()}>
-          {/* Group Index routes under a single key to prevent remounting and scroll loss */}
+        <ScrollRestoration />
+        <Routes>
           <Route path="/" element={<IndexLayout />} />
           <Route path="/movies" element={<IndexLayout />} />
           <Route path="/series" element={<IndexLayout />} />
@@ -220,7 +187,6 @@ function AppRoutes() {
           <Route path="/terms" element={<PageWrapper><Terms /></PageWrapper>} />
           <Route path="*" element={<ProtectedRoute><PageWrapper><NotFound /></PageWrapper></ProtectedRoute>} />
         </Routes>
-      </AnimatePresence>
       </Suspense>
     </>
   );

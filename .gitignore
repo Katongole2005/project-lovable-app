@@ -26,8 +26,15 @@ venv/
 logs/
 
 # Node / Frontend
+node_modules/
+dist/
 templates/node_modules/
 templates/dist/
+
+# Local tool state
+.local/
+.config/
+.agents/
 
 # Editors / OS
 .DS_Store
