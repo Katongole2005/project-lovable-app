@@ -18,30 +18,7 @@ const mediaAvailabilityRequests = new Map<string, Promise<MediaAvailability>>();
 const preconnectedOrigins = new Set<string>();
 const warmedMediaUrls = new Set<string>();
 
-const BROWSE_MOVIE_SELECT = [
-  "mobifliks_id",
-  "title",
-  "year",
-  "created_at",
-  "language",
-  "type",
-  "image_url",
-  "backdrop_url",
-  "logo_url",
-  "genres",
-  "description",
-  "runtime_minutes",
-  "certification",
-  "release_date",
-  "download_url",
-  "server2_url",
-  "views",
-  "vj_name",
-  "file_size",
-  "details_url",
-  "video_page_url",
-  "raw_data",
-].join(",");
+const BROWSE_MOVIE_SELECT = "*";
 
 // ─── Bounded-cache helpers ────────────────────────────────────────────────────
 const MAX_DETAIL_CACHE = 60;
