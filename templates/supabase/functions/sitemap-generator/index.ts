@@ -79,26 +79,7 @@ serve(async (req: Request) => {
       }
     }
 
-    // Get unique VJs (for vj landing pages)
-    const vjSet = new Set<string>()
-    for (const m of movies) {
-      if (m.vj_name && m.vj_name.trim()) {
-        vjSet.add(m.vj_name.trim().replace(/^VJ\s+/i, '').toLowerCase())
-      }
-    }
-    const uniqueVjs = Array.from(vjSet)
-
     const today = new Date().toISOString().split('T')[0]
-
-    // Find the most recent update date for VJ pages
-    const getLatestUpdateForVj = (vjNameLower: string): string => {
-      for (const m of movies) {
-        if (m.vj_name && m.vj_name.trim().replace(/^VJ\s+/i, '').toLowerCase() === vjNameLower) {
-          return (m.last_updated || m.created_at || today).split('T')[0]
-        }
-      }
-      return today
-    }
 
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -126,14 +107,6 @@ serve(async (req: Request) => {
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
-
-  <!-- VJ Translator Pages -->
-${uniqueVjs.map(vj => `  <url>
-    <loc>${loc(`/vj/${encodeURIComponent(vj)}`)}</loc>
-    <lastmod>${getLatestUpdateForVj(vj)}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`).join('\n')}
 
   <!-- Movies & Series -->
 ${movies.filter(movie => movie.mobifliks_id !== 'TEST_DELETE_ME').map((movie) => `  <url>
