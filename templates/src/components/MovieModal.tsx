@@ -814,8 +814,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                     </div>
                   )}
                   {/* Premium fade gradients to seamlessly blend the backdrop into the content */}
-                  <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black via-black/35 to-transparent" />
-                  <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/80 via-black/15 to-transparent" />
+                  <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/70 via-black/18 to-transparent" />
+                  <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/35 via-transparent to-transparent" />
                 </div>
 
                 {/* Content area - overlapping backdrop */}
@@ -1285,7 +1285,7 @@ function MobileMovieLayout({
     opacity: Math.max(0.18, 1 - heroScrollProgress * 1.12),
   };
   const heroOverlayStyle: React.CSSProperties = {
-    opacity: 0.2 + heroScrollProgress * 0.45,
+    opacity: 0.08 + heroScrollProgress * 0.28,
   };
   const surfaceStyle: React.CSSProperties = {
     transform: `translateY(${-Math.min(scrollTop * 0.08, 18)}px)`,
@@ -1351,12 +1351,12 @@ function MobileMovieLayout({
             className="absolute inset-0 transition-opacity duration-300"
             style={{
               ...heroOverlayStyle,
-              background: "linear-gradient(180deg, rgba(16,17,22,0.08) 0%, rgba(16,17,22,0.05) 34%, rgba(16,17,22,0.72) 77%, #101116 100%)",
+              background: "linear-gradient(180deg, rgba(16,17,22,0.02) 0%, rgba(16,17,22,0.02) 42%, rgba(16,17,22,0.46) 82%, #101116 100%)",
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 transition-opacity duration-300" style={heroOverlayStyle} />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10 transition-opacity duration-300" style={heroOverlayStyle} />
 
-          <div className="absolute inset-0 bg-black/10" />
+          <div className="absolute inset-0 bg-black/[0.03]" />
 
           <div
             className="absolute bottom-0 left-0 right-0 z-20 flex gap-4 items-end p-5 transition-[transform,opacity] duration-300 ease-out will-change-transform"
