@@ -801,18 +801,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       )}
                       <img
                         src={backgroundImage}
-                        alt=""
-                        aria-hidden="true"
-                        className={cn(
-                          "absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl transition-opacity duration-500",
-                          desktopBackdropLoaded ? "opacity-70" : "opacity-0"
-                        )}
-                      />
-                      <img
-                        src={backgroundImage}
                         alt={`${movie.title} backdrop`}
                         className={cn(
-                          "relative z-[1] w-full h-full object-contain object-center transition-opacity duration-500",
+                          "w-full h-full object-cover object-center transition-opacity duration-500",
                           desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                         )}
                       />
@@ -1347,18 +1338,9 @@ function MobileMovieLayout({
             >
               <img
                 src={backgroundImage}
-                alt=""
-                aria-hidden="true"
-                className={cn(
-                  "absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl transition-opacity duration-700",
-                  backdropLoaded ? "opacity-70" : "opacity-0"
-                )}
-              />
-              <img
-                src={backgroundImage}
                 alt={movie.title}
                 className={cn(
-                  "relative z-[1] w-full h-full object-contain object-center transition-opacity duration-700",
+                  "w-full h-full object-cover object-center transition-opacity duration-700",
                   backdropLoaded ? "opacity-100" : "opacity-0"
                 )}
               />
