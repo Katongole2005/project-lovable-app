@@ -7,7 +7,96 @@
 /* Moviebay Design System - Premium Typography & Modern Light Blue-Gray Theme */
 
 @layer base {
-  :root, .dark {
+  :root, .light {
+    --background: 210 24% 96%;
+    --foreground: 224 24% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 24% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 24% 10%;
+
+    --primary: 357 85% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 22% 90%;
+    --secondary-foreground: 224 24% 14%;
+
+    --muted: 214 20% 91%;
+    --muted-foreground: 222 11% 42%;
+
+    --accent: 210 30% 88%;
+    --accent-foreground: 224 24% 12%;
+
+    --destructive: 0 76% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 18% 82%;
+    --input: 214 18% 84%;
+    --ring: 357 85% 48%;
+
+    --radius: 0.5rem;
+
+    --glow-primary: 357 85% 48%;
+    --glow-secondary: 214 14% 58%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(357 85% 48%), hsl(15 90% 52%));
+    --gradient-light: linear-gradient(180deg, hsl(210 24% 98%), hsl(214 28% 93%));
+    --gradient-card: linear-gradient(160deg, hsl(0 0% 100%), hsl(214 24% 95%));
+    --gradient-hero: radial-gradient(ellipse 80% 50% at 50% 0%, hsl(357 85% 48% / 0.12), transparent 70%);
+
+    --shadow-soft: 0 4px 20px hsl(222 22% 24% / 0.10);
+    --shadow-card: 0 10px 30px hsl(222 22% 24% / 0.14);
+    --shadow-elevated: 0 24px 60px hsl(222 22% 24% / 0.18);
+
+    --sidebar-background: 210 24% 98%;
+    --sidebar-foreground: 224 24% 12%;
+    --sidebar-primary: 357 85% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 22% 90%;
+    --sidebar-accent-foreground: 224 24% 12%;
+    --sidebar-border: 214 18% 82%;
+    --sidebar-ring: 357 85% 48%;
+
+    --chart-1: 357 85% 48%;
+    --chart-2: 213 72% 44%;
+    --chart-3: 158 58% 36%;
+    --chart-4: 42 92% 48%;
+    --chart-5: 276 52% 48%;
+
+    --star: 42 96% 48%;
+
+    --font-display: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+    --text-xs: clamp(0.75rem, 0.7rem + 0.1vw, 0.8125rem);
+    --text-sm: clamp(0.875rem, 0.8rem + 0.15vw, 0.9375rem);
+    --text-base: clamp(1rem, 0.95rem + 0.15vw, 1.0625rem);
+    --text-lg: clamp(1.125rem, 1.05rem + 0.25vw, 1.25rem);
+    --text-xl: clamp(1.25rem, 1.15rem + 0.35vw, 1.5rem);
+    --text-2xl: clamp(1.5rem, 1.35rem + 0.5vw, 1.75rem);
+    --text-3xl: clamp(1.875rem, 1.6rem + 1vw, 2.25rem);
+    --text-4xl: clamp(2.25rem, 2rem + 1vw, 2.75rem);
+    --text-5xl: clamp(3rem, 2.5rem + 2vw, 3.5rem);
+    --text-6xl: clamp(3.75rem, 3rem + 2vw, 4.5rem);
+
+    --leading-none: 1;
+    --leading-tight: 1.15;
+    --leading-snug: 1.3;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+    --leading-loose: 1.75;
+
+    --tracking-tighter: -0.03em;
+    --tracking-tight: -0.015em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.015em;
+    --tracking-wider: 0.03em;
+    --tracking-widest: 0.08em;
+  }
+
+  .dark {
     /* Core colors - Cinematic OLED Black & Crimson Theme */
     --background: 0 0% 2%; /* True OLED Black */
     --foreground: 0 0% 100%; /* Pure White for maximum visibility */
@@ -128,8 +217,12 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    color-scheme: light dark;
+    color-scheme: light;
     scroll-padding-top: env(safe-area-inset-top);
+  }
+
+  .dark {
+    color-scheme: dark;
   }
 
   button,
