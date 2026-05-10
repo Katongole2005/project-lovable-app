@@ -801,9 +801,18 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       )}
                       <img
                         src={backgroundImage}
+                        alt=""
+                        aria-hidden="true"
+                        className={cn(
+                          "absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl transition-opacity duration-500",
+                          desktopBackdropLoaded ? "opacity-70" : "opacity-0"
+                        )}
+                      />
+                      <img
+                        src={backgroundImage}
                         alt={`${movie.title} backdrop`}
                         className={cn(
-                          "w-full h-full object-cover object-center transition-opacity duration-500",
+                          "relative z-[1] w-full h-full object-contain object-center transition-opacity duration-500",
                           desktopBackdropLoaded ? "opacity-100" : "opacity-0"
                         )}
                       />
@@ -814,8 +823,8 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                     </div>
                   )}
                   {/* Premium fade gradients to seamlessly blend the backdrop into the content */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black via-black/35 to-transparent" />
+                  <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/80 via-black/15 to-transparent" />
                 </div>
 
                 {/* Content area - overlapping backdrop */}
@@ -1338,9 +1347,18 @@ function MobileMovieLayout({
             >
               <img
                 src={backgroundImage}
+                alt=""
+                aria-hidden="true"
+                className={cn(
+                  "absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl transition-opacity duration-700",
+                  backdropLoaded ? "opacity-70" : "opacity-0"
+                )}
+              />
+              <img
+                src={backgroundImage}
                 alt={movie.title}
                 className={cn(
-                  "w-full h-full object-cover object-center transition-opacity duration-700",
+                  "relative z-[1] w-full h-full object-contain object-center transition-opacity duration-700",
                   backdropLoaded ? "opacity-100" : "opacity-0"
                 )}
               />
