@@ -823,11 +823,11 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                   variants={staggerContainer}
                   initial={allowDesktopMotion ? "hidden" : "visible"}
                   animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : "visible"}
-                  className="relative -mt-32 px-10 pb-10 space-y-6"
+                  className="relative z-[5] -mt-32 px-10 pb-10 space-y-6"
                 >
                   {/* Poster + Title row */}
-                  <motion.div variants={fadeInUp} className="flex gap-6 items-start">
-                    <div className="w-32 lg:w-40 flex-none rounded-none overflow-hidden shadow-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
+                  <motion.div variants={fadeInUp} className="relative z-[6] flex gap-6 items-start">
+                    <div className="relative z-[7] w-32 lg:w-40 flex-none rounded-none overflow-hidden shadow-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
                       <img
                         src={getImageUrl(movie.image_url)}
                         alt={`${movie.title} poster`}
@@ -835,7 +835,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                       />
                     </div>
 
-                    <div className="flex-1 min-w-0 space-y-4 pt-2">
+                    <div className="relative z-[7] flex-1 min-w-0 space-y-4 pt-2">
                       <motion.div variants={fadeInUp} className="min-w-0 space-y-4 pt-2">
                         {movie.logo_url ? (
                           <img
@@ -1359,7 +1359,7 @@ function MobileMovieLayout({
           <div className="absolute inset-0 bg-black/10" />
 
           <div
-            className="absolute bottom-0 left-0 right-0 flex gap-4 items-end p-5 transition-[transform,opacity] duration-300 ease-out will-change-transform"
+            className="absolute bottom-0 left-0 right-0 z-20 flex gap-4 items-end p-5 transition-[transform,opacity] duration-300 ease-out will-change-transform"
             style={heroContentStyle}
           >
             <div className="w-24 h-36 flex-shrink-0 overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.45)] relative">

@@ -130,13 +130,13 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
     >
       <div
         className={cn(
-          "relative aspect-[2/3] overflow-hidden rounded-[18px] bg-card border border-black/[0.03] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm md:will-change-transform"
+          "relative isolate aspect-[2/3] overflow-hidden rounded-[18px] bg-card border border-black/[0.03] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm md:will-change-transform"
         )}
       >
         <BlurImage
           src={getImageUrl(movie.image_url)}
           alt={movie.title}
-          className="card-image-zoom"
+          className="relative z-0 card-image-zoom"
           loading={priority ? "eager" : "lazy"}
         />
 
@@ -165,7 +165,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
           </div>
         )}
 
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[80%]">
+        <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5 max-w-[80%]">
           {isNew && (
             <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500 text-white flex items-center gap-0.5 shadow-sm">
               <Sparkles className="w-2.5 h-2.5" />
@@ -209,7 +209,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
         )}
       </div>
 
-      <div className="mt-3 space-y-1.5">
+      <div className="relative z-10 mt-3 space-y-1.5">
         <div className="h-5 flex items-center">
           {movie.logo_url ? (
             <img
