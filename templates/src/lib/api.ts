@@ -627,11 +627,53 @@ function getVariantTitle(movie: Movie): string {
   return movie.type === "series" ? getSeriesBaseName(movie.title) : cleanTitle(movie.title);
 }
 
+function getCanonicalTitleKey(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/\b\d+\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getTranslationBucket(movie: Movie): string {
+  return movie.vj_name?.trim() ? "translated" : "original";
+}
+
+function getYearKey(movie: Movie): string | number {
+  return movie.year ?? movie.release_date?.slice(0, 4) ?? "unknown";
+}
+
+function getArtworkGroupKey(movie: Movie): string | null {
+  const rawData = (movie as any).raw_data;
+  const tmdbId = rawData?.tmdb_id ?? rawData?.tmdb?.id;
+  if (tmdbId) return `tmdb:${tmdbId}`;
+
+  const logoUrl = movie.logo_url ?? rawData?.logo_url ?? rawData?.tmdb?.details?.logo_url;
+  if (logoUrl) return `logo:${logoUrl}`;
+
+  if (movie.image_url) return `poster:${movie.image_url}`;
+  return null;
+}
+
 function getVariantGroupKey(movie: Movie): string {
-  const translationBucket = movie.vj_name?.trim() ? "translated" : "original";
-  const titleKey = getVariantTitle(movie).toLowerCase();
-  const yearKey = movie.year ?? movie.release_date?.slice(0, 4) ?? "unknown";
+  const translationBucket = getTranslationBucket(movie);
+  const titleKey = getCanonicalTitleKey(getVariantTitle(movie));
+  const yearKey = getYearKey(movie);
   return `${movie.type}:${translationBucket}:${titleKey}:${yearKey}`;
+}
+
+function getArtworkVariantGroupKey(movie: Movie): string | null {
+  const artworkKey = getArtworkGroupKey(movie);
+  if (!artworkKey) return null;
+  return `${movie.type}:${getTranslationBucket(movie)}:${getYearKey(movie)}:${artworkKey}`;
+}
+
+function sharesVariantIdentity(left: Movie, right: Movie): boolean {
+  if (getVariantGroupKey(left) === getVariantGroupKey(right)) return true;
+  const leftArtworkKey = getArtworkVariantGroupKey(left);
+  return Boolean(leftArtworkKey && leftArtworkKey === getArtworkVariantGroupKey(right));
 }
 
 function stripVariantMetadata(movie: Movie): Movie {
@@ -640,7 +682,11 @@ function stripVariantMetadata(movie: Movie): Movie {
 }
 
 function getVjVariantKey(movie: Movie): string {
-  return movie.vj_name?.trim().toLowerCase() || `id:${movie.mobifliks_id}`;
+  const vjKey = movie.vj_name?.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+  if (!vjKey) return `id:${movie.mobifliks_id}`;
+  if (vjKey === "ice" || vjKey === "icep") return "icep";
+  if (vjKey === "jr") return "junior";
+  return vjKey;
 }
 
 function compareVariantBase(left: Movie, right: Movie): number {
@@ -703,16 +749,21 @@ function mergeSameVjVariants(variants: Movie[]): Movie[] {
 
 function attachVariantVersions(movies: Movie[]): Movie[] {
   const groups = new Map<string, { items: Movie[]; firstIndex: number }>();
+  const artworkGroups = new Map<string, string>();
   const result: Array<{ item: Movie; index: number }> = [];
 
   movies.forEach((movie, index) => {
     const key = getVariantGroupKey(movie);
-    const group = groups.get(key);
+    const artworkKey = getArtworkVariantGroupKey(movie);
+    const groupedKey = groups.has(key) ? key : artworkKey ? artworkGroups.get(artworkKey) ?? key : key;
+    const group = groups.get(groupedKey);
     if (group) {
       group.items.push(movie);
+      if (artworkKey) artworkGroups.set(artworkKey, groupedKey);
       return;
     }
-    groups.set(key, { items: [movie], firstIndex: index });
+    groups.set(groupedKey, { items: [movie], firstIndex: index });
+    if (artworkKey) artworkGroups.set(artworkKey, groupedKey);
   });
 
   groups.forEach(({ items, firstIndex }) => {
@@ -759,7 +810,7 @@ async function fetchMovieVariants(movie: Movie): Promise<Movie[]> {
   }
 
   const candidates = normalize(data ?? []).filter(
-    (candidate) => getVariantGroupKey(candidate) === getVariantGroupKey(movie)
+    (candidate) => sharesVariantIdentity(candidate, movie)
   );
   return mergeSameVjVariants(candidates);
 }
@@ -903,6 +954,7 @@ export async function fetchHeroLatest(limit: number = 12): Promise<Movie[]> {
     .from("movies")
     .select(BROWSE_MOVIE_SELECT)
     .eq("type", "movie")
+    .not("backdrop_url", "is", null)
     .order("release_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false, nullsFirst: false })
     .limit(Math.min(targetLimit * 2, 48));
