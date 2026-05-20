@@ -212,6 +212,8 @@ export function CinematicVideoPlayer({
   const watchStatSecondsRef = useRef(0);
   const lastTrackedPlaybackTimeRef = useRef<number | null>(null);
   const iframeStatTimestampRef = useRef<number | null>(null);
+  const stallRecoveryTimeoutRef = useRef<number | null>(null);
+  const lastPlaybackProgressRef = useRef(Date.now());
 
   const activeTitle = sessionTitle || title;
   const activeMovie = sessionMovie ?? movie ?? null;
@@ -460,6 +462,7 @@ export function CinematicVideoPlayer({
   useEffect(() => {
     if (isOpen) {
       lastSessionKeyRef.current = sessionKey;
+      lastPlaybackProgressRef.current = Date.now();
       pauseRequestedRef.current = false;
       setIsPlaying(false);
       setIsPaused(false);
@@ -476,6 +479,11 @@ export function CinematicVideoPlayer({
       setShowSplashDetails(false);
     } else {
       lastSessionKeyRef.current = "";
+      lastPlaybackProgressRef.current = Date.now();
+      if (stallRecoveryTimeoutRef.current !== null) {
+        window.clearTimeout(stallRecoveryTimeoutRef.current);
+        stallRecoveryTimeoutRef.current = null;
+      }
       pauseRequestedRef.current = false;
       setIsPlaying(false);
       setIsPaused(false);
@@ -681,6 +689,7 @@ export function CinematicVideoPlayer({
   const handleDirectTimeUpdate = () => {
     const video = videoRef.current;
     if (!video) return;
+    lastPlaybackProgressRef.current = Date.now();
 
     // Update buffered time
     if (video.buffered.length > 0) {
@@ -701,6 +710,12 @@ export function CinematicVideoPlayer({
       setDuration(video.duration || 0);
       onTimeUpdate?.(video.currentTime, video.duration || 0);
     }
+  };
+
+  const handleDirectProgress = () => {
+    const video = videoRef.current;
+    if (!video || video.buffered.length === 0) return;
+    setBufferedTime(video.buffered.end(video.buffered.length - 1));
   };
 
   const togglePip = async (e?: React.MouseEvent) => {
@@ -826,6 +841,7 @@ export function CinematicVideoPlayer({
 
   const handleDirectPlay = () => {
     pauseRequestedRef.current = false;
+    lastPlaybackProgressRef.current = Date.now();
     setIsPaused(false);
     setHasEnded(false);
     setPlaybackError(null);
@@ -838,6 +854,7 @@ export function CinematicVideoPlayer({
 
   const handleDirectPlaying = () => {
     pauseRequestedRef.current = false;
+    lastPlaybackProgressRef.current = Date.now();
     setIsPaused(false);
     setIsBuffering(false);
     setPlaybackError(null);
@@ -846,6 +863,7 @@ export function CinematicVideoPlayer({
   const handleDirectWaiting = () => {
     const video = videoRef.current;
     if (!video || video.paused || pauseRequestedRef.current) return;
+    lastPlaybackProgressRef.current = Date.now();
     setIsBuffering(true);
   };
 
@@ -905,6 +923,54 @@ export function CinematicVideoPlayer({
     }
     setPlaybackError("This stream failed to load. Try replaying or switch to the other server.");
   };
+
+  useEffect(() => {
+    if (!isOpen || !isPlaying || isPaused || hasEnded || isEmbeddableVideo || !isBuffering) {
+      if (stallRecoveryTimeoutRef.current !== null) {
+        window.clearTimeout(stallRecoveryTimeoutRef.current);
+        stallRecoveryTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    const recoverFromStall = () => {
+      const video = videoRef.current;
+      if (!video || video.paused || video.ended || pauseRequestedRef.current) return;
+
+      const stalledForMs = Date.now() - lastPlaybackProgressRef.current;
+      const hasBufferedAhead = video.buffered.length > 0 && video.buffered.end(video.buffered.length - 1) > video.currentTime + 1.5;
+
+      if (hasBufferedAhead && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        setIsBuffering(false);
+        void video.play().catch(() => undefined);
+        return;
+      }
+
+      if (stalledForMs < 18000) return;
+
+      const resumeAt = video.currentTime || currentTime || resumeTime || startTime;
+      if (attemptPlaybackRecovery()) {
+        return;
+      }
+
+      pauseRequestedRef.current = true;
+      video.pause();
+      setResumeTime(resumeAt);
+      setCurrentTime(resumeAt);
+      setIsPaused(true);
+      setIsBuffering(false);
+      setPlaybackError("This stream stopped responding on this device. Resume playback or try another device/network.");
+    };
+
+    stallRecoveryTimeoutRef.current = window.setTimeout(recoverFromStall, 18000);
+
+    return () => {
+      if (stallRecoveryTimeoutRef.current !== null) {
+        window.clearTimeout(stallRecoveryTimeoutRef.current);
+        stallRecoveryTimeoutRef.current = null;
+      }
+    };
+  }, [attemptPlaybackRecovery, currentTime, hasEnded, isBuffering, isEmbeddableVideo, isOpen, isPaused, isPlaying, resumeTime, startTime]);
 
   const handleRetryPlayback = () => {
     pauseRequestedRef.current = false;
@@ -1136,9 +1202,11 @@ export function CinematicVideoPlayer({
                     onLoadedMetadata={handleDirectLoadedMetadata}
                     onLoadedData={() => setIsBuffering(false)}
                     onTimeUpdate={handleDirectTimeUpdate}
+                    onProgress={handleDirectProgress}
                     onCanPlay={() => setIsBuffering(false)}
                     onPlaying={handleDirectPlaying}
                     onWaiting={handleDirectWaiting}
+                    onStalled={handleDirectWaiting}
                     onSeeking={handleDirectSeeking}
                     onSeeked={handleDirectSeeked}
                     onPlay={handleDirectPlay}
