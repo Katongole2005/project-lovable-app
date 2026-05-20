@@ -301,6 +301,24 @@ export function HeroCarousel({
 
           <div className="absolute inset-0 pointer-events-none hero-vignette" />
 
+          <div
+            key={`title-${activeIndex}`}
+            className="absolute left-6 top-6 z-20 max-w-[min(520px,48vw)] lg:left-10 lg:top-10 xl:left-14 xl:top-14 2xl:left-16 2xl:top-16"
+          >
+            {currentMovie.logo_url ? (
+              <img
+                src={currentMovie.logo_url}
+                alt={currentMovie.title}
+                className="h-16 w-auto max-w-full object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)] lg:h-24 xl:h-28 2xl:h-32"
+                loading="eager"
+              />
+            ) : (
+              <h2 className="font-display text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] lg:text-4xl xl:text-5xl 2xl:text-6xl">
+                {currentMovie.title}
+              </h2>
+            )}
+          </div>
+
           <div className="relative z-10 h-full flex hero-cinematic-container">
 
             <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 2xl:p-16 pb-8 lg:pb-12 2xl:pb-14">
@@ -316,20 +334,6 @@ export function HeroCarousel({
                       >
                         {String(activeIndex + 1).padStart(2, "0")}
                       </span>
-                      <div className="pb-1 lg:pb-2">
-                        {currentMovie.logo_url ? (
-                          <img
-                            src={currentMovie.logo_url}
-                            alt={currentMovie.title}
-                            className="h-16 lg:h-24 xl:h-28 2xl:h-32 w-auto max-w-[400px] 2xl:max-w-[520px] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)]"
-                            loading="eager"
-                          />
-                        ) : (
-                          <h2 className="text-2xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-display font-bold text-white leading-tight tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                            {currentMovie.title}
-                          </h2>
-                        )}
-                      </div>
                     </div>
 
                     <div 
