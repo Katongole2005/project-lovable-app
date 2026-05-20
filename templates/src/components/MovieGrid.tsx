@@ -14,8 +14,8 @@ interface MovieGridProps {
 export function MovieGrid({ movies, onMovieClick, isLoading, emptyMessage = "No content found", className }: MovieGridProps) {
   if (isLoading) {
     return (
-      <div className={cn("grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4", className)}>
-        {Array.from({ length: 12 }).map((_, i) => (
+      <div className={cn("grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 2xl:gap-5", className)}>
+        {Array.from({ length: 16 }).map((_, i) => (
           <MovieCardSkeleton key={i} className="w-full" />
         ))}
       </div>
@@ -33,7 +33,7 @@ export function MovieGrid({ movies, onMovieClick, isLoading, emptyMessage = "No 
   }
 
   return (
-    <div className={cn("grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 content-visibility-auto", className)}>
+    <div className={cn("grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 2xl:gap-5 content-visibility-auto", className)}>
       {movies.map((movie, index) => (
         <MovieCard
           key={movie.mobifliks_id}

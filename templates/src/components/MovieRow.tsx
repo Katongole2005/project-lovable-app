@@ -35,8 +35,8 @@ export const MovieRow = forwardRef<HTMLElement, MovieRowProps>(function MovieRow
         <div className="flex items-center justify-between mb-6">
           <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight">{title}</h2>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-          {Array.from({ length: 24 }).map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3 md:gap-4 2xl:gap-5">
+          {Array.from({ length: 30 }).map((_, i) => (
             <MovieCardSkeleton key={i} className="w-full" />
           ))}
         </div>
@@ -86,7 +86,7 @@ export const MovieRow = forwardRef<HTMLElement, MovieRowProps>(function MovieRow
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3 md:gap-4 2xl:gap-5">
         {visibleMovies.map((movie, index) => (
           <MovieCard
             key={movie.mobifliks_id}

@@ -303,7 +303,7 @@ export function HeroCarousel({
 
           <div className="relative z-10 h-full flex hero-cinematic-container">
 
-            <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 pb-8 lg:pb-12">
+            <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 2xl:p-16 pb-8 lg:pb-12 2xl:pb-14">
                 <>
                   <div 
                     key={`info-${activeIndex}`}
@@ -321,11 +321,11 @@ export function HeroCarousel({
                           <img
                             src={currentMovie.logo_url}
                             alt={currentMovie.title}
-                            className="h-16 lg:h-24 xl:h-28 w-auto max-w-[400px] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)]"
+                            className="h-16 lg:h-24 xl:h-28 2xl:h-32 w-auto max-w-[400px] 2xl:max-w-[520px] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)]"
                             loading="eager"
                           />
                         ) : (
-                          <h2 className="text-2xl lg:text-4xl xl:text-5xl font-display font-bold text-white leading-tight tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                          <h2 className="text-2xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-display font-bold text-white leading-tight tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                             {currentMovie.title}
                           </h2>
                         )}
@@ -378,7 +378,7 @@ export function HeroCarousel({
 
                     {currentMovie.description && (
                       <p 
-                        className="text-sm lg:text-base text-white/50 max-w-lg line-clamp-2 mb-6 lg:mb-8 leading-relaxed"
+                        className="text-sm lg:text-base 2xl:text-lg text-white/50 max-w-lg 2xl:max-w-2xl line-clamp-2 mb-6 lg:mb-8 leading-relaxed"
                       >
                         {currentMovie.description}
                       </p>
@@ -480,7 +480,7 @@ export function HeroCarousel({
               </div>
             </div>
 
-            <div className="hidden lg:flex items-end pb-8 pr-6 xl:pr-10 min-w-[380px]">
+            <div className="hidden lg:flex items-end pb-8 pr-6 xl:pr-10 2xl:pr-14 min-w-[380px] 2xl:min-w-[520px]">
                 <>
                   <div 
                     key={`cards-${activeIndex}`} 
@@ -494,7 +494,7 @@ export function HeroCarousel({
                         data-testid={`button-hero-side-card-${originalIndex}`}
                         aria-label={`Go to ${movie.title}`}
                       >
-                        <div className="relative w-[100px] xl:w-[120px] aspect-[2/3] rounded-xl xl:rounded-2xl overflow-hidden border border-white/10 group-hover:border-primary/50 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group-hover:shadow-[0_12px_48px_rgba(239,68,68,0.3)]">
+                        <div className="relative w-[100px] xl:w-[120px] 2xl:w-[140px] aspect-[2/3] rounded-xl xl:rounded-2xl overflow-hidden border border-white/10 group-hover:border-primary/50 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group-hover:shadow-[0_12px_48px_rgba(239,68,68,0.3)]">
                           <img
                             src={getImageUrl(movie.image_url)}
                             alt={movie.title}
@@ -503,7 +503,7 @@ export function HeroCarousel({
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                         </div>
-                        <p className="mt-2.5 text-[10px] xl:text-xs text-white/40 text-center font-bold uppercase tracking-widest max-w-[100px] xl:max-w-[120px] truncate group-hover:text-primary transition-colors">
+                        <p className="mt-2.5 text-[10px] xl:text-xs text-white/40 text-center font-bold uppercase tracking-widest max-w-[100px] xl:max-w-[120px] 2xl:max-w-[140px] truncate group-hover:text-primary transition-colors">
                           {movie.title}
                         </p>
                       </button>

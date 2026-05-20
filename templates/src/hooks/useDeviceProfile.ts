@@ -64,6 +64,8 @@ function readProfile(): DeviceProfile {
   const connection = getConnection();
   const isMobile = window.innerWidth < 768;
   const isCompact = window.innerWidth < 1024;
+  const isLargeDesktop = window.innerWidth >= 1536;
+  const isUltraWideDesktop = window.innerWidth >= 1800;
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const saveData = connection?.saveData === true;
   const lowMemory = typeof typedNavigator.deviceMemory === "number" && typedNavigator.deviceMemory <= 4;
@@ -84,8 +86,8 @@ function readProfile(): DeviceProfile {
     allowComplexAnimations,
     allowHighResImages: !saveData && !lowMemory && !isMobile,
     autoplayDelayMs: 3000,
-    homeGridItems: isMobile ? 8 : isCompact ? 12 : 24,
-    recommendationItems: isMobile ? 6 : isCompact ? 8 : 12,
+    homeGridItems: isMobile ? 8 : isCompact ? 12 : isUltraWideDesktop ? 40 : isLargeDesktop ? 32 : 24,
+    recommendationItems: isMobile ? 6 : isCompact ? 8 : isUltraWideDesktop ? 20 : isLargeDesktop ? 16 : 12,
   };
 }
 

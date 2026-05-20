@@ -56,7 +56,7 @@ export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>
       <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight mb-6" data-testid="text-section-recommendations">
         Because You Watched <span className="text-primary">{sourceTitle}</span>
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3 md:gap-4 2xl:gap-5">
         {recommendations.map((movie, index) => (
           <MovieCard
             key={movie.mobifliks_id}

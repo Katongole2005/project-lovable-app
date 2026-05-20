@@ -859,6 +859,13 @@
     max-height: 850px;
   }
 
+  @media (min-width: 1536px) {
+    .hero-cinematic-container {
+      min-height: 560px;
+      max-height: 900px;
+    }
+  }
+
   .hero-progress-bar-fill {
     width: 100%;
     transform-origin: left center;

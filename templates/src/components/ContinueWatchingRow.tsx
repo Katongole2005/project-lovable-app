@@ -21,7 +21,7 @@ export function ContinueWatchingRow({ items, onResume, onRemove, className }: Co
         Continue Watching
       </h2>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+      <div className="flex gap-3 2xl:gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
         {items.map((item, index) => (
           <ContinueWatchingCard
             key={item.id}
@@ -58,7 +58,7 @@ function ContinueWatchingCard({
   return (
     <div
       className={cn(
-        "group relative flex-shrink-0 w-[260px] sm:w-[280px] cursor-pointer snap-start press-effect"
+        "group relative flex-shrink-0 w-[260px] sm:w-[280px] 2xl:w-[320px] cursor-pointer snap-start press-effect"
       )}
       onClick={() => onResume(item)}
       data-testid={`card-continue-${item.id}`}

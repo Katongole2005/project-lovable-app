@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, Volume2, VolumeX, Settings, Monitor, Timer, Cast, Star } from "lucide-react";
+import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack, RotateCcw, RotateCw, Volume2, VolumeX, Settings, Monitor, Timer, Cast, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -168,6 +168,7 @@ export function CinematicVideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
   const [hasEnded, setHasEnded] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [sessionTitle, setSessionTitle] = useState(title);
@@ -240,6 +241,48 @@ export function CinematicVideoPlayer({
     );
   }, []);
 
+  const shouldUseMobileOrientation = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.innerWidth < 900 ||
+      window.matchMedia("(pointer: coarse)").matches ||
+      navigator.maxTouchPoints > 0
+    );
+  }, []);
+
+  const lockOrientation = useCallback(async (orientation: "landscape" | "portrait-primary") => {
+    const orientationApi = window.screen?.orientation as ScreenOrientation & {
+      lock?: (orientation: string) => Promise<void>;
+      unlock?: () => void;
+    };
+
+    if (!orientationApi?.lock) return false;
+
+    try {
+      await orientationApi.lock(orientation);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const enterMobileLandscape = useCallback(async () => {
+    if (!shouldUseMobileOrientation() || !containerRef.current) return;
+
+    try {
+      if (!document.fullscreenElement && containerRef.current.requestFullscreen) {
+        await containerRef.current.requestFullscreen();
+      }
+    } catch {
+      // Fullscreen is best-effort on mobile browsers.
+    }
+
+    const locked = await lockOrientation("landscape");
+    if (locked || window.innerWidth > window.innerHeight) {
+      setIsLandscape(true);
+    }
+  }, [lockOrientation, shouldUseMobileOrientation]);
+
   const flushWatchStats = useCallback(() => {
     if (!user?.id) return;
 
@@ -258,7 +301,8 @@ export function CinematicVideoPlayer({
     setIsPlaying(true);
     setIsBuffering(true);
     setShowControls(true);
-  }, []);
+    void enterMobileLandscape();
+  }, [enterMobileLandscape]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -456,6 +500,25 @@ export function CinematicVideoPlayer({
     controlsTimeoutRef.current = setTimeout(() => setShowControls(false), controlsHideDelayMs);
   }, [controlsHideDelayMs, useNativeVideoControls]);
 
+  const toggleMobileOrientation = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+
+    if (!containerRef.current) return;
+
+    try {
+      if (!document.fullscreenElement && containerRef.current.requestFullscreen) {
+        await containerRef.current.requestFullscreen();
+      }
+    } catch {
+      // Some browsers allow natural rotation but block programmatic fullscreen.
+    }
+
+    const nextOrientation = isLandscape ? "portrait-primary" : "landscape";
+    const locked = await lockOrientation(nextOrientation);
+    setIsLandscape(locked ? !isLandscape : window.innerWidth > window.innerHeight);
+    resetControlsTimeout();
+  }, [isLandscape, lockOrientation, resetControlsTimeout]);
+
   // When playback begins, show controls briefly so the user sees back/close
   useEffect(() => {
     if (!isPlaying) return;
@@ -475,19 +538,53 @@ export function CinematicVideoPlayer({
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
     if (!isFullscreen) {
-      try { await containerRef.current.requestFullscreen(); setIsFullscreen(true); } catch { /* */ }
+      try {
+        await containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+        if (shouldUseMobileOrientation()) {
+          const locked = await lockOrientation("landscape");
+          if (locked || window.innerWidth > window.innerHeight) setIsLandscape(true);
+        }
+      } catch { /* */ }
     } else {
-      try { await document.exitFullscreen(); setIsFullscreen(false); } catch { /* */ }
+      try {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+        setIsLandscape(false);
+      } catch { /* */ }
     }
-  }, [isFullscreen]);
+  }, [isFullscreen, lockOrientation, shouldUseMobileOrientation]);
 
   useEffect(() => {
-    const handleFSChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleFSChange = () => {
+      const fullscreen = !!document.fullscreenElement;
+      setIsFullscreen(fullscreen);
+      if (!fullscreen) setIsLandscape(false);
+    };
     document.addEventListener("fullscreenchange", handleFSChange);
     return () => document.removeEventListener("fullscreenchange", handleFSChange);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateOrientation = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+
+    updateOrientation();
+    window.addEventListener("resize", updateOrientation, { passive: true });
+    window.screen?.orientation?.addEventListener?.("change", updateOrientation);
+
+    return () => {
+      window.removeEventListener("resize", updateOrientation);
+      window.screen?.orientation?.removeEventListener?.("change", updateOrientation);
+    };
+  }, []);
+
   const handleClose = useCallback(() => {
+    window.screen?.orientation?.unlock?.();
+    setIsLandscape(false);
     if (isFullscreen) { document.exitFullscreen().catch(() => {}); }
     onClose();
   }, [isFullscreen, onClose]);
@@ -644,6 +741,11 @@ export function CinematicVideoPlayer({
         case "f":
           toggleFullscreen();
           break;
+        case "r":
+          if (shouldUseMobileOrientation()) {
+            toggleMobileOrientation();
+          }
+          break;
         case "i":
           togglePip();
           break;
@@ -720,7 +822,7 @@ export function CinematicVideoPlayer({
     // Note: React hooks exhaustive-deps might complain if we don't wrap all these functions in useCallback,
     // but moving the effect below their declaration resolves the runtime crash.
     return () => window.removeEventListener("keydown", handle);
-  }, [beginPlayback, handleClose, isFullscreen, isOpen, isPlaying, toggleFullscreen, togglePlay, isMuted, volume, isEmbeddableVideo, duration, playbackRate]);
+  }, [beginPlayback, handleClose, isFullscreen, isOpen, isPlaying, toggleFullscreen, toggleMobileOrientation, togglePlay, isMuted, volume, isEmbeddableVideo, duration, playbackRate, shouldUseMobileOrientation]);
 
   const handleDirectPlay = () => {
     pauseRequestedRef.current = false;
@@ -1161,6 +1263,13 @@ export function CinematicVideoPlayer({
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
+                      <button
+                        onClick={toggleMobileOrientation}
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all md:hidden"
+                        aria-label={isLandscape ? "Rotate player to portrait" : "Rotate player to landscape"}
+                      >
+                        <RotateCw className={cn("h-5 w-5 text-white transition-transform", isLandscape && "rotate-90")} />
+                      </button>
                       <button onClick={toggleFullscreen} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
                         {isFullscreen ? <Minimize className="h-5 w-5 text-white" /> : <Maximize className="h-5 w-5 text-white" />}
                       </button>
@@ -1378,6 +1487,12 @@ export function CinematicVideoPlayer({
                                 </button>
                               </ControlTooltip>
                             )}
+
+                            <ControlTooltip content={isLandscape ? "Rotate Portrait (r)" : "Rotate Landscape (r)"}>
+                              <button onClick={toggleMobileOrientation} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90 md:hidden">
+                                <RotateCw className={cn("h-5 w-5 text-white/80 transition-transform", isLandscape && "rotate-90")} />
+                              </button>
+                            </ControlTooltip>
 
                             <ControlTooltip content={isFullscreen ? "Exit Fullscreen (f)" : "Fullscreen (f)"}>
                               <button onClick={toggleFullscreen} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90">
