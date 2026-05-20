@@ -143,6 +143,15 @@ function shouldUseDirectPlayback(url?: string): boolean {
   );
 }
 
+function shouldPreferDirectPlaybackOnThisDevice(url?: string): boolean {
+  if (!shouldUseDirectPlayback(url) || typeof navigator === "undefined") return false;
+
+  const userAgent = navigator.userAgent;
+  const isSafari = /safari/i.test(userAgent) && !/chrome|chromium|android|crios|fxios|edgios/i.test(userAgent);
+  const isMobile = /mobile|iphone|ipad|ipod/i.test(userAgent);
+  return isSafari && !isMobile;
+}
+
 async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise<string | null> {
   if (!CLOUDFLARE_WORKER_URL) {
     return null;
@@ -154,12 +163,27 @@ async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise
   }
 
   const token = await generateSecureToken(targetUrl, title);
+  endpoint.searchParams.set("url", targetUrl);
+  endpoint.searchParams.set("name", title || "video");
   if (token) {
     endpoint.searchParams.set("token", token);
-  } else {
-    endpoint.searchParams.set("url", targetUrl);
-    endpoint.searchParams.set("name", title || "video");
   }
+  endpoint.searchParams.set("play", "1");
+  return endpoint.toString();
+}
+
+function buildUnsignedWorkerPlaybackUrl(targetUrl: string, title: string): string | null {
+  if (!CLOUDFLARE_WORKER_URL) {
+    return null;
+  }
+
+  const endpoint = createUrl(CLOUDFLARE_WORKER_URL);
+  if (!endpoint) {
+    return null;
+  }
+
+  endpoint.searchParams.set("url", targetUrl);
+  endpoint.searchParams.set("name", title || "video");
   endpoint.searchParams.set("play", "1");
   return endpoint.toString();
 }
@@ -276,6 +300,11 @@ export async function buildMediaUrl({
 }): Promise<string> {
   const normalizedUrl = unwrapLegacyWorkerUrl(url);
   if (play) {
+    if (shouldPreferDirectPlaybackOnThisDevice(normalizedUrl)) {
+      preconnectOrigin(normalizedUrl);
+      return normalizedUrl;
+    }
+
     if (shouldProxyMediaUrl(normalizedUrl)) {
       const workerPlaybackUrl = await buildWorkerPlaybackUrl(normalizedUrl, title);
       if (workerPlaybackUrl) {
@@ -392,13 +421,16 @@ export function buildPlaybackRecoveryUrl(
     if (!targetUrl) {
       return null;
     }
-    return buildWorkerPlaybackUrl(targetUrl, title) ?? targetUrl;
+    return targetUrl;
   }
 
   if (workerUrl && parsed.hostname === workerUrl.hostname) {
     const targetUrl = parsed.searchParams.get("url");
     if (!targetUrl) {
       return null;
+    }
+    if (shouldUseDirectPlayback(targetUrl)) {
+      return targetUrl;
     }
     return buildApiPlaybackUrl(targetUrl, title, detailsUrl, mobifliksId) ?? targetUrl;
   }
@@ -407,7 +439,7 @@ export function buildPlaybackRecoveryUrl(
     return null;
   }
 
-  return buildApiPlaybackUrl(mediaUrl, title, detailsUrl, mobifliksId) ?? mediaUrl;
+  return buildUnsignedWorkerPlaybackUrl(mediaUrl, title) ?? buildApiPlaybackUrl(mediaUrl, title, detailsUrl, mobifliksId) ?? mediaUrl;
 }
 
 export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaAvailability> {
