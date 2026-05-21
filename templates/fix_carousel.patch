@@ -1,0 +1,48 @@
+--- src/components/HeroCarousel.tsx
++++ src/components/HeroCarousel.tsx
+@@ -27,2 +27,3 @@
+   const [selectedIndex, setSelectedIndex] = React.useState(0);
+   const [isTransitioning, setIsTransitioning] = React.useState(false);
++  const isTransitioningRef = React.useRef(false);
+@@ -47,3 +48,4 @@
+   const scrollTo = React.useCallback((index: number) => {
+-    if (isTransitioning || totalSlides === 0) return;
++    if (isTransitioningRef.current || totalSlides === 0) return;
++    isTransitioningRef.current = true;
+     setIsTransitioning(true);
+@@ -51,2 +53,5 @@
+-    setTimeout(() => setIsTransitioning(false), transitionDuration);
+-  }, [isTransitioning, totalSlides, transitionDuration]);
++    setTimeout(() => {
++      isTransitioningRef.current = false;
++      setIsTransitioning(false);
++    }, transitionDuration);
++  }, [totalSlides, transitionDuration]);
+@@ -54,3 +59,4 @@
+   const scrollPrev = React.useCallback(() => {
+-    if (isTransitioning || totalSlides === 0) return;
++    if (isTransitioningRef.current || totalSlides === 0) return;
++    isTransitioningRef.current = true;
+     setIsTransitioning(true);
+@@ -58,2 +64,5 @@
+-    setTimeout(() => setIsTransitioning(false), transitionDuration);
+-  }, [totalSlides, isTransitioning, transitionDuration]);
++    setTimeout(() => {
++      isTransitioningRef.current = false;
++      setIsTransitioning(false);
++    }, transitionDuration);
++  }, [totalSlides, transitionDuration]);
+@@ -61,3 +70,4 @@
+   const scrollNext = React.useCallback(() => {
+-    if (isTransitioning || totalSlides === 0) return;
++    if (isTransitioningRef.current || totalSlides === 0) return;
++    isTransitioningRef.current = true;
+     setIsTransitioning(true);
+@@ -65,2 +75,5 @@
+-    setTimeout(() => setIsTransitioning(false), transitionDuration);
+-  }, [totalSlides, isTransitioning, transitionDuration]);
++    setTimeout(() => {
++      isTransitioningRef.current = false;
++      setIsTransitioning(false);
++    }, transitionDuration);
++  }, [totalSlides, transitionDuration]);
