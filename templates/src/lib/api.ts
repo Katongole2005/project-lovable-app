@@ -379,6 +379,12 @@ export interface MediaAvailability {
 }
 
 export function buildResolveMediaUrl(mediaUrl: string): string | null {
+  // The /resolve-media endpoint only exists on the local Python backend.
+  // In production API_BASE is a relative path (e.g. "/api") and there is no
+  // serverless function behind it, so skip to avoid noisy 404 errors.
+  if (!API_BASE || !API_BASE.startsWith("http")) {
+    return null;
+  }
   const resolveEndpoint = buildApiEndpoint("/resolve-media");
   if (!resolveEndpoint) {
     return null;

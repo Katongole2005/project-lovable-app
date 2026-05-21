@@ -54,7 +54,7 @@ export function usePushNotifications() {
       return;
     }
     if (!VAPID_PUBLIC_KEY) {
-      console.error("VITE_VAPID_PUBLIC_KEY is not set");
+      console.warn("VITE_VAPID_PUBLIC_KEY is not set – push notifications disabled");
       setStatus("unsupported");
       return;
     }
@@ -89,7 +89,7 @@ export function usePushNotifications() {
     }
 
     if (!VAPID_PUBLIC_KEY) {
-      console.error("VITE_VAPID_PUBLIC_KEY is not set");
+      console.warn("VITE_VAPID_PUBLIC_KEY is not set – push notifications disabled");
       setStatus("unsupported");
       return false;
     }
