@@ -8,11 +8,12 @@ interface MovieGridProps {
   movies: Movie[];
   onMovieClick: (movie: Movie) => void;
   isLoading?: boolean;
+  appendSkeletonCount?: number;
   emptyMessage?: string;
   className?: string;
 }
 
-export function MovieGrid({ movies, onMovieClick, isLoading, emptyMessage = "No content found", className }: MovieGridProps) {
+export function MovieGrid({ movies, onMovieClick, isLoading, appendSkeletonCount = 0, emptyMessage = "No content found", className }: MovieGridProps) {
   if (isLoading) {
     return (
       <div className={cn("movie-grid-cinematic grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 2xl:gap-5", className)}>
@@ -48,6 +49,13 @@ export function MovieGrid({ movies, onMovieClick, isLoading, emptyMessage = "No 
           style={{ "--card-index": index % 24 } as CSSProperties}
           priority={index < 6}
           allowNewBadge={index < 15}
+        />
+      ))}
+      {Array.from({ length: appendSkeletonCount }).map((_, i) => (
+        <MovieCardSkeleton
+          key={`append-skeleton-${i}`}
+          className="w-full browse-card-enter"
+          style={{ "--card-index": (movies.length + i) % 24 } as CSSProperties}
         />
       ))}
     </div>

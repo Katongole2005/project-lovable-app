@@ -59,6 +59,7 @@ import { Button } from "@/components/ui/button";
 import {
   fetchTrending,
   fetchHeroLatest,
+  fetchNewThisWeek,
   fetchRecent,
   fetchSeries,
   searchMovies,
@@ -111,11 +112,16 @@ function scheduleLowPriorityTask(task: () => void): void {
 
 const CATEGORY_TO_GENRE: Record<string, string> = {
   action: "Action",
+  adventure: "Adventure",
+  crime: "Crime",
   romance: "Romance",
   animation: "Animation",
   horror: "Horror",
   special: "Special",
   drama: "Drama",
+  fantasy: "Fantasy",
+  "sci-fi": "Science Fiction",
+  thriller: "Thriller",
 };
 
 function parseEpisodeInfoFromTitle(title: string): {
@@ -258,6 +264,7 @@ export default function Index() {
 
   const filterCategories = useMemo(() => [
     { id: "trending", label: "Latest Added" },
+    { id: "new-week", label: "New This Week" },
     ...Object.entries(CATEGORY_TO_GENRE).map(([id, label]) => ({ id, label }))
   ], []);
 
@@ -977,11 +984,17 @@ export default function Index() {
     setIsLoading(true);
     const vj = vjOverride === undefined ? null : vjOverride;
     const dbFilters: FilterOptions = { vj };
+    setActiveFilters((prev) => ({ ...prev, category, vj }));
     try {
       if (category === "trending") {
         const data = await fetchTrending(dbFilters);
         startTransition(() => {
           setRecentMovies(data);
+        });
+      } else if (category === "new-week") {
+        const data = await fetchNewThisWeek("movie", 40, 0, dbFilters);
+        startTransition(() => {
+          setRecentMovies(sortByLatestAdded(data));
         });
       } else {
         const genre = CATEGORY_TO_GENRE[category] || category;
@@ -995,7 +1008,7 @@ export default function Index() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [sortByLatestAdded, sortByYearDesc]);
 
   const handleVJChange = useCallback(async (vj: string | null) => {
     setActiveVJ(vj);
@@ -1014,26 +1027,34 @@ export default function Index() {
         let data: Movie[] = [];
         if (filters.contentType === "movies") {
           if (filters.category && filters.category !== "trending") {
-            const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
-            data = await fetchByGenre(genre, "movie", 100, dbFilters);
+            if (filters.category === "new-week") {
+              data = await fetchNewThisWeek("movie", 100, 0, dbFilters);
+            } else {
+              const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
+              data = await fetchByGenre(genre, "movie", 100, dbFilters);
+            }
           } else {
             data = await fetchMoviesSorted("movie", 100, 1, dbFilters);
           }
         } else {
           if (filters.category && filters.category !== "trending") {
-            const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
-            data = await fetchByGenre(genre, "series", 100, dbFilters);
+            if (filters.category === "new-week") {
+              data = await fetchNewThisWeek("series", 100, 0, dbFilters);
+            } else {
+              const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
+              data = await fetchByGenre(genre, "series", 100, dbFilters);
+            }
           } else {
             data = await fetchSeries(100, 1, undefined, dbFilters);
           }
         }
 
         startTransition(() => {
-          setCategoryMovies(sortByYearDesc(data));
+          setCategoryMovies(filters.category === "new-week" ? sortByLatestAdded(data) : sortByYearDesc(data));
           setActiveVJ(filters.vj);
           setActiveFilters(filters);
           setNextLoadOffset(
-            filters.contentType === "series"
+            filters.contentType === "series" && filters.category !== "new-week"
               ? Math.min(100 * 2, 200)
               : 100
           );
@@ -1042,7 +1063,9 @@ export default function Index() {
       } else {
         let data: Movie[] = [];
 
-        if (filters.category && filters.category !== "trending") {
+        if (filters.category === "new-week") {
+          data = await fetchNewThisWeek("movie", 100, 0, dbFilters);
+        } else if (filters.category && filters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
           data = await fetchByGenre(genre, "movie", 100, dbFilters);
         } else if (filters.category === "trending") {
@@ -1057,7 +1080,7 @@ export default function Index() {
           }
           setActiveVJ(filters.vj);
           setActiveFilters(filters);
-          setRecentMovies(filters.category === "trending" ? data : sortByYearDesc(data));
+          setRecentMovies(filters.category === "trending" ? data : filters.category === "new-week" ? sortByLatestAdded(data) : sortByYearDesc(data));
         });
       }
     } catch (error) {
@@ -1065,7 +1088,7 @@ export default function Index() {
     } finally {
       setIsLoading(false);
     }
-  }, [sortByYearDesc]);
+  }, [navigateTo, sortByLatestAdded, sortByYearDesc]);
 
   const handleLoadMore = useCallback(async () => {
     if (isLoadingMore) return;
@@ -1075,7 +1098,9 @@ export default function Index() {
     try {
       let more: Movie[] = [];
       if (viewMode === "movies") {
-        if (activeFilters.category && activeFilters.category !== "trending") {
+        if (activeFilters.category === "new-week") {
+          more = await fetchNewThisWeek("movie", browseBatchLimit, nextLoadOffset, dbFilters);
+        } else if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
           more = await fetchByGenre(genre, "movie", browseBatchLimit, dbFilters, 1, nextLoadOffset);
         } else {
@@ -1083,13 +1108,17 @@ export default function Index() {
         }
         setNextLoadOffset((prev) => prev + browseBatchLimit);
       } else if (viewMode === "series") {
-        if (activeFilters.category && activeFilters.category !== "trending") {
+        if (activeFilters.category === "new-week") {
+          more = await fetchNewThisWeek("series", browseBatchLimit, nextLoadOffset, dbFilters);
+          setNextLoadOffset((prev) => prev + browseBatchLimit);
+        } else if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
           more = await fetchByGenre(genre, "series", browseBatchLimit, dbFilters, 1, nextLoadOffset);
+          setNextLoadOffset((prev) => prev + seriesFetchBatchLimit);
         } else {
           more = await fetchSeries(browseBatchLimit, 1, undefined, dbFilters, nextLoadOffset);
+          setNextLoadOffset((prev) => prev + seriesFetchBatchLimit);
         }
-        setNextLoadOffset((prev) => prev + seriesFetchBatchLimit);
       } else if (viewMode === "originals") {
         const nextOriginalsPage = originalsPage + 1;
         const originals = await fetchOriginals(browseBatchLimit, nextOriginalsPage);
@@ -1101,24 +1130,34 @@ export default function Index() {
       const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
       const newMovies = more.filter(m => !existingIds.has(m.mobifliks_id));
       startTransition(() => {
-        setCategoryMovies(prev => sortByYearDesc([...prev, ...newMovies]));
+        setCategoryMovies(prev => activeFilters.category === "new-week"
+          ? sortByLatestAdded([...prev, ...newMovies])
+          : sortByYearDesc([...prev, ...newMovies])
+        );
       });
     } finally {
       setIsLoadingMore(false);
     }
-  }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
+  }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByLatestAdded, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
 
   const getCategoryTitle = () => {
     const titles: Record<string, string> = {
       trending: "Latest Added",
+      "new-week": "New This Week",
       action: "Action",
+      adventure: "Adventure",
+      crime: "Crime",
       romance: "Romance",
       animation: "Animation",
       horror: "Horror",
       special: "Special",
       drama: "Drama",
+      fantasy: "Fantasy",
+      "sci-fi": "Sci-Fi",
+      thriller: "Thriller",
     };
     if (activeCategory === "trending") return "Latest Added";
+    if (activeCategory === "new-week") return "New This Week";
     return `Trending in ${titles[activeCategory] || "All"}`;
   };
 
@@ -1326,6 +1365,7 @@ export default function Index() {
                   movies={categoryMovies}
                   onMovieClick={handleMovieClick}
                   isLoading={isLoading && categoryMovies.length === 0}
+                  appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                 />
 
                 {categoryMovies.length > 0 && (
@@ -1365,6 +1405,7 @@ export default function Index() {
                   movies={categoryMovies}
                   onMovieClick={handleMovieClick}
                   isLoading={isLoading && categoryMovies.length === 0}
+                  appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                 />
 
                 {categoryMovies.length > 0 && (
@@ -1404,6 +1445,7 @@ export default function Index() {
                   movies={categoryMovies}
                   onMovieClick={handleMovieClick}
                   isLoading={isLoading && categoryMovies.length === 0}
+                  appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                   emptyMessage="No English originals found."
                 />
 

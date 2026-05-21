@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
-import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
+import { getImageUrl, getOptimizedBackdropUrl, isUsableArtworkUrl } from "@/lib/api";
 import { Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 
@@ -28,7 +28,7 @@ export function HeroCarousel({
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [isTransitioning, setIsTransitioning] = React.useState(false);
   const safeMovies = React.useMemo(
-    () => movies.filter((movie): movie is Movie => Boolean(movie?.mobifliks_id)),
+    () => movies.filter((movie): movie is Movie => Boolean(movie?.mobifliks_id) && isUsableArtworkUrl(movie.backdrop_url)),
     [movies]
   );
   const totalSlides = Math.min(

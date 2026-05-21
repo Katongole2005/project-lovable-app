@@ -19,6 +19,15 @@ const preconnectedOrigins = new Set<string>();
 const warmedMediaUrls = new Set<string>();
 
 const BROWSE_MOVIE_SELECT = "*";
+const BAD_ARTWORK_PATTERNS = [
+  "placehold.co",
+  "placeholder",
+  "no+poster",
+  "no-poster",
+  "no_backdrop",
+  "no-backdrop",
+  "default",
+];
 
 // ─── Bounded-cache helpers ────────────────────────────────────────────────────
 const MAX_DETAIL_CACHE = 60;
@@ -58,14 +67,20 @@ function buildApiEndpoint(path: string): URL | null {
 }
 
 export const getImageUrl = (url?: string) => {
-  if (!url) return fallbackPoster;
+  if (!isUsableArtworkUrl(url)) return fallbackPoster;
   return url.replace('/original/', '/w500/');
 };
 
 export const getOptimizedBackdropUrl = (url?: string): string => {
-  if (!url) return fallbackPoster;
+  if (!isUsableArtworkUrl(url)) return fallbackPoster;
   return url.replace('/w1280/', '/w780/').replace('/original/', '/w780/');
 };
+
+export function isUsableArtworkUrl(url?: string | null): boolean {
+  if (!url || !url.trim()) return false;
+  const lowered = url.toLowerCase();
+  return !BAD_ARTWORK_PATTERNS.some((pattern) => lowered.includes(pattern));
+}
 
 export const preloadImage = (url: string): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -891,6 +906,7 @@ export interface FilterOptions {
   vj?: string | null;
   year?: number | null;
   genre?: string | null;
+  createdAfter?: string | null;
 }
 
 export function normalizeVjName(value?: string | null): string {
@@ -928,6 +944,7 @@ function applyFilters(query: any, filters?: FilterOptions) {
   }
   if (filters.year) query = query.eq("year", filters.year);
   if (filters.genre) query = query.filter("genres", "cs", JSON.stringify([filters.genre]));
+  if (filters.createdAfter) query = query.gte("created_at", filters.createdAfter);
   return query;
 }
 
@@ -964,7 +981,24 @@ export async function fetchHeroLatest(limit: number = 12): Promise<Movie[]> {
     return [];
   }
 
-  return finalizeBrowseResults(normalize(data ?? []), targetLimit);
+  return finalizeBrowseResults(normalize(data ?? []).filter((movie) => isUsableArtworkUrl(movie.backdrop_url)), targetLimit);
+}
+
+export async function fetchNewThisWeek(contentType: "movie" | "series" = "movie", limit: number = 40, offsetOverride = 0, filters?: FilterOptions): Promise<Movie[]> {
+  const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  let query = supabase
+    .from("movies")
+    .select(BROWSE_MOVIE_SELECT)
+    .eq("type", contentType)
+    .gte("created_at", weekAgo.toISOString())
+    .order("created_at", { ascending: false })
+    .range(offsetOverride, offsetOverride + fetchLimit - 1);
+  query = applyFilters(query, filters);
+  const { data, error } = await query;
+  if (error) { console.error("fetchNewThisWeek error:", error); return []; }
+  return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
 export async function fetchRecent(contentType: string = "movie", limit: number = 20, page: number = 1): Promise<Movie[]> {
@@ -1015,19 +1049,114 @@ export async function fetchSeries(limit: number = 20, page: number = 1, language
   return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getSearchTokens(value: string): string[] {
+  return normalizeSearchText(value)
+    .split(/\s+/)
+    .filter((token) => token.length >= 2);
+}
+
+function compactSearchText(value: string): string {
+  return normalizeSearchText(value).replace(/\s+/g, "");
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a) return b.length;
+  if (!b) return a.length;
+
+  const previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+  const current = new Array<number>(b.length + 1);
+
+  for (let i = 1; i <= a.length; i++) {
+    current[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      current[j] = Math.min(
+        current[j - 1] + 1,
+        previous[j] + 1,
+        previous[j - 1] + cost
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+
+  return previous[b.length];
+}
+
+function sortSmartSearchResults(movies: Movie[], normalizedQuery: string, queryTokens: string[]): Movie[] {
+  if (!normalizedQuery) return movies;
+  const compactQuery = normalizedQuery.replace(/\s+/g, "");
+
+  return [...movies].sort((a, b) => {
+    const score = (movie: Movie) => {
+      const title = normalizeSearchText(movie.title);
+      const compactTitle = title.replace(/\s+/g, "");
+      const titleTokens = title.split(/\s+/).filter(Boolean);
+      let value = 0;
+
+      if (title === normalizedQuery) value += 120;
+      if (title.startsWith(normalizedQuery)) value += 80;
+      if (title.includes(normalizedQuery)) value += 60;
+      if (compactQuery && compactTitle === compactQuery) value += 110;
+      if (compactQuery && compactTitle.startsWith(compactQuery)) value += 72;
+      if (compactQuery && compactTitle.includes(compactQuery)) value += 56;
+
+      for (const token of queryTokens) {
+        if (titleTokens.includes(token)) {
+          value += 28;
+          continue;
+        }
+        if (title.includes(token)) {
+          value += 18;
+          continue;
+        }
+        const fuzzyHit = titleTokens.some((titleToken) => {
+          const maxDistance = token.length <= 4 ? 1 : 2;
+          return Math.abs(titleToken.length - token.length) <= maxDistance
+            && levenshteinDistance(titleToken, token) <= maxDistance;
+        });
+        if (fuzzyHit) value += 16;
+      }
+
+      if (movie.vj_name && queryTokens.some((token) => normalizeSearchText(movie.vj_name || "").includes(token))) value += 8;
+      value += Math.min(movie.views ?? 0, 100000) / 100000;
+      return value;
+    };
+
+    return score(b) - score(a);
+  });
+}
+
 export async function searchMovies(query: string, page: number = 1, limit: number = 20): Promise<SearchResult> {
   const fetchLimit = Math.min(limit * 2, 200);
   const offset = (page - 1) * limit;
+  const normalizedQuery = normalizeSearchText(query);
   const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
+  const tokens = getSearchTokens(query);
+  const compactQuery = compactSearchText(query);
+  const searchClauses = [
+    `title.ilike.%${safeQuery}%`,
+    ...(compactQuery && compactQuery !== normalizedQuery ? [`title.ilike.%${compactQuery.replace(/[%_\\]/g, (c) => `\\${c}`)}%`] : []),
+    ...tokens.slice(0, 4).map((token) => `title.ilike.%${token.replace(/[%_\\]/g, (c) => `\\${c}`)}%`),
+  ];
   const { data, error, count } = await supabase
     .from("movies")
     .select("*", { count: "exact" })
     .in("type", ["movie", "series"])
-    .ilike("title", `%${safeQuery}%`)
+    .or(searchClauses.join(","))
     .order("views", { ascending: false })
-    .range(offset, offset + fetchLimit - 1);
+    .range(offset, offset + Math.min(fetchLimit * 3, 300) - 1);
   if (error) { console.error("searchMovies error:", error); return { results: [], total_results: 0, page }; }
-  const grouped = finalizeBrowseResults(normalize(data ?? []));
+  const grouped = finalizeBrowseResults(sortSmartSearchResults(normalize(data ?? []), normalizedQuery, tokens));
   return { results: grouped.slice(0, limit), total_results: count ?? 0, page };
 }
 
@@ -1035,15 +1164,27 @@ export async function searchAll(query: string, page: number = 1, limit: number =
   const fetchLimit = Math.min(limit * 2, 200);
   const offset = (page - 1) * limit;
   const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
+  const tokens = getSearchTokens(query);
+  const compactQuery = compactSearchText(query);
+  const searchClauses = [
+    `title.ilike.%${safeQuery}%`,
+    ...(compactQuery ? [`title.ilike.%${compactQuery.replace(/[%_\\]/g, (c) => `\\${c}`)}%`] : []),
+    `director.ilike.%${safeQuery}%`,
+    `vj_name.ilike.%${safeQuery}%`,
+    ...tokens.slice(0, 4).flatMap((token) => {
+      const safeToken = token.replace(/[%_\\]/g, (c) => `\\${c}`);
+      return [`title.ilike.%${safeToken}%`, `vj_name.ilike.%${safeToken}%`];
+    }),
+  ];
   const { data, error } = await supabase
     .from("movies")
     .select("*")
     .in("type", ["movie", "series"])
-    .or(`title.ilike.%${safeQuery}%,director.ilike.%${safeQuery}%,vj_name.ilike.%${safeQuery}%`)
+    .or(searchClauses.join(","))
     .order("views", { ascending: false })
-    .range(offset, offset + fetchLimit - 1);
+    .range(offset, offset + Math.min(fetchLimit * 3, 300) - 1);
   if (error) { console.error("searchAll error:", error); return []; }
-  return finalizeBrowseResults(normalize(data ?? []), limit);
+  return finalizeBrowseResults(sortSmartSearchResults(normalize(data ?? []), normalizeSearchText(query), tokens), limit);
 }
 
 export async function fetchMovieDetails(id: string): Promise<Movie | null> {

@@ -1,4 +1,4 @@
-import { Flame, Sword, Heart, Clapperboard, Ghost, Star, Film, Compass, Shield, Sparkles, Rocket, Crosshair } from "lucide-react";
+import { Flame, Sword, Heart, Clapperboard, Ghost, Star, Film, Compass, Shield, Sparkles, Rocket, Crosshair, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CategoryChipsProps {
@@ -8,6 +8,7 @@ interface CategoryChipsProps {
 
 const categories = [
   { id: "trending", label: "Latest Added", icon: Flame },
+  { id: "new-week", label: "New This Week", icon: CalendarClock },
   { id: "action", label: "Action", icon: Sword },
   { id: "adventure", label: "Adventure", icon: Compass },
   { id: "crime", label: "Crime", icon: Shield },

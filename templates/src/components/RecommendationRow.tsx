@@ -11,10 +11,6 @@ interface RecommendationRowProps {
   className?: string;
 }
 
-/**
- * "Because You Watched X" — picks the most recent continue-watching item,
- * matches its genres against the full movie list, and shows up to 12 results.
- */
 export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>(function RecommendationRow({ continueWatching, allMovies, onMovieClick, className }, ref) {
   const deviceProfile = useDeviceProfile();
   const { sourceTitle, recommendations } = useMemo(() => {
@@ -22,26 +18,26 @@ export const RecommendationRow = forwardRef<HTMLElement, RecommendationRowProps>
       return { sourceTitle: "", recommendations: [] };
     }
 
-    // Find the source movie from continueWatching in allMovies
     const sourceItem = continueWatching[0];
-    const sourceMovie = allMovies.find(m => m.mobifliks_id === sourceItem.contentId);
+    const sourceMovie = allMovies.find(m => m.mobifliks_id === sourceItem.contentId)
+      ?? allMovies.find(m => m.title.trim().toLowerCase() === sourceItem.title.trim().toLowerCase());
 
-    if (!sourceMovie || !sourceMovie.genres || sourceMovie.genres.length === 0) {
-      return { sourceTitle: "", recommendations: [] };
-    }
+    const sourceGenres = new Set((sourceMovie?.genres ?? []).map(g => g.toLowerCase()));
+    const sourceVj = sourceMovie?.vj_name?.trim().toLowerCase() || "";
+    const sourceType = sourceMovie?.type ?? sourceItem.type;
+    const sourceId = sourceMovie?.mobifliks_id ?? sourceItem.contentId;
 
-    const sourceGenres = new Set(sourceMovie.genres.map(g => g.toLowerCase()));
-    const sourceId = sourceMovie.mobifliks_id;
-
-    // Score movies by genre overlap
     const scored = allMovies
       .filter(m => m.mobifliks_id !== sourceId)
       .map(m => {
         const movieGenres = (m.genres || []).map(g => g.toLowerCase());
         const overlap = movieGenres.filter(g => sourceGenres.has(g)).length;
-        return { movie: m, score: overlap };
+        const sameVj = sourceVj && m.vj_name?.trim().toLowerCase() === sourceVj ? 1 : 0;
+        const sameType = m.type === sourceType ? 1 : 0;
+        const recentBoost = m.created_at ? Math.max(0, 14 - ((Date.now() - new Date(m.created_at).getTime()) / (1000 * 60 * 60 * 24))) / 14 : 0;
+        return { movie: m, score: overlap * 4 + sameVj * 3 + sameType + recentBoost };
       })
-      .filter(s => s.score > 0)
+      .filter(s => s.score >= 1.5)
       .sort((a, b) => b.score - a.score)
       .slice(0, deviceProfile.recommendationItems)
       .map(s => s.movie);

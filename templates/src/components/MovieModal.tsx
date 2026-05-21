@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Play, Download, ExternalLink, Eye, ChevronLeft, ChevronRight, Star, CalendarDays, Heart, Share2, Layers, Bookmark, Flag, Send, Youtube, Cast } from "lucide-react";
+import { X, Play, Download, ExternalLink, Eye, ChevronLeft, ChevronRight, CalendarDays, Heart, Share2, Layers, Bookmark, Flag, Send, Youtube, Cast } from "lucide-react";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { toSlug } from "@/lib/slug";
 import { toast } from "sonner";
@@ -448,7 +448,6 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     : movie.cast && movie.cast.length > 0
       ? movie.cast
       : (movie.stars || []).map((name) => ({ name }));
-  const rating = movie.views ? Math.min(4.5 + (movie.views / 100000) * 0.5, 5).toFixed(1) : "4.5";
   const runtimeLabel =
     typeof movie.runtime_minutes === "number" && movie.runtime_minutes > 0
       ? movie.runtime_minutes < 60
@@ -457,6 +456,21 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       : null;
   const releaseLabel = movie.release_date ? movie.release_date : null;
   const certificationLabel = movie.certification ? movie.certification : null;
+  const qualityLabel = movie.server2_url || movie.download_url || (isSeries && allEpisodes.some((episode) => episode.server2_url || episode.download_url)) ? "HD" : null;
+  const modalPrimaryMeta = [
+    movie.year ? String(movie.year) : null,
+    isSeries ? "Series" : "Movie",
+    runtimeLabel,
+    certificationLabel,
+    releaseLabel,
+  ].filter(Boolean) as string[];
+  const modalAccentMeta = [
+    qualityLabel,
+    movie.language || null,
+    movie.vj_name ? `VJ ${movie.vj_name}` : null,
+  ].filter(Boolean) as string[];
+  const modalGenreMeta = (movie.genres ?? []).slice(0, 3);
+  const mobileDetailChips = [...modalPrimaryMeta.slice(0, 3), ...modalAccentMeta, ...modalGenreMeta.slice(0, 1)];
   const handlePlay = async (url: string, title: string, startTime: number = 0, mobifliksId?: string | null, detailsUrl?: string | null) => {
     const finalUrl = await buildMediaUrl({
       url,
@@ -701,9 +715,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
             isSeries={isSeries}
             series={series}
             cast={cast}
-            rating={rating}
             runtimeLabel={runtimeLabel}
             certificationLabel={certificationLabel}
+            detailChips={mobileDetailChips}
             backgroundImage={backgroundImage}
             onClose={onClose}
             onPlay={handlePlay}
@@ -851,39 +865,42 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
 
                       </motion.div>
 
-                      <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-3">
-                        {/* Rating */}
-                        <span className="flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full border border-[#ff8a3d]/30 bg-[#ff8a3d]/15 text-[#ffd3a8] shadow-[0_0_24px_rgba(255,138,61,0.12)]">
-                          <Star className="w-4 h-4 fill-[#ff8a3d] text-[#ff8a3d]" />
-                          {rating}
-                        </span>
-                        {movie.year && (
-                          <span className="text-lg font-medium text-white/90">{movie.year}</span>
-                        )}
-                        {/* Release Date */}
-                        {releaseLabel && (
-                          <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                            <CalendarDays className="w-4 h-4" />
-                            {releaseLabel}
-                          </span>
-                        )}
-                        {certificationLabel && (
-                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                            {certificationLabel}
-                          </span>
-                        )}
-                        {runtimeLabel && (
-                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                            {runtimeLabel}
-                          </span>
-                        )}
-                        {movie.vj_name && (
-                          <span className="px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
-                            VJ {movie.vj_name}
-                          </span>
-                        )}
+                      <motion.div variants={fadeInUp} className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px] font-semibold text-white/82">
+                          {modalPrimaryMeta.map((item, index) => (
+                            <React.Fragment key={item}>
+                              {index > 0 && <span className="h-1 w-1 rounded-full bg-white/28" aria-hidden="true" />}
+                              <span className="tracking-normal">{item}</span>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {modalAccentMeta.map((item) => (
+                            <span
+                              key={item}
+                              className={cn(
+                                "rounded-md border px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md",
+                                item === "HD"
+                                  ? "border-emerald-300/22 bg-emerald-400/10 text-emerald-100"
+                                  : item.startsWith("VJ ")
+                                    ? "border-red-300/22 bg-red-500/12 text-red-100"
+                                    : "border-white/12 bg-white/[0.06] text-white/72"
+                              )}
+                            >
+                              {item}
+                            </span>
+                          ))}
+                          {modalGenreMeta.map((genre) => (
+                            <span
+                              key={genre}
+                              className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white/58"
+                            >
+                              {genre}
+                            </span>
+                          ))}
+                        </div>
                         {movie.views !== undefined && movie.views > 0 && (
-                          <span className="flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-medium rounded border border-white/40 text-white/80">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/42">
                             <Eye className="w-4 h-4" />
                             {movie.views >= 1000000
                               ? `${(movie.views / 1000000).toFixed(1)}M`
@@ -892,12 +909,6 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                                 : movie.views}
                           </span>
                         )}
-                        {isSeries && (
-                          <span className="px-2.5 py-0.5 text-sm font-semibold rounded bg-primary/30 text-primary border border-primary/40">
-                            SERIES
-                          </span>
-                        )}
-
                       </motion.div>
 
                       <motion.div variants={fadeInUp} className="flex items-center gap-3 pt-2">
@@ -1079,9 +1090,9 @@ interface MobileMovieLayoutProps {
   isSeries: boolean;
   series: Series;
   cast: CastMember[];
-  rating: string;
   runtimeLabel: string | null;
   certificationLabel: string | null;
+  detailChips: string[];
   backgroundImage: string | null;
   onClose: () => void;
   onPlay: (url: string, title: string) => void;
@@ -1106,9 +1117,9 @@ function MobileMovieLayout({
   isSeries,
   series,
   cast,
-  rating,
   runtimeLabel,
   certificationLabel,
+  detailChips,
   backgroundImage,
   onClose,
   onPlay,
@@ -1383,19 +1394,27 @@ function MobileMovieLayout({
                   {movie.title}
                 </h1>
               )}
-              <div className="mt-4 flex flex-wrap items-center gap-4">
-                <span className="flex items-center gap-1.5 text-[15px] font-semibold text-[#d9ff2a]">
-                  <Star className="h-4 w-4 fill-current" />
-                  {rating}
-                </span>
+              <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2">
+                {detailChips.slice(0, 6).map((chip, index) => (
+                  <React.Fragment key={chip}>
+                    {index > 0 && <span className="h-1 w-1 rounded-full bg-white/24" aria-hidden="true" />}
+                    <span
+                      className={cn(
+                        "text-[13px] font-black tracking-normal",
+                        chip === "HD"
+                          ? "text-[#d9ff21]"
+                          : chip.startsWith("VJ ")
+                            ? "text-red-100"
+                            : "text-white/78"
+                      )}
+                    >
+                      {chip}
+                    </span>
+                  </React.Fragment>
+                ))}
                 {viewsLabel && (
-                  <span className="text-[15px] font-medium text-[#8d909c]">
-                    ({viewsLabel} voted)
-                  </span>
-                )}
-                {movie.year && (
-                  <span className="ml-auto text-[16px] font-semibold text-white/88">
-                    {movie.year}
+                  <span className="text-[12px] font-black text-white/42">
+                    {viewsLabel}
                   </span>
                 )}
               </div>
