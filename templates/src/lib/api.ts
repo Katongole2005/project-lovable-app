@@ -173,30 +173,17 @@ async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise
   }
 
   const token = await generateSecureToken(targetUrl, title);
-  endpoint.searchParams.set("url", targetUrl);
-  endpoint.searchParams.set("name", title || "video");
   if (token) {
     endpoint.searchParams.set("token", token);
+  } else {
+    endpoint.searchParams.set("url", targetUrl);
+    endpoint.searchParams.set("name", title || "video");
   }
   endpoint.searchParams.set("play", "1");
   return endpoint.toString();
 }
 
-function buildUnsignedWorkerPlaybackUrl(targetUrl: string, title: string): string | null {
-  if (!CLOUDFLARE_WORKER_URL) {
-    return null;
-  }
 
-  const endpoint = createUrl(CLOUDFLARE_WORKER_URL);
-  if (!endpoint) {
-    return null;
-  }
-
-  endpoint.searchParams.set("url", targetUrl);
-  endpoint.searchParams.set("name", title || "video");
-  endpoint.searchParams.set("play", "1");
-  return endpoint.toString();
-}
 
 function buildApiPlaybackUrl(
   targetUrl: string,
@@ -417,45 +404,6 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
   } catch {
     return null;
   }
-}
-
-export function buildPlaybackRecoveryUrl(
-  mediaUrl: string, 
-  title: string,
-  mobifliksId?: string,
-  detailsUrl?: string
-): string | null {
-  const parsed = createUrl(mediaUrl);
-  if (!parsed) {
-    return null;
-  }
-
-  const workerUrl = CLOUDFLARE_WORKER_URL ? createUrl(CLOUDFLARE_WORKER_URL) : null;
-
-  if (parsed.pathname.endsWith("/media")) {
-    const targetUrl = parsed.searchParams.get("url");
-    if (!targetUrl) {
-      return null;
-    }
-    return targetUrl;
-  }
-
-  if (workerUrl && parsed.hostname === workerUrl.hostname) {
-    const targetUrl = parsed.searchParams.get("url");
-    if (!targetUrl) {
-      return null;
-    }
-    if (shouldUseDirectPlayback(targetUrl)) {
-      return targetUrl;
-    }
-    return buildApiPlaybackUrl(targetUrl, title, detailsUrl, mobifliksId) ?? targetUrl;
-  }
-
-  if (!shouldProxyMediaUrl(mediaUrl)) {
-    return null;
-  }
-
-  return buildUnsignedWorkerPlaybackUrl(mediaUrl, title) ?? buildApiPlaybackUrl(mediaUrl, title, detailsUrl, mobifliksId) ?? mediaUrl;
 }
 
 export async function resolveMediaAvailability(mediaUrl: string): Promise<MediaAvailability> {

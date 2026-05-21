@@ -3,7 +3,7 @@ import { X, Play, Pause, ChevronDown, Maximize, Minimize, SkipForward, SkipBack,
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { buildPlaybackRecoveryUrl, getImageUrl } from "@/lib/api";
+import { getImageUrl } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { incrementUserStat } from "@/lib/stats";
 import { Slider } from "@/components/ui/slider";
@@ -941,30 +941,8 @@ export function CinematicVideoPlayer({
   };
 
   const attemptPlaybackRecovery = useCallback(() => {
-    if (hasRetriedPlayback) return false;
-
-    const fallbackUrl = buildPlaybackRecoveryUrl(
-      activeVideoUrl, 
-      activeTitle,
-      movie?.mobifliks_id,
-      (movie as any)?.video_page_url || movie?.details_url
-    );
-    if (!fallbackUrl || fallbackUrl === activeVideoUrl) {
-      return false;
-    }
-
-    const nextResumeTime = videoRef.current?.currentTime || currentTime || resumeTime || startTime;
-    pauseRequestedRef.current = false;
-    setHasRetriedPlayback(true);
-    setPlaybackError(null);
-    setIsPaused(false);
-    setIsBuffering(true);
-    setHasEnded(false);
-    setResumeTime(nextResumeTime);
-    setCurrentTime(nextResumeTime);
-    setActiveVideoUrl(fallbackUrl);
-    return true;
-  }, [activeTitle, activeVideoUrl, currentTime, hasRetriedPlayback, resumeTime, startTime, movie]);
+    return false; // Disabled to strictly enforce masked URLs and avoid leaking raw video links
+  }, []);
 
   const handleDirectError = () => {
     pauseRequestedRef.current = false;
