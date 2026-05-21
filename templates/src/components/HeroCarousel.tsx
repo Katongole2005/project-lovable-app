@@ -302,32 +302,29 @@ export function HeroCarousel({
 
 	          <div className="absolute inset-0 pointer-events-none hero-vignette" />
 
-          <div
-            key={`title-${activeIndex}`}
-            className="absolute left-6 top-6 z-20 max-w-[min(520px,48vw)] lg:left-10 lg:top-10 xl:left-14 xl:top-14 2xl:left-16 2xl:top-16"
-          >
-            {currentMovie.logo_url ? (
-              <img
-                src={currentMovie.logo_url}
-                alt={currentMovie.title}
-	                className="hero-title-reveal h-16 w-auto max-w-full object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)] lg:h-24 xl:h-28 2xl:h-32"
-	                loading="eager"
-	              />
-	            ) : (
-	              <h2 className="hero-title-reveal font-display text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] lg:text-4xl xl:text-5xl 2xl:text-6xl">
-	                {currentMovie.title}
-	              </h2>
-	            )}
-	            <div className="mt-3 h-px w-24 bg-gradient-to-r from-red-500/85 via-white/35 to-transparent shadow-[0_0_18px_rgba(239,68,68,0.45)]" />
-	          </div>
-
           <div className="relative z-10 h-full flex hero-cinematic-container">
 
-            <div className="flex-1 flex flex-col justify-end p-6 lg:p-10 xl:p-14 2xl:p-16 pb-8 lg:pb-12 2xl:pb-14">
+            <div className="flex-1 flex flex-col justify-end p-6 pb-[8vh] lg:p-10 lg:pb-[9vh] xl:p-14 xl:pb-[9vh] 2xl:p-16 2xl:pb-[10vh]">
                 <>
                   <div 
                     key={`info-${activeIndex}`}
+                    className="max-w-[min(640px,48vw)]"
                   >
+                    <div className="mb-6 lg:mb-8">
+                      {currentMovie.logo_url ? (
+                        <img
+                          src={currentMovie.logo_url}
+                          alt={currentMovie.title}
+                          className="hero-title-reveal max-h-[96px] w-auto max-w-[min(560px,42vw)] object-contain object-left drop-shadow-[0_12px_34px_rgba(0,0,0,0.92)] lg:max-h-[118px] xl:max-h-[132px] 2xl:max-h-[148px]"
+                          loading="eager"
+                        />
+                      ) : (
+                        <h2 className="hero-title-reveal font-display text-4xl font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-6xl 2xl:text-7xl">
+                          {currentMovie.title}
+                        </h2>
+                      )}
+                      <div className="mt-4 h-px w-28 bg-gradient-to-r from-red-500/85 via-white/35 to-transparent shadow-[0_0_18px_rgba(239,68,68,0.45)]" />
+                    </div>
                     <div
                       className="flex flex-wrap items-center gap-2 mb-5 lg:mb-7"
                     >
