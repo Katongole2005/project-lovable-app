@@ -110,7 +110,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
     <>
       <div
         className={cn(
-          "fixed left-0 right-0 top-0 z-30 pointer-events-none transition-transform duration-300 ease-out",
+          "fixed left-0 right-0 top-0 z-30 pointer-events-none transition-transform duration-300 ease-out md:hidden",
           isHeaderVisible ? "translate-y-0" : "-translate-y-full"
         )}
         style={{
@@ -124,17 +124,17 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
 
       <header
         className={cn(
-          "sticky top-0 z-40 pb-4 transition-all duration-300 ease-out will-change-transform",
+          "fixed left-0 right-0 top-0 z-40 pointer-events-none pb-4 transition-transform duration-300 ease-out will-change-transform",
           isHeaderVisible ? "translate-y-0" : "-translate-y-full",
-          isScrolled && "bg-background/40 backdrop-blur-md"
+          isScrolled && "bg-background/40 backdrop-blur-md md:bg-transparent md:backdrop-blur-0"
         )}
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
-        <div className="container mx-auto px-4">
+        <div className="container pointer-events-auto mx-auto px-4">
           <div className="relative flex items-center justify-between gap-4">
             <Link
               to="/"
-              className="flex-shrink-0"
+              className="flex-shrink-0 md:invisible md:pointer-events-none"
               onClick={() => handleTabNavigation("home")}
               data-testid="link-logo"
             >
@@ -215,7 +215,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                 <button
                   onClick={toggleTheme}
                   className={cn(
-                    "rounded-full p-2.5 backdrop-blur transition-all duration-300 hover:bg-card",
+                    "rounded-full p-2.5 backdrop-blur transition-all duration-300 hover:bg-card md:hidden",
                     isDark
                       ? playButtonSurfaceClass
                       : "border border-border/40 bg-card/60 text-foreground"

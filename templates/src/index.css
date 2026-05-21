@@ -926,15 +926,20 @@
   }
 
   .hero-cinematic-container {
-    height: calc(100vh - 7rem);
-    min-height: 500px;
-    max-height: 850px;
+    height: 100vh;
+    height: 100svh;
+    min-height: 620px;
+  }
+
+  @supports (height: 100dvh) {
+    .hero-cinematic-container {
+      height: 100dvh;
+    }
   }
 
   @media (min-width: 1536px) {
     .hero-cinematic-container {
-      min-height: 560px;
-      max-height: 900px;
+      min-height: 700px;
     }
   }
 

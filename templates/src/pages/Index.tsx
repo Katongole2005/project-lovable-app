@@ -1181,7 +1181,7 @@ export default function Index() {
         />
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-4">
+        <main className={`container mx-auto px-4 ${viewMode === "home" ? "pt-0 pb-4" : "pb-4 pt-24 md:pt-28"}`}>
           {/* Home View */}
           {viewMode === "home" && (
             <div>
