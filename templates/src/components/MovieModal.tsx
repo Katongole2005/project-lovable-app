@@ -865,11 +865,11 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
 
                       </motion.div>
 
-                      <motion.div variants={fadeInUp} className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px] font-semibold text-white/82">
+                      <motion.div variants={fadeInUp} className="space-y-3.5">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px] font-bold text-white/92 drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
                           {modalPrimaryMeta.map((item, index) => (
                             <React.Fragment key={item}>
-                              {index > 0 && <span className="h-1 w-1 rounded-full bg-white/28" aria-hidden="true" />}
+                              {index > 0 && <span className="h-1.5 w-1.5 rounded-full bg-[#ff8a3d]/80 shadow-[0_0_12px_rgba(255,138,61,0.45)]" aria-hidden="true" />}
                               <span className="tracking-normal">{item}</span>
                             </React.Fragment>
                           ))}
@@ -879,12 +879,12 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                             <span
                               key={item}
                               className={cn(
-                                "rounded-md border px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md",
+                                "rounded-md border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] shadow-[0_10px_22px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md",
                                 item === "HD"
-                                  ? "border-emerald-300/22 bg-emerald-400/10 text-emerald-100"
+                                  ? "border-emerald-300/45 bg-emerald-400/18 text-emerald-50"
                                   : item.startsWith("VJ ")
-                                    ? "border-red-300/22 bg-red-500/12 text-red-100"
-                                    : "border-white/12 bg-white/[0.06] text-white/72"
+                                    ? "border-red-300/45 bg-red-500/20 text-red-50"
+                                    : "border-white/18 bg-white/[0.09] text-white/86"
                               )}
                             >
                               {item}
@@ -893,14 +893,14 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                           {modalGenreMeta.map((genre) => (
                             <span
                               key={genre}
-                              className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white/58"
+                              className="rounded-md border border-white/16 bg-white/[0.075] px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/78"
                             >
                               {genre}
                             </span>
                           ))}
                         </div>
                         {movie.views !== undefined && movie.views > 0 && (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/42">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-white/58">
                             <Eye className="w-4 h-4" />
                             {movie.views >= 1000000
                               ? `${(movie.views / 1000000).toFixed(1)}M`
@@ -1394,18 +1394,18 @@ function MobileMovieLayout({
                   {movie.title}
                 </h1>
               )}
-              <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2">
+              <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)]">
                 {detailChips.slice(0, 6).map((chip, index) => (
                   <React.Fragment key={chip}>
-                    {index > 0 && <span className="h-1 w-1 rounded-full bg-white/24" aria-hidden="true" />}
+                    {index > 0 && <span className="h-1.5 w-1.5 rounded-full bg-[#ff8a3d]/75 shadow-[0_0_10px_rgba(255,138,61,0.4)]" aria-hidden="true" />}
                     <span
                       className={cn(
                         "text-[13px] font-black tracking-normal",
                         chip === "HD"
-                          ? "text-[#d9ff21]"
+                          ? "rounded-md bg-[#d9ff21]/14 px-1.5 py-0.5 text-[#e8ff68]"
                           : chip.startsWith("VJ ")
-                            ? "text-red-100"
-                            : "text-white/78"
+                            ? "rounded-md bg-red-500/18 px-1.5 py-0.5 text-red-50"
+                            : "text-white/90"
                       )}
                     >
                       {chip}
@@ -1413,7 +1413,7 @@ function MobileMovieLayout({
                   </React.Fragment>
                 ))}
                 {viewsLabel && (
-                  <span className="text-[12px] font-black text-white/42">
+                  <span className="text-[12px] font-black text-white/58">
                     {viewsLabel}
                   </span>
                 )}
