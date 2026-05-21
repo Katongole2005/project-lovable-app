@@ -27,6 +27,7 @@ export function HeroCarousel({
   const deviceProfile = useDeviceProfile();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [isTransitioning, setIsTransitioning] = React.useState(false);
+  const isTransitioningRef = React.useRef(false);
   const safeMovies = React.useMemo(
     () => movies.filter((movie): movie is Movie => Boolean(movie?.mobifliks_id) && isUsableArtworkUrl(movie.backdrop_url)),
     [movies]
@@ -45,25 +46,37 @@ export function HeroCarousel({
 
 
   const scrollTo = React.useCallback((index: number) => {
-    if (isTransitioning || totalSlides === 0) return;
+    if (isTransitioningRef.current || totalSlides === 0) return;
+    isTransitioningRef.current = true;
     setIsTransitioning(true);
     setSelectedIndex(Math.max(0, Math.min(index, totalSlides - 1)));
-    setTimeout(() => setIsTransitioning(false), transitionDuration);
-  }, [isTransitioning, totalSlides, transitionDuration]);
+    setTimeout(() => {
+      isTransitioningRef.current = false;
+      setIsTransitioning(false);
+    }, transitionDuration);
+  }, [totalSlides, transitionDuration]);
 
   const scrollPrev = React.useCallback(() => {
-    if (isTransitioning || totalSlides === 0) return;
+    if (isTransitioningRef.current || totalSlides === 0) return;
+    isTransitioningRef.current = true;
     setIsTransitioning(true);
     setSelectedIndex(prev => (prev - 1 + totalSlides) % totalSlides);
-    setTimeout(() => setIsTransitioning(false), transitionDuration);
-  }, [totalSlides, isTransitioning, transitionDuration]);
+    setTimeout(() => {
+      isTransitioningRef.current = false;
+      setIsTransitioning(false);
+    }, transitionDuration);
+  }, [totalSlides, transitionDuration]);
 
   const scrollNext = React.useCallback(() => {
-    if (isTransitioning || totalSlides === 0) return;
+    if (isTransitioningRef.current || totalSlides === 0) return;
+    isTransitioningRef.current = true;
     setIsTransitioning(true);
     setSelectedIndex(prev => (prev + 1) % totalSlides);
-    setTimeout(() => setIsTransitioning(false), transitionDuration);
-  }, [totalSlides, isTransitioning, transitionDuration]);
+    setTimeout(() => {
+      isTransitioningRef.current = false;
+      setIsTransitioning(false);
+    }, transitionDuration);
+  }, [totalSlides, transitionDuration]);
 
   React.useEffect(() => {
     if (!shouldAutoplay) return;
