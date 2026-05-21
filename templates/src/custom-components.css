@@ -157,3 +157,107 @@
   50% { transform: scale(1.1) translate(-2%, -1%); }
   100% { transform: scale(1); }
 }
+
+/* ── Cinematic video player ───────────────────────────────────────────── */
+
+.video-player-seek-played,
+.video-player-scrubber-played {
+  background: #e50914;
+  box-shadow: 0 0 8px rgba(229, 9, 20, 0.55);
+}
+
+.video-player--idle .video-player-mini-progress {
+  opacity: 1;
+}
+
+.video-player-mini-progress {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.video-player--idle .video-player-mini-progress,
+.video-player-mini-progress:hover {
+  opacity: 1;
+}
+
+.video-player-flash--left {
+  left: 14%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.video-player-flash--right {
+  right: 14%;
+  top: 50%;
+  transform: translate(50%, -50%);
+}
+
+.video-player-flash--center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.video-player--mobile-landscape .video-player-controls-top {
+  padding-bottom: 0.75rem;
+}
+
+.video-player--mobile-landscape .video-player-dock {
+  border-radius: 1rem;
+}
+
+.video-player--mobile-portrait .video-player-video {
+  object-fit: contain;
+}
+
+.video-player--fullscreen .video-player-video {
+  object-fit: contain;
+}
+
+/* Paused frame: subtle zoom + cinematic grayscale */
+.video-player-video,
+.video-player-embed {
+  transform: scale(1);
+  filter: grayscale(0%) contrast(1);
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, filter;
+}
+
+.video-player-media-frame--paused .video-player-video,
+.video-player-media-frame--paused .video-player-embed {
+  transform: scale(1.07);
+  filter: grayscale(100%) contrast(1.08) brightness(0.92);
+}
+
+.video-player-media-frame--paused::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.35) 100%);
+  transition: opacity 0.55s ease;
+}
+
+.video-player-brand-logo img {
+  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.75));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-player-controls,
+  .video-player-mini-progress,
+  .video-player-flash,
+  .video-player-video,
+  .video-player-embed {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .video-player-media-frame--paused .video-player-video,
+  .video-player-media-frame--paused .video-player-embed {
+    transform: none;
+    filter: grayscale(100%) contrast(1.05);
+  }
+}

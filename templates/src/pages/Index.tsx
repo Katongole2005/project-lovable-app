@@ -805,6 +805,55 @@ export default function Index() {
     setIsModalOpen(false);
   }, []);
 
+  const nextEpisodePlayback = useMemo(() => {
+    const series = activePlayerMovie?.type === "series" ? (activePlayerMovie as Series) : null;
+    if (!series?.episodes?.length) return null;
+
+    const parsed = parseEpisodeInfoFromTitle(videoTitle);
+    const episodes = [...series.episodes].sort((a, b) => {
+      const seasonA = a.season_number ?? 1;
+      const seasonB = b.season_number ?? 1;
+      if (seasonA !== seasonB) return seasonA - seasonB;
+      return a.episode_number - b.episode_number;
+    });
+
+    const currentIndex = episodes.findIndex((episode) => {
+      if (parsed.seasonNumber && parsed.episodeNumber) {
+        return (
+          (episode.season_number ?? 1) === parsed.seasonNumber &&
+          episode.episode_number === parsed.episodeNumber
+        );
+      }
+      return episode.mobifliks_id === activePlaybackItem?.episodeId;
+    });
+
+    if (currentIndex < 0 || currentIndex >= episodes.length - 1) return null;
+
+    const next = episodes[currentIndex + 1];
+    const nextUrl = next.server2_url || next.download_url;
+    if (!nextUrl) return null;
+
+    const seasonNumber = next.season_number ?? 1;
+    return {
+      episode: next,
+      title: `${series.title} - S${seasonNumber}:E${next.episode_number}`,
+      url: nextUrl,
+    };
+  }, [activePlaybackItem?.episodeId, activePlayerMovie, videoTitle]);
+
+  const handlePlayNextEpisode = useCallback(() => {
+    if (!nextEpisodePlayback) return;
+    const { episode, title: nextTitle, url } = nextEpisodePlayback;
+    void handlePlayVideo(
+      url,
+      nextTitle,
+      0,
+      undefined,
+      episode.mobifliks_id,
+      episode.video_page_url,
+    );
+  }, [handlePlayVideo, nextEpisodePlayback]);
+
   useEffect(() => {
     if (isModalOpen && !modalHistoryRef.current) {
       window.history.pushState({ modal: true }, "");
@@ -1511,14 +1560,10 @@ export default function Index() {
               movie={activePlayerMovie}
               onTimeUpdate={handleVideoTimeUpdate}
               startTime={videoStartTime}
-              subtitles={activePlayerSubtitles.length > 0 ? activePlayerSubtitles : [
-                { id: "en", label: "English", language: "en", url: "" },
-                { id: "lug", label: "Luganda", language: "lug", url: "" },
-              ]}
-              skipSegments={activePlayerSkipSegments.length > 0 ? activePlayerSkipSegments : [
-                { label: "Intro", startTime: 2, endTime: 12 },
-                { label: "Recap", startTime: 60, endTime: 90 },
-              ]}
+              subtitles={activePlayerSubtitles}
+              skipSegments={activePlayerSkipSegments}
+              hasNextEpisode={!!nextEpisodePlayback}
+              onPlayNext={handlePlayNextEpisode}
             />
           )}
 
