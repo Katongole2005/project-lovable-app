@@ -42,7 +42,7 @@ export function HeroCarousel({
   const transitionDuration = deviceProfile.allowComplexAnimations ? 420 : 180;
   const autoplayDelayMs = deviceProfile.autoplayDelayMs;
   const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
-  const shouldAutoplay = totalSlides > 1 && !deviceProfile.prefersReducedMotion;
+  const shouldAutoplay = totalSlides > 1;
 
 
   const scrollTo = React.useCallback((index: number) => {
@@ -79,12 +79,23 @@ export function HeroCarousel({
   }, [totalSlides, transitionDuration]);
 
   React.useEffect(() => {
-    if (!shouldAutoplay) return;
-    const timer = window.setInterval(() => {
-      scrollNext();
-    }, autoplayDelayMs);
-    return () => window.clearInterval(timer);
-  }, [autoplayDelayMs, scrollNext, shouldAutoplay]);
+    if (!shouldAutoplay || totalSlides <= 1) return;
+    let animationFrameId: number;
+    let lastTime = performance.now();
+    const delay = autoplayDelayMs || 4000;
+    
+    const loop = (time: number) => {
+      if (time - lastTime >= delay) {
+        setSelectedIndex(prev => (prev + 1) % totalSlides);
+        lastTime = time;
+      }
+      animationFrameId = requestAnimationFrame(loop);
+    };
+    
+    animationFrameId = requestAnimationFrame(loop);
+    
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [shouldAutoplay, totalSlides, autoplayDelayMs]);
 
   React.useEffect(() => {
     if (totalSlides > 0 && selectedIndex >= totalSlides) {
