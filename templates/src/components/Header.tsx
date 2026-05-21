@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, memo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, User, ChevronDown, Moon, Sun } from "lucide-react";
+import { Search, User, ChevronDown, Moon, Sun, Home, Film, Tv, Sparkles } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,9 +16,10 @@ interface HeaderProps {
 }
 
 const navItems = [
-  { id: "movies", label: "Movie", path: "/movies" },
-  { id: "series", label: "Series", path: "/series" },
-  { id: "originals", label: "Originals", path: "/originals" },
+  { id: "home", label: "Home", path: "/", icon: Home },
+  { id: "movies", label: "Movies", path: "/movies", icon: Film },
+  { id: "series", label: "Series", path: "/series", icon: Tv },
+  { id: "originals", label: "Originals", path: "/originals", icon: Sparkles },
 ];
 
 const preloadProfilePage = () => {
@@ -130,7 +131,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="relative flex items-center justify-between gap-4">
             <Link
               to="/"
               className="flex-shrink-0"
@@ -145,22 +146,28 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
               />
             </Link>
 
-            <nav className="hidden md:flex pill-nav relative">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabNavigation(item.id)}
-                  className={cn("pill-nav-item", currentTab === item.id && "active")}
-                  data-testid={`button-nav-${item.id}`}
-                >
-                  {currentTab === item.id && (
-                    <div
-                      className="pill-nav-indicator"
-                    />
-                  )}
-                  <span className="relative z-10">{item.label}</span>
-                </button>
-              ))}
+            <nav className="hidden md:flex pill-nav pill-nav-desktop absolute left-1/2 top-0 -translate-x-1/2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabNavigation(item.id)}
+                    className={cn("pill-nav-item", currentTab === item.id && "active")}
+                    data-testid={`button-nav-${item.id}`}
+                  >
+                    {currentTab === item.id && (
+                      <div
+                        className="pill-nav-indicator"
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-2.5">
+                      <Icon className="h-[18px] w-[18px] stroke-[2.45]" />
+                      <span>{item.label}</span>
+                    </span>
+                  </button>
+                );
+              })}
               <button
                 onClick={() => handleTabNavigation("search")}
                 className={cn(
@@ -178,7 +185,28 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                     className="pill-nav-indicator"
                   />
                 )}
-                <Search className={cn("relative z-10 h-5 w-5", currentTab === "search" && "animate-pulse")} />
+                <Search className={cn("relative z-10 h-[19px] w-[19px]", currentTab === "search" && "animate-pulse")} />
+              </button>
+              <button
+                onClick={() => handleTabNavigation("profile")}
+                onMouseEnter={preloadProfilePage}
+                onFocus={preloadProfilePage}
+                className={cn(
+                  "relative rounded-full transition-all duration-300",
+                  currentTab === "profile"
+                    ? "text-white"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-label="Profile"
+                title="Profile"
+                data-testid="button-nav-profile"
+              >
+                {currentTab === "profile" && (
+                  <div
+                    className="pill-nav-indicator"
+                  />
+                )}
+                <User className={cn("relative z-10 h-[19px] w-[19px]", currentTab === "profile" && "animate-pulse")} />
               </button>
             </nav>
 
@@ -210,7 +238,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                 onPointerDown={preloadProfilePage}
                 onTouchStart={preloadProfilePage}
                 onClick={() => handleTabNavigation("profile")}
-                className="hidden items-center gap-3 rounded-full border border-border/40 bg-card/60 px-3 py-2 backdrop-blur md:flex"
+                className="hidden items-center gap-3 rounded-full border border-border/40 bg-card/60 px-3 py-2 backdrop-blur"
                 data-testid="link-profile"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
@@ -241,7 +269,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
 
           <div className="mt-4 flex justify-center md:hidden">
             <nav className="pill-nav relative">
-              {navItems.map((item) => (
+              {navItems.filter((item) => item.id !== "home").map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleTabNavigation(item.id)}

@@ -805,7 +805,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
               <div className="relative w-full max-w-full">
 
                 {/* Backdrop hero section */}
-                <div className="relative h-[350px] lg:h-[425px] overflow-hidden bg-black/50">
+                <div className="relative h-[390px] lg:h-[470px] overflow-hidden bg-black/50">
                   {backgroundImage ? (
                     <>
                       {!desktopBackdropLoaded && (
@@ -828,7 +828,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                     </div>
                   )}
                   {/* Premium fade gradients to seamlessly blend the backdrop into the content */}
-                  <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/70 via-black/18 to-transparent" />
+                  <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black via-black/58 via-38% to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 z-[3] h-56 bg-gradient-to-t from-[#080808] via-[#080808]/78 via-45% to-transparent" />
+                  <div className="absolute inset-x-0 -bottom-10 z-[3] h-40 bg-[#080808] blur-3xl opacity-95" />
                   <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/35 via-transparent to-transparent" />
                 </div>
 
@@ -837,7 +839,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                   variants={staggerContainer}
                   initial={allowDesktopMotion ? "hidden" : "visible"}
                   animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : "visible"}
-                  className="relative z-[5] -mt-32 px-10 pb-10 space-y-6"
+                  className="relative z-[5] -mt-48 px-10 pb-10 space-y-6 bg-gradient-to-b from-transparent via-[#080808]/84 via-36% to-[#080808]"
                 >
                   {/* Poster + Title row */}
                   <motion.div variants={fadeInUp} className="relative z-[6] flex gap-6 items-start">

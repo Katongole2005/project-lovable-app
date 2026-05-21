@@ -531,6 +531,78 @@
     z-index: 0;
   }
 
+  .pill-nav-desktop {
+    gap: 0.35rem;
+    padding: 0.42rem;
+    background:
+      radial-gradient(circle at 86% 50%, rgba(65, 52, 105, 0.34), transparent 34%),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.12), hsl(0 0% 100% / 0.035)),
+      hsl(225 28% 5% / 0.74);
+    -webkit-backdrop-filter: blur(30px) saturate(1.35);
+    backdrop-filter: blur(30px) saturate(1.35);
+    border-color: hsl(0 0% 100% / 0.13);
+    box-shadow:
+      0 22px 64px rgba(0, 0, 0, 0.34),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .pill-nav-desktop::after {
+    background: none;
+    animation: none;
+    opacity: 0;
+  }
+
+  .pill-nav-desktop .pill-nav-item {
+    padding: 0.66rem 1.08rem;
+    min-height: 2.9rem;
+    color: hsl(0 0% 100% / 0.78);
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
+
+  .pill-nav-desktop .pill-nav-item:hover {
+    color: hsl(0 0% 100% / 0.95);
+  }
+
+  .pill-nav-desktop .pill-nav-item.active {
+    color: hsl(225 18% 8%);
+    text-shadow: none;
+  }
+
+  .pill-nav-desktop .pill-nav-indicator {
+    inset: 0.34rem;
+    background: hsl(0 0% 96%);
+    border: 1px solid hsl(0 0% 100% / 0.72);
+    box-shadow:
+      0 12px 34px rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+  }
+
+  .pill-nav-desktop [data-testid="button-nav-search"],
+  .pill-nav-desktop [data-testid="button-nav-profile"] {
+    min-height: 2.9rem;
+    min-width: 2.9rem;
+    padding: 0.66rem 0.82rem;
+    color: hsl(0 0% 100% / 0.82);
+  }
+
+  .pill-nav-desktop [data-testid="button-nav-search"]:hover,
+  .pill-nav-desktop [data-testid="button-nav-profile"]:hover {
+    color: hsl(0 0% 100% / 0.98);
+  }
+
+  .pill-nav-desktop [data-testid="button-nav-search"] .pill-nav-indicator,
+  .pill-nav-desktop [data-testid="button-nav-profile"] .pill-nav-indicator {
+    inset: 0.34rem;
+  }
+
+  .pill-nav-desktop [data-testid="button-nav-search"]:has(.pill-nav-indicator),
+  .pill-nav-desktop [data-testid="button-nav-profile"]:has(.pill-nav-indicator) {
+    color: hsl(225 18% 8%);
+  }
+
   /* Gradient text */
   .gradient-text {
     background: var(--gradient-primary);

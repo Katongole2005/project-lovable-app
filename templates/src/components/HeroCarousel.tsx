@@ -328,16 +328,6 @@ export function HeroCarousel({
                   <div 
                     key={`info-${activeIndex}`}
                   >
-                    <div 
-                      className="flex items-end gap-4 lg:gap-6 mb-4 lg:mb-5"
-                    >
-                      <span
-                        className="text-6xl lg:text-8xl xl:text-9xl font-black text-white/10 leading-none font-display select-none hero-info-track-number"
-                      >
-                        {String(activeIndex + 1).padStart(2, "0")}
-                      </span>
-                    </div>
-
                     <div
                       className="flex flex-wrap items-center gap-2 mb-5 lg:mb-7"
                     >
@@ -398,10 +388,7 @@ export function HeroCarousel({
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
-                <div className="ml-1 flex min-w-[170px] items-center gap-3">
-                  <span className="text-[11px] font-semibold tabular-nums text-white/55">
-                    {String(activeIndex + 1).padStart(2, "0")}
-                  </span>
+                <div className="ml-1 flex min-w-[130px] items-center gap-3">
 	                  <div className="hero-progress-rail h-0.5 flex-1 overflow-hidden rounded-full">
 	                  {shouldAutoplay && (
 	                    <div
@@ -411,9 +398,6 @@ export function HeroCarousel({
 	                    />
                   )}
                   </div>
-                  <span className="text-[11px] font-semibold tabular-nums text-white/35">
-                    {String(totalSlides).padStart(2, "0")}
-                  </span>
                 </div>
               </div>
             </div>
