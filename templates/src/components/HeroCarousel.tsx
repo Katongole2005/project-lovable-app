@@ -102,7 +102,7 @@ export function HeroCarousel({
 
   if (isLoading || !displayMovies.length) {
     return <div className="overflow-hidden relative" aria-busy={isLoading} aria-label="Loading latest movies">
-      <div className="md:hidden rounded-3xl p-4 overflow-hidden relative hero-mobile-gradient min-h-[350px]">
+      <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem+env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(350px+6.5rem+env(safe-area-inset-top))]">
         <div className="flex justify-between items-center mb-3">
           <div className="h-6 w-32 bg-white/8 rounded-lg shimmer" />
           <div className="h-5 w-14 bg-white/8 rounded-lg shimmer" />
@@ -158,14 +158,32 @@ export function HeroCarousel({
   return (
     <div className="overflow-hidden relative">
       {/* Mobile carousel */}
-      <div className="md:hidden rounded-3xl p-4 overflow-hidden relative hero-mobile-gradient">
+      <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem+env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(460px+6.5rem+env(safe-area-inset-top))] flex flex-col justify-between">
+        {/* Dynamic Ambient Blur Background Layer */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none rounded-3xl">
+          {currentMovie && (
+            <div
+              key={`mobile-bg-${currentMovie.mobifliks_id}`}
+              className="absolute inset-0 transition-opacity duration-700 ease-out"
+            >
+              <img
+                src={currentMovie.backdrop_url ? getOptimizedBackdropUrl(currentMovie.backdrop_url) : getImageUrl(currentMovie.image_url)}
+                alt=""
+                className="w-full h-full object-cover blur-[36px] scale-125 opacity-35"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f]/45 via-black/65 to-[#0a0a0f]/95" />
+            </div>
+          )}
+        </div>
+
         <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[600px] bg-[radial-gradient(ellipse_at_center,hsl(270,60%,55%)/0.3_0%,transparent_65%)] pointer-events-none" />
+        
         <div className="relative z-10 flex justify-between items-center mb-3">
           <h2 className="text-xl font-display font-bold text-white tracking-tight">{title}</h2>
           {showViewAll && <button onClick={onViewAll} className="text-sm font-medium text-white/70 hover:text-white transition-colors">View all</button>}
         </div>
 
-        <div className="relative flex items-center justify-center py-2 carousel-perspective" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div className="relative flex items-center justify-center py-6 carousel-perspective z-10" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <div className="relative w-[160px] h-[240px]">
             {mobileDeck.map((movie, index) => {
               const offset = index - activeIndex;
@@ -196,15 +214,18 @@ export function HeroCarousel({
                   } as React.CSSProperties}
                   onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}
                 >
-                    <div className={cn("w-full h-full rounded-xl overflow-hidden shadow-2xl transition-shadow duration-300", isSelected && "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]")}>
+                  <div className={cn(
+                    "w-full h-full rounded-xl overflow-hidden shadow-2xl transition-all duration-300 border border-white/10", 
+                    isSelected && "shadow-[0_20px_50px_-10px_rgba(239,68,68,0.35)] border-red-500/40 scale-102"
+                  )}>
                     <img
                       src={getImageUrl(movie.image_url)}
                       alt={movie.title}
                       className={cn("w-full h-full object-cover", isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns animate-10s")}
-                      loading={index < 2 ? "eager" : "lazy"}
-                      fetchpriority={index === 0 ? "high" : "auto"}
+                      loading="eager"
+                      fetchpriority={index < 3 ? "high" : "auto"}
                     />
-                    <div className={cn("absolute inset-0 bg-gradient-to-t from-black/40 to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-50")} />
+                    <div className={cn("absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-60")} />
                   </div>
                 </div>
               );
@@ -213,33 +234,52 @@ export function HeroCarousel({
         </div>
 
         {currentMovie && (
-            <div key={currentMovie.mobifliks_id} className="relative z-10 mt-3 text-center">
-              <div className="flex flex-col items-center justify-center gap-3 mb-2 px-4">
+            <div key={currentMovie.mobifliks_id} className="relative z-10 mt-2 text-center">
+              <div className="flex flex-col items-center justify-center gap-2 px-4">
                 {currentMovie.logo_url ? (
                   <img
                     src={currentMovie.logo_url}
                     alt={currentMovie.title}
-                    className="h-10 w-auto max-w-full object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+                    className="h-10 w-auto max-w-full object-contain drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
                     loading="eager"
                   />
                 ) : (
-                  <h3 className="text-lg font-display font-bold text-white tracking-tight drop-shadow-lg line-clamp-1">{currentMovie.title}</h3>
+                  <h3 className="text-lg font-display font-bold text-white tracking-tight drop-shadow-md line-clamp-1">{currentMovie.title}</h3>
                 )}
                 <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5">
                   {heroMetaChips.slice(0, 4).map((chip) => (
                     <span
                       key={chip}
-                    className="hero-meta-chip rounded-md px-2 py-0.5 text-[10px] font-semibold text-white/80"
+                      className="hero-meta-chip rounded-md px-2.5 py-0.5 text-[10px] font-semibold text-white/90"
                     >
                       {chip}
                     </span>
                   ))}
                 </div>
+                
+                {/* Mobile Hero Actions */}
+                <div className="flex items-center justify-center gap-3 mt-3 w-full max-w-[280px]">
+                  <button
+                    onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
+                    className="btn-premium-red flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-full text-white font-bold text-xs shadow-lg shadow-red-600/20 active:scale-95 transition-transform"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current text-white" />
+                    Watch Now
+                  </button>
+                  {onMovieClick && (
+                    <button
+                      onClick={() => onMovieClick(currentMovie)}
+                      className="btn-glass flex-1 py-2 px-4 rounded-full text-white font-semibold text-xs active:scale-95 transition-transform"
+                    >
+                      Details
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
         )}
 
-        <div className="relative z-10 mt-3">
+        <div className="relative z-10 mt-4">
           <div className="mx-auto flex w-full max-w-[180px] items-center justify-center gap-3">
             <span className="text-[10px] font-semibold tabular-nums text-white/55">
               {String(activeIndex + 1).padStart(2, "0")}
@@ -258,15 +298,11 @@ export function HeroCarousel({
             </span>
           </div>
         </div>
-
-
-      </div >
+      </div>
 
       <div className="hidden md:block">
         <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden hero-cinematic-container">
-
           <div className="absolute inset-0 bg-[#0a0a0f]" />
-
           <>
             {backdropSrc && (
               <div
@@ -296,7 +332,7 @@ export function HeroCarousel({
 	          <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-[#0a0a0f]/85 via-black/45 to-transparent" />
 	          <div className="absolute top-0 left-0 right-0 h-1/4 bg-gradient-to-b from-black/25 to-transparent" />
 	          <div className="hero-ambient-wash absolute inset-0 pointer-events-none" />
-	          <div className="hero-light-sweep absolute inset-0 pointer-events-none" />
+	          <div className={cn("hero-light-sweep absolute inset-0 pointer-events-none", isTransitioning && "active")} />
 	          <div className="hero-grain-overlay absolute inset-0 pointer-events-none" />
 	          <div className="hero-content-glass absolute left-0 bottom-0 top-0 w-[58%] pointer-events-none" />
 
@@ -418,7 +454,7 @@ export function HeroCarousel({
                             src={getImageUrl(movie.image_url)}
                             alt={movie.title}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-115"
-                            loading="lazy"
+                            loading="eager"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                         </div>
@@ -430,6 +466,7 @@ export function HeroCarousel({
                   </div>
                 </>
             </div>
+            </div>
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -440,24 +477,6 @@ export function HeroCarousel({
             </svg>
           </div>
         </div>
-      </div>
-      {/* Hidden SVG Filter for Realistic Liquid "Shuffle" Effect — static ID, mounted once */}
-      <svg className="absolute w-0 h-0 invisible pointer-events-none" aria-hidden="true">
-        <filter id="hero-water-distortion" x="-20%" y="-20%" width="140%" height="140%">
-          {/* Base Turbulence for the "Ripple" waves */}
-          <feTurbulence type="fractalNoise" baseFrequency="0.01 0.015" numOctaves="3" result="noise">
-            <animate attributeName="baseFrequency" values="0.01 0.015; 0.015 0.01; 0.01 0.015" dur="10s" repeatCount="indefinite" />
-          </feTurbulence>
-          
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G">
-            <animate attributeName="scale" values="0;120;0" dur="1.8s" keyTimes="0; 0.5; 1" />
-          </feDisplacementMap>
-          
-          <feGaussianBlur stdDeviation="0">
-            <animate attributeName="stdDeviation" values="0;12;0" dur="1.8s" keyTimes="0; 0.5; 1" />
-          </feGaussianBlur>
-        </filter>
-      </svg>
-    </div >
+    </div>
   );
 }

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, star
 import { useSearchParams, useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
-import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { CategoryChips } from "@/components/CategoryChips";
 import { VJChips } from "@/components/VJChips";
 import { HeroCarousel } from "@/components/HeroCarousel";
@@ -1169,7 +1168,6 @@ export default function Index() {
 
       {/* Site Announcement */}
       <div className="relative z-10">
-        <AnnouncementBanner />
 
         {/* Header — memo'd at component level, properly bails out on unchanged props */}
         <Header
@@ -1181,7 +1179,7 @@ export default function Index() {
         />
 
         {/* Main Content */}
-        <main className={`container mx-auto px-4 ${viewMode === "home" ? "pt-0 pb-4" : "pb-4 pt-24 md:pt-28"}`}>
+        <main className={`container mx-auto px-4 ${viewMode === "home" ? "pt-0 pb-4" : "pb-4 pt-[calc(6.5rem+env(safe-area-inset-top))] md:pt-28"}`}>
           {/* Home View */}
           {viewMode === "home" && (
             <div>

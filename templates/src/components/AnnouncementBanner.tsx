@@ -3,28 +3,42 @@ import { X, Megaphone } from "lucide-react";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
 import { cn } from "@/lib/utils";
 
-export function AnnouncementBanner() {
+interface AnnouncementBannerProps {
+  dismissed?: boolean;
+  onDismiss?: () => void;
+}
+
+export function AnnouncementBanner({ dismissed: externalDismissed, onDismiss }: AnnouncementBannerProps) {
   const { settings } = useSiteSettingsContext();
-  const [dismissed, setDismissed] = useState(false);
+  const [internalDismissed, setInternalDismissed] = useState(false);
 
   const announcement = settings.site_announcement;
+  const isDismissed = externalDismissed !== undefined ? externalDismissed : internalDismissed;
+
+  const handleDismiss = () => {
+    if (onDismiss) {
+      onDismiss();
+    } else {
+      setInternalDismissed(true);
+    }
+  };
 
   // Reset dismissed state when announcement changes
   useEffect(() => {
-    if (announcement) setDismissed(false);
+    if (announcement) setInternalDismissed(false);
   }, [announcement]);
 
-  if (!announcement || dismissed) return null;
+  if (!announcement || isDismissed) return null;
 
   return (
-    <div className="relative bg-primary/10 border-b border-primary/20 backdrop-blur-sm">
+    <div className="relative bg-primary/10 border-b border-primary/20 backdrop-blur-sm pointer-events-auto">
       <div className="container mx-auto px-4 py-2.5 flex items-center gap-3">
         <Megaphone className="w-4 h-4 text-primary flex-shrink-0" />
         <p className="text-xs sm:text-sm text-foreground flex-1 font-medium">
           {announcement}
         </p>
         <button
-          onClick={() => setDismissed(true)}
+          onClick={handleDismiss}
           className="p-1 rounded-full hover:bg-primary/10 transition-colors flex-shrink-0"
           aria-label="Dismiss announcement"
         >

@@ -4,6 +4,8 @@ import { Search, User, ChevronDown, Moon, Sun, Home, Film, Tv, Sparkles } from "
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import logoLight from "@/assets/logo.png";
 import logoDark from "@/assets/logo-dark.png";
 
@@ -28,6 +30,9 @@ const preloadProfilePage = () => {
 
 function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
   const { user } = useAuth();
+  const { settings } = useSiteSettingsContext();
+  const [announcementDismissed, setAnnouncementDismissed] = useState(false);
+  const hasAnnouncement = Boolean(settings.site_announcement && !announcementDismissed);
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -114,7 +119,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
           isHeaderVisible ? "translate-y-0" : "-translate-y-full"
         )}
         style={{
-          height: "calc(7rem + env(safe-area-inset-top))",
+          height: hasAnnouncement ? "calc(9.5rem + env(safe-area-inset-top))" : "calc(7rem + env(safe-area-inset-top))",
           background:
             "linear-gradient(to bottom, hsl(var(--background)) 0%, hsl(var(--background) / 0.95) 30%, hsl(var(--background) / 0.7) 50%, hsl(var(--background) / 0.3) 75%, transparent 100%)",
           maskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
@@ -128,9 +133,10 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
           isHeaderVisible ? "translate-y-0" : "-translate-y-full",
           isScrolled && "bg-background/40 backdrop-blur-md md:bg-transparent md:backdrop-blur-0"
         )}
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
+        style={{ paddingTop: hasAnnouncement ? "env(safe-area-inset-top)" : "calc(env(safe-area-inset-top) + 1rem)" }}
       >
-        <div className="container pointer-events-auto mx-auto px-4">
+        <AnnouncementBanner dismissed={announcementDismissed} onDismiss={() => setAnnouncementDismissed(true)} />
+        <div className={cn("container pointer-events-auto mx-auto px-4", hasAnnouncement && "mt-3")}>
           <div className="relative flex items-center justify-between gap-4">
             <Link
               to="/"

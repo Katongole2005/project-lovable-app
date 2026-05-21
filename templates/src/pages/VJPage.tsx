@@ -52,7 +52,7 @@ export default function VJPage() {
         onMovieSelect={(movie) => navigate(`/movie/${movie.mobifliks_id}`)}
       />
       
-      <main className="container mx-auto px-4 pt-24 pb-12">
+      <main className="container mx-auto px-4 pt-[calc(7.5rem+env(safe-area-inset-top))] pb-12 md:pt-28">
         <div className="mb-8 flex items-center gap-4">
           <Button 
             variant="ghost" 

@@ -972,7 +972,7 @@ export default function Profile() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-12">
+      <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-6 md:py-12">
         
         {/* Navigation Header */}
         <header className="flex items-center justify-between mb-10">
