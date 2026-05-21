@@ -172,7 +172,8 @@ async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise
     return null;
   }
 
-  const token = await generateSecureToken(targetUrl, title);
+  // Playback links expire in 6 hours (plenty of time to watch a movie)
+  const token = await generateSecureToken(targetUrl, title, 6);
   if (token) {
     endpoint.searchParams.set("token", token);
   } else {
@@ -333,7 +334,9 @@ export async function buildMediaUrl({
       return normalizedUrl;
     }
     
-    const token = await generateSecureToken(normalizedUrl, title);
+    // Playback expires in 6 hours, Downloads expire in 24 hours
+    const expirationHours = play ? 6 : 24;
+    const token = await generateSecureToken(normalizedUrl, title, expirationHours);
     if (token) {
       endpoint.searchParams.set("token", token);
     } else {

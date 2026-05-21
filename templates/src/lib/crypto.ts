@@ -7,16 +7,16 @@ const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "";
 
 /**
  * Encrypts a payload into a URL-safe Base64 token.
- * Payload includes the original URL, title, and a 24-hour expiration timestamp.
+ * Payload includes the original URL, title, and a configurable expiration timestamp.
  */
-export async function generateSecureToken(url: string, title: string): Promise<string | null> {
+export async function generateSecureToken(url: string, title: string, expirationHours: number = 24): Promise<string | null> {
   if (!SECRET_KEY) return null; // Fallback to raw if no key is configured
 
   try {
     const payload = JSON.stringify({
       u: url,
       t: title,
-      e: Date.now() + 24 * 60 * 60 * 1000 // 24 hours from now
+      e: Date.now() + expirationHours * 60 * 60 * 1000 // Variable expiration
     });
 
     const encoder = new TextEncoder();
