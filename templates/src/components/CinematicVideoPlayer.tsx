@@ -1038,8 +1038,7 @@ export function CinematicVideoPlayer({
             if (!isPlaying || isTouchDevice || isPaused || useNativeVideoControls) return;
             setShowControls(false);
           }}
-        >
-          {/* ── PRE-PLAY SCREEN ── */}
+        >          {/* ── PRE-PLAY SCREEN ── */}
           <AnimatePresence>
             {!isPlaying && (
               <motion.div
@@ -1058,35 +1057,35 @@ export function CinematicVideoPlayer({
                       src={posterUrl}
                       alt=""
                       aria-hidden
-                      className="absolute inset-0 h-full w-full object-cover md:scale-110 md:blur-2xl"
+                      className="absolute inset-0 h-full w-full object-cover md:scale-110 md:blur-2xl opacity-90 transition-transform duration-[8000ms] ease-out scale-100 hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--poster-gradient-top)_0%,var(--poster-gradient-middle)_42%,var(--poster-gradient-bottom)_100%)] md:bg-[linear-gradient(180deg,rgba(0,0,0,0.64)_0%,var(--poster-gradient-middle)_42%,var(--poster-gradient-bottom)_100%)]" />
-                    <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/45 to-transparent" />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--poster-gradient-top)_0%,var(--poster-gradient-middle)_42%,var(--poster-gradient-bottom)_100%)] md:bg-[linear-gradient(180deg,rgba(0,0,0,0.72)_0%,var(--poster-gradient-middle)_35%,var(--poster-gradient-bottom)_100%)]" />
+                    <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/60 to-transparent" />
                   </>
                 )}
                 {!posterUrl && (
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(19,160,255,0.45),transparent_42%),linear-gradient(180deg,#06a4df_0%,#0551b8_58%,#03143e_100%)]" />
                 )}
 
-                {/* Close button */}
+                {/* Premium floating close button */}
                 <button
                   onClick={handleClose}
                   aria-label="Close player"
-                  className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/28 text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all hover:bg-white/10 active:scale-95"
+                  className="absolute left-6 top-[max(1.5rem,env(safe-area-inset-top))] z-20 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-zinc-950/40 text-white shadow-2xl backdrop-blur-xl transition-all hover:bg-white/10 active:scale-90"
                 >
                   <ChevronDown className="h-5 w-5" />
                 </button>
 
                 {/* Title row */}
-                <div className="pointer-events-none absolute left-0 right-0 top-[8vh] z-10 flex flex-col items-center px-8 text-center md:top-10">
+                <div className="pointer-events-none absolute left-0 right-0 top-[10vh] z-10 flex flex-col items-center px-8 text-center md:top-14">
                   {activeMovie?.logo_url ? (
                     <img
                       src={activeMovie.logo_url}
                       alt={activeTitle}
-                      className="max-h-28 w-auto max-w-[82vw] object-contain drop-shadow-[0_10px_34px_rgba(0,0,0,0.5)] md:max-h-16"
+                      className="max-h-24 w-auto max-w-[80vw] object-contain drop-shadow-[0_12px_36px_rgba(0,0,0,0.65)] md:max-h-20"
                     />
                   ) : (
-                    <h2 className="max-w-[82vw] text-5xl font-black leading-[0.92] tracking-tight text-white drop-shadow-[0_10px_34px_rgba(0,0,0,0.42)] md:text-3xl">
+                    <h2 className="max-w-[80vw] text-4xl md:text-5xl font-black leading-[0.9] tracking-tight text-white drop-shadow-[0_12px_36px_rgba(0,0,0,0.55)]">
                       {activeTitle}
                     </h2>
                   )}
@@ -1096,18 +1095,18 @@ export function CinematicVideoPlayer({
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.08, duration: 0.46, ease: [0.22, 1, 0.36, 1] }}
-                  className="relative z-10 flex w-full max-w-sm flex-col items-center text-center md:max-w-md"
+                  className="relative z-10 flex w-full max-w-sm flex-col items-center text-center md:max-w-md mt-24"
                 >
                   <h1 className="max-w-full truncate text-[22px] font-black leading-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.42)] md:text-2xl">
                     {activeTitle}
                   </h1>
 
-                  <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[13px] font-semibold text-white/82">
-                    {year && <span>{year}</span>}
-                    {year && <span className="text-white/45">|</span>}
-                    <span>{primaryGenre}</span>
-                    {runtimeLabel && <span className="text-white/45">|</span>}
-                    {runtimeLabel && <span>{runtimeLabel}</span>}
+                  <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-bold text-white/80">
+                    {year && <span className="bg-white/10 px-2 py-0.5 rounded-md backdrop-blur-sm">{year}</span>}
+                    {year && <span className="text-white/30">•</span>}
+                    <span className="bg-white/10 px-2 py-0.5 rounded-md backdrop-blur-sm">{primaryGenre}</span>
+                    {runtimeLabel && <span className="text-white/30">•</span>}
+                    {runtimeLabel && <span className="bg-white/10 px-2 py-0.5 rounded-md backdrop-blur-sm">{runtimeLabel}</span>}
                   </div>
 
                   <div className="mt-3 flex items-center justify-center gap-0.5">
@@ -1118,46 +1117,54 @@ export function CinematicVideoPlayer({
                           "h-4 w-4",
                           index < Math.round(Number(rating))
                             ? "fill-[#ff9f1c] text-[#ff9f1c]"
-                            : "fill-slate-400/70 text-slate-400/70"
+                            : "fill-slate-400/30 text-slate-400/30"
                         )}
                       />
                     ))}
                   </div>
 
-                  <motion.button
-                    initial={{ scale: 0.85, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.16, duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                    whileHover={{ scale: 1.06 }}
-                    whileTap={{ scale: 0.94 }}
-                    onClick={beginPlayback}
-                    aria-label={`Play ${activeTitle}`}
-                    className="mt-8 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/75 text-[#6f8bc8] shadow-[0_18px_45px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-md transition-all hover:bg-white active:scale-95"
-                  >
-                    <Play className="ml-1 h-8 w-8 fill-current" />
-                  </motion.button>
+                  {/* Theatre Launch Orb */}
+                  <div className="relative mt-10 mb-2 flex items-center justify-center">
+                    {/* Concentric pulsing ripple circles */}
+                    <div className="absolute inset-0 -m-6 rounded-full bg-white/[0.04] animate-ping duration-[2200ms] pointer-events-none" />
+                    <div className="absolute inset-0 -m-10 rounded-full bg-white/[0.02] animate-pulse duration-[3000ms] pointer-events-none" />
+                    <motion.button
+                      initial={{ scale: 0.85, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.16, duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.93 }}
+                      onClick={beginPlayback}
+                      aria-label={`Play ${activeTitle}`}
+                      className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-white text-black shadow-[0_0_35px_rgba(255,255,255,0.35),0_15px_45px_rgba(0,0,0,0.65),inset_0_1.5px_0_rgba(255,255,255,0.9)] backdrop-blur-md transition-all hover:shadow-[0_0_55px_rgba(255,255,255,0.7)] hover:bg-white active:scale-95"
+                    >
+                      <Play className="ml-1.5 h-8 w-8 fill-current text-black" />
+                    </motion.button>
+                  </div>
 
                   {activeMovie?.description && (
                     <>
                       <button
                         type="button"
                         onClick={() => setShowSplashDetails(value => !value)}
-                        className="mt-8 flex flex-col items-center gap-1 text-[10px] font-semibold text-white/76 transition-colors hover:text-white"
+                        className="mt-6 flex flex-col items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white/60 transition-colors hover:text-white"
                       >
-                        <span>{showSplashDetails ? "Show Less" : "Show More"}</span>
+                        <span>{showSplashDetails ? "Hide Info" : "Show Info"}</span>
                         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showSplashDetails && "rotate-180")} />
                       </button>
 
                       <AnimatePresence>
                         {showSplashDetails && (
-                          <motion.p
+                          <motion.div
                             initial={{ opacity: 0, y: 8, height: 0 }}
                             animate={{ opacity: 1, y: 0, height: "auto" }}
                             exit={{ opacity: 0, y: 8, height: 0 }}
-                            className="mt-3 line-clamp-4 max-w-xs overflow-hidden text-xs font-medium leading-relaxed text-white/78"
+                            className="mt-3 overflow-hidden"
                           >
-                            {activeMovie.description}
-                          </motion.p>
+                            <p className="max-w-xs md:max-w-md p-4 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-md text-xs font-medium leading-relaxed text-white/70 shadow-inner">
+                              {activeMovie.description}
+                            </p>
+                          </motion.div>
                         )}
                       </AnimatePresence>
                     </>
@@ -1171,7 +1178,17 @@ export function CinematicVideoPlayer({
 
           {/* ── IFRAME PLAYER ── */}
           {isPlaying && (
-            <div className="absolute inset-0 z-10 bg-black animate-in fade-in duration-300">
+            <div className="absolute inset-0 z-10 bg-black overflow-hidden flex items-center justify-center animate-in fade-in duration-300">
+                {/* Ambilight Ambient Glow Effect */}
+                {posterGradient && (
+                  <div 
+                    className="absolute -inset-16 z-0 opacity-40 blur-[120px] pointer-events-none scale-105 transition-opacity duration-1000 hidden md:block"
+                    style={{
+                      background: `radial-gradient(circle at center, var(--poster-gradient-middle) 0%, var(--poster-gradient-top) 40%, transparent 70%)`
+                    }}
+                  />
+                )}
+
                 {isEmbeddableVideo ? (
                   <iframe
                     ref={iframeRef}
@@ -1183,7 +1200,7 @@ export function CinematicVideoPlayer({
                     }}
                     allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
                     allowFullScreen
-                    className="absolute inset-x-0 bottom-0 w-full h-full border-0 bg-black"
+                    className="relative z-10 w-full h-full border-0 bg-black"
                     style={{ top: "-10px", height: "calc(100% + 20px)" }}
                   />
                 ) : (
@@ -1197,31 +1214,31 @@ export function CinematicVideoPlayer({
                       onContextMenu={(e) => e.preventDefault()}
                       playsInline
                       preload="metadata"
-                    poster={posterUrl ?? undefined}
-                    className="absolute inset-0 h-full w-full bg-black object-contain"
-                    onLoadedMetadata={handleDirectLoadedMetadata}
-                    onLoadedData={() => setIsBuffering(false)}
-                    onTimeUpdate={handleDirectTimeUpdate}
-                    onProgress={handleDirectProgress}
-                    onCanPlay={() => setIsBuffering(false)}
-                    onPlaying={handleDirectPlaying}
-                    onWaiting={handleDirectWaiting}
-                    onStalled={handleDirectWaiting}
-                    onSeeking={handleDirectSeeking}
-                    onSeeked={handleDirectSeeked}
-                    onPlay={handleDirectPlay}
-                    onPause={handleDirectPause}
-                    onEnded={handleDirectEnded}
-                    onError={handleDirectError}
-                  />
+                      poster={posterUrl ?? undefined}
+                      className="relative z-10 h-full w-full bg-black object-contain shadow-2xl"
+                      onLoadedMetadata={handleDirectLoadedMetadata}
+                      onLoadedData={() => setIsBuffering(false)}
+                      onTimeUpdate={handleDirectTimeUpdate}
+                      onProgress={handleDirectProgress}
+                      onCanPlay={() => setIsBuffering(false)}
+                      onPlaying={handleDirectPlaying}
+                      onWaiting={handleDirectWaiting}
+                      onStalled={handleDirectWaiting}
+                      onSeeking={handleDirectSeeking}
+                      onSeeked={handleDirectSeeked}
+                      onPlay={handleDirectPlay}
+                      onPause={handleDirectPause}
+                      onEnded={handleDirectEnded}
+                      onError={handleDirectError}
+                    />
                 )}
 
                 {/* Loading/Buffering Overlay */}
                 {isBuffering && (
-                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/45 backdrop-blur-sm pointer-events-none">
-                    <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    <div className="text-center flex flex-col items-center gap-2">
-                      <p className="text-sm font-semibold tracking-wide text-white">Loading movie...</p>
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/55 backdrop-blur-md pointer-events-none">
+                    <div className="w-12 h-12 border-4 border-white/10 border-t-white rounded-full animate-spin shadow-lg" />
+                    <div className="text-center flex flex-col items-center gap-2 animate-pulse">
+                      <p className="text-xs font-black tracking-[0.2em] text-white/80 uppercase">Loading Cinema</p>
                       {activeMovie?.logo_url ? (
                         <img
                           src={activeMovie.logo_url}
@@ -1229,7 +1246,7 @@ export function CinematicVideoPlayer({
                           className="h-6 w-auto max-w-full object-contain opacity-80"
                         />
                       ) : (
-                        <p className="mt-1 text-xs text-white/60">{activeTitle}</p>
+                        <p className="mt-1 text-xs text-white/60 font-bold">{activeTitle}</p>
                       )}
                     </div>
                   </div>
@@ -1237,20 +1254,20 @@ export function CinematicVideoPlayer({
 
                 {playbackError && !isBuffering && (
                   <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/72 px-6">
-                    <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/75 p-6 text-center shadow-2xl backdrop-blur-xl">
-                      <p className="text-lg font-semibold text-white">Playback interrupted</p>
-                      <p className="mt-2 text-sm text-white/68">{playbackError}</p>
+                    <div className="w-full max-w-md rounded-3xl border border-white/10 bg-zinc-950/75 p-6 text-center shadow-2xl backdrop-blur-xl">
+                      <p className="text-lg font-bold text-white tracking-tight">Playback Interrupted</p>
+                      <p className="mt-2 text-xs text-white/60 font-medium leading-relaxed">{playbackError}</p>
                       <div className="mt-5 flex items-center justify-center gap-3">
                         <button
                           onClick={handleRetryPlayback}
-                          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                          className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-black text-black tracking-wider uppercase transition-transform hover:scale-[1.02] active:scale-[0.98]"
                         >
                           <RotateCcw className="h-4 w-4" />
                           Retry
                         </button>
                         <button
                           onClick={handleClose}
-                          className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10"
+                          className="rounded-xl border border-white/15 px-5 py-2.5 text-xs font-black text-white/85 tracking-wider uppercase transition-colors hover:bg-white/10"
                         >
                           Close
                         </button>
@@ -1292,12 +1309,7 @@ export function CinematicVideoPlayer({
                       e.stopPropagation(); 
                       resetControlsTimeout(); 
                       if (isTouchDevice) handleDoubleTap('center'); 
-                    }}
-                    onClick={(e) => { 
-                      if (!isTouchDevice) { 
-                        e.stopPropagation(); 
-                        togglePlay(); 
-                      } 
+                      else { togglePlay(); }
                     }}
                     onMouseMove={resetControlsTimeout}
                   />
@@ -1316,30 +1328,39 @@ export function CinematicVideoPlayer({
                     showControls ? "opacity-100" : "opacity-0 cursor-none"
                   )}
                 >
-                  {/* Top Bar (already mostly implemented, but polished) */}
-                  <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-start justify-between px-6 pt-6 pointer-events-auto">
-                    <div className="flex items-center gap-4">
-                      <button onClick={handleClose} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all active:scale-90">
-                        <ChevronDown className="h-6 w-6 text-white" />
+                  {/* Top Bar - Floating Premium Dock with safe area bounds */}
+                  <div className="absolute inset-x-0 top-0 z-50 flex items-start justify-between px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pb-12 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
+                    <div className="pointer-events-auto flex items-center gap-3.5 bg-black/30 border border-white/5 backdrop-blur-md rounded-2xl p-2 pr-6 shadow-xl max-w-[80vw]">
+                      <button 
+                        onClick={handleClose} 
+                        className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-90"
+                        aria-label="Close video player"
+                      >
+                        <ChevronDown className="h-5 w-5 text-white" />
                       </button>
-                      <div>
-                        <h2 className="text-white font-bold tracking-tight text-lg">{activeTitle}</h2>
-                        <div className="flex items-center gap-2 text-white/50 text-[11px] font-medium uppercase tracking-wider">
+                      <div className="min-w-0">
+                        <h2 className="text-white font-bold tracking-tight text-sm md:text-base truncate">{activeTitle}</h2>
+                        <div className="flex items-center gap-1.5 text-white/50 text-[10px] font-bold uppercase tracking-wider">
                           <span>{activeMovie?.type === "series" ? "Series" : "Movie"}</span>
                           {year && <span>• {year}</span>}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    
+                    <div className="pointer-events-auto flex items-center gap-2 px-[max(0rem,env(safe-area-inset-right))]">
                       <button
                         onClick={toggleMobileOrientation}
-                        className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all md:hidden"
+                        className="p-3 rounded-2xl bg-black/30 border border-white/5 backdrop-blur-md hover:bg-white/10 transition-all md:hidden"
                         aria-label={isLandscape ? "Rotate player to portrait" : "Rotate player to landscape"}
                       >
-                        <RotateCw className={cn("h-5 w-5 text-white transition-transform", isLandscape && "rotate-90")} />
+                        <RotateCw className={cn("h-4.5 w-4.5 text-white transition-transform", isLandscape && "rotate-90")} />
                       </button>
-                      <button onClick={toggleFullscreen} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                        {isFullscreen ? <Minimize className="h-5 w-5 text-white" /> : <Maximize className="h-5 w-5 text-white" />}
+                      <button 
+                        onClick={toggleFullscreen} 
+                        className="p-3 rounded-2xl bg-black/30 border border-white/5 backdrop-blur-md hover:bg-white/10 transition-all"
+                        aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                      >
+                        {isFullscreen ? <Minimize className="h-4.5 w-4.5 text-white" /> : <Maximize className="h-4.5 w-4.5 text-white" />}
                       </button>
                     </div>
                   </div>
@@ -1349,30 +1370,30 @@ export function CinematicVideoPlayer({
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                        <button 
                         onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-                        className="pointer-events-auto w-24 h-24 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group shadow-2xl"
+                        className="pointer-events-auto w-20 h-20 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-110 active:scale-95 group shadow-2xl border border-white/10"
                        >
-                         <Play className="w-10 h-10 text-white fill-white ml-1.5" />
+                         <Play className="w-8 h-8 text-black fill-black ml-1" />
                        </button>
                     </div>
                   )}
 
-                  {/* Bottom Controls Bar */}
-                  <div className="absolute inset-x-0 bottom-0 pb-10 pt-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none">
-                    <div className="max-w-[1200px] mx-auto px-6 pointer-events-auto space-y-4">
+                  {/* Floating Glassmorphic Controls Dock */}
+                  <div className="absolute inset-x-0 bottom-0 z-50 pb-[max(1.5rem,env(safe-area-inset-bottom))] px-[max(1.5rem,env(safe-area-inset-left))] pointer-events-none bg-gradient-to-t from-black/90 via-black/30 to-transparent pt-32">
+                    <div className="max-w-4xl mx-auto w-full pointer-events-auto rounded-[24px] border border-white/10 bg-zinc-950/45 backdrop-blur-xl shadow-[0_24px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.1)] p-4 md:p-6 space-y-4 transition-all duration-300">
                       {/* Brand Logo Overlay */}
                       {activeMovie?.logo_url && (
-                        <div className="flex justify-start px-1 -mb-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex justify-start px-2 -mb-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
                           <img 
                             src={activeMovie.logo_url} 
                             alt={activeTitle} 
-                            className="h-10 md:h-16 w-auto max-w-[180px] md:max-w-[280px] object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 transition-opacity hover:opacity-100" 
+                            className="h-8 md:h-12 w-auto max-w-[140px] md:max-w-[220px] object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 transition-opacity hover:opacity-100" 
                           />
                         </div>
                       )}
                       
-                      {/* Timeline / Seek Bar (Center Column) */}
-                      <div className="flex items-center gap-3 w-full px-2">
-                        <span className="text-[10px] font-medium text-white/50 tabular-nums min-w-[35px]">
+                      {/* Timeline / Seek Bar */}
+                      <div className="flex items-center gap-3.5 w-full px-1">
+                        <span className="text-[10px] font-bold text-white/50 tabular-nums min-w-[38px] text-right">
                           {formatTime(currentTime)}
                         </span>
                         
@@ -1385,10 +1406,10 @@ export function CinematicVideoPlayer({
                           <AnimatePresence>
                             {hoverTime !== null && (
                               <motion.div 
-                                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                initial={{ opacity: 0, y: 8, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                                className="absolute bottom-full mb-4 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-white shadow-xl pointer-events-none z-50 whitespace-nowrap"
+                                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                className="absolute bottom-full mb-3 px-2.5 py-1.5 bg-zinc-950 border border-white/10 rounded-xl text-[10px] font-black text-white shadow-2xl pointer-events-none z-50 whitespace-nowrap backdrop-blur-md"
                                 style={{ left: hoverPosition, transform: 'translateX(-50%)' }}
                               >
                                 {formatTime(hoverTime)}
@@ -1396,12 +1417,18 @@ export function CinematicVideoPlayer({
                             )}
                           </AnimatePresence>
 
-                          {/* Buffered Progress Background */}
-                          <div className="absolute top-[22px] left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden">
+                          {/* Custom visual progress bar track */}
+                          <div className="absolute top-[22px] left-0 right-0 h-1 rounded-full overflow-hidden bg-white/10 group-hover:h-1.5 transition-all duration-300">
+                            {/* Buffered Track */}
                             <motion.div 
                               initial={false}
                               animate={{ width: `${(bufferedTime / (duration || 1)) * 100}%` }}
-                              className="h-full bg-white/20"
+                              className="absolute top-0 left-0 h-full bg-white/15"
+                            />
+                            {/* Visual Playback Progress (Matches real progress bar beneath) */}
+                            <div 
+                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-500 via-rose-500 to-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                              style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                             />
                           </div>
                           
@@ -1412,77 +1439,81 @@ export function CinematicVideoPlayer({
                             onPointerDown={() => setIsSeeking(true)}
                             onPointerUp={() => { setIsSeeking(false); }}
                             onValueChange={handleSeek}
-                            className="relative z-10 cursor-pointer"
+                            className="relative z-10 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300 [&_.relative]:h-1 [&_.relative]:group-hover:h-1.5 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:bg-white [&_[role=slider]]:border-none [&_[role=slider]]:shadow-lg"
                           />
                         </div>
 
-                        <span className="text-[10px] font-medium text-white/50 tabular-nums min-w-[35px]">
+                        <span className="text-[10px] font-bold text-white/50 tabular-nums min-w-[38px]">
                           {formatTime(duration)}
                         </span>
                       </div>
 
                       {/* Control Buttons Row */}
                       <TooltipProvider>
-                        <div className="flex items-center justify-between pb-2">
-                          {/* Left Group */}
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between pb-1">
+                          {/* Left Group - Primary Playback Seeks */}
+                          <div className="flex items-center gap-1.5">
                             <ControlTooltip content={isPaused ? "Play (k)" : "Pause (k)"}>
                               <button 
                                 onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90"
+                                className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-105 hover:bg-white/90 active:scale-95 shadow-md"
                               >
                                 {isPaused ? (
-                                  <Play className="h-5 w-5 fill-white" />
+                                  <Play className="h-5 w-5 fill-current ml-0.5" />
                                 ) : (
-                                  <Pause className="h-5 w-5 fill-white" />
+                                  <Pause className="h-5 w-5 fill-current" />
                                 )}
                               </button>
                             </ControlTooltip>
 
-                            <ControlTooltip content="Seek Backward 10s (j)">
-                              <button onClick={(e) => { e.stopPropagation(); skip(-10); }} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90">
-                                <SkipBack className="h-5 w-5 text-white/80" />
+                            <ControlTooltip content="Rewind 10s (j)">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); skip(-10); }} 
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/5 active:scale-90 transition-all"
+                              >
+                                <SkipBack className="h-5 w-5" />
                               </button>
                             </ControlTooltip>
 
-                            <ControlTooltip content="Seek Forward 10s (l)">
-                              <button onClick={(e) => { e.stopPropagation(); skip(10); }} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90">
-                                <SkipForward className="h-5 w-5 text-white/80" />
+                            <ControlTooltip content="Forward 10s (l)">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); skip(10); }} 
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/5 active:scale-90 transition-all"
+                              >
+                                <SkipForward className="h-5 w-5" />
                               </button>
                             </ControlTooltip>
                           </div>
 
-                          {/* Right Group */}
+                          {/* Right Group - Options & Features */}
                           <div className="flex items-center gap-1">
                             {/* Playback Speed */}
-                            <div className="relative mr-1">
-                              <DropdownMenu>
-                                <ControlTooltip content="Playback Speed">
-                                  <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-[10px] font-bold text-white/80 transition-all">
-                                      <Timer className="h-4 w-4" />
-                                      {playbackRate}x
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                </ControlTooltip>
-                                <DropdownMenuContent side="top" className="bg-zinc-900 border-zinc-800 text-white min-w-[100px]">
-                                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
-                                    <DropdownMenuItem 
-                                      key={rate} 
-                                      onClick={() => changePlaybackRate(rate)}
-                                      className={cn(
-                                        "text-xs font-medium focus:bg-white/10 focus:text-white cursor-pointer",
-                                        playbackRate === rate ? "bg-primary/20 text-primary" : "text-white/60"
-                                      )}
-                                    >
-                                      {rate}x {rate === 1 && "(Normal)"}
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                            <DropdownMenu>
+                              <ControlTooltip content="Playback Speed">
+                                <DropdownMenuTrigger asChild>
+                                  <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-white/5 hover:text-white text-xs font-bold text-white/70 transition-all">
+                                    <Timer className="h-4 w-4" />
+                                    <span className="hidden sm:inline">{playbackRate}x</span>
+                                  </button>
+                                </DropdownMenuTrigger>
+                              </ControlTooltip>
+                              <DropdownMenuContent side="top" className="bg-zinc-950/80 border border-white/10 text-white min-w-[120px] rounded-2xl backdrop-blur-xl shadow-2xl">
+                                {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                                  <DropdownMenuItem 
+                                    key={rate} 
+                                    onClick={() => changePlaybackRate(rate)}
+                                    className={cn(
+                                      "text-xs font-bold focus:bg-white/15 focus:text-white cursor-pointer px-3 py-2 rounded-lg transition-colors m-1",
+                                      playbackRate === rate ? "bg-gradient-to-r from-orange-500 to-red-500 text-white" : "text-white/60"
+                                    )}
+                                  >
+                                    {rate}x {rate === 1 && "(Normal)"}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
 
-                            {/* Volume Popover */}
+                            {/* Volume */}
                             <div 
                               className="relative flex items-center"
                               onMouseEnter={() => setIsVolumeHovered(true)}
@@ -1499,20 +1530,25 @@ export function CinematicVideoPlayer({
                                         if (isEmbeddableVideo) sendCommand("muted", nextMuted);
                                         else if (videoRef.current) videoRef.current.muted = nextMuted;
                                       }}
-                                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90"
+                                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/5 active:scale-90 transition-all"
                                     >
-                                      {isMuted || volume === 0 ? <VolumeX className="h-5 w-5 text-red-400" /> : <Volume2 className="h-5 w-5 text-white/80" />}
+                                      {isMuted || volume === 0 ? (
+                                        <VolumeX className="h-5 w-5 text-red-500" />
+                                      ) : (
+                                        <Volume2 className="h-5 w-5" />
+                                      )}
                                     </button>
                                   </PopoverTrigger>
                                 </ControlTooltip>
+                                
                                 <PopoverContent 
                                   side="top" 
-                                  sideOffset={15} 
-                                  className="w-10 p-3 bg-zinc-900 border-zinc-800 rounded-full shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+                                  sideOffset={16} 
+                                  className="w-12 p-3 bg-zinc-950/70 border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-300"
                                   onMouseEnter={() => setIsVolumeHovered(true)}
                                   onMouseLeave={() => setIsVolumeHovered(false)}
                                 >
-                                  <div className="h-24">
+                                  <div className="h-24 flex flex-col items-center justify-between gap-2.5">
                                     <Slider 
                                       orientation="vertical"
                                       value={[isMuted ? 0 : volume * 100]} 
@@ -1527,28 +1563,33 @@ export function CinematicVideoPlayer({
                                           videoRef.current.muted = vol === 0;
                                         }
                                       }}
-                                      className="h-full py-2 cursor-pointer"
+                                      className="h-full py-1.5 cursor-pointer accent-orange-500"
                                     />
+                                    <span className="text-[9px] font-black text-white/60 tabular-nums">
+                                      {Math.round((isMuted ? 0 : volume) * 100)}%
+                                    </span>
                                   </div>
                                 </PopoverContent>
                               </Popover>
                             </div>
 
-
-
-                            <ControlTooltip content="Cast">
-                              <button className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90 text-white/40">
+                            {/* Cast Indicator */}
+                            <ControlTooltip content="Cast Screen">
+                              <button className="w-10 h-10 rounded-xl flex items-center justify-center text-white/40 hover:text-white/60 hover:bg-white/5 transition-all">
                                 <Cast className="h-5 w-5" />
                               </button>
                             </ControlTooltip>
 
+                            {/* PiP */}
                             {isPipAvailable && (
                               <ControlTooltip content="Picture in Picture (i)">
                                 <button 
                                   onClick={togglePip} 
                                   className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90",
-                                    isPipActive ? "text-primary" : "text-white/80 hover:bg-white/10"
+                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90",
+                                    isPipActive 
+                                      ? "text-orange-500 bg-orange-500/10" 
+                                      : "text-white/70 hover:text-white hover:bg-white/5"
                                   )}
                                 >
                                   <Monitor className="h-5 w-5" />
@@ -1556,21 +1597,28 @@ export function CinematicVideoPlayer({
                               </ControlTooltip>
                             )}
 
+                            {/* Device Rotation (Mobile only) */}
                             <ControlTooltip content={isLandscape ? "Rotate Portrait (r)" : "Rotate Landscape (r)"}>
-                              <button onClick={toggleMobileOrientation} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90 md:hidden">
-                                <RotateCw className={cn("h-5 w-5 text-white/80 transition-transform", isLandscape && "rotate-90")} />
+                              <button 
+                                onClick={toggleMobileOrientation} 
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/5 active:scale-90 transition-all md:hidden"
+                              >
+                                <RotateCw className={cn("h-5 w-5 transition-transform", isLandscape && "rotate-90")} />
                               </button>
                             </ControlTooltip>
 
+                            {/* Fullscreen */}
                             <ControlTooltip content={isFullscreen ? "Exit Fullscreen (f)" : "Fullscreen (f)"}>
-                              <button onClick={toggleFullscreen} className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-white/10 active:scale-90">
-                                {isFullscreen ? <Minimize className="h-5 w-5 text-white/80" /> : <Maximize className="h-5 w-5 text-white/80" />}
+                              <button 
+                                onClick={toggleFullscreen} 
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/5 active:scale-90 transition-all"
+                              >
+                                {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
                               </button>
                             </ControlTooltip>
                           </div>
                         </div>
                       </TooltipProvider>
-
 
                     </div>
                   </div>
@@ -1588,7 +1636,7 @@ export function CinematicVideoPlayer({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5 }}
-                className="absolute inset-0 z-40 flex items-center justify-center bg-black/95 backdrop-blur-2xl overflow-hidden"
+                className="absolute inset-0 z-40 flex items-center justify-center bg-black/95 backdrop-blur-2xl overflow-hidden p-6"
               >
                 {posterUrl && (
                   <img src={posterUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20 blur-md scale-105" />
@@ -1599,38 +1647,38 @@ export function CinematicVideoPlayer({
                   initial={{ scale: 0.92, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.15, duration: 0.4 }}
-                  className="relative flex flex-col items-center text-center gap-8 max-w-lg px-6"
+                  className="relative flex flex-col items-center text-center gap-8 max-w-md w-full border border-white/10 bg-zinc-950/70 p-8 rounded-3xl backdrop-blur-2xl shadow-2xl"
                 >
                   <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#ff8a3d]/80">Finished Watching</p>
-                    <h3 className="text-3xl md:text-4xl font-black text-white tracking-tighter drop-shadow-2xl">{activeTitle}</h3>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500">Finished Watching</p>
+                    <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-2xl">{activeTitle}</h3>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full">
                     <button
                       onClick={() => {
                         setHasEnded(false);
                         setIsPlaying(false);
                         setTimeout(() => beginPlayback(), 80);
                       }}
-                      className="flex h-14 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 text-sm font-bold text-white shadow-2xl transition-all hover:bg-white/10 hover:scale-105 active:scale-95 group"
+                      className="flex h-12 items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-6 text-xs font-bold text-white shadow-2xl transition-all hover:bg-white/10 hover:scale-102 active:scale-98 group"
                     >
-                      <RotateCcw className="h-5 w-5 text-white/60 group-hover:rotate-[-45deg] transition-transform" />
+                      <RotateCcw className="h-4.5 w-4.5 text-white/60 group-hover:rotate-[-45deg] transition-transform" />
                       Replay
                     </button>
                     {hasNextEpisode && onPlayNext && (
                       <button
                         onClick={(e) => { e.stopPropagation(); onPlayNext(); }}
-                        className="flex h-14 items-center gap-3 rounded-2xl px-8 text-sm font-bold text-white shadow-[0_0_30px_rgba(255,138,61,0.35)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,138,61,0.5)] active:scale-95 btn-gradient-next"
+                        className="flex h-12 items-center justify-center gap-2.5 rounded-xl px-6 text-xs font-bold text-white shadow-[0_0_30px_rgba(239,68,68,0.35)] transition-all hover:scale-102 hover:shadow-[0_0_40px_rgba(239,68,68,0.5)] active:scale-98 bg-gradient-to-r from-orange-500 to-red-500 border border-white/10"
                       >
-                        Next Episode <SkipForward className="h-5 w-5 fill-current" />
+                        Next Episode <SkipForward className="h-4.5 w-4.5 fill-current" />
                       </button>
                     )}
                     <button
                       onClick={handleClose}
-                      className="flex h-14 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 text-sm font-bold text-white/70 shadow-xl transition-all hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95"
+                      className="flex h-12 items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-6 text-xs font-bold text-white/70 shadow-xl transition-all hover:bg-white/10 hover:text-white hover:scale-102 active:scale-98"
                     >
-                      <X className="h-5 w-5" /> Close
+                      <X className="h-4.5 w-4.5" /> Close
                     </button>
                   </div>
                 </motion.div>
