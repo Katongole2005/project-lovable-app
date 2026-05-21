@@ -953,6 +953,10 @@
 	    animation: hero-backdrop-drift 18s ease-in-out infinite;
 	    transform-origin: center;
 	    will-change: transform;
+	    backface-visibility: hidden;
+	    -webkit-backface-visibility: hidden;
+	    transform: translateZ(0);
+	    -webkit-transform: translateZ(0);
 	  }
 
 	  .hero-ambient-wash {

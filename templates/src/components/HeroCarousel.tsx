@@ -339,6 +339,7 @@ export function HeroCarousel({
 	                  className={cn("h-full w-full object-cover", deviceProfile.allowComplexAnimations && "hero-backdrop-drift")}
 	                  loading="eager"
 	                  fetchpriority="high"
+	                  decoding="sync"
 	                />
               </div>
             )}
