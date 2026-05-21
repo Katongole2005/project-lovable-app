@@ -79,6 +79,7 @@ import {
   normalizeVjName
 } from "@/lib/api";
 import type { FilterOptions } from "@/lib/api";
+import { preloadHeroMovies } from "@/lib/heroImages";
 import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
 import type { Movie, Series, ContinueWatching, SkipSegment, SubtitleTrack } from "@/types/movie";
 import { ChevronLeft, Loader2 } from "lucide-react";
@@ -447,15 +448,23 @@ export default function Index() {
     });
   }, []);
 
-  const preloadHeroAssets = useCallback((items: Movie[]) => {
-    const firstHero = items[0];
-    if (firstHero?.backdrop_url) {
-      preloadImage(getOptimizedBackdropUrl(firstHero.backdrop_url)).catch(() => { });
-    }
-    if (firstHero?.image_url) {
-      preloadImage(getImageUrl(firstHero.image_url)).catch(() => { });
-    }
-  }, []);
+  const preloadHeroAssets = useCallback(
+    (items: Movie[]) => {
+      preloadHeroMovies(items, deviceProfile.allowHighResImages, deviceProfile.isMobile ? 3 : 5);
+    },
+    [deviceProfile.allowHighResImages, deviceProfile.isMobile],
+  );
+
+  const heroCarouselMovies = useMemo(() => {
+    if (!heroData?.length) return trending;
+    const heroMovies = heroData
+      .filter((movie: Movie) => movie.type === "movie")
+      .slice(0, heroMovieLimit);
+    const heroSeries = seriesQueryData?.length
+      ? seriesQueryData.slice(0, heroSeriesLimit)
+      : [];
+    return [...heroMovies, ...heroSeries].slice(0, heroMovieLimit + heroSeriesLimit);
+  }, [heroData, heroMovieLimit, heroSeriesLimit, seriesQueryData, trending]);
 
   const prefetchSeriesDetailsFor = useCallback((items: Array<Movie | Series>, limit = 4) => {
     const candidates = items
@@ -1232,12 +1241,12 @@ export default function Index() {
               {shouldShowHero && (
                 <Suspense fallback={null}>
                   <HeroCarousel
-                    movies={trending}
+                    movies={heroCarouselMovies}
                     onPlay={handleHeroPlay}
                     onMovieClick={handleMovieClick}
                     title="Latest on Moviebay"
                     onViewAll={() => handleTabChange("movies")}
-                    isLoading={isHeroLoading}
+                    isLoading={isHeroLoading && heroCarouselMovies.length === 0}
                   />
                 </Suspense>
               )}

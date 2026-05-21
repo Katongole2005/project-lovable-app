@@ -2,8 +2,14 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
 import { getImageUrl, getOptimizedBackdropUrl, isUsableArtworkUrl } from "@/lib/api";
+import {
+  getHeroBackdropUrl,
+  getHeroPosterUrl,
+  preloadHeroImage,
+} from "@/lib/heroImages";
 import { Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
+import { HeroMediaImage } from "@/components/HeroMediaImage";
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -29,8 +35,13 @@ export function HeroCarousel({
   const [isTransitioning, setIsTransitioning] = React.useState(false);
   const isTransitioningRef = React.useRef(false);
   const safeMovies = React.useMemo(
-    () => movies.filter((movie): movie is Movie => Boolean(movie?.mobifliks_id) && isUsableArtworkUrl(movie.backdrop_url)),
-    [movies]
+    () =>
+      movies.filter(
+        (movie): movie is Movie =>
+          Boolean(movie?.mobifliks_id) &&
+          (isUsableArtworkUrl(movie.backdrop_url) || isUsableArtworkUrl(movie.image_url)),
+      ),
+    [movies],
   );
   const totalSlides = Math.min(
     safeMovies.length,
@@ -80,22 +91,32 @@ export function HeroCarousel({
 
   React.useEffect(() => {
     if (!shouldAutoplay || totalSlides <= 1) return;
-    let animationFrameId: number;
-    let lastTime = performance.now();
-    const delay = autoplayDelayMs || 4000;
-    
-    const loop = (time: number) => {
-      if (time - lastTime >= delay) {
-        setSelectedIndex(prev => (prev + 1) % totalSlides);
-        lastTime = time;
-      }
-      animationFrameId = requestAnimationFrame(loop);
-    };
-    
-    animationFrameId = requestAnimationFrame(loop);
-    
-    return () => cancelAnimationFrame(animationFrameId);
+
+    const delay = autoplayDelayMs || 5000;
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) return;
+      setSelectedIndex((prev) => (prev + 1) % totalSlides);
+    }, delay);
+
+    return () => window.clearInterval(intervalId);
   }, [shouldAutoplay, totalSlides, autoplayDelayMs]);
+
+  React.useEffect(() => {
+    if (!displayMovies.length) return;
+
+    const indices = [
+      activeIndex,
+      (activeIndex + 1) % totalSlides,
+      (activeIndex + totalSlides - 1) % totalSlides,
+    ];
+
+    indices.forEach((index) => {
+      const movie = displayMovies[index];
+      if (!movie) return;
+      preloadHeroImage(getHeroBackdropUrl(movie, deviceProfile.allowHighResImages));
+      preloadHeroImage(getHeroPosterUrl(movie));
+    });
+  }, [activeIndex, deviceProfile.allowHighResImages, displayMovies, totalSlides]);
 
   React.useEffect(() => {
     if (totalSlides > 0 && selectedIndex >= totalSlides) {
@@ -104,13 +125,8 @@ export function HeroCarousel({
   }, [selectedIndex, totalSlides]);
 
   const getBackdrop = React.useCallback(
-    (movie?: Movie) => {
-      if (!movie?.backdrop_url) return null;
-      return deviceProfile.allowHighResImages
-        ? movie.backdrop_url.replace('/original/', '/w1280/').replace('/w780/', '/w1280/')
-        : getOptimizedBackdropUrl(movie.backdrop_url);
-    },
-    [deviceProfile.allowHighResImages]
+    (movie?: Movie) => getHeroBackdropUrl(movie, deviceProfile.allowHighResImages),
+    [deviceProfile.allowHighResImages],
   );
 
   const touchStartX = React.useRef(0);
@@ -153,6 +169,8 @@ export function HeroCarousel({
 
   const currentMovie = displayMovies[activeIndex];
   const backdropSrc = getBackdrop(currentMovie);
+  const posterFallbackSrc = getHeroPosterUrl(currentMovie);
+  const showHeavyHeroEffects = !deviceProfile.preferLightweightRendering;
   const vjVersionCount = currentMovie.vj_count ?? currentMovie.vj_versions?.length ?? 0;
   const heroMetaChips = [
     currentMovie.year ? String(currentMovie.year) : null,
@@ -188,13 +206,24 @@ export function HeroCarousel({
           {currentMovie && (
             <div
               key={`mobile-bg-${currentMovie.mobifliks_id}`}
-              className="absolute inset-0 transition-opacity duration-700 ease-out"
+              className="absolute inset-0 transition-opacity duration-500 ease-out"
             >
-              <img
-                src={currentMovie.backdrop_url ? getOptimizedBackdropUrl(currentMovie.backdrop_url) : getImageUrl(currentMovie.image_url)}
-                alt=""
-                className="w-full h-full object-cover blur-[36px] scale-125 opacity-35"
-              />
+              {deviceProfile.allowAmbientEffects ? (
+                <HeroMediaImage
+                  primarySrc={getBackdrop(currentMovie)}
+                  fallbackSrc={posterFallbackSrc}
+                  alt=""
+                  className="h-full w-full scale-125 object-cover opacity-35 blur-2xl"
+                  priority
+                />
+              ) : (
+                <div
+                  className="h-full w-full bg-cover bg-center opacity-40"
+                  style={{
+                    backgroundImage: `url(${backdropSrc ?? posterFallbackSrc ?? ""})`,
+                  }}
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f]/45 via-black/65 to-[#0a0a0f]/95" />
             </div>
           )}
@@ -242,12 +271,15 @@ export function HeroCarousel({
                     "w-full h-full rounded-xl overflow-hidden shadow-2xl transition-all duration-300 border border-white/10", 
                     isSelected && "shadow-[0_20px_50px_-10px_rgba(239,68,68,0.35)] border-red-500/40 scale-102"
                   )}>
-                    <img
-                      src={getImageUrl(movie.image_url)}
+                    <HeroMediaImage
+                      primarySrc={getImageUrl(movie.image_url)}
+                      fallbackSrc={getHeroPosterUrl(movie)}
                       alt={movie.title}
-                      className={cn("w-full h-full object-cover", isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns animate-10s")}
-                      loading="eager"
-                      fetchpriority={index < 3 ? "high" : "auto"}
+                      className={cn(
+                        "h-full w-full object-cover",
+                        isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns animate-10s",
+                      )}
+                      priority={Math.abs(adjustedOffset) <= 1}
                     />
                     <div className={cn("absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-60")} />
                   </div>
@@ -328,27 +360,19 @@ export function HeroCarousel({
         <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden hero-cinematic-container">
           <div className="absolute inset-0 bg-[#0a0a0f]" />
           <>
-            {backdropSrc && (
-              <div
-                key={`backdrop-${activeIndex}`}
-                className="absolute inset-0"
-              >
-	                <img
-	                  src={backdropSrc}
-	                  alt=""
-	                  className={cn("h-full w-full object-cover", deviceProfile.allowComplexAnimations && "hero-backdrop-drift")}
-	                  loading="eager"
-	                  fetchpriority="high"
-	                  decoding="sync"
-	                />
+            {(backdropSrc || posterFallbackSrc) && (
+              <div key={`backdrop-${currentMovie.mobifliks_id}-${activeIndex}`} className="absolute inset-0">
+                <HeroMediaImage
+                  primarySrc={backdropSrc}
+                  fallbackSrc={posterFallbackSrc}
+                  alt=""
+                  className={cn(
+                    "h-full w-full object-cover",
+                    showHeavyHeroEffects && deviceProfile.allowComplexAnimations && "hero-backdrop-drift",
+                  )}
+                  priority
+                />
               </div>
-            )}
-            {!backdropSrc && (
-              <div
-                key={`backdrop-fallback-${activeIndex}`}
-                className="absolute inset-0 blur-[80px] pointer-events-none bg-cover bg-center opacity-40"
-                style={{ backgroundImage: `url(${getImageUrl(currentMovie.image_url)})` }}
-              />
             )}
           </>
 
@@ -356,10 +380,19 @@ export function HeroCarousel({
 	          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/35" />
 	          <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-[#0a0a0f]/85 via-black/45 to-transparent" />
 	          <div className="absolute top-0 left-0 right-0 h-1/4 bg-gradient-to-b from-black/25 to-transparent" />
-	          <div className="hero-ambient-wash absolute inset-0 pointer-events-none" />
-	          <div className={cn("hero-light-sweep absolute inset-0 pointer-events-none", isTransitioning && "active")} />
-	          <div className="hero-grain-overlay absolute inset-0 pointer-events-none" />
-	          <div className="hero-content-glass absolute left-0 bottom-0 top-0 w-[58%] pointer-events-none" />
+	          {showHeavyHeroEffects && (
+	            <>
+	              <div className="hero-ambient-wash absolute inset-0 pointer-events-none" />
+	              <div
+	                className={cn(
+	                  "hero-light-sweep absolute inset-0 pointer-events-none",
+	                  isTransitioning && "active",
+	                )}
+	              />
+	              <div className="hero-grain-overlay absolute inset-0 pointer-events-none" />
+	              <div className="hero-content-glass absolute left-0 bottom-0 top-0 w-[58%] pointer-events-none" />
+	            </>
+	          )}
 
 	          <div className="absolute inset-0 pointer-events-none hero-vignette" />
 
@@ -475,11 +508,12 @@ export function HeroCarousel({
                         aria-label={`Go to ${movie.title}`}
                       >
                         <div className="relative w-[100px] xl:w-[120px] 2xl:w-[140px] aspect-[2/3] rounded-xl xl:rounded-2xl overflow-hidden border border-white/10 group-hover:border-primary/50 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group-hover:shadow-[0_12px_48px_rgba(239,68,68,0.3)]">
-                          <img
-                            src={getImageUrl(movie.image_url)}
+                          <HeroMediaImage
+                            primarySrc={getImageUrl(movie.image_url)}
+                            fallbackSrc={getHeroPosterUrl(movie)}
                             alt={movie.title}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-115"
-                            loading="eager"
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            priority={cardIdx === 0}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                         </div>

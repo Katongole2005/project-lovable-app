@@ -1666,6 +1666,35 @@ html.perf-low .hero-meta-chip {
   backdrop-filter: none;
 }
 
+/* Chrome on macOS: reduce GPU-heavy hero layers (common jank source vs Safari) */
+html.perf-mac-chrome .hero-grain-overlay,
+html.perf-mac-chrome .hero-light-sweep,
+html.perf-mac-chrome .hero-ambient-wash,
+html.perf-mac-chrome .hero-content-glass {
+  display: none !important;
+}
+
+html.perf-mac-chrome .hero-backdrop-drift,
+html.perf-mac-chrome .animate-ken-burns,
+html.perf-mac-chrome .animate-ken-burns-mobile {
+  animation: none !important;
+}
+
+html.perf-mac-chrome .hero-meta-chip,
+html.perf-mac-chrome .hero-cta-glow,
+html.perf-mac-chrome [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.perf-lite body::before {
+  display: none;
+}
+
+html.perf-lite .glass-noise-overlay {
+  display: none;
+}
+
 /* Film grain noise texture overlay — subtle cinematic texture across the whole app */
 body::before {
   content: '';

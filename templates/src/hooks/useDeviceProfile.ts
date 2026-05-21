@@ -28,6 +28,8 @@ export interface DeviceProfile {
   autoplayDelayMs: number;
   homeGridItems: number;
   recommendationItems: number;
+  isMacChrome: boolean;
+  preferLightweightRendering: boolean;
 }
 
 const DEFAULT_PROFILE: DeviceProfile = {
@@ -44,7 +46,22 @@ const DEFAULT_PROFILE: DeviceProfile = {
   autoplayDelayMs: 5000,
   homeGridItems: 24,
   recommendationItems: 12,
+  isMacChrome: false,
+  preferLightweightRendering: false,
 };
+
+/** Chrome on macOS often struggles with heavy blur/GPU layers vs Safari on the same machine. */
+function isMacChromeBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return (
+    /Macintosh|Mac OS X/i.test(ua) &&
+    /Chrome\//i.test(ua) &&
+    !/Edg\//i.test(ua) &&
+    !/OPR\//i.test(ua) &&
+    !/Brave\//i.test(ua)
+  );
+}
 
 function getConnection() {
   if (typeof navigator === "undefined") {
@@ -71,8 +88,11 @@ function readProfile(): DeviceProfile {
   const lowMemory = typeof typedNavigator.deviceMemory === "number" && typedNavigator.deviceMemory <= 4;
   const lowCpu = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4;
   const slowNetwork = connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g";
-  const isWeakDevice = prefersReducedMotion || saveData || lowMemory || lowCpu || slowNetwork;
+  const isMacChrome = isMacChromeBrowser();
+  const isWeakDevice =
+    prefersReducedMotion || saveData || lowMemory || lowCpu || slowNetwork || isMacChrome;
   const allowComplexAnimations = !isWeakDevice && !isMobile;
+  const preferLightweightRendering = isWeakDevice || isMacChrome;
 
   return {
     isMobile,
@@ -84,10 +104,12 @@ function readProfile(): DeviceProfile {
     isWeakDevice,
     allowAmbientEffects: !isWeakDevice && !isCompact,
     allowComplexAnimations,
-    allowHighResImages: !saveData && !lowMemory && !isMobile,
-    autoplayDelayMs: 3000,
+    allowHighResImages: !saveData && !lowMemory && !isMobile && !isMacChrome,
+    autoplayDelayMs: isMacChrome ? 6000 : 5000,
     homeGridItems: isMobile ? 8 : isCompact ? 12 : isUltraWideDesktop ? 40 : isLargeDesktop ? 32 : 24,
     recommendationItems: isMobile ? 6 : isCompact ? 8 : isUltraWideDesktop ? 20 : isLargeDesktop ? 16 : 12,
+    isMacChrome,
+    preferLightweightRendering,
   };
 }
 
@@ -96,30 +118,41 @@ export function useDeviceProfile() {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updateProfile = () => setProfile(readProfile());
     const connection = getConnection();
 
+    const applyDocumentPerfFlags = (next: DeviceProfile) => {
+      const root = document.documentElement;
+      root.classList.toggle("perf-mac-chrome", next.isMacChrome);
+      root.classList.toggle("perf-lite", next.preferLightweightRendering);
+    };
+
+    const updateProfileAndFlags = () => {
+      const next = readProfile();
+      setProfile(next);
+      applyDocumentPerfFlags(next);
+    };
+
     // RAF-debounced resize: batches resize events to once per animation frame
-    // instead of firing hundreds of times per second while dragging the window.
     let rafId: number | null = null;
     const handleResize = () => {
       if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        updateProfile();
+        updateProfileAndFlags();
       });
     };
 
-    updateProfile();
+    updateProfileAndFlags();
     window.addEventListener("resize", handleResize, { passive: true });
-    mediaQuery.addEventListener("change", updateProfile);
-    connection?.addEventListener?.("change", updateProfile);
+    mediaQuery.addEventListener("change", updateProfileAndFlags);
+    connection?.addEventListener?.("change", updateProfileAndFlags);
 
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener("resize", handleResize);
-      mediaQuery.removeEventListener("change", updateProfile);
-      connection?.removeEventListener?.("change", updateProfile);
+      mediaQuery.removeEventListener("change", updateProfileAndFlags);
+      connection?.removeEventListener?.("change", updateProfileAndFlags);
+      document.documentElement.classList.remove("perf-mac-chrome", "perf-lite");
     };
   }, []);
 
