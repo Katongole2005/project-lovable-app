@@ -16,7 +16,7 @@ export function ContinueWatchingRow({ items, onResume, onRemove, className }: Co
   if (items.length === 0) return null;
 
   return (
-    <section className={cn("py-6 content-visibility-auto", className)}>
+    <section className={cn("py-6 ", className)}>
       <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight mb-6" data-testid="text-section-continue-watching">
         Continue Watching
       </h2>
@@ -72,7 +72,6 @@ function ContinueWatchingCard({
           src={getImageUrl(item.image)}
           alt={item.title}
           className="w-full h-full object-cover object-top"
-          loading="lazy"
         />
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
