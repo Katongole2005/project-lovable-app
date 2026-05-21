@@ -184,7 +184,13 @@ export default function Index() {
   const activeTab = viewMode === "home" ? "home" : viewMode;
   const deviceProfile = useDeviceProfile();
   const homeFeedLimit = deviceProfile.isMobile ? 16 : deviceProfile.isCompact ? 24 : 32;
-  const originalsInitialLimit = deviceProfile.isMobile ? 24 : 36;
+  const browseBatchLimit = deviceProfile.isMobile
+    ? 28
+    : deviceProfile.isCompact
+      ? 36
+      : Math.min(Math.max(deviceProfile.homeGridItems * 2, 48), 80);
+  const originalsInitialLimit = browseBatchLimit;
+  const seriesFetchBatchLimit = Math.min(browseBatchLimit * 2, 200);
   const heroMovieLimit = deviceProfile.isMobile ? 8 : 12;
   const heroSeriesLimit = deviceProfile.isMobile ? 2 : 4;
 
@@ -312,15 +318,15 @@ export default function Index() {
   });
 
   const { data: moviesQueryData, isLoading: isMoviesLoading } = useQuery({
-    queryKey: ["movies", "recent", 1, homeFeedLimit],
-    queryFn: () => fetchMoviesSorted("movie", homeFeedLimit, 1),
+    queryKey: ["movies", "recent", 1, browseBatchLimit],
+    queryFn: () => fetchMoviesSorted("movie", browseBatchLimit, 1),
     staleTime: 1000 * 60 * 10,
     enabled: viewMode === "movies" || viewMode === "home",
   });
 
   const { data: seriesQueryData, isLoading: isSeriesLoading } = useQuery({
-    queryKey: ["series", "recent", 1, homeFeedLimit],
-    queryFn: () => fetchSeries(homeFeedLimit, 1),
+    queryKey: ["series", "recent", 1, browseBatchLimit],
+    queryFn: () => fetchSeries(browseBatchLimit, 1),
     staleTime: 1000 * 60 * 10,
     enabled: viewMode === "series" || viewMode === "home",
   });
@@ -596,11 +602,11 @@ export default function Index() {
   useEffect(() => {
     if (viewMode === "movies" && moviesQueryData) {
       setCategoryMovies(sortByYearDesc(moviesQueryData));
-      setNextLoadOffset(homeFeedLimit);
+      setNextLoadOffset(browseBatchLimit);
       setIsLoading(false);
     } else if (viewMode === "series" && seriesQueryData) {
       setCategoryMovies(sortByYearDesc(seriesQueryData));
-      setNextLoadOffset(Math.min(homeFeedLimit * 2, 200));
+      setNextLoadOffset(seriesFetchBatchLimit);
       setIsLoading(false);
     } else if (viewMode === "originals" && originalsQueryData) {
       setCategoryMovies(sortByYearDesc(originalsQueryData));
@@ -612,7 +618,7 @@ export default function Index() {
       (viewMode === "originals" && isOriginalsLoading)) {
       setIsLoading(true);
     }
-  }, [viewMode, moviesQueryData, seriesQueryData, originalsQueryData, isMoviesLoading, isSeriesLoading, isOriginalsLoading, homeFeedLimit, originalsInitialLimit, isOriginalsLoading]);
+  }, [viewMode, moviesQueryData, seriesQueryData, originalsQueryData, isMoviesLoading, isSeriesLoading, isOriginalsLoading, browseBatchLimit, originalsInitialLimit, seriesFetchBatchLimit]);
 
 
   const handleSearch = useCallback(async (query: string) => {
@@ -1071,25 +1077,25 @@ export default function Index() {
       if (viewMode === "movies") {
         if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
-          more = await fetchByGenre(genre, "movie", 20, dbFilters, 1, nextLoadOffset);
+          more = await fetchByGenre(genre, "movie", browseBatchLimit, dbFilters, 1, nextLoadOffset);
         } else {
-          more = await fetchMoviesSorted("movie", 20, 1, dbFilters, nextLoadOffset);
+          more = await fetchMoviesSorted("movie", browseBatchLimit, 1, dbFilters, nextLoadOffset);
         }
-        setNextLoadOffset((prev) => prev + 20);
+        setNextLoadOffset((prev) => prev + browseBatchLimit);
       } else if (viewMode === "series") {
         if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
-          more = await fetchByGenre(genre, "series", 20, dbFilters, 1, nextLoadOffset);
+          more = await fetchByGenre(genre, "series", browseBatchLimit, dbFilters, 1, nextLoadOffset);
         } else {
-          more = await fetchSeries(20, 1, undefined, dbFilters, nextLoadOffset);
+          more = await fetchSeries(browseBatchLimit, 1, undefined, dbFilters, nextLoadOffset);
         }
-        setNextLoadOffset((prev) => prev + Math.min(20 * 2, 200));
+        setNextLoadOffset((prev) => prev + seriesFetchBatchLimit);
       } else if (viewMode === "originals") {
         const nextOriginalsPage = originalsPage + 1;
-        const originals = await fetchOriginals(60, nextOriginalsPage);
+        const originals = await fetchOriginals(browseBatchLimit, nextOriginalsPage);
         more = sortByYearDesc(originals);
         setOriginalsPage(nextOriginalsPage);
-        setNextLoadOffset((prev) => prev + 60);
+        setNextLoadOffset((prev) => prev + browseBatchLimit);
       }
 
       const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
@@ -1100,7 +1106,7 @@ export default function Index() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByYearDesc, activeFilters, nextLoadOffset]);
+  }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
 
   const getCategoryTitle = () => {
     const titles: Record<string, string> = {
@@ -1303,7 +1309,7 @@ export default function Index() {
           {/* Movies Category */}
           {viewMode === "movies" && (
             <PageTransition>
-              <div className="space-y-4">
+              <div className="browse-page-shell space-y-4">
                 <div className="flex items-center gap-3">
                   <Button
                     variant="ghost"
@@ -1313,7 +1319,7 @@ export default function Index() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
-                  <h2 className="text-xl font-semibold">All Movies</h2>
+                  <h2 className="browse-page-title text-xl font-semibold">All Movies</h2>
                 </div>
 
                 <MovieGrid
@@ -1328,7 +1334,7 @@ export default function Index() {
                       variant="outline"
                       onClick={handleLoadMore}
                       disabled={isLoadingMore}
-                      className="gap-2"
+                      className="browse-load-more gap-2"
                     >
                       {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
                       Load More
@@ -1342,7 +1348,7 @@ export default function Index() {
           {/* Series Category */}
           {viewMode === "series" && (
             <PageTransition>
-              <div className="space-y-4">
+              <div className="browse-page-shell space-y-4">
                 <div className="flex items-center gap-3">
                   <Button
                     variant="ghost"
@@ -1352,7 +1358,7 @@ export default function Index() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
-                  <h2 className="text-xl font-semibold">All Series</h2>
+                  <h2 className="browse-page-title text-xl font-semibold">All Series</h2>
                 </div>
 
                 <MovieGrid
@@ -1367,7 +1373,7 @@ export default function Index() {
                       variant="outline"
                       onClick={handleLoadMore}
                       disabled={isLoadingMore}
-                      className="gap-2"
+                      className="browse-load-more gap-2"
                     >
                       {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
                       Load More
@@ -1381,7 +1387,7 @@ export default function Index() {
           {/* Originals (English) */}
           {viewMode === "originals" && (
             <PageTransition>
-              <div className="space-y-4">
+              <div className="browse-page-shell space-y-4">
                 <div className="flex items-center gap-3">
                   <Button
                     variant="ghost"
@@ -1391,7 +1397,7 @@ export default function Index() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
-                  <h2 className="text-xl font-semibold">Originals (English)</h2>
+                  <h2 className="browse-page-title text-xl font-semibold">Originals (English)</h2>
                 </div>
 
                 <MovieGrid
@@ -1407,7 +1413,7 @@ export default function Index() {
                       variant="outline"
                       onClick={handleLoadMore}
                       disabled={isLoadingMore}
-                      className="gap-2"
+                      className="browse-load-more gap-2"
                     >
                       {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
                       Load More

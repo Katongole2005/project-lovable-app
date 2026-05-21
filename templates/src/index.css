@@ -2010,3 +2010,154 @@ body::before {
   width: 100px; height: 100px;
   animation: waveScale 1.8s cubic-bezier(0.1, 0, 0.2, 1) 0.6s forwards;
 }
+
+/* Browse page cinematic motion */
+.browse-page-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.browse-page-shell::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2.5rem;
+  width: min(78vw, 980px);
+  height: 18rem;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle at 28% 20%, hsl(var(--primary) / 0.11), transparent 34%),
+    radial-gradient(circle at 70% 10%, hsl(42 92% 56% / 0.08), transparent 30%);
+  filter: blur(44px);
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.browse-page-title {
+  position: relative;
+  text-shadow: 0 10px 30px hsl(0 0% 0% / 0.35);
+  animation: browse-title-rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.movie-grid-cinematic {
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+
+.browse-card-enter {
+  --card-index: 0;
+  opacity: 1;
+  transform: translate3d(0, 22px, 0) scale(0.975);
+  animation: browse-card-enter 560ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: min(calc(var(--card-index) * 18ms), 180ms);
+}
+
+.browse-card-depth {
+  transform-style: preserve-3d;
+}
+
+.browse-card-depth::after {
+  content: "";
+  position: absolute;
+  inset: 8% 5% auto;
+  height: 72%;
+  border-radius: 20px;
+  background:
+    linear-gradient(115deg, transparent 18%, hsl(var(--primary) / 0.18) 50%, transparent 78%),
+    radial-gradient(circle at 50% 0%, hsl(42 92% 56% / 0.16), transparent 45%);
+  opacity: 0;
+  filter: blur(18px);
+  transform: translateY(22px) scale(0.92);
+  transition: opacity 380ms ease, transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.browse-card-depth:hover::after {
+  opacity: 0.8;
+  transform: translateY(28px) scale(1.02);
+}
+
+.browse-load-more {
+  position: relative;
+  overflow: hidden;
+  border-color: hsl(var(--primary) / 0.24);
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.08), hsl(0 0% 100% / 0.025)),
+    hsl(var(--card) / 0.72);
+  box-shadow:
+    0 12px 34px hsl(0 0% 0% / 0.22),
+    inset 0 1px 0 hsl(0 0% 100% / 0.1);
+  backdrop-filter: blur(18px);
+}
+
+.browse-load-more::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 12%, hsl(var(--primary) / 0.18) 45%, hsl(42 92% 56% / 0.14) 58%, transparent 82%);
+  transform: translateX(-120%);
+  transition: transform 680ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.browse-load-more:hover::before {
+  transform: translateX(120%);
+}
+
+@keyframes browse-card-enter {
+  0% {
+    opacity: 0.72;
+    transform: translate3d(0, 22px, 0) scale(0.975);
+    filter: saturate(0.82) brightness(0.82) blur(2px);
+  }
+  72% {
+    opacity: 1;
+    filter: saturate(1.04) brightness(1.04) blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
+  }
+}
+
+@keyframes browse-title-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: none;
+  }
+}
+
+html.perf-low .browse-card-enter,
+html.perf-low .browse-page-title {
+  animation-duration: 180ms !important;
+  animation-delay: 0ms !important;
+}
+
+html.perf-low .browse-page-shell::before,
+html.perf-low .browse-card-depth::after,
+html.perf-low .browse-load-more::before {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .browse-card-enter,
+  .browse-page-title {
+    opacity: 1;
+    transform: none;
+    animation: none;
+    filter: none;
+  }
+
+  .browse-card-depth::after,
+  .browse-load-more::before {
+    display: none;
+  }
+}

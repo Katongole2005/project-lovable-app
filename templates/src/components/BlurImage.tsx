@@ -20,7 +20,7 @@ export function BlurImage({ src, alt, className, loading = "lazy" }: BlurImagePr
   }, []);
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-muted/60 via-card to-muted/35">
       <img
         src={src}
         alt={alt}

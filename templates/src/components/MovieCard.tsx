@@ -2,6 +2,7 @@ import { Play, Heart, TrendingUp, Sparkles } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import { buildMediaUrl, getImageUrl, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import type { CSSProperties } from "react";
 import { useCallback, useState, useEffect, forwardRef, memo } from "react";
 import { isInWatchlist, toggleWatchlist } from "@/lib/storage";
 import { BlurImage } from "./BlurImage";
@@ -14,6 +15,7 @@ interface MovieCardProps {
   priority?: boolean;
   allowNewBadge?: boolean;
   onWatchlistChange?: () => void;
+  style?: CSSProperties;
 }
 
 function isNewRelease(movie: Movie): boolean {
@@ -59,7 +61,7 @@ function getVjDetail(movie: Movie): string | null {
   return null;
 }
 
-const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, allowNewBadge = false, onWatchlistChange }, ref) {
+const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, allowNewBadge = false, onWatchlistChange, style }, ref) {
   const [inWatchlist, setInWatchlist] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -111,6 +113,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
   return (
     <div
       ref={ref}
+      style={style}
       className={cn(
         "group relative flex-shrink-0 cursor-pointer overflow-visible touch-manipulation",
         className
@@ -239,9 +242,9 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
 
 export const MovieCard = memo(MovieCardBase);
 
-export function MovieCardSkeleton({ className }: { className?: string }) {
+export function MovieCardSkeleton({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
-    <div className={cn("flex-shrink-0", className)}>
+    <div className={cn("flex-shrink-0", className)} style={style}>
       <div className="aspect-[2/3] rounded-2xl bg-card/95 md:bg-card/80 border border-white/[0.06] overflow-hidden relative card-premium-shadow md:backdrop-blur-sm">
         <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40 animate-pulse" />
         <div className="absolute inset-0 shimmer opacity-50" />
