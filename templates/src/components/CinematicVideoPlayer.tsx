@@ -453,40 +453,6 @@ export function CinematicVideoPlayer({
     };
   }, [posterUrl]);
 
-  // Player Diagnostic Logger (runs every second during playback)
-  useEffect(() => {
-    if (!isOpen || !isPlaying) return;
-    
-    const logInterval = window.setInterval(() => {
-      const video = videoRef.current;
-      if (video) {
-        console.log(`[MOVIE_BAY_LOG] [${new Date().toISOString()}] Native Video State:`, {
-          title: activeTitle,
-          url: activeVideoUrl,
-          currentTime: video.currentTime,
-          duration: video.duration,
-          readyState: video.readyState,
-          networkState: video.networkState,
-          paused: video.paused,
-          buffered: video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : 0,
-          error: video.error ? video.error.message || video.error.code : null,
-          isBufferingState: isBuffering
-        });
-      } else {
-        console.log(`[MOVIE_BAY_LOG] [${new Date().toISOString()}] Embed Player State:`, {
-          title: activeTitle,
-          url: activeVideoUrl,
-          currentTime,
-          duration,
-          isBuffering,
-          isPaused
-        });
-      }
-    }, 1000);
-    
-    return () => window.clearInterval(logInterval);
-  }, [isOpen, isPlaying, activeTitle, activeVideoUrl, currentTime, duration, isBuffering, isPaused]);
-
   // Handle PiP availability and state
   useEffect(() => {
     if (typeof document === "undefined" || isEmbeddableVideo) return;
