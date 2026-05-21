@@ -105,7 +105,7 @@ function readProfile(): DeviceProfile {
     allowAmbientEffects: !isWeakDevice && !isCompact,
     allowComplexAnimations,
     allowHighResImages: !saveData && !lowMemory && !isMobile && !isMacChrome,
-    autoplayDelayMs: isMacChrome ? 6000 : 5000,
+    autoplayDelayMs: 5000,
     homeGridItems: isMobile ? 8 : isCompact ? 12 : isUltraWideDesktop ? 40 : isLargeDesktop ? 32 : 24,
     recommendationItems: isMobile ? 6 : isCompact ? 8 : isUltraWideDesktop ? 20 : isLargeDesktop ? 16 : 12,
     isMacChrome,
