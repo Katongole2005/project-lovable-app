@@ -1,4 +1,4 @@
-import { Play, Star, Heart, TrendingUp, Sparkles } from "lucide-react";
+import { Play, Heart, TrendingUp, Sparkles } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import { buildMediaUrl, getImageUrl, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -52,22 +52,14 @@ function isTrending(movie: Movie): boolean {
   return (movie.views ?? 0) >= 5000;
 }
 
-function getStableRating(movie: Movie): string {
-  if (movie.views) {
-    return Math.min(8.5, Math.max(6.0, (movie.views / 10000) + 6)).toFixed(1);
-  }
-
-  const hash = movie.mobifliks_id.split("").reduce((acc, char) => {
-    acc = (acc << 5) - acc + char.charCodeAt(0);
-    return acc & acc;
-  }, 0);
-
-  return (6 + (Math.abs(hash) % 26) / 10).toFixed(1);
+function getVjDetail(movie: Movie): string | null {
+  const versionCount = movie.vj_count ?? movie.vj_versions?.length ?? 0;
+  if (versionCount > 1) return `${versionCount} VJ`;
+  if (movie.vj_name?.trim()) return `VJ ${movie.vj_name.trim()}`;
+  return null;
 }
 
 const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, allowNewBadge = false, onWatchlistChange }, ref) {
-  const rating = getStableRating(movie);
-
   const [inWatchlist, setInWatchlist] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -113,6 +105,8 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
   const isNew = allowNewBadge && isNewRelease(movie);
   const trending = isTrending(movie);
   const hasMultipleVjs = (movie.vj_versions?.length ?? 0) > 1;
+  const vjDetail = getVjDetail(movie);
+  const isPlayable = Boolean(movie.server2_url || movie.download_url);
 
   return (
     <div
@@ -167,19 +161,19 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
 
         <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5 max-w-[80%]">
           {isNew && (
-            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500 text-white flex items-center gap-0.5 shadow-sm">
+            <span className="flex items-center gap-0.5 rounded-full border border-amber-200/30 bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500 px-2 py-0.5 text-[9px] font-black text-black shadow-[0_0_18px_rgba(246,196,83,0.28)]">
               <Sparkles className="w-2.5 h-2.5" />
               NEW
             </span>
           )}
           {trending && !isNew && (
-            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-orange-500 text-white flex items-center gap-0.5 shadow-sm">
+            <span className="flex items-center gap-0.5 rounded-full border border-red-400/25 bg-red-500/85 px-2 py-0.5 text-[9px] font-bold text-white shadow-[0_0_16px_rgba(239,68,68,0.26)] backdrop-blur-sm">
               <TrendingUp className="w-2.5 h-2.5" />
               HOT
             </span>
           )}
           {movie.type === "series" && (
-            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-primary text-primary-foreground shadow-sm">
+            <span className="rounded-full border border-red-400/25 bg-red-500/85 px-2 py-0.5 text-[9px] font-bold text-white shadow-[0_0_16px_rgba(239,68,68,0.22)] backdrop-blur-sm">
               SERIES
             </span>
           )}
@@ -223,17 +217,19 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
             </h3>
           )}
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="rating-badge font-semibold" data-testid={`text-rating-${movie.mobifliks_id}`}>
-            <Star className="w-3 h-3 fill-current" />
-            {rating}
-          </span>
-
+        <div className="flex min-h-[22px] flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
           {movie.year && (
-            <>
-              <span className="text-muted-foreground/30">•</span>
-              <span className="font-medium text-muted-foreground/80">{movie.year}</span>
-            </>
+            <span className="font-semibold text-muted-foreground/80">{movie.year}</span>
+          )}
+          {vjDetail && (
+            <span className="rounded-md border border-red-400/18 bg-gradient-to-b from-red-500/13 to-white/[0.035] px-1.5 py-0.5 font-semibold leading-none text-red-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              {vjDetail}
+            </span>
+          )}
+          {isPlayable && (
+            <span className="rounded-md border border-white/10 bg-white/[0.055] px-1.5 py-0.5 font-semibold leading-none text-muted-foreground/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              HD
+            </span>
           )}
         </div>
       </div>

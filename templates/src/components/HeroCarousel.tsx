@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
 import { getImageUrl, getOptimizedBackdropUrl } from "@/lib/api";
-import { Star, Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 
 interface HeroCarouselProps {
@@ -100,18 +100,6 @@ export function HeroCarousel({
     }
   };
 
-  const getImdbRating = (movie: Movie) => {
-    const hash = (movie.mobifliks_id || movie.title || "movie").split('').reduce((a, b) => {
-      a = (a << 5) - a + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    return (5 + Math.abs(hash) % 40 / 10).toFixed(1);
-  };
-
-  const getStarCount = (movie: Movie) => {
-    const rating = parseFloat(getImdbRating(movie));
-    return Math.round(rating / 2);
-  };
   if (isLoading || !displayMovies.length) {
     return <div className="overflow-hidden relative" aria-busy={isLoading} aria-label="Loading latest movies">
       <div className="md:hidden rounded-3xl p-4 overflow-hidden relative hero-mobile-gradient min-h-[350px]">
@@ -141,6 +129,17 @@ export function HeroCarousel({
 
   const currentMovie = displayMovies[activeIndex];
   const backdropSrc = getBackdrop(currentMovie);
+  const vjVersionCount = currentMovie.vj_count ?? currentMovie.vj_versions?.length ?? 0;
+  const heroMetaChips = [
+    currentMovie.year ? String(currentMovie.year) : null,
+    vjVersionCount > 1
+      ? `${vjVersionCount} VJ Versions`
+      : currentMovie.vj_name
+        ? `VJ ${currentMovie.vj_name}`
+        : null,
+    currentMovie.genres?.[0] ?? (currentMovie.type === "series" ? "Series" : "Movie"),
+    currentMovie.server2_url || currentMovie.download_url ? "HD" : null,
+  ].filter(Boolean) as string[];
 
   const getSideCards = () => {
     if (totalSlides <= 1) return [];
@@ -226,39 +225,37 @@ export function HeroCarousel({
                 ) : (
                   <h3 className="text-lg font-display font-bold text-white tracking-tight drop-shadow-lg line-clamp-1">{currentMovie.title}</h3>
                 )}
-                <span className="px-2.5 py-1 text-[10px] font-bold rounded-md text-black bg-gradient-to-r from-[hsl(45,100%,55%)] to-[hsl(35,100%,50%)] shadow-[0_0_12px_hsl(45_100%_50%/0.3)]">
-                  IMDB {getImdbRating(currentMovie)}
-                </span>
+                <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5">
+                  {heroMetaChips.slice(0, 4).map((chip) => (
+                    <span
+                      key={chip}
+                    className="hero-meta-chip rounded-md px-2 py-0.5 text-[10px] font-semibold text-white/80"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
         )}
 
         <div className="relative z-10 mt-3">
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex justify-center gap-1.5">
-              {mobileDeck.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => scrollTo(index)}
-                  className={cn(
-                    "transition-all duration-500 rounded-full",
-                    index === activeIndex
-                      ? "w-4 h-1.5 bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]"
-                      : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
-                  )}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-            <div className="w-24 mx-auto h-0.5 rounded-full bg-white/20 overflow-hidden">
+          <div className="mx-auto flex w-full max-w-[180px] items-center justify-center gap-3">
+            <span className="text-[10px] font-semibold tabular-nums text-white/55">
+              {String(activeIndex + 1).padStart(2, "0")}
+            </span>
+            <div className="hero-progress-rail h-0.5 flex-1 overflow-hidden rounded-full">
               {shouldAutoplay && (
                   <div
                     key={`mobile-progress-${activeIndex}`}
-                    className="hero-progress-bar-fill h-full bg-white rounded-full animate-progress"
+                    className="hero-progress-bar-fill hero-progress-highlight h-full rounded-full animate-progress"
                     style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
                   />
               )}
             </div>
+            <span className="text-[10px] font-semibold tabular-nums text-white/35">
+              {String(totalSlides).padStart(2, "0")}
+            </span>
           </div>
         </div>
 
@@ -276,13 +273,13 @@ export function HeroCarousel({
                 key={`backdrop-${activeIndex}`}
                 className="absolute inset-0"
               >
-                <img
-                  src={backdropSrc}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="eager"
-                  fetchpriority="high"
-                />
+	                <img
+	                  src={backdropSrc}
+	                  alt=""
+	                  className={cn("h-full w-full object-cover", deviceProfile.allowComplexAnimations && "hero-backdrop-drift")}
+	                  loading="eager"
+	                  fetchpriority="high"
+	                />
               </div>
             )}
             {!backdropSrc && (
@@ -294,12 +291,16 @@ export function HeroCarousel({
             )}
           </>
 
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
-          <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-[#0a0a0f]/80 via-black/40 to-transparent" />
-          <div className="absolute top-0 left-0 right-0 h-1/4 bg-gradient-to-b from-black/20 to-transparent" />
+	          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-black/45" />
+	          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/35" />
+	          <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-[#0a0a0f]/85 via-black/45 to-transparent" />
+	          <div className="absolute top-0 left-0 right-0 h-1/4 bg-gradient-to-b from-black/25 to-transparent" />
+	          <div className="hero-ambient-wash absolute inset-0 pointer-events-none" />
+	          <div className="hero-light-sweep absolute inset-0 pointer-events-none" />
+	          <div className="hero-grain-overlay absolute inset-0 pointer-events-none" />
+	          <div className="hero-content-glass absolute left-0 bottom-0 top-0 w-[58%] pointer-events-none" />
 
-          <div className="absolute inset-0 pointer-events-none hero-vignette" />
+	          <div className="absolute inset-0 pointer-events-none hero-vignette" />
 
           <div
             key={`title-${activeIndex}`}
@@ -309,15 +310,16 @@ export function HeroCarousel({
               <img
                 src={currentMovie.logo_url}
                 alt={currentMovie.title}
-                className="h-16 w-auto max-w-full object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)] lg:h-24 xl:h-28 2xl:h-32"
-                loading="eager"
-              />
-            ) : (
-              <h2 className="font-display text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] lg:text-4xl xl:text-5xl 2xl:text-6xl">
-                {currentMovie.title}
-              </h2>
-            )}
-          </div>
+	                className="hero-title-reveal h-16 w-auto max-w-full object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.9)] lg:h-24 xl:h-28 2xl:h-32"
+	                loading="eager"
+	              />
+	            ) : (
+	              <h2 className="hero-title-reveal font-display text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] lg:text-4xl xl:text-5xl 2xl:text-6xl">
+	                {currentMovie.title}
+	              </h2>
+	            )}
+	            <div className="mt-3 h-px w-24 bg-gradient-to-r from-red-500/85 via-white/35 to-transparent shadow-[0_0_18px_rgba(239,68,68,0.45)]" />
+	          </div>
 
           <div className="relative z-10 h-full flex hero-cinematic-container">
 
@@ -336,48 +338,17 @@ export function HeroCarousel({
                       </span>
                     </div>
 
-                    <div 
-                      className="flex items-center gap-3 mb-4 lg:mb-5"
-                    >
-                      <div className="flex items-center gap-0.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={cn(
-                              "w-4 h-4 lg:w-5 lg:h-5",
-                              i < getStarCount(currentMovie)
-                                ? "text-amber-400 fill-amber-400"
-                                : "text-white/20"
-                            )}
-                          />
-                        ))}
-                      </div>
-                      <span className="px-3 py-1 text-xs font-bold rounded-md text-black bg-gradient-to-r from-amber-400 to-amber-500 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
-                        IMDB {getImdbRating(currentMovie)}
-                      </span>
-                    </div>
-
-                    <div 
+                    <div
                       className="flex flex-wrap items-center gap-2 mb-5 lg:mb-7"
                     >
-                      {currentMovie.genres && currentMovie.genres.length > 0 && (
-                        <>
-                          <span className="text-sm text-white/50 font-medium">Genre:</span>
-                          {currentMovie.genres.slice(0, 3).map(genre => (
-                            <span key={genre} className="text-sm text-white/80 font-medium">
-                              {genre}
-                            </span>
-                          ))}
-                        </>
-                      )}
-                      {currentMovie.year && (
-                        <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded bg-white/10 text-white/70 border border-white/10">
-                          {currentMovie.year}
+                      {heroMetaChips.map((chip) => (
+                        <span
+                          key={chip}
+	                          className="hero-meta-chip rounded-md px-3 py-1 text-xs font-semibold text-white/80"
+	                        >
+                          {chip}
                         </span>
-                      )}
-                      <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded bg-white/10 text-white/70 border border-white/10 uppercase">
-                        {currentMovie.type === "series" ? "Series" : "Movie"}
-                      </span>
+                      ))}
                     </div>
 
                     {currentMovie.description && (
@@ -394,7 +365,7 @@ export function HeroCarousel({
                       <button
                         onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
                         data-testid="button-hero-play"
-                        className="btn-premium-red group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-semibold text-sm lg:text-base"
+	                        className="btn-premium-red hero-cta-glow group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-semibold text-sm lg:text-base"
                       >
                         <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
                         Watch Now
@@ -410,76 +381,39 @@ export function HeroCarousel({
                   </div>
                 </>
 
-              <div className="flex items-center gap-3 mt-6 lg:mt-8">
+              <div className="mt-6 flex items-center gap-3 lg:mt-8">
                 <button
                   onClick={scrollPrev}
                   data-testid="button-hero-prev"
-                  className="w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white active:scale-90 transition-all duration-200"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-white/65 backdrop-blur-md transition-all duration-200 hover:border-white/20 hover:bg-white/15 hover:text-white active:scale-95 lg:h-10 lg:w-10"
                   aria-label="Previous"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
                   onClick={scrollNext}
                   data-testid="button-hero-next"
-                  className="w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white active:scale-90 transition-all duration-200"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-white/65 backdrop-blur-md transition-all duration-200 hover:border-white/20 hover:bg-white/15 hover:text-white active:scale-95 lg:h-10 lg:w-10"
                   aria-label="Next"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="h-5 w-5" />
                 </button>
-                <div className="flex items-center gap-1.5 ml-2">
-                  {totalSlides <= 10
-                    ? displayMovies.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => scrollTo(index)}
-                        data-testid={`button-hero-dot-${index}`}
-                        className={cn(
-                          "rounded-full transition-all duration-500",
-                          index === activeIndex
-                            ? "w-6 h-1.5 bg-white shadow-[0_0_10px_rgba(255,255,255,0.4)]"
-                            : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
-                        )}
-                        aria-label={`Go to slide ${index + 1}`}
-                      />
-                    ))
-                    : (() => {
-                      const maxDots = 7;
-                      const half = Math.floor(maxDots / 2);
-                      let start = Math.max(0, activeIndex - half);
-                      let end = start + maxDots;
-                      if (end > totalSlides) { end = totalSlides; start = Math.max(0, end - maxDots); }
-                      const dots = [];
-                      if (start > 0) dots.push(<span key="s" className="w-1 h-1 rounded-full bg-white/20" />);
-                      for (let i = start; i < end; i++) {
-                        dots.push(
-                          <button
-                            key={i}
-                            onClick={() => scrollTo(i)}
-                            data-testid={`button-hero-dot-${i}`}
-                            className={cn(
-                              "rounded-full transition-all duration-500",
-                              i === activeIndex
-                                ? "w-6 h-1.5 bg-white shadow-[0_0_10px_rgba(255,255,255,0.4)]"
-                                : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
-                            )}
-                            aria-label={`Go to slide ${i + 1}`}
-                          />
-                        );
-                      }
-                      if (end < totalSlides) dots.push(<span key="e" className="w-1 h-1 rounded-full bg-white/20" />);
-                      return dots;
-                    })()
-                  }
-                </div>
-                <div className="ml-3 w-20 h-1 rounded-full bg-white/10 overflow-hidden">
-                  {shouldAutoplay && (
-                    <div
-                      key={`desktop-progress-${activeIndex}`}
-                      className="hero-progress-bar-fill h-full rounded-full bg-gradient-to-r from-white/60 to-white/90"
-                      style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
-                    />
+                <div className="ml-1 flex min-w-[170px] items-center gap-3">
+                  <span className="text-[11px] font-semibold tabular-nums text-white/55">
+                    {String(activeIndex + 1).padStart(2, "0")}
+                  </span>
+	                  <div className="hero-progress-rail h-0.5 flex-1 overflow-hidden rounded-full">
+	                  {shouldAutoplay && (
+	                    <div
+	                      key={`desktop-progress-${activeIndex}`}
+	                      className="hero-progress-bar-fill hero-progress-highlight h-full rounded-full"
+	                      style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
+	                    />
                   )}
+                  </div>
+                  <span className="text-[11px] font-semibold tabular-nums text-white/35">
+                    {String(totalSlides).padStart(2, "0")}
+                  </span>
                 </div>
               </div>
             </div>
