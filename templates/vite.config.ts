@@ -21,7 +21,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      target: 'esnext',
+      target: ["chrome90", "edge90", "firefox90", "safari14"],
+      cssTarget: ["chrome90", "edge90", "firefox90", "safari14"],
       rollupOptions: {
         output: {
           manualChunks: {
