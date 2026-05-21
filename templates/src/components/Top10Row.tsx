@@ -17,7 +17,7 @@ export const Top10Row = forwardRef<HTMLElement, Top10RowProps>(function Top10Row
   if (top10.length < 3) return null;
 
   return (
-    <section ref={ref} className={cn("py-6 content-visibility-auto", className)}>
+    <section ref={ref} className={cn("py-6 ", className)}>
       <h2 className="section-title text-lg md:text-xl font-display font-semibold text-foreground tracking-tight mb-6" data-testid="text-section-top10">
         Latest 10
       </h2>

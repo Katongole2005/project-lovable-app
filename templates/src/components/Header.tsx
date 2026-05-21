@@ -148,7 +148,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                 src={currentLogo}
                 alt="MovieBay"
                 className="h-8 w-auto md:h-10"
-                loading="lazy"
+                
               />
             </Link>
 
