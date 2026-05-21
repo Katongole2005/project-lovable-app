@@ -1,6 +1,35 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
+
+const logToFilePlugin = () => {
+  return {
+    name: 'log-to-file',
+    configureServer(server: any) {
+      server.middlewares.use('/api/log', (req: any, res: any) => {
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk: any) => {
+            body += chunk.toString();
+          });
+          req.on('end', () => {
+            try {
+              const logFile = path.resolve(__dirname, 'frontend_logs.txt');
+              const parsed = JSON.parse(body);
+              const logLine = `[${parsed.time}] [${parsed.type.toUpperCase()}] ${parsed.message}\n`;
+              fs.appendFileSync(logFile, logLine);
+            } catch (e) {
+              console.error('Error writing log', e);
+            }
+            res.statusCode = 200;
+            res.end('ok');
+          });
+        }
+      });
+    }
+  };
+};
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -14,7 +43,7 @@ export default defineConfig(({ mode }) => {
       allowedHosts: true,
       hmr: { overlay: false },
     },
-    plugins: [react()],
+    plugins: [react(), logToFilePlugin()],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

@@ -301,9 +301,27 @@ export function CinematicVideoPlayer({
     setHasEnded(false);
     setIsPaused(false);
     setIsPlaying(true);
-    setIsBuffering(true);
     setShowControls(true);
     void enterMobileLandscape();
+
+    if (videoRef.current) {
+      if (videoRef.current.readyState >= 3) {
+        setIsBuffering(false);
+      } else {
+        setIsBuffering(true);
+      }
+      
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("Auto-play blocked by browser:", err);
+          setIsPaused(true);
+          setIsBuffering(false);
+        });
+      }
+    } else {
+      setIsBuffering(true);
+    }
   }, [enterMobileLandscape]);
 
   useEffect(() => {
@@ -434,6 +452,40 @@ export function CinematicVideoPlayer({
       isCancelled = true;
     };
   }, [posterUrl]);
+
+  // Player Diagnostic Logger (runs every second during playback)
+  useEffect(() => {
+    if (!isOpen || !isPlaying) return;
+    
+    const logInterval = window.setInterval(() => {
+      const video = videoRef.current;
+      if (video) {
+        console.log(`[MOVIE_BAY_LOG] [${new Date().toISOString()}] Native Video State:`, {
+          title: activeTitle,
+          url: activeVideoUrl,
+          currentTime: video.currentTime,
+          duration: video.duration,
+          readyState: video.readyState,
+          networkState: video.networkState,
+          paused: video.paused,
+          buffered: video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : 0,
+          error: video.error ? video.error.message || video.error.code : null,
+          isBufferingState: isBuffering
+        });
+      } else {
+        console.log(`[MOVIE_BAY_LOG] [${new Date().toISOString()}] Embed Player State:`, {
+          title: activeTitle,
+          url: activeVideoUrl,
+          currentTime,
+          duration,
+          isBuffering,
+          isPaused
+        });
+      }
+    }, 1000);
+    
+    return () => window.clearInterval(logInterval);
+  }, [isOpen, isPlaying, activeTitle, activeVideoUrl, currentTime, duration, isBuffering, isPaused]);
 
   // Handle PiP availability and state
   useEffect(() => {
@@ -980,8 +1032,15 @@ export function CinematicVideoPlayer({
     setIsPaused(false);
     setIsBuffering(true);
     setActiveVideoUrl(videoUrl);
-    setResumeTime(currentTime || startTime);
-    setCurrentTime(currentTime || startTime);
+    
+    const resumeAt = currentTime || startTime;
+    setResumeTime(resumeAt);
+    setCurrentTime(resumeAt);
+    
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
+    
     beginPlayback();
   };
 
@@ -1177,8 +1236,7 @@ export function CinematicVideoPlayer({
           </AnimatePresence>
 
           {/* ── IFRAME PLAYER ── */}
-          {isPlaying && (
-            <div className="absolute inset-0 z-10 bg-black overflow-hidden flex items-center justify-center animate-in fade-in duration-300">
+          <div className={cn("absolute inset-0 z-10 bg-black overflow-hidden flex items-center justify-center transition-opacity duration-300", isPlaying ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}>
                 {/* Ambilight Ambient Glow Effect */}
                 {posterGradient && (
                   <div 
@@ -1206,7 +1264,7 @@ export function CinematicVideoPlayer({
                 ) : (
                     <video
                       ref={videoRef}
-                      key={`${activeVideoUrl}-${resumeTime}`}
+                      key={`${activeVideoUrl}`}
                       src={activeVideoUrl}
                       autoPlay
                       controls={useNativeVideoControls}
@@ -1625,7 +1683,6 @@ export function CinematicVideoPlayer({
                 </div>
                 )}
             </div>
-          )}
 
           {/* ── VIDEO ENDED OVERLAY ── */}
           <AnimatePresence>

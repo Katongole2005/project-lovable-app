@@ -13,6 +13,7 @@ import { AppLoader } from "@/components/AppLoader";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { NotificationSubscribePrompt } from "@/components/NotificationSubscribePrompt";
+import { DebugConsole } from "@/components/DebugConsole";
 
 const Toaster = lazy(() => import("@/components/ui/toaster").then(module => ({ default: module.Toaster })));
 const CookieConsent = lazy(() => import("@/components/CookieConsent").then(module => ({ default: module.CookieConsent })));
@@ -86,6 +87,7 @@ const App = () => {
           </BrowserRouter>
         </ThemeProvider>
       </ErrorBoundary>
+      <DebugConsole />
     </QueryClientProvider>
   );
 };
