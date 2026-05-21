@@ -159,13 +159,7 @@ function shouldUseDirectPlayback(url?: string): boolean {
 }
 
 function shouldPreferDirectPlaybackOnThisDevice(url?: string): boolean {
-  if (!shouldUseDirectPlayback(url) || typeof navigator === "undefined") return false;
-
-  const userAgent = navigator.userAgent;
-  const isSafari = /safari/i.test(userAgent) && !/chrome|chromium|android|crios|fxios|edgios/i.test(userAgent);
-  const isMobile = /mobile|iphone|ipad|ipod/i.test(userAgent);
-  const isMac = /macintosh|mac os x/i.test(userAgent);
-  return (isSafari && !isMobile) || isMac;
+  return false;
 }
 
 async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise<string | null> {
@@ -236,7 +230,11 @@ export function shouldProxyMediaUrl(url?: string): boolean {
     /download(mp4|serie|video|mp3)\.php/i.test(normalized) ||
     /\/watch\/(mp4|serie|video|file)\//i.test(normalized) ||
     /\/download\/(mp4|serie|video|file)\//i.test(normalized) ||
+    /b-cdn\.net/i.test(normalized) ||
     /pearlpix\.xyz/i.test(normalized) ||
+    /bunnycdn\.com/i.test(normalized) ||
+    /storage\.googleapis\.com/i.test(normalized) ||
+    /\.(mp4|m4v|webm|m3u8|mov|avi|mkv)(\?|$)/i.test(normalized) ||
     /munoserver/i.test(normalized) ||
     /munotech/i.test(normalized)
   );

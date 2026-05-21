@@ -735,12 +735,9 @@ export default function Index() {
       mobifliksId,
       detailsUrl
     });
-    const cachedMedia = getCachedMediaAvailability(proxiedUrl);
-    let playbackUrl = cachedMedia?.resolved_url || proxiedUrl;
-
-    if (playbackUrl !== proxiedUrl && shouldProxyMediaUrl(playbackUrl)) {
-      playbackUrl = await buildMediaUrl({ url: playbackUrl, title, play: true });
-    }
+    
+    // Always enforce proxy if available to avoid direct link issues on certain devices.
+    let playbackUrl = proxiedUrl;
 
     const movie = selectedMovieRef.current;
     const parsedEpisode = parseEpisodeInfoFromTitle(title);
