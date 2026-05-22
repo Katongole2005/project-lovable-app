@@ -296,10 +296,13 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
   // Use optimized (smaller) backdrop URL for faster loading.
   const backgroundImage = React.useMemo(() => {
     if (!backdrop) return null;
-    return deviceProfile.allowHighResImages
-      ? backdrop.replace("/original/", "/w1280/").replace("/w780/", "/w1280/")
-      : getOptimizedBackdropUrl(backdrop);
-  }, [backdrop, deviceProfile.allowHighResImages]);
+    // Always request the highest available quality for the modal backdrop
+    // since it takes up the entire screen. w1280 is the largest standard TMDB size.
+    return backdrop
+      .replace("/w780/", "/w1280/")
+      .replace("/w500/", "/w1280/")
+      .replace("/w300/", "/w1280/");
+  }, [backdrop]);
   const allowDesktopMotion = deviceProfile.allowComplexAnimations && !deviceProfile.prefersReducedMotion;
 
   const [desktopBackdropLoaded, setDesktopBackdropLoaded] = React.useState(false);
