@@ -256,16 +256,29 @@
     line-height: var(--leading-normal);
     letter-spacing: var(--tracking-normal);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    background-image:
-      radial-gradient(ellipse 100% 60% at 0% 0%, hsl(var(--primary) / 0.06), transparent 40%),
-      radial-gradient(ellipse 80% 50% at 100% 100%, hsl(var(--primary) / 0.04), transparent 40%);
-    background-attachment: fixed;
     min-height: 100vh;
     min-height: 100dvh;
     overscroll-behavior-y: none;
+    position: relative;
   }
 
-  .dark body {
+  /* Fixed background gradient — rendered as a separate layer so it paints
+     immediately on mount, bypassing the browser deferred-paint bug that
+     background-attachment:fixed triggers on Chrome/Edge. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(ellipse 100% 60% at 0% 0%, hsl(var(--primary) / 0.06), transparent 40%),
+      radial-gradient(ellipse 80% 50% at 100% 100%, hsl(var(--primary) / 0.04), transparent 40%);
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .dark body::after {
     background-image:
       radial-gradient(ellipse 120% 60% at 10% -10%, hsl(357 93% 47% / 0.08), transparent 50%),
       radial-gradient(ellipse 80% 40% at 50% 100%, hsl(0 0% 25% / 0.05), transparent 60%);
@@ -1585,9 +1598,6 @@ html.perf-touch .backdrop-blur-sm {
   backdrop-filter: blur(4px) !important;
 }
 
-html.perf-low body {
-  background-attachment: scroll;
-}
 
 html.perf-low body::before {
   display: none;
@@ -1724,14 +1734,6 @@ body::before {
 }
 
 @media (max-width: 767px) {
-  body {
-    background-attachment: scroll;
-  }
-
-  body::before {
-    display: none;
-  }
-
   .hero-vignette {
     box-shadow: inset 0 0 60px 20px rgba(0, 0, 0, 0.38);
   }
