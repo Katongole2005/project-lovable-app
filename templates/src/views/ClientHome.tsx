@@ -1561,26 +1561,28 @@ function ClientHome() {
           </div>
         )}
         {/* Minimal Footer for Verification & Navigation */}
-        <footer className="container relative z-10 mx-auto pb-8 px-2 pt-16 mt-8 border-t border-white/[0.05] flex flex-col">
-          <div className="mb-4 self-start h-[35px]">
-            <img 
-              alt="MovieBay Logo" 
-              className="h-full w-auto object-contain" 
-              src={currentLogo} 
-            />
-          </div>
-          <div className="mb-4 self-start">
-            <div className="mt-2 text-sm text-muted-foreground max-w-lg text-left">
-              <p>MovieBay does not host any media files, instead, it provides links to third-party services. Legal concerns regarding the files should be addressed directly with the respective file hosts and providers. MovieBay bears no responsibility for the media files displayed by the providers.</p>
+        {viewMode !== "search" && (
+          <footer className="container relative z-10 mx-auto pb-8 px-2 pt-16 mt-8 border-t border-white/[0.05] flex flex-col">
+            <div className="mb-4 self-start h-[35px]">
+              <img 
+                alt="MovieBay Logo" 
+                className="h-full w-auto object-contain" 
+                src={currentLogo} 
+              />
             </div>
-          </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground self-start">
-            <Link className="hover:text-white transition-colors" to="/dmca" suppressHydrationWarning>DMCA</Link>
-            <Link className="hover:text-white transition-colors" to="/settings" suppressHydrationWarning>Settings</Link>
-            <Link className="hover:text-white transition-colors" to="/privacy" suppressHydrationWarning>Privacy Policy</Link>
-            <Link className="hover:text-white transition-colors" to="/terms" suppressHydrationWarning>Terms of Service</Link>
-          </div>
-        </footer>
+            <div className="mb-4 self-start">
+              <div className="mt-2 text-sm text-muted-foreground max-w-lg text-left">
+                <p>MovieBay does not host any media files, instead, it provides links to third-party services. Legal concerns regarding the files should be addressed directly with the respective file hosts and providers. MovieBay bears no responsibility for the media files displayed by the providers.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground self-start">
+              <Link className="hover:text-white transition-colors" to="/dmca" suppressHydrationWarning>DMCA</Link>
+              <Link className="hover:text-white transition-colors" to="/settings" suppressHydrationWarning>Settings</Link>
+              <Link className="hover:text-white transition-colors" to="/privacy" suppressHydrationWarning>Privacy Policy</Link>
+              <Link className="hover:text-white transition-colors" to="/terms" suppressHydrationWarning>Terms of Service</Link>
+            </div>
+          </footer>
+        )}
 
         {/* Lazy Loaded Heavy Modals */}
         <Suspense fallback={null}>
