@@ -1,14 +1,31 @@
 import ClientHome from '@/views/ClientHome';
 
-// In a real production Next.js app, we would fetch the movie data here
-// and generate dynamic metadata for SEO.
-// Since the modal is embedded in ClientHome, we just render ClientHome.
-// eslint-disable-next-line react-refresh/only-export-components
+import { supabase } from '@/integrations/supabase/client';
+
+// Generate dynamic metadata for SEO by fetching the actual movie
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  
+  const { data: movie } = await supabase
+    .from('movies')
+    .select('title, description, image_url')
+    .eq('mobifliks_id', id)
+    .single();
+
+  if (!movie) {
+    return {
+      title: 'Watch Online - Moviebay',
+    };
+  }
+
   return {
-    title: `Watch Movie ${id} Online - Moviebay`,
-    description: `Stream or download movie ${id} in HD on Moviebay.`,
+    title: `Watch ${movie.title} Online - Moviebay`,
+    description: movie.description ? `${movie.description.slice(0, 150)}...` : `Stream or download ${movie.title} in HD on Moviebay.`,
+    openGraph: {
+      title: `Watch ${movie.title} Online - Moviebay`,
+      description: movie.description ? `${movie.description.slice(0, 150)}...` : `Stream or download ${movie.title} in HD on Moviebay.`,
+      images: movie.image_url ? [{ url: movie.image_url }] : [],
+    }
   };
 }
 
