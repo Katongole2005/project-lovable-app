@@ -692,7 +692,8 @@ function ClientHome() {
     setTimeout(() => {
       navigateTo(`/${typeSlug}/${urlSlug}`, {
         replace: false,
-        state: { backgroundView: viewMode }
+        state: { backgroundView: viewMode },
+        shallow: true
       });
     }, 400);
 
@@ -725,7 +726,7 @@ function ClientHome() {
     
     if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
       const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
-      navigateTo(targetPath, { replace: true });
+      navigateTo(targetPath, { replace: true, shallow: true });
     }
   }, [location.pathname, navigateTo, viewMode]);
 

@@ -8,9 +8,25 @@ let memoryState: any = null;
 
 export function useNavigate() {
   const router = useRouter();
-  return (path: string | number, options?: { replace?: boolean, state?: any }) => {
+  return (path: string | number, options?: { replace?: boolean, state?: any, shallow?: boolean }) => {
     if (typeof path === 'number') {
       if (path === -1) router.back();
+      return;
+    }
+    
+    if (options?.shallow) {
+      if (options.state !== undefined) {
+        memoryState = options.state;
+        try { sessionStorage.setItem('moviebay_router_state', JSON.stringify(options.state)); } catch (e) {}
+      } else {
+        memoryState = null;
+        try { sessionStorage.removeItem('moviebay_router_state'); } catch (e) {}
+      }
+      if (options.replace) {
+        window.history.replaceState(options.state || {}, '', path);
+      } else {
+        window.history.pushState(options.state || {}, '', path);
+      }
       return;
     }
     if (options?.state !== undefined) {
