@@ -141,7 +141,7 @@ export function HeroCarousel({
   };
 
   if (isLoading || !displayMovies.length) {
-    return <div className="overflow-hidden relative" aria-busy={isLoading} aria-label="Loading latest movies">
+    return <div className="overflow-hidden relative" aria-busy={isLoading ? "true" : "false"} aria-label="Loading latest movies">
       <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem+env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(350px+6.5rem+env(safe-area-inset-top))]">
         <div className="flex justify-between items-center mb-3">
           <div className="h-6 w-32 bg-white/8 rounded-lg shimmer" />

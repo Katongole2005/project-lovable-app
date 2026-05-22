@@ -120,8 +120,10 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
       )}
 
       <header
-        className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-2 md:px-3"
-        style={{ top: hasAnnouncement ? "calc(env(safe-area-inset-top) + 3.5rem)" : "calc(env(safe-area-inset-top) + 1.25rem)" }}
+        className={cn(
+          "pointer-events-none fixed inset-x-0 z-50 flex justify-center px-2 md:px-3",
+          hasAnnouncement ? "top-[calc(env(safe-area-inset-top)+3.5rem)]" : "top-[calc(env(safe-area-inset-top)+1.25rem)]"
+        )}
       >
         <nav className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.08] px-[14px] py-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-[24px] backdrop-saturate-[1.8]">
             {navItems.map((item) => {
@@ -170,8 +172,8 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
             )}
             aria-label="Profile"
           >
-            {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="" className="h-5 w-5 md:h-6 md:w-6 rounded-full object-cover" />
+            {user?.user_metadata?.avatar_url ? (
+              <img src={user.user_metadata.avatar_url} alt="" className="h-5 w-5 md:h-6 md:w-6 rounded-full object-cover" />
             ) : (
               <User className="h-[18px] w-[18px] md:h-5 md:w-5" />
             )}

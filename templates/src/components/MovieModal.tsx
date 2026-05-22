@@ -283,7 +283,7 @@ function VJVersionSwitcher({
   );
 }
 
-export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = false, onMovieSelect, onAuthRequired }: MovieModalProps) {
+function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = false, onMovieSelect, onAuthRequired }: MovieModalProps & { movie: Movie | Series }) {
   // NOTE: hooks must be called unconditionally; keep all hooks above the null-guard return.
   const deviceProfile = useDeviceProfile();
   const { user } = useAuth();
@@ -441,7 +441,6 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
     toast.success(added ? `Added to My List` : `Removed from My List`);
   };
 
-  if (!movie) return null;
 
   const isSeries = movie.type === "series";
   const series = movie as Series;
@@ -648,6 +647,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                         {actionStep.includes("vj") ? "Choose Version" : "Choose Quality"}
                       </h3>
                       <button 
+                        title="Close"
                         onClick={() => setActionStep("none")}
                         className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
                       >
@@ -1143,6 +1143,7 @@ function MobileMovieLayout({
   playbackSources,
   resumeEpisode,
 }: MobileMovieLayoutProps) {
+  const { user } = useAuth();
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [selectedSeason, setSelectedSeason] = React.useState(1);
   const [activeTab, setActiveTab] = React.useState<"overview" | "casts" | "related">("overview");
@@ -2263,4 +2264,9 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, seriesDetailsUr
       </div>
     </div>
   );
+}
+
+export function MovieModal(props: MovieModalProps) {
+  if (!props.movie) return null;
+  return <InnerMovieModal {...props} movie={props.movie} />;
 }

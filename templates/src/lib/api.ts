@@ -120,7 +120,7 @@ function preconnectOrigin(url?: string | null): void {
   }
 }
 
-function warmMediaElement(url?: string | null): void {
+export function warmMediaElement(url?: string | null): void {
   if (!url || typeof document === "undefined" || warmedMediaUrls.has(url)) return;
 
   try {
@@ -536,7 +536,9 @@ const fixReleaseDate = (dateStr?: string): string | undefined => {
       d.setFullYear(currentYear);
       return d.toISOString().split("T")[0];
     }
-  } catch (e) { }
+  } catch (e) {
+    // Ignore invalid dates
+  }
   return dateStr;
 };
 

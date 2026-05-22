@@ -83,6 +83,7 @@ function ContinueWatchingCard({
         </div>
 
         <button
+          title="Remove from Continue Watching"
           onClick={handleRemove}
           data-testid={`button-remove-${item.id}`}
           className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-destructive/80 border border-white/[0.08]"
