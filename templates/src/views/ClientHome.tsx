@@ -752,7 +752,7 @@ function ClientHome() {
     
     if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
       const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
-      navigateTo(targetPath, { replace: true });
+      navigateTo(targetPath, { replace: true, shallow: true });
     }
   }, [location.pathname, navigateTo, viewMode]);
 
@@ -921,10 +921,18 @@ function ClientHome() {
       if (isVideoOpen) {
         setIsVideoOpen(false);
         setActivePlaybackItem(null);
+        if (window.location.pathname.startsWith("/movie/") || window.location.pathname.startsWith("/series/")) {
+          const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
+          navigateTo(targetPath, { replace: true, shallow: true });
+        }
         return;
       }
       if (isModalOpen) {
         setIsModalOpen(false);
+        if (window.location.pathname.startsWith("/movie/") || window.location.pathname.startsWith("/series/")) {
+          const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
+          navigateTo(targetPath, { replace: true, shallow: true });
+        }
         return;
       }
       if (viewMode === "movies" || viewMode === "series" || viewMode === "search" || viewMode === "originals") {
