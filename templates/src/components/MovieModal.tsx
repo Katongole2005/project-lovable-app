@@ -464,7 +464,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
   ].filter(Boolean) as string[];
   const modalGenreMeta = (movie.genres ?? []).slice(0, 3);
   const mobileDetailChips = [...modalPrimaryMeta.slice(0, 3), ...modalAccentMeta, ...modalGenreMeta.slice(0, 1)];
-  const handlePlay = async (url: string, title: string, startTime: number = 0, mobifliksId?: string | null, detailsUrl?: string | null) => {
+  const handlePlay = React.useCallback(async (url: string, title: string, startTime: number = 0, mobifliksId?: string | null, detailsUrl?: string | null) => {
     const finalUrl = await buildMediaUrl({
       url,
       title,
@@ -476,7 +476,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
       incrementUserStat(user.id, 'activity_points', 5); // Points for starting playback
     }
     onPlay(finalUrl, title);
-  };
+  }, [movie, user, onPlay]);
 
   const continueWatching = useContinueWatching();
 
