@@ -25,9 +25,9 @@ export function useNavigate() {
       } catch (e) {}
     }
     if (options?.replace) {
-      router.replace(path);
+      router.replace(path, { scroll: false });
     } else {
-      router.push(path);
+      router.push(path, { scroll: false });
     }
   };
 }
@@ -88,9 +88,9 @@ export function Navigate({ to, replace }: { to: string, replace?: boolean }) {
   const router = useRouter();
   useEffect(() => {
     if (replace) {
-      router.replace(to);
+      router.replace(to, { scroll: false });
     } else {
-      router.push(to);
+      router.push(to, { scroll: false });
     }
   }, [to, replace, router]);
   return null;
