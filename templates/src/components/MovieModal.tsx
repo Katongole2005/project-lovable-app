@@ -19,15 +19,6 @@ import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { useAuth } from "@/hooks/useAuth";
 
-export async function getProxiedPlayUrl(url: string, title: string, detailsUrl?: string | null, mobifliksId?: string | null) {
-  return await buildMediaUrl({
-    url,
-    title,
-    detailsUrl,
-    mobifliksId,
-    play: true,
-  });
-}
 
 /**
  * Downloads a file with a clean, movie-title filename.
@@ -364,7 +355,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
       };
       fetchTmdb();
     }
-  }, [movie?.mobifliks_id, isOpen]);
+  }, [movie, isOpen]);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -388,7 +379,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
         }
       }
     }
-  }, [movie?.mobifliks_id, isOpen, (movie as unknown as Series).episodes?.length]);
+  }, [movie, isOpen]);
 
   React.useEffect(() => {
     setDesktopBackdropLoaded(false);
@@ -551,7 +542,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
     if (!targetUrl) return;
     const name = movie.year ? `${movie.title} (${movie.year})` : movie.title;
     downloadWithName(targetUrl, name, (movie as any).video_page_url || movie.details_url, movie.mobifliks_id, user?.id);
-  }, [movie, selectedServer]);
+  }, [movie, selectedServer, onAuthRequired, user]);
 
   const handlePrimaryAction = React.useCallback((serverId?: 1 | 2) => {
     if (!user) {
@@ -600,7 +591,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
     if (targetUrl) {
       handlePlay(targetUrl, movie.title, 0, movie.mobifliks_id, (movie as any).video_page_url || movie.details_url);
     }
-  }, [isSeries, series.episodes, resumeEpisode, movie, selectedServer, onPlay]);
+  }, [isSeries, series.episodes, resumeEpisode, movie, selectedServer, handlePlay, onAuthRequired, user]);
 
   const desktopBorderColor = getSubtleArtworkBorder(artworkTint);
 
@@ -610,9 +601,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
         {/* Mobile: Full screen sheet, Desktop: Centered modal */}
         <DialogContent
           className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-transparent border-0 md:border overflow-hidden shadow-none md:shadow-[0_24px_80px_rgba(0,0,0,0.62)] rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none"
-          style={{
-            borderColor: desktopBorderColor,
-          }}
+          ref={(el) => { if (el) el.style.borderColor = desktopBorderColor; }}
         >
 
           <DialogTitle className="sr-only">{movie.title}</DialogTitle>
@@ -783,9 +772,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
               {deviceProfile.allowAmbientEffects && (
                 <motion.div
                   className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-                  }}
+                  ref={(el) => { if (el) el.style.backgroundImage = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`; }}
                 />
               )}
             </div>
@@ -960,7 +947,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                                 await navigator.share({ title: movie.title, url: shareUrl });
                                 return;
                               }
-                            } catch { }
+                            } catch { /* ignore */ }
                             try {
                               await navigator.clipboard.writeText(shareUrl);
                               toast.success("Link copied to clipboard!");
@@ -1183,7 +1170,7 @@ function MobileMovieLayout({
       }
     });
     return () => { cancelled = true; };
-  }, [movie.mobifliks_id, movie.genres?.[0]]);
+  }, [movie.mobifliks_id, movie.genres, movie.type]);
 
   React.useEffect(() => {
     setBackdropLoaded(false);
@@ -1235,7 +1222,7 @@ function MobileMovieLayout({
   const shouldTruncate = description.length > maxDescriptionLength;
   const displayDescription = isExpanded ? description : description.slice(0, maxDescriptionLength);
 
-  const allEpisodes = series.episodes || [];
+  const allEpisodes = React.useMemo(() => series.episodes || [], [series.episodes]);
   const seasons = React.useMemo(() => {
     const seasonMap = new Map<number, typeof allEpisodes>();
     allEpisodes.forEach((ep) => {
@@ -1253,7 +1240,7 @@ function MobileMovieLayout({
     if (availableSeasons.length > 0 && !availableSeasons.includes(selectedSeason)) {
       setSelectedSeason(availableSeasons[0]);
     }
-  }, [movie.mobifliks_id, availableSeasons]);
+  }, [movie.mobifliks_id, availableSeasons, selectedSeason]);
 
   const currentSeasonEpisodes = seasons.get(selectedSeason) || allEpisodes;
 
@@ -1273,7 +1260,7 @@ function MobileMovieLayout({
         await navigator.share({ title: movie.title, url: shareUrl });
         return;
       }
-    } catch { }
+    } catch { /* ignore */ }
 
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -1351,7 +1338,7 @@ function MobileMovieLayout({
           {backgroundImage && (
             <div
               className="w-full h-full transition-transform duration-300 ease-out will-change-transform"
-              style={heroImageStyle}
+              ref={(el) => { if (el) Object.assign(el.style, heroImageStyle); }}
             >
               <img
                 src={backgroundImage}
@@ -1366,18 +1353,20 @@ function MobileMovieLayout({
 
           <div
             className="absolute inset-0 transition-opacity duration-300"
-            style={{
-              ...heroOverlayStyle,
-              background: "linear-gradient(180deg, rgba(16,17,22,0.02) 0%, rgba(16,17,22,0.02) 42%, rgba(16,17,22,0.46) 82%, #101116 100%)",
+            ref={(el) => {
+              if (el) {
+                Object.assign(el.style, heroOverlayStyle);
+                el.style.background = "linear-gradient(180deg, rgba(16,17,22,0.02) 0%, rgba(16,17,22,0.02) 42%, rgba(16,17,22,0.46) 82%, #101116 100%)";
+              }
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10 transition-opacity duration-300" style={heroOverlayStyle} />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10 transition-opacity duration-300" ref={(el) => { if (el) Object.assign(el.style, heroOverlayStyle); }} />
 
           <div className="absolute inset-0 bg-black/[0.03]" />
 
           <div
             className="absolute bottom-0 left-0 right-0 z-20 flex gap-4 items-end p-5 transition-[transform,opacity] duration-300 ease-out will-change-transform"
-            style={heroContentStyle}
+            ref={(el) => { if (el) Object.assign(el.style, heroContentStyle); }}
           >
             <div className="w-24 h-36 flex-shrink-0 overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.45)] relative">
               <img
@@ -1521,9 +1510,11 @@ function MobileMovieLayout({
       </div>
 
       <div
-        ref={scrollContainerRef}
+        ref={(el) => {
+          scrollContainerRef.current = el;
+          if (el) el.style.setProperty("-webkit-overflow-scrolling", "touch");
+        }}
         className="pointer-events-none relative z-30 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y"
-        style={{ WebkitOverflowScrolling: "touch" }}
       >
         <div className="w-full aspect-[16/15.5] pointer-events-none" />
 
@@ -1531,7 +1522,7 @@ function MobileMovieLayout({
 
         <div
           className="pointer-events-auto relative z-30 min-h-0 !rounded-none pb-12 bg-[#101116]"
-          style={surfaceStyle}
+          ref={(el) => { if (el) Object.assign(el.style, surfaceStyle); }}
         >
           <div className="px-4 pb-2 pt-0">
             <motion.section
@@ -1749,9 +1740,11 @@ function MobileMovieLayout({
                       >
                         <div
                           className="w-20 h-20 rounded-full overflow-hidden shadow-lg p-[2px] modal-cast-member-ring"
-                          style={{
-                            ["--member-hue" as string]: (accentHue + i * 25) % 360,
-                            ["--member-hue-alt" as string]: (accentHue + i * 25 + 60) % 360,
+                          ref={(el) => {
+                            if (el) {
+                              el.style.setProperty("--member-hue", String((accentHue + i * 25) % 360));
+                              el.style.setProperty("--member-hue-alt", String((accentHue + i * 25 + 60) % 360));
+                            }
                           }}
                         >
                           <div className="w-full h-full rounded-full overflow-hidden bg-[hsl(230,18%,8%)]">
@@ -1848,7 +1841,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seriesDetail
     if (episode.server2_url) {
       fetchMediaSize(episode.server2_url, seriesTitle, episode.mobifliks_id).then(setS2Size);
     }
-  }, [episode.download_url, episode.server2_url, seriesTitle]);
+  }, [episode.download_url, episode.server2_url, seriesTitle, episode.mobifliks_id]);
 
   const hasVideo = (episode.download_url &&
     (episode.download_url.includes(".mp4") ||
@@ -1911,7 +1904,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seriesDetail
             src={getImageUrl(seriesImage)}
             alt={`Episode ${episode.episode_number}`}
             className="w-full h-full object-cover"
-            style={{ objectPosition: `center ${30 + (index * 5) % 40}%` }}
+            ref={(el) => { if (el) el.style.objectPosition = `center ${30 + (index * 5) % 40}%`; }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
@@ -1978,7 +1971,7 @@ function MobileTimelineEpisode({ episode, seriesTitle, seriesImage, seriesDetail
 
             {progressPct > 0 && (
               <div className="w-full h-[3px] bg-white/10">
-                <div className="episode-progress-fill h-full rounded-r-full" style={{ width: `${progressPct}%` }} />
+                <div className="episode-progress-fill h-full rounded-r-full" ref={(el) => { if (el) el.style.width = `${progressPct}%`; }} />
               </div>
             )}
           </div>
@@ -2027,7 +2020,7 @@ function DesktopEpisodeSection({
   onPlay: (url: string, title: string, startTime?: number, mobifliksId?: string | null, detailsUrl?: string | null) => void;
 }) {
   const [selectedSeason, setSelectedSeason] = React.useState(1);
-  const allEpisodes = series.episodes || [];
+  const allEpisodes = React.useMemo(() => series.episodes || [], [series.episodes]);
 
   const seasons = React.useMemo(() => {
     const seasonMap = new Map<number, Episode[]>();
@@ -2046,7 +2039,7 @@ function DesktopEpisodeSection({
     if (availableSeasons.length > 0 && !availableSeasons.includes(selectedSeason)) {
       setSelectedSeason(availableSeasons[0]);
     }
-  }, [movie.mobifliks_id, availableSeasons]);
+  }, [availableSeasons, selectedSeason]);
 
   const currentEpisodes = seasons.get(selectedSeason) || allEpisodes;
 
@@ -2118,7 +2111,7 @@ function DesktopEpisodeCard({ episode, seriesTitle, seriesImage, seriesDetailsUr
     if (episode.server2_url) {
       fetchMediaSize(episode.server2_url, seriesTitle, episode.mobifliks_id).then(setS2Size);
     }
-  }, [episode.download_url, episode.server2_url, seriesTitle]);
+  }, [episode.download_url, episode.server2_url, seriesTitle, episode.mobifliks_id]);
 
   const hasVideo = (episode.download_url &&
     (episode.download_url.includes(".mp4") ||

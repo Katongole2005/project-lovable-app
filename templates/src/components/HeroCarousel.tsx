@@ -141,7 +141,7 @@ export function HeroCarousel({
   };
 
   if (isLoading || !displayMovies.length) {
-    return <div className="overflow-hidden relative" aria-busy={isLoading ? "true" : "false"} aria-label="Loading latest movies">
+    return <div className="overflow-hidden relative" aria-busy="true" aria-label="Loading latest movies">
       <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem+env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(350px+6.5rem+env(safe-area-inset-top))]">
         <div className="flex justify-between items-center mb-3">
           <div className="h-6 w-32 bg-white/8 rounded-lg shimmer" />
@@ -219,9 +219,7 @@ export function HeroCarousel({
               ) : (
                 <div
                   className="h-full w-full bg-cover bg-center opacity-40"
-                  style={{
-                    backgroundImage: `url(${backdropSrc ?? posterFallbackSrc ?? ""})`,
-                  }}
+                  ref={(el) => { if (el) el.style.backgroundImage = `url(${backdropSrc ?? posterFallbackSrc ?? ""})`; }}
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f]/45 via-black/65 to-[#0a0a0f]/95" />
@@ -260,11 +258,13 @@ export function HeroCarousel({
                     "absolute inset-0 cursor-pointer transition-all ease-out preserve-3d dynamic-card",
                     deviceProfile.isWeakDevice ? "duration-200" : "duration-300"
                   )}
-                  style={{
-                    transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
-                    opacity: opacity,
-                    zIndex: zIndex,
-                  } as React.CSSProperties}
+                  ref={(el) => {
+                    if (el) {
+                      el.style.transform = `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`;
+                      el.style.opacity = opacity.toString();
+                      el.style.zIndex = zIndex.toString();
+                    }
+                  }}
                   onClick={() => isSelected ? (onMovieClick ? onMovieClick(movie) : onPlay(movie)) : scrollTo(index)}
                 >
                   <div className={cn(
@@ -345,7 +345,7 @@ export function HeroCarousel({
                   <div
                     key={`mobile-progress-${activeIndex}`}
                     className="hero-progress-bar-fill hero-progress-highlight h-full rounded-full animate-progress"
-                    style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
+                    ref={(el) => { if (el) el.style.setProperty("--duration", `${autoplayDelayMs}ms`); }}
                   />
               )}
             </div>
@@ -478,7 +478,7 @@ export function HeroCarousel({
                           <div
                             key={`desktop-progress-${activeIndex}`}
                             className="hero-progress-bar-fill hero-progress-highlight h-full rounded-full"
-                            style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
+                            ref={(el) => { if (el) el.style.setProperty("--duration", `${autoplayDelayMs}ms`); }}
                           />
                         )}
                       </div>

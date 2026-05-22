@@ -63,11 +63,7 @@ function ContinueWatchingCard({
       onClick={() => onResume(item)}
       data-testid={`card-continue-${item.id}`}
     >
-      <div className="relative aspect-video overflow-hidden rounded-xl shadow-card card-hover"
-        style={{
-          boxShadow: "0 8px 32px hsl(230 60% 5% / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.04)",
-        }}
-      >
+      <div className="relative aspect-video overflow-hidden rounded-xl shadow-card card-hover shadow-[0_8px_32px_hsl(230_60%_5%/0.5),inset_0_1px_0_hsl(0_0%_100%/0.04)]">
         <img
           src={getImageUrl(item.image)}
           alt={item.title}
@@ -106,7 +102,7 @@ function ContinueWatchingCard({
           <div className="progress-bar">
             <div
               className="progress-bar-fill"
-              style={{ width: `${progressPercent}%` }}
+              ref={(el) => { if (el) el.style.width = `${progressPercent}%`; }}
             />
           </div>
         </div>
