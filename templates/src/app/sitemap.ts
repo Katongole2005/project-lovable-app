@@ -62,7 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           const validDate = isNaN(lastMod.getTime()) ? new Date() : lastMod;
 
           dynamicRoutes.push({
-            url: `${baseUrl}/${typeSlug}/${item.mobifliks_id}`,
+            url: `${baseUrl}/${typeSlug}/${encodeURIComponent(item.mobifliks_id)}`,
             lastModified: validDate,
             changeFrequency: 'monthly',
             priority: 0.7,
