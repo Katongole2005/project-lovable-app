@@ -44,14 +44,15 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
   });
 
 const loadCinematicVideoPlayer = () => import("@/components/CinematicVideoPlayer").then(module => ({ default: module.CinematicVideoPlayer }));
-const ContinueWatchingRow = lazyWithRetry(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
-const RecommendationRow = lazyWithRetry(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
-const Top10Row = lazyWithRetry(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
-const SearchBar = lazyWithRetry(() => import("@/components/SearchBar").then(module => ({ default: module.SearchBar })));
 const loadMovieModal = () => import("@/components/MovieModal").then(module => ({ default: module.MovieModal }));
 const MovieModal = lazyWithRetry(loadMovieModal);
 const CinematicVideoPlayer = lazyWithRetry(loadCinematicVideoPlayer);
 const FilterModal = lazyWithRetry(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
+
+import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
+import { RecommendationRow } from "@/components/RecommendationRow";
+import { Top10Row } from "@/components/Top10Row";
+import { SearchBar } from "@/components/SearchBar";
 import { DynamicBackground } from "@/components/DynamicBackground";
 import { StayedAlertModal } from "@/components/StayedAlertModal";
 import { AuthGatedModal } from "@/components/AuthGatedModal";
@@ -260,7 +261,7 @@ function ClientHome() {
   const [gatedAction, setGatedAction] = useState<"watch" | "download" | "general">("general");
   const { user, loading: authLoading } = useAuth();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [showDeferredHomeSections, setShowDeferredHomeSections] = useState(false);
+  const [showDeferredHomeSections, setShowDeferredHomeSections] = useState(true);
   const [isStayedAlertOpen, setIsStayedAlertOpen] = useState(false);
 
   const [activeFilters, setActiveFilters] = useState<FilterState>({
@@ -298,33 +299,6 @@ function ClientHome() {
     }, 5 * 60 * 1000);
     return () => clearTimeout(timer);
   }, [user]);
-
-  useEffect(() => {
-    const idleWindow = window as IdleWindow;
-    let timeoutId: number | null = null;
-    let idleId: number | null = null;
-    const revealDeferredUi = () => {
-      startTransition(() => {
-        setShowDeferredHomeSections(true);
-      });
-    };
-
-    if (idleWindow.requestIdleCallback) {
-      idleId = idleWindow.requestIdleCallback(() => revealDeferredUi());
-    } else {
-      timeoutId = window.setTimeout(revealDeferredUi, 250);
-    }
-
-    return () => {
-      if (idleId !== null && idleWindow.cancelIdleCallback) {
-        idleWindow.cancelIdleCallback(idleId);
-      }
-
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, []);
 
   // React Query for instant tab switching and caching
   const { data: heroData, isLoading: isHeroLoading } = useQuery({
