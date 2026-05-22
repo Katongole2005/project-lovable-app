@@ -198,7 +198,7 @@ export function HeroCarousel({
   };
 
   return (
-    <div className="overflow-hidden relative">
+    <div className="overflow-hidden relative isolate [transform-style:flat]">
       {/* Mobile carousel */}
       <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem+env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(460px+6.5rem+env(safe-area-inset-top))] flex flex-col justify-between">
         {/* Dynamic Ambient Blur Background Layer */}
@@ -396,15 +396,15 @@ export function HeroCarousel({
 
 	          <div className="absolute inset-0 pointer-events-none hero-vignette" />
 
-          <div className="relative z-10 h-full flex hero-cinematic-container">
+          <div className="relative z-10 h-full flex flex-col justify-end hero-cinematic-container">
 
-            <div className="flex-1 flex flex-col justify-end p-6 pb-[8vh] lg:p-10 lg:pb-[9vh] xl:p-14 xl:pb-[9vh] 2xl:p-16 2xl:pb-[10vh]">
+            <div className="px-6 pb-4 lg:px-10 xl:px-14 2xl:px-16">
                 <>
                   <div 
                     key={`info-${activeIndex}`}
                     className="max-w-[min(640px,48vw)]"
                   >
-                    <div className="mb-6 lg:mb-8">
+                    <div className="mb-4 lg:mb-5">
                       {currentMovie.logo_url ? (
                         <img
                           src={currentMovie.logo_url}
@@ -420,7 +420,7 @@ export function HeroCarousel({
                       <div className="mt-4 h-px w-28 bg-gradient-to-r from-red-500/85 via-white/35 to-transparent shadow-[0_0_18px_rgba(239,68,68,0.45)]" />
                     </div>
                     <div
-                      className="flex flex-wrap items-center gap-2 mb-5 lg:mb-7"
+                      className="flex flex-wrap items-center gap-2 mb-3 lg:mb-4"
                     >
                       {heroMetaChips.map((chip) => (
                         <span
@@ -434,19 +434,17 @@ export function HeroCarousel({
 
                     {currentMovie.description && (
                       <p 
-                        className="text-sm lg:text-base 2xl:text-lg text-white/50 max-w-lg 2xl:max-w-2xl line-clamp-2 mb-6 lg:mb-8 leading-relaxed"
+                        className="text-sm lg:text-base 2xl:text-lg text-white/[0.82] max-w-lg 2xl:max-w-2xl line-clamp-2 mb-5 lg:mb-6 leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
                       >
                         {currentMovie.description}
                       </p>
                     )}
 
-                    <div 
-                      className="flex items-center gap-3"
-                    >
+                    <div className="flex items-center gap-3 flex-wrap">
                       <button
                         onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
                         data-testid="button-hero-play"
-	                        className="btn-premium-red hero-cta-glow group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-semibold text-sm lg:text-base"
+                        className="btn-premium-red hero-cta-glow group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-semibold text-sm lg:text-base"
                       >
                         <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
                         Watch Now
@@ -458,74 +456,84 @@ export function HeroCarousel({
                       >
                         More
                       </button>
+                      <div className="h-5 w-px bg-white/15 mx-1 shrink-0" />
+                      <button
+                        onClick={scrollPrev}
+                        data-testid="button-hero-prev"
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/[0.09] text-white/70 backdrop-blur-md transition-all duration-200 hover:border-white/25 hover:bg-white/[0.16] hover:text-white active:scale-95"
+                        aria-label="Previous"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={scrollNext}
+                        data-testid="button-hero-next"
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/[0.09] text-white/70 backdrop-blur-md transition-all duration-200 hover:border-white/25 hover:bg-white/[0.16] hover:text-white active:scale-95"
+                        aria-label="Next"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                      <div className="hero-progress-rail h-[3px] w-16 lg:w-20 overflow-hidden rounded-full flex-shrink-0">
+                        {shouldAutoplay && (
+                          <div
+                            key={`desktop-progress-${activeIndex}`}
+                            className="hero-progress-bar-fill hero-progress-highlight h-full rounded-full"
+                            style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </>
+            </div>
 
-              <div className="mt-6 flex items-center gap-3 lg:mt-8">
-                <button
-                  onClick={scrollPrev}
-                  data-testid="button-hero-prev"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-white/65 backdrop-blur-md transition-all duration-200 hover:border-white/20 hover:bg-white/15 hover:text-white active:scale-95 lg:h-10 lg:w-10"
-                  aria-label="Previous"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={scrollNext}
-                  data-testid="button-hero-next"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-white/65 backdrop-blur-md transition-all duration-200 hover:border-white/20 hover:bg-white/15 hover:text-white active:scale-95 lg:h-10 lg:w-10"
-                  aria-label="Next"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-                <div className="ml-1 flex min-w-[130px] items-center gap-3">
-	                  <div className="hero-progress-rail h-0.5 flex-1 overflow-hidden rounded-full">
-	                  {shouldAutoplay && (
-	                    <div
-	                      key={`desktop-progress-${activeIndex}`}
-	                      className="hero-progress-bar-fill hero-progress-highlight h-full rounded-full"
-	                      style={{ "--duration": `${autoplayDelayMs}ms` } as React.CSSProperties}
-	                    />
-                  )}
-                  </div>
-                </div>
+            {/* Trending backdrop rail */}
+            <div className="pb-6 lg:pb-8 xl:pb-10 2xl:pb-12 mt-4 lg:mt-5">
+              <div className="flex items-end gap-2.5 overflow-x-auto hide-scrollbar px-4 lg:px-8 xl:px-12 2xl:px-14 snap-x">
+                {displayMovies.map((movie, idx) => {
+                  const isActiveCard = idx === activeIndex;
+                  const mBackdrop = getBackdrop(movie);
+                  const mPoster = getHeroPosterUrl(movie);
+                  return (
+                    <button
+                      key={movie.mobifliks_id}
+                      onClick={() => scrollTo(idx)}
+                      aria-label={`Go to ${movie.title}`}
+                      className={cn(
+                        "relative flex-shrink-0 w-[160px] xl:w-[185px] 2xl:w-[210px] aspect-video rounded-xl overflow-hidden border transition-all duration-300 snap-start",
+                        isActiveCard
+                          ? "border-white/50 shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-[1.03]"
+                          : "border-white/10 opacity-50 hover:opacity-80 hover:border-white/25 hover:-translate-y-1"
+                      )}
+                    >
+                      <HeroMediaImage
+                        primarySrc={mBackdrop}
+                        fallbackSrc={mPoster}
+                        alt={movie.title}
+                        className="h-full w-full object-cover"
+                        priority={Math.abs(idx - activeIndex) <= 2}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                      {movie.logo_url ? (
+                        <img
+                          src={movie.logo_url}
+                          alt={movie.title}
+                          className="absolute bottom-2 right-2 h-5 xl:h-6 w-auto max-w-[70px] object-contain drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]"
+                        />
+                      ) : (
+                        <span className="absolute bottom-1.5 left-2 text-[9px] xl:text-[10px] font-bold text-white/85 line-clamp-1 max-w-[90%]">
+                          {movie.title}
+                        </span>
+                      )}
+                      {isActiveCard && (
+                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/80" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="hidden lg:flex items-end pb-8 pr-6 xl:pr-10 2xl:pr-14 min-w-[380px] 2xl:min-w-[520px]">
-                <>
-                  <div 
-                    key={`cards-${activeIndex}`} 
-                    className="flex items-end gap-4 xl:gap-5"
-                  >
-                    {getSideCards().map(({ movie, originalIndex }, cardIdx) => (
-                      <button
-                        key={movie.mobifliks_id}
-                        className="relative flex flex-col items-center cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-xl hover:-translate-y-2 transition-all duration-300"
-                        onClick={() => scrollTo(originalIndex)}
-                        data-testid={`button-hero-side-card-${originalIndex}`}
-                        aria-label={`Go to ${movie.title}`}
-                      >
-                        <div className="relative w-[100px] xl:w-[120px] 2xl:w-[140px] aspect-[2/3] rounded-xl xl:rounded-2xl overflow-hidden border border-white/10 group-hover:border-primary/50 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group-hover:shadow-[0_12px_48px_rgba(239,68,68,0.3)]">
-                          <HeroMediaImage
-                            primarySrc={getImageUrl(movie.image_url)}
-                            fallbackSrc={getHeroPosterUrl(movie)}
-                            alt={movie.title}
-                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                            priority={cardIdx === 0}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-                        </div>
-                        <p className="mt-2.5 text-[10px] xl:text-xs text-white/40 text-center font-bold uppercase tracking-widest max-w-[100px] xl:max-w-[120px] 2xl:max-w-[140px] truncate group-hover:text-primary transition-colors">
-                          {movie.title}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                </>
-            </div>
-            </div>
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -536,6 +544,7 @@ export function HeroCarousel({
             </svg>
           </div>
         </div>
+      </div>
     </div>
   );
 }

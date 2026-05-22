@@ -9,6 +9,9 @@ import { MovieRow } from "@/components/MovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
+import { useTheme } from "next-themes";
+import logoLight from "@/assets/logo.png";
+import logoDark from "@/assets/logo-dark.png";
 
 // Helper function to retry lazy loading chunks in case of network errors or outdated hashes
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
@@ -1005,6 +1008,10 @@ export default function Index() {
     }
   }, []);
 
+  const { theme } = useTheme();
+  const isDark = theme === "dark" || !theme;
+  const currentLogo = isDark ? logoDark : logoLight;
+
   const handleTabChange = useCallback((tab: string) => {
     const viewToPath: Record<string, string> = {
       home: "/",
@@ -1217,7 +1224,7 @@ export default function Index() {
 
 
   return (
-    <div className="min-h-screen pb-safe relative">
+    <div className="min-h-screen pb-safe relative isolate [transform-style:flat]">
       {/* Premium Dynamic Mesh Background */}
       <DynamicBackground />
 
@@ -1526,14 +1533,25 @@ export default function Index() {
           </div>
         )}
         {/* Minimal Footer for Verification & Navigation */}
-        <footer className="mt-10 py-6 border-t border-white/[0.05] flex flex-col items-center gap-4">
-          <div className="flex items-center gap-8">
-            <Link to="/privacy" className="text-xs font-medium text-white/30 hover:text-primary transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="text-xs font-medium text-white/30 hover:text-primary transition-colors">Terms of Service</Link>
+        <footer className="container relative z-10 mx-auto pb-8 px-2 pt-16 mt-8 border-t border-white/[0.05] flex flex-col">
+          <div className="mb-4 self-start h-[35px]">
+            <img 
+              alt="MovieBay Logo" 
+              className="h-full w-auto object-contain" 
+              src={currentLogo} 
+            />
           </div>
-          <p className="text-[10px] text-white/10 uppercase tracking-[0.2em]">
-            &copy; 2026 sj. All Rights Reserved.
-          </p>
+          <div className="mb-4 self-start">
+            <div className="mt-2 text-sm text-muted-foreground max-w-lg text-left">
+              <p>MovieBay does not host any media files, instead, it provides links to third-party services. Legal concerns regarding the files should be addressed directly with the respective file hosts and providers. MovieBay bears no responsibility for the media files displayed by the providers.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground self-start">
+            <Link className="hover:text-white transition-colors" to="/dmca">DMCA</Link>
+            <Link className="hover:text-white transition-colors" to="/settings">Settings</Link>
+            <Link className="hover:text-white transition-colors" to="/privacy">Privacy Policy</Link>
+            <Link className="hover:text-white transition-colors" to="/terms">Terms of Service</Link>
+          </div>
         </footer>
 
         {/* Lazy Loaded Heavy Modals */}

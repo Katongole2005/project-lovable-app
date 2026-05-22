@@ -5,12 +5,12 @@ export function getHeroBackdropUrl(movie: Movie | undefined, preferHighRes: bool
   if (!movie) return null;
 
   if (movie.backdrop_url && isUsableArtworkUrl(movie.backdrop_url)) {
-    if (preferHighRes) {
-      return movie.backdrop_url
-        .replace("/original/", "/w1280/")
-        .replace("/w780/", "/w1280/");
-    }
-    return getOptimizedBackdropUrl(movie.backdrop_url);
+    // Always request the highest available quality for the hero banner.
+    // w1280 is the largest standard TMDB size; swap out any lower-res variants.
+    return movie.backdrop_url
+      .replace("/w780/", "/w1280/")
+      .replace("/w500/", "/w1280/")
+      .replace("/w300/", "/w1280/");
   }
 
   if (movie.image_url && isUsableArtworkUrl(movie.image_url)) {

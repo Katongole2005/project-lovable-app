@@ -129,7 +129,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
 
       <header
         className={cn(
-          "fixed left-0 right-0 top-0 z-40 pointer-events-none pb-4 transition-transform duration-300 ease-out will-change-transform",
+          "fixed left-0 right-0 top-0 md:top-5 z-40 pointer-events-none pb-4 transition-transform duration-300 ease-out will-change-transform",
           isHeaderVisible ? "translate-y-0" : "-translate-y-full",
           isScrolled && "bg-background/40 backdrop-blur-md md:bg-transparent md:backdrop-blur-0"
         )}
