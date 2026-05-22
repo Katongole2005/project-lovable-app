@@ -196,7 +196,10 @@ function ClientHome() {
   const locationState = location.state as { backgroundView?: ViewMode } | null;
   const isMovieRoute = /^\/(movie|series)\//.test(location.pathname);
 
-  const viewMode: ViewMode = (isMovieRoute && locationState?.backgroundView)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const viewMode: ViewMode = (mounted && isMovieRoute && locationState?.backgroundView)
     ? locationState.backgroundView
     : (pathToView[location.pathname] ?? "home");
 
@@ -649,10 +652,10 @@ function ClientHome() {
   }, [viewMode, moviesQueryData, seriesQueryData, originalsQueryData, isMoviesLoading, isSeriesLoading, isOriginalsLoading, browseBatchLimit, originalsInitialLimit, seriesFetchBatchLimit]);
 
 
-  const handleSearch = useCallback(async (query: string) => {
+  const handleSearch = useCallback(async (query: string, skipNavigate = false) => {
     if (!query.trim()) return;
     setSearchQuery(query);
-    navigateTo("/search");
+    if (!skipNavigate) navigateTo("/search");
     setCurrentPage(1);
     setIsLoading(true);
     addRecentSearch(query);
@@ -667,6 +670,16 @@ function ClientHome() {
       setIsLoading(false);
     }
   }, []);
+
+  // Handle direct URL load with search query
+  useEffect(() => {
+    if (viewMode === "search" && searchParams.has("q")) {
+      const q = searchParams.get("q");
+      if (q && q !== searchQuery && searchResults.length === 0 && !isLoading) {
+        void handleSearch(q, true);
+      }
+    }
+  }, [viewMode, searchParams, searchQuery, searchResults.length, isLoading, handleSearch]);
 
   const handleMovieClick = useCallback(async (movie: Movie) => {
     let resolvedMovie: Movie | Series = movie;
