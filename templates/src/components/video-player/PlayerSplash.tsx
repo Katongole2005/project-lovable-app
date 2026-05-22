@@ -1,3 +1,4 @@
+"use client";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Play, Star } from "lucide-react";
 import { cn } from "@/lib/utils";

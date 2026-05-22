@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";

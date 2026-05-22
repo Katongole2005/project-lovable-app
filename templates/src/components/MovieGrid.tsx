@@ -1,3 +1,4 @@
+"use client";
 import type { Movie } from "@/types/movie";
 import type { CSSProperties } from "react";
 import { MovieCard, MovieCardSkeleton } from "./MovieCard";

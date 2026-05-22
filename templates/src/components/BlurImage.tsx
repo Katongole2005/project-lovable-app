@@ -1,3 +1,4 @@
+"use client";
 import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
@@ -26,8 +27,8 @@ export function BlurImage({ src, alt, className, loading = "lazy" }: BlurImagePr
         alt={alt}
         decoding="async"
         className={cn(
-          "w-full h-full object-cover transition-[transform,filter] duration-500",
-          loaded ? "blur-0 scale-100" : "blur-lg scale-105",
+          "w-full h-full object-cover transition-[transform,filter] duration-700 ease-out",
+          loaded ? "blur-0 scale-100" : "blur-xl scale-110",
           className
         )}
         loading={loading}

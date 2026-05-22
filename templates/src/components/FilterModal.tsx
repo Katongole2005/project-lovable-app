@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { ChevronLeft, X, Sparkles, Film, Tv } from "lucide-react";
 import { cn } from "@/lib/utils";

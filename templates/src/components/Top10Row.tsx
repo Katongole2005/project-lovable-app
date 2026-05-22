@@ -1,3 +1,4 @@
+"use client";
 import type { Movie } from "@/types/movie";
 import { buildMediaUrl, getImageUrl, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -80,13 +81,7 @@ function Top10Card({
             />
           )}
           <span
-            className="text-[100px] md:text-[140px] font-black leading-none select-none tracking-tighter text-transparent"
-            style={{
-              WebkitTextStroke: "2px hsl(var(--foreground) / 0.15)",
-              marginRight: "-24px",
-              zIndex: 0,
-              fontFamily: "'Outfit', sans-serif",
-            }}
+            className="text-[100px] md:text-[140px] font-black leading-none select-none tracking-tighter text-transparent [-webkit-text-stroke:2px_hsl(var(--foreground)/0.15)] -mr-6 z-0 font-[Outfit]"
           >
             {rank}
           </span>

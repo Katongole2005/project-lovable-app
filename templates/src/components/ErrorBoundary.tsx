@@ -1,3 +1,4 @@
+"use client";
 import React, { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
@@ -38,9 +39,9 @@ async function clearAppCaches() {
 }
 
 function forceFreshReload() {
-  const currentUrl = new URL(window.location.href);
+  const currentUrl = new URL((typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).href);
   currentUrl.searchParams.set("sw", Date.now().toString());
-  window.location.replace(currentUrl.toString());
+  (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).replace(currentUrl.toString());
 }
 
 export class ErrorBoundary extends Component<Props, State> {

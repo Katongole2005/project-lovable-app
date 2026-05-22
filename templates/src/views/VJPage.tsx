@@ -1,5 +1,6 @@
+"use client";
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "@/lib/router-polyfill";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { MovieGrid } from "@/components/MovieGrid";

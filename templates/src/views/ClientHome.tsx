@@ -1,5 +1,7 @@
+"use client";
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, startTransition } from "react";
-import { useSearchParams, useLocation, useNavigate, useParams, Link } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { useSearchParams, useLocation, useNavigate, useParams, Link } from "@/lib/router-polyfill";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { CategoryChips } from "@/components/CategoryChips";
@@ -17,22 +19,22 @@ import logoDark from "@/assets/logo-dark.png";
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
   lazy(async () => {
     const pageHasAlreadyBeenForceRefreshed = JSON.parse(
-      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
+      (typeof window !== "undefined" ? window.sessionStorage : { getItem: ()=>null, setItem: ()=>{}, removeItem: ()=>{} }).getItem('page-has-been-force-refreshed') || 'false'
     );
 
     try {
       const component = await componentImport();
-      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
+      (typeof window !== "undefined" ? window.sessionStorage : { getItem: ()=>null, setItem: ()=>{}, removeItem: ()=>{} }).setItem('page-has-been-force-refreshed', 'false');
       return component;
     } catch (error) {
       if (!pageHasAlreadyBeenForceRefreshed) {
         // Assume that the error is due to an outdated chunk hash or temporary network issue
-        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+        (typeof window !== "undefined" ? window.sessionStorage : { getItem: ()=>null, setItem: ()=>{}, removeItem: ()=>{} }).setItem('page-has-been-force-refreshed', 'true');
         
         // Force bypass CDN and browser cache by appending a timestamp to the URL
-        const currentUrl = new URL(window.location.href);
+        const currentUrl = new URL((typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).href);
         currentUrl.searchParams.set('v', new Date().getTime().toString());
-        window.location.href = currentUrl.toString();
+        (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).href = currentUrl.toString();
         
         // Return a promise that never resolves while the page is reloading
         return new Promise(() => {});
@@ -169,7 +171,15 @@ async function buildPrimaryPlaybackUrl(item: Movie | Series): Promise<string | n
   });
 }
 
-export default function Index() {
+export default function WrappedClientHome() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+      <ClientHome />
+    </Suspense>
+  );
+}
+
+function ClientHome() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigateTo = useNavigate();
@@ -1010,7 +1020,7 @@ export default function Index() {
 
   const { theme } = useTheme();
   const isDark = theme === "dark" || !theme;
-  const currentLogo = isDark ? logoDark : logoLight;
+  const currentLogo = isDark ? logoDark.src : logoLight.src;
 
   const handleTabChange = useCallback((tab: string) => {
     const viewToPath: Record<string, string> = {
@@ -1224,7 +1234,7 @@ export default function Index() {
 
 
   return (
-    <div className="min-h-screen pb-safe relative isolate [transform-style:flat]">
+    <div className="min-h-screen pb-safe relative">
       {/* Premium Dynamic Mesh Background */}
       <DynamicBackground />
 
@@ -1242,9 +1252,10 @@ export default function Index() {
 
         {/* Main Content */}
         <main className={`container mx-auto px-4 ${viewMode === "home" ? "pt-0 pb-4" : "pb-4 pt-[calc(6.5rem+env(safe-area-inset-top))] md:pt-28"}`}>
-          {/* Home View */}
-          {viewMode === "home" && (
-            <div>
+          <AnimatePresence mode="wait">
+            {/* Home View */}
+            {viewMode === "home" && (
+              <PageTransition viewKey="home" className="space-y-0">
               {shouldShowHero && (
                 <Suspense fallback={null}>
                   <HeroCarousel
@@ -1357,12 +1368,12 @@ export default function Index() {
                   </div>
                 </Suspense>
               )}
-            </div>
-          )}
+              </PageTransition>
+            )}
 
-          {/* Search View */}
+            {/* Search View */}
           {viewMode === "search" && (
-            <PageTransition>
+            <PageTransition viewKey="search">
               <div className="space-y-6">
                 <div className="max-w-xl mx-auto">
                   <Suspense fallback={<div className="h-12 rounded-full bg-card/60 border border-border/30" />}>
@@ -1407,7 +1418,7 @@ export default function Index() {
 
           {/* Movies Category */}
           {viewMode === "movies" && (
-            <PageTransition>
+            <PageTransition viewKey="movies">
               <div className="browse-page-shell space-y-4">
                 <div className="flex items-center gap-3">
                   <Button
@@ -1447,7 +1458,7 @@ export default function Index() {
 
           {/* Series Category */}
           {viewMode === "series" && (
-            <PageTransition>
+            <PageTransition viewKey="series">
               <div className="browse-page-shell space-y-4">
                 <div className="flex items-center gap-3">
                   <Button
@@ -1487,7 +1498,7 @@ export default function Index() {
 
           {/* Originals (English) */}
           {viewMode === "originals" && (
-            <PageTransition>
+            <PageTransition viewKey="originals">
               <div className="browse-page-shell space-y-4">
                 <div className="flex items-center gap-3">
                   <Button
@@ -1525,6 +1536,7 @@ export default function Index() {
               </div>
             </PageTransition>
           )}
+          </AnimatePresence>
         </main>
 
         {showExitToast && (
@@ -1547,10 +1559,10 @@ export default function Index() {
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground self-start">
-            <Link className="hover:text-white transition-colors" to="/dmca">DMCA</Link>
-            <Link className="hover:text-white transition-colors" to="/settings">Settings</Link>
-            <Link className="hover:text-white transition-colors" to="/privacy">Privacy Policy</Link>
-            <Link className="hover:text-white transition-colors" to="/terms">Terms of Service</Link>
+            <Link className="hover:text-white transition-colors" to="/dmca" suppressHydrationWarning>DMCA</Link>
+            <Link className="hover:text-white transition-colors" to="/settings" suppressHydrationWarning>Settings</Link>
+            <Link className="hover:text-white transition-colors" to="/privacy" suppressHydrationWarning>Privacy Policy</Link>
+            <Link className="hover:text-white transition-colors" to="/terms" suppressHydrationWarning>Terms of Service</Link>
           </div>
         </footer>
 

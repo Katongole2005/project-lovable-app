@@ -1,3 +1,4 @@
+"use client";
 import { Play } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import { getImageUrl } from "@/lib/api";

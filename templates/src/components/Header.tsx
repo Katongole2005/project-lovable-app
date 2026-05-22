@@ -1,5 +1,6 @@
+"use client";
 import { useEffect, useMemo, useRef, useState, memo } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "@/lib/router-polyfill";
 import { Search, User, ChevronDown, Moon, Sun, Home, Film, Tv, Sparkles } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ const navItems = [
 ];
 
 const preloadProfilePage = () => {
-  void import("@/pages/Profile");
+  void import("@/views/Profile");
 };
 
 function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
@@ -85,7 +86,7 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
   }, [activeTab, location.pathname]);
 
   const isDark = resolvedTheme === "dark";
-  const currentLogo = isDark ? logoDark : logoLight;
+  const currentLogo = isDark ? logoDark.src : logoLight.src;
   const playButtonSurfaceClass =
     "border border-white/10 bg-[linear-gradient(135deg,#ff8a3d_0%,#ff5b2e_52%,#ff4d6d_100%)] text-white shadow-[0_10px_26px_rgba(255,91,46,0.24),0_0_22px_rgba(255,138,61,0.18)]";
 
@@ -125,7 +126,11 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
           hasAnnouncement ? "top-[calc(env(safe-area-inset-top)+3.5rem)]" : "top-[calc(env(safe-area-inset-top)+1.25rem)]"
         )}
       >
-        <nav className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.08] px-[14px] py-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-[24px] backdrop-saturate-[1.8]">
+        <div className="pointer-events-auto relative z-10 flex items-center gap-2 rounded-full px-[14px] py-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
+          {/* Dedicated background and blur layer for Chrome compatibility */}
+          <div className="absolute inset-0 -z-10 rounded-full border border-white/10 bg-white/[0.08] backdrop-blur-[24px] backdrop-saturate-[1.8] pointer-events-none transform-gpu [backface-visibility:hidden] [-webkit-backdrop-filter:blur(24px)_saturate(1.8)]" />
+          
+          <nav className="flex items-center gap-2 relative z-10">
             {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
@@ -178,7 +183,8 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
               <User className="h-[18px] w-[18px] md:h-5 md:w-5" />
             )}
           </button>
-        </nav>
+          </nav>
+        </div>
       </header>
     </>
   );

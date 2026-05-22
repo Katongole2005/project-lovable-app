@@ -1,9 +1,10 @@
+"use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // This VAPID public key must match the one on the server
 // Generate a pair at: https://vapidkeys.com/
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

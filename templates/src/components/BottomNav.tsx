@@ -1,4 +1,5 @@
-import { useNavigate, useLocation } from "react-router-dom";
+"use client";
+import { useNavigate, useLocation } from "@/lib/router-polyfill";
 import { Film, Tv, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 

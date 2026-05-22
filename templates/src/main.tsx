@@ -14,7 +14,7 @@ function isLocalNetworkHost(hostname: string) {
 }
 
 function renderFatalErrorOverlay(title: string, detail: string) {
-  if (!import.meta.env.DEV) return;
+  if (!(process.env.NODE_ENV === "development")) return;
 
   const existing = document.getElementById("fatal-dev-error-overlay");
   if (existing) {
@@ -50,7 +50,7 @@ function renderFatalErrorOverlay(title: string, detail: string) {
   document.body.appendChild(overlay);
 }
 
-if (import.meta.env.DEV) {
+if ((process.env.NODE_ENV === "development")) {
   window.addEventListener("error", (event) => {
     const detail = event.error?.stack || event.message || "Unknown error";
     renderFatalErrorOverlay("Startup error", detail);
@@ -72,7 +72,7 @@ if (import.meta.env.DEV) {
 createRoot(document.getElementById("root")!).render(<App />);
 
 const shouldDisableServiceWorker =
-  import.meta.env.DEV || isLocalNetworkHost(window.location.hostname);
+  (process.env.NODE_ENV === "development") || isLocalNetworkHost((typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).hostname);
 
 if (shouldDisableServiceWorker && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -105,9 +105,9 @@ if (!shouldDisableServiceWorker && "serviceWorker" in navigator) {
       const handleNewWorker = (worker: ServiceWorker) => {
         worker.addEventListener("statechange", () => {
           if (worker.state === "activated" && navigator.serviceWorker.controller) {
-            const currentUrl = new URL(window.location.href);
+            const currentUrl = new URL((typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).href);
             currentUrl.searchParams.set('sw', new Date().getTime().toString());
-            window.location.href = currentUrl.toString();
+            (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).href = currentUrl.toString();
           }
         });
       };

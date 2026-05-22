@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { X, Megaphone } from "lucide-react";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";

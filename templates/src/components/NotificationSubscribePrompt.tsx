@@ -1,6 +1,7 @@
+"use client";
 import { useEffect, useMemo, useState } from "react";
 import { Bell, BellRing, Check, Clock, X } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "@/lib/router-polyfill";
 import { useAuth } from "@/hooks/useAuth";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Button } from "@/components/ui/button";

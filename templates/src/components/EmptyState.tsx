@@ -1,3 +1,4 @@
+"use client";
 import { Film, Search, Popcorn } from "lucide-react";
 import { cn } from "@/lib/utils";
 

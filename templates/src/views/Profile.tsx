@@ -1,5 +1,6 @@
+"use client";
 import { lazy, Suspense, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-polyfill";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useTheme } from "next-themes";
@@ -60,7 +61,7 @@ const SendPushPanel = lazy(() =>
 );
 
 const preloadHomePage = () => {
-  void import("./Index");
+  void import("./ClientHome");
 };
 
 function ClearDataDialog({
@@ -396,7 +397,7 @@ function PreferencesDialog({
   );
 }
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 24, scale: 0.97 },
   visible: {
     opacity: 1, y: 0, scale: 1,
@@ -795,7 +796,7 @@ export default function Profile() {
     if (!user) return;
     setClaiming(true);
     try {
-      const { data, error } = await supabase.rpc("claim_daily_points", { user_id: user.id });
+      const { data, error } = await supabase.rpc("claim_daily_points" as any, { user_id: user.id });
       if (error) throw error;
       const result = data as any;
       if (result.success) {
@@ -813,7 +814,7 @@ export default function Profile() {
 
   const copyReferral = () => {
     const code = profile?.referral_code || user?.id.slice(0, 8);
-    const link = `${window.location.origin}/auth?ref=${code}`;
+    const link = `${(typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin}/auth?ref=${code}`;
     navigator.clipboard.writeText(link);
     toast.success("Referral link copied!");
   };
@@ -969,7 +970,7 @@ export default function Profile() {
       {/* Cinematic Background Orbs */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px] animate-pulse [animation-delay:2s]" />
       </div>
 
       <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-6 md:py-12">
@@ -1029,6 +1030,8 @@ export default function Profile() {
                 </Avatar>
                 <button 
                   onClick={() => setEditProfileOpen(true)}
+                  aria-label="Edit Profile"
+                  title="Edit Profile"
                   className="absolute -bottom-2 -right-2 z-20 w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
                 >
                   <Camera className="w-5 h-5" />

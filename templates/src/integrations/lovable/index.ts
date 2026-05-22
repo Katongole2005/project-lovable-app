@@ -10,7 +10,7 @@ export const lovable = {
     signInWithOAuth: async (provider: "google" | "apple", opts?: SignInOptions) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: opts?.redirect_uri || window.location.origin },
+        options: { redirectTo: opts?.redirect_uri || (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin },
       });
       if (error) return { error };
       return { redirected: true };

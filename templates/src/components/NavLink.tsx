@@ -1,4 +1,5 @@
-import { NavLink as RouterNavLink, NavLinkProps } from "react-router-dom";
+"use client";
+import { NavLink as RouterNavLink, NavLinkProps } from "@/lib/router-polyfill";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 

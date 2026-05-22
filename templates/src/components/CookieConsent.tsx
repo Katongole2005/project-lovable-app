@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useCallback } from "react";
 import { Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,13 +15,13 @@ export function CookieConsent() {
     const consent = localStorage.getItem(COOKIE_KEY);
     if (consent) return;
 
-    const currentPath = window.location.pathname.toLowerCase();
+    const currentPath = (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).pathname.toLowerCase();
     if (EXCLUDED_PATHS.some((p) => currentPath.startsWith(p))) return;
 
     const timer = setTimeout(() => setVisible(true), SHOW_DELAY_MS);
 
     const handleNav = () => {
-      const path = window.location.pathname.toLowerCase();
+      const path = (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).pathname.toLowerCase();
       if (EXCLUDED_PATHS.some((p) => path.startsWith(p))) {
         setVisible(false);
       }

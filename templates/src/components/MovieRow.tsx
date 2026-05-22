@@ -1,3 +1,4 @@
+"use client";
 import { ChevronRight, SlidersHorizontal, Filter } from "lucide-react";
 import { forwardRef } from "react";
 import type { Movie } from "@/types/movie";

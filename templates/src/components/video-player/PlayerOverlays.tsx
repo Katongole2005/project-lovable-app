@@ -1,3 +1,4 @@
+"use client";
 import { motion } from "framer-motion";
 import { RotateCcw, SkipForward, X } from "lucide-react";
 import type { Movie, Series } from "@/types/movie";

@@ -1,3 +1,4 @@
+"use client";
 import { AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";

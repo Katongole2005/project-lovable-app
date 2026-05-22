@@ -37,7 +37,7 @@ export const getWelcomeEmailHtml = (firstName: string) => `
     <h1>Welcome, ${firstName}! 🎬</h1>
     <p>Thanks for joining MovieBay. You now have access to thousands of movies, curated collections, and personalized recommendations.</p>
     <p>Start exploring and find your next favorite film.</p>
-    <a href="${window.location.origin}" class="btn">Start Exploring</a>
+    <a href="${(typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin}" class="btn">Start Exploring</a>
     <div class="footer">
       <p>© MovieBay · moviebay@s-u.in</p>
     </div>

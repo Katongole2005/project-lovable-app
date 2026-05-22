@@ -1,3 +1,4 @@
+"use client";
 import { Play, Info, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Movie } from "@/types/movie";

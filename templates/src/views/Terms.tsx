@@ -1,6 +1,7 @@
+"use client";
 import { motion } from "framer-motion";
 import { ArrowLeft, Scale, FileText, UserCheck, AlertTriangle, ShieldCheck, Globe } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-polyfill";
 import { useSeo } from "@/hooks/useSeo";
 
 const Terms = () => {

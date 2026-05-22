@@ -1,6 +1,7 @@
+"use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSeo } from "@/hooks/useSeo";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "@/lib/router-polyfill";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchTrending, getOptimizedBackdropUrl } from "@/lib/api";
@@ -10,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, Loader2, Film, Sparkles } from "lucide-react";
 import logoDark from "@/assets/logo-dark.png";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 
 type AuthView = "login" | "signup" | "forgot";
@@ -22,12 +23,12 @@ const QUOTES = [
   { text: "A film is never really good unless the camera is an eye in the head of a poet.", author: "Orson Welles" },
 ];
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
 };
 
-const staggerItem = {
+const staggerItem: Variants = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
 };
@@ -115,6 +116,7 @@ const Auth = () => {
     let animId: number;
 
     function resize() {
+      if (!canvas || !ctx) return;
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       canvas.style.width = `${window.innerWidth}px`;
@@ -136,6 +138,7 @@ const Auth = () => {
 
     let t = 0;
     function draw() {
+      if (!ctx) return;
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
       t += 0.01;
 
@@ -193,7 +196,7 @@ const Auth = () => {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin,
         data: {
           first_name: firstName,
           last_name: lastName,
@@ -227,7 +230,7 @@ const Auth = () => {
   const handleForgotPassword = useCallback(async () => {
     setSubmitting(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${(typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin}/auth`,
     });
     setSubmitting(false);
 
@@ -244,7 +247,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin,
           queryParams: {
             access_type: "offline",
             prompt: "consent",
@@ -284,19 +287,23 @@ const Auth = () => {
   }
 
   return (
-    <div className="dark" style={{ colorScheme: "dark" }}>
+    <div className="dark [color-scheme:dark]">
       <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0">
+          {backdropUrl && (
+            <style>{`
+              .auth-dynamic-bg {
+                background-image: url(${backdropUrl});
+                transition-duration: 2500ms;
+                animation: ${backdropLoaded && !reducedMotion ? 'auth-ken-burns 25s ease-in-out infinite alternate' : 'none'};
+              }
+            `}</style>
+          )}
           <div
             className={cn(
-              "absolute inset-0 bg-cover bg-center transition-opacity ease-out",
+              "auth-dynamic-bg absolute inset-0 bg-cover bg-center transition-opacity ease-out",
               backdropLoaded ? "opacity-25" : "opacity-0"
             )}
-            style={{
-              ...(backdropUrl ? { backgroundImage: `url(${backdropUrl})` } : {}),
-              transitionDuration: "2500ms",
-              animation: backdropLoaded && !reducedMotion ? "auth-ken-burns 25s ease-in-out infinite alternate" : "none",
-            }}
           />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_0%,#000_70%)]" />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60" />
@@ -309,13 +316,11 @@ const Auth = () => {
 
         {!deviceProfile.isWeakDevice && (
           <div
-            className="pointer-events-none absolute inset-0 z-[2] opacity-[0.03]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-              backgroundRepeat: "repeat",
-              backgroundSize: "192px 192px",
-              mixBlendMode: "overlay",
-            }}
+            className={cn(
+              "pointer-events-none absolute inset-0 z-[2] opacity-[0.03] mix-blend-overlay",
+              "bg-[url('data:image/svg+xml,%3Csvg_viewBox=%220_0_256_256%22_xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter_id=%22noise%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.85%22_numOctaves=%221%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22100%25%22_height=%22100%25%22_filter=%22url(%23noise)%22/%3E%3C/svg%3E')]",
+              "bg-repeat bg-[size:192px_192px]"
+            )}
           />
         )}
 
@@ -329,7 +334,7 @@ const Auth = () => {
             >
               <motion.div variants={staggerItem} className="mb-10">
                 <motion.img
-                  src={logoDark}
+                  src={logoDark.src}
                   alt="MovieBay"
                   className="mb-8 h-12 w-auto"
                   data-testid="img-logo-desktop"
@@ -404,7 +409,7 @@ const Auth = () => {
                     transition={{ duration: 0.5, delay: 0.3 }}
                     className="mb-8 flex justify-center lg:hidden"
                   >
-                    <img src={logoDark} alt="MovieBay" className="h-10 w-auto" data-testid="img-logo-mobile" />
+                    <img src={logoDark.src} alt="MovieBay" className="h-10 w-auto" data-testid="img-logo-mobile" />
                   </motion.div>
 
                   <AnimatePresence mode="wait">

@@ -1,3 +1,4 @@
+"use client";
 import type { Movie, ContinueWatching } from "@/types/movie";
 import { MovieCard } from "./MovieCard";
 import { cn } from "@/lib/utils";

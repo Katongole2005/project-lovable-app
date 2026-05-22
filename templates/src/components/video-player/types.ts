@@ -1,3 +1,4 @@
+"use client";
 import type { Movie, Series, SkipSegment, SubtitleTrack } from "@/types/movie";
 
 export interface CinematicVideoPlayerProps {

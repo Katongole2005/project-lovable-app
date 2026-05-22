@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+"use client";
+import { useNavigate } from "@/lib/router-polyfill";
 import { useSeo } from "@/hooks/useSeo";
 import { Home, Search, Clapperboard } from "lucide-react";
 import { Button } from "@/components/ui/button";

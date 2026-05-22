@@ -1,6 +1,7 @@
+"use client";
 import { motion } from "framer-motion";
 import { ArrowLeft, Shield, Lock, Eye, Mail, Globe, ChevronRight, AlertTriangle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-polyfill";
 import { useSeo } from "@/hooks/useSeo";
 
 const Privacy = () => {

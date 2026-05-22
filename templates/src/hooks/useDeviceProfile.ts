@@ -114,15 +114,7 @@ function readProfile(): DeviceProfile {
 }
 
 export function useDeviceProfile() {
-  const [profile, setProfile] = useState<DeviceProfile>(() => {
-    // Read real profile synchronously on first render to avoid a flash
-    // where DEFAULT_PROFILE (isMacChrome: false) causes opacity animations
-    // to run on Mac Chrome, making modals appear transparent on first open.
-    if (typeof window !== "undefined" && typeof navigator !== "undefined") {
-      return readProfile();
-    }
-    return DEFAULT_PROFILE;
-  });
+  const [profile, setProfile] = useState<DeviceProfile>(DEFAULT_PROFILE);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");

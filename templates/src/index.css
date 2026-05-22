@@ -211,7 +211,7 @@
   }
 
   html {
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
     font-size: 16px;
     text-rendering: optimizeLegibility;

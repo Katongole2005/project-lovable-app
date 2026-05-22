@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { X, Lock, Download, Play, ChevronRight, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";

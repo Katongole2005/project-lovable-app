@@ -1,3 +1,4 @@
+"use client";
 import { Flame, Sword, Heart, Clapperboard, Ghost, Star, Film, Compass, Shield, Sparkles, Rocket, Crosshair, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +26,7 @@ const categories = [
 export function CategoryChips({ activeCategory, onCategoryChange }: CategoryChipsProps) {
   return (
     <div className="relative -mx-4 md:mx-0 overflow-hidden">
-      <div className="flex gap-2 md:gap-3 py-2 px-4 md:px-0 snap-x snap-mandatory category-chip-wrapper">
+      <div className="flex gap-2 md:gap-3 py-2 px-4 md:px-0 snap-x snap-mandatory overflow-x-auto scroll-smooth scrollbar-hide">
         {categories.map((category) => {
           const Icon = category.icon;
           const isActive = activeCategory === category.id;

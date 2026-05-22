@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateSecureToken } from "./crypto";
 
 const fallbackPoster = "https://placehold.co/300x450/1a1a2e/ffffff?text=No+Poster";
-const DEFAULT_API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "/api";
-export const API_BASE = (import.meta.env.VITE_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, "");
+const DEFAULT_API_BASE = (process.env.NODE_ENV === "development") ? "http://127.0.0.1:8000/api" : "/api";
+export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, "");
 export const CLOUDFLARE_WORKER_URL = "https://cdn.s-u.in";
 
 const movieDetailsCache = new Map<string, Movie | null>();
@@ -50,7 +50,7 @@ function boundedMap<K, V>(map: Map<K, V>, max: number): void {
 }
 
 function getUrlBase(): string {
-  return typeof window !== "undefined" ? window.location.origin : "http://localhost";
+  return typeof window !== "undefined" ? (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin : "http://localhost";
 }
 
 function createUrl(url: string): URL | null {
@@ -266,7 +266,7 @@ export async function fetchMediaSize(url: string, title?: string, mobifliksId?: 
       }
     }
   } catch (e) {
-    console.error("Backend size fetch failed:", e);
+    console.warn("Backend size fetch failed:", e);
   }
 
   return null;

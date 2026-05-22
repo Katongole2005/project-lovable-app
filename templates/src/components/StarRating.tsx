@@ -1,3 +1,4 @@
+"use client";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useCallback, useRef, useEffect, forwardRef } from "react";

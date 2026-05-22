@@ -3,7 +3,7 @@
  * Uses Web Crypto API (AES-GCM) to generate self-destructing, encrypted URLs.
  */
 
-const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "";
+const SECRET_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "";
 
 /**
  * Encrypts a payload into a URL-safe Base64 token.

@@ -1,3 +1,4 @@
+"use client";
 import { Play, X } from "lucide-react";
 import type { ContinueWatching } from "@/types/movie";
 import { getImageUrl } from "@/lib/api";

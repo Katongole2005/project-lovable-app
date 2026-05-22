@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { X, Play, Download, ExternalLink, Eye, ChevronLeft, ChevronRight, CalendarDays, Heart, Share2, Layers, Bookmark, Flag, Send, Youtube, Cast } from "lucide-react";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
@@ -115,7 +116,7 @@ function extractArtworkTint(imageUrl: string): Promise<RgbColor | null> {
 
     const parsedUrl = (() => {
       try {
-        return new URL(imageUrl, window.location.origin);
+        return new URL(imageUrl, (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin);
       } catch {
         return null;
       }
@@ -733,7 +734,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
           <motion.div
             initial={allowDesktopMotion ? { opacity: 0, scale: 0.98 } : false}
             animate={allowDesktopMotion ? { opacity: 1, scale: 1 } : undefined}
-            transition={allowDesktopMotion ? { duration: 0.24, ease: [0.22, 1, 0.36, 1] } : undefined}
+            transition={allowDesktopMotion ? { duration: 0.35, ease: [0.16, 1, 0.3, 1] } : undefined}
             className="hidden md:flex md:flex-col w-full relative h-full md:rounded-3xl overflow-hidden isolate"
           >
             {/* Multi-layer background for professional glass effect */}
@@ -941,7 +942,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                           onClick={async (e) => {
                             e.stopPropagation();
                             const typeSlug = movie.type === "series" ? "series" : "movie";
-                            const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
+                            const shareUrl = `${(typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
                             try {
                               if (navigator.share) {
                                 await navigator.share({ title: movie.title, url: shareUrl });
@@ -1138,7 +1139,7 @@ function MobileMovieLayout({
   const [backdropLoaded, setBackdropLoaded] = React.useState(false);
   const [scrollTop, setScrollTop] = React.useState(0);
   const [relatedMovies, setRelatedMovies] = React.useState<Movie[]>([]);
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const scrollContainerRef = React.useRef<HTMLDivElement | null>(null);
   const episodesSectionRef = React.useRef<HTMLDivElement>(null);
   const scrollFrameRef = React.useRef<number | null>(null);
   const continueWatching = useContinueWatching();
@@ -1253,7 +1254,7 @@ function MobileMovieLayout({
   const accentHue = 6;
   const handleShare = React.useCallback(async () => {
     const typeSlug = movie.type === "series" ? "series" : "movie";
-    const shareUrl = `${window.location.origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
+    const shareUrl = `${(typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin}/${typeSlug}/${toSlug(movie.title, movie.mobifliks_id, movie.year)}`;
 
     try {
       if (navigator.share) {
@@ -1786,7 +1787,9 @@ function MobileMovieLayout({
                           }
 
                           const typeSlug = m.type === "series" ? "series" : "movie";
-                          window.location.assign(`/${typeSlug}/${toSlug(m.title, m.mobifliks_id, m.year)}`);
+                          if (typeof window !== "undefined") {
+                            window.location.assign(`/${typeSlug}/${toSlug(m.title, m.mobifliks_id, m.year)}`);
+                          }
                         }}
                       >
                         <div className="aspect-[2/3] rounded-xl overflow-hidden border border-white/8 bg-white/5 shadow-lg group-active:scale-95 transition-transform duration-200 relative">

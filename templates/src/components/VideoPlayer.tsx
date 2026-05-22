@@ -1,3 +1,4 @@
+"use client";
 import { useRef, useEffect } from "react";
 import { X, Maximize2, Minimize2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";

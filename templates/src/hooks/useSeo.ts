@@ -1,3 +1,4 @@
+"use client";
 import { useEffect } from "react";
 
 interface SeoProps {
@@ -49,7 +50,7 @@ export function useSeo({
     setMeta("name", "twitter:image", ogImage);
 
     // OG URL
-    const url = canonical ? `${SITE_URL}${canonical}` : window.location.href;
+    const url = canonical ? `${SITE_URL}${canonical}` : (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).href;
     setMeta("property", "og:url", url);
 
     // Canonical link

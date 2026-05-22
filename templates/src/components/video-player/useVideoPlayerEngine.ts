@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getImageUrl } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";

@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Search, X, TrendingUp, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -128,6 +129,7 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
           {query && (
             <button
               type="button"
+              aria-label="Clear search"
               onClick={() => {
                 setQuery("");
                 setSuggestions([]);
@@ -204,9 +206,9 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
                     <span>Recent</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {recentSearches.slice(0, 5).map((term) => (
+                    {recentSearches.slice(0, 5).map((term, index) => (
                       <button
-                        key={term}
+                        key={`${term}-${index}`}
                         onClick={() => handleChipClick(term)}
                         className="px-3 py-1.5 rounded-full bg-muted/30 text-sm text-foreground hover:bg-muted/50 transition-colors"
                       >
@@ -224,9 +226,9 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
                     <span>Trending</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {popularSearches.slice(0, 5).map((term) => (
+                    {popularSearches.slice(0, 5).map((term, index) => (
                       <button
-                        key={term}
+                        key={`${term}-${index}`}
                         onClick={() => handleChipClick(term)}
                         className="px-3 py-1.5 rounded-full bg-primary/10 text-sm text-primary hover:bg-primary/20 transition-colors"
                       >
