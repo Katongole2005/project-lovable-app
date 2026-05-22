@@ -994,7 +994,7 @@
 	  }
 
 	  .hero-content-glass {
-	    background: linear-gradient(90deg, rgba(10,10,15,0.82) 0%, rgba(10,10,15,0.62) 20%, rgba(10,10,15,0.28) 48%, transparent 100%);
+	    background: linear-gradient(90deg, #0a0a0f 0%, rgba(10, 10, 15, 0.95) 15%, rgba(10, 10, 15, 0.85) 30%, rgba(10, 10, 15, 0.45) 55%, transparent 100%);
 	  }
 
 	  .hero-title-reveal {

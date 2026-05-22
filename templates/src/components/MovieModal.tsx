@@ -607,10 +607,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         {/* Mobile: Full screen sheet, Desktop: Centered modal */}
         <DialogContent
-          className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-[#09090b] border-0 md:border overflow-hidden shadow-none md:shadow-[0_24px_80px_rgba(0,0,0,0.62)] rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none"
+          className="w-full max-w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[90vh] p-0 bg-transparent border-0 md:border overflow-hidden shadow-none md:shadow-[0_24px_80px_rgba(0,0,0,0.62)] rounded-none md:rounded-3xl duration-75 [&>button]:hidden left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] animate-none data-[state=open]:animate-none data-[state=closed]:animate-none"
           style={{
             borderColor: desktopBorderColor,
-            backgroundColor: '#09090b',
           }}
         >
 
@@ -743,7 +742,6 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
             initial={allowDesktopMotion ? { opacity: 0, scale: 0.98 } : false}
             animate={allowDesktopMotion ? { opacity: 1, scale: 1 } : undefined}
             transition={allowDesktopMotion ? { duration: 0.24, ease: [0.22, 1, 0.36, 1] } : undefined}
-            style={{ backgroundColor: '#09090b' }}
             className="hidden md:flex md:flex-col w-full relative h-full md:rounded-3xl overflow-hidden isolate"
           >
             {/* Multi-layer background for professional glass effect */}
@@ -776,9 +774,9 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                   )}
                 </>
               )}
-              <div className="absolute inset-0 bg-black/50" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
               {deviceProfile.allowAmbientEffects && (
                 <motion.div
                   className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
@@ -830,10 +828,10 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                     </div>
                   )}
                   {/* Premium fade gradients to seamlessly blend the backdrop into the content */}
-                  <div className="absolute inset-0 z-[2] bg-gradient-to-t from-[#080808] via-[#080808]/80 via-40% to-transparent pointer-events-none" />
-                  <div className="absolute inset-x-0 bottom-0 z-[3] h-[300px] bg-gradient-to-t from-[#080808] via-[#080808]/95 via-50% to-transparent pointer-events-none" />
-                  <div className="absolute inset-x-0 -bottom-12 z-[3] h-56 bg-[#080808] blur-3xl opacity-100 pointer-events-none" />
-                  <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/50 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/50 via-black/20 via-40% to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 z-[3] h-[300px] bg-gradient-to-t from-black/70 via-black/40 via-50% to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 -bottom-12 z-[3] h-56 bg-black/60 blur-3xl opacity-100 pointer-events-none" />
+                  <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/40 via-transparent to-transparent pointer-events-none" />
                 </div>
 
                 {/* Content area - overlapping backdrop */}
@@ -841,7 +839,7 @@ export function MovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fa
                   variants={staggerContainer}
                   initial={allowDesktopMotion ? "hidden" : "visible"}
                   animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : "visible"}
-                  className="relative z-[5] -mt-56 px-10 pb-10 space-y-6 bg-gradient-to-b from-transparent via-[#080808]/95 via-30% to-[#080808]"
+                  className="relative z-[5] -mt-56 px-10 pb-10 space-y-6 bg-gradient-to-b from-transparent via-black/40 via-30% to-black/60 backdrop-blur-md"
                 >
                   {/* Poster + Title row */}
                   <motion.div variants={fadeInUp} className="relative z-[6] flex gap-6 items-start">
