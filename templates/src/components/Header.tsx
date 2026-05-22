@@ -113,208 +113,70 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
 
   return (
     <>
-      <div
-        className={cn(
-          "fixed left-0 right-0 top-0 z-30 pointer-events-none transition-transform duration-300 ease-out md:hidden",
-          isHeaderVisible ? "translate-y-0" : "-translate-y-full"
-        )}
-        style={{
-          height: hasAnnouncement ? "calc(9.5rem + env(safe-area-inset-top))" : "calc(7rem + env(safe-area-inset-top))",
-          background:
-            "linear-gradient(to bottom, hsl(var(--background)) 0%, hsl(var(--background) / 0.95) 30%, hsl(var(--background) / 0.7) 50%, hsl(var(--background) / 0.3) 75%, transparent 100%)",
-          maskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
-        }}
-      />
+      {hasAnnouncement && (
+        <div className="fixed left-0 right-0 top-0 z-50">
+          <AnnouncementBanner dismissed={announcementDismissed} onDismiss={() => setAnnouncementDismissed(true)} />
+        </div>
+      )}
 
       <header
-        className={cn(
-          "fixed left-0 right-0 top-0 md:top-5 z-40 pointer-events-none pb-4 transition-transform duration-300 ease-out will-change-transform",
-          isHeaderVisible ? "translate-y-0" : "-translate-y-full",
-          isScrolled && "bg-background/40 backdrop-blur-md md:bg-transparent md:backdrop-blur-0"
-        )}
-        style={{ paddingTop: hasAnnouncement ? "env(safe-area-inset-top)" : "calc(env(safe-area-inset-top) + 1rem)" }}
+        className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-2 md:px-3"
+        style={{ top: hasAnnouncement ? "calc(env(safe-area-inset-top) + 3.5rem)" : "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
-        <AnnouncementBanner dismissed={announcementDismissed} onDismiss={() => setAnnouncementDismissed(true)} />
-        <div className={cn("container pointer-events-auto mx-auto px-4", hasAnnouncement && "mt-3")}>
-          <div className="relative flex items-center justify-between gap-4">
-            <Link
-              to="/"
-              className="flex-shrink-0 md:invisible md:pointer-events-none"
-              onClick={() => handleTabNavigation("home")}
-              data-testid="link-logo"
-            >
-              <img
-                src={currentLogo}
-                alt="MovieBay"
-                className="h-8 w-auto md:h-10"
-                
-              />
-            </Link>
-
-            <nav className="hidden md:flex pill-nav pill-nav-desktop absolute left-1/2 top-0 -translate-x-1/2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleTabNavigation(item.id)}
-                    className={cn("pill-nav-item", currentTab === item.id && "active")}
-                    data-testid={`button-nav-${item.id}`}
-                  >
-                    {currentTab === item.id && (
-                      <div
-                        className="pill-nav-indicator"
-                      />
-                    )}
-                    <span className="relative z-10 flex items-center gap-2.5">
-                      <Icon className="h-[18px] w-[18px] stroke-[2.45]" />
-                      <span>{item.label}</span>
-                    </span>
-                  </button>
-                );
-              })}
+        <nav className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.08] px-[14px] py-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-[24px] backdrop-saturate-[1.8]">
+            {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id;
+            return (
               <button
-                onClick={() => handleTabNavigation("search")}
+                key={item.id}
+                onClick={() => handleTabNavigation(item.id)}
                 className={cn(
-                  "relative rounded-full p-2 transition-all duration-300",
-                  currentTab === "search"
-                    ? "text-white"
-                    : "text-muted-foreground hover:text-foreground"
+                  "inline-flex min-h-[40px] md:min-h-[44px] items-center gap-1.5 md:gap-2 rounded-full px-3 md:px-4 text-[13px] md:text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
+                  isActive
+                    ? "bg-white/95 text-[#111] shadow-[0_8px_20px_rgba(0,0,0,0.26)]"
+                    : "text-white/85 hover:-translate-y-[1px] hover:bg-white/12 hover:text-white hover:shadow-[0_6px_14px_rgba(0,0,0,0.2)]"
                 )}
-                aria-label="Search"
-                title="Search"
-                data-testid="button-nav-search"
               >
-                {currentTab === "search" && (
-                  <div
-                    className="pill-nav-indicator"
-                  />
-                )}
-                <Search className={cn("relative z-10 h-[19px] w-[19px]", currentTab === "search" && "animate-pulse")} />
+                <span className="text-base"><Icon className="h-[18px] w-[18px] md:h-5 md:w-5" /></span>
+                <span className={cn(isActive ? "block" : "hidden md:block")}>{item.label}</span>
               </button>
-              <button
-                onClick={() => handleTabNavigation("profile")}
-                onMouseEnter={preloadProfilePage}
-                onFocus={preloadProfilePage}
-                className={cn(
-                  "relative rounded-full transition-all duration-300",
-                  currentTab === "profile"
-                    ? "text-white"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label="Profile"
-                title="Profile"
-                data-testid="button-nav-profile"
-              >
-                {currentTab === "profile" && (
-                  <div
-                    className="pill-nav-indicator"
-                  />
-                )}
-                <User className={cn("relative z-10 h-[19px] w-[19px]", currentTab === "profile" && "animate-pulse")} />
-              </button>
-            </nav>
+            );
+          })}
+          
+          <div className="mx-1 h-6 w-px bg-white/10 shrink-0 hidden md:block" />
 
-            <div className="flex items-center gap-3">
-              {mounted && (
-                <button
-                  onClick={toggleTheme}
-                  className={cn(
-                    "rounded-full p-2.5 backdrop-blur transition-all duration-300 hover:bg-card md:hidden",
-                    isDark
-                      ? playButtonSurfaceClass
-                      : "border border-border/40 bg-card/60 text-foreground"
-                  )}
-                  aria-label="Toggle theme"
-                  data-testid="button-theme-toggle"
-                >
-                  {isDark ? (
-                    <Sun className="h-5 w-5 text-foreground" />
-                  ) : (
-                    <Moon className="h-5 w-5 text-foreground" />
-                  )}
-                </button>
-              )}
-
-              <Link
-                to="/profile"
-                onMouseEnter={preloadProfilePage}
-                onFocus={preloadProfilePage}
-                onPointerDown={preloadProfilePage}
-                onTouchStart={preloadProfilePage}
-                onClick={() => handleTabNavigation("profile")}
-                className="hidden items-center gap-3 rounded-full border border-border/40 bg-card/60 px-3 py-2 backdrop-blur"
-                data-testid="link-profile"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
-                  {user?.avatar_url ? (
-                    <img src={user.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    <User className="h-4 w-4 text-primary" />
-                  )}
-                </div>
-                <div className="text-left">
-                  <p className="max-w-[80px] truncate text-sm font-black leading-tight text-foreground">
-                    {(() => {
-                      if (!user) return "Guest";
-                      const fullName = user.user_metadata?.full_name || user.user_metadata?.first_name || user.email?.split("@")[0];
-                      if (!fullName) return "Member";
-                      const nameParts = fullName.trim().split(/\s+/);
-                      return nameParts.length > 1 ? nameParts.pop() : nameParts[0];
-                    })()}
-                  </p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">
-                    {user ? "Pro" : "Free"}
-                  </p>
-                </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-4 flex justify-center md:hidden">
-            <nav className="pill-nav relative">
-              {navItems.filter((item) => item.id !== "home").map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabNavigation(item.id)}
-                  className={cn(
-                    "pill-nav-item px-3 py-1.5 text-xs",
-                    currentTab === item.id && "active"
-                  )}
-                  data-testid={`button-nav-mobile-${item.id}`}
-                >
-                  {currentTab === item.id && (
-                    <div
-                      className="pill-nav-indicator"
-                    />
-                  )}
-                  <span className="relative z-10">{item.label}</span>
-                </button>
-              ))}
-              <button
-                onClick={() => handleTabNavigation("search")}
-                className={cn(
-                  "relative rounded-full p-1.5 transition-all duration-300",
-                  currentTab === "search"
-                    ? "text-white"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label="Search"
-                title="Search"
-                data-testid="button-nav-mobile-search"
-              >
-                {currentTab === "search" && (
-                  <div
-                    className="pill-nav-indicator"
-                  />
-                )}
-                <Search className={cn("relative z-10 h-4 w-4", currentTab === "search" && "animate-pulse")} />
-              </button>
-            </nav>
-          </div>
-        </div>
+          <button
+            onClick={() => handleTabNavigation("search")}
+            className={cn(
+              "md:ml-1 inline-flex min-h-[40px] md:min-h-[44px] min-w-[40px] md:min-w-[44px] items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
+              currentTab === "search"
+                ? "bg-white/95 text-[#111] shadow-[0_8px_20px_rgba(0,0,0,0.26)]"
+                : "text-white/85 hover:bg-white/12 hover:text-white hover:shadow-[0_6px_14px_rgba(0,0,0,0.2)]"
+            )}
+            aria-label="Search"
+          >
+            <Search className="h-[18px] w-[18px] md:h-5 md:w-5" />
+          </button>
+          
+          <button
+            onClick={() => handleTabNavigation("profile")}
+            onMouseEnter={preloadProfilePage}
+            className={cn(
+              "ml-0.5 md:ml-1 inline-flex min-h-[40px] md:min-h-[44px] min-w-[40px] md:min-w-[44px] items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
+              currentTab === "profile"
+                ? "bg-white/95 text-[#111] shadow-[0_8px_20px_rgba(0,0,0,0.26)]"
+                : "text-white/85 hover:bg-white/12 hover:text-white hover:shadow-[0_6px_14px_rgba(0,0,0,0.2)]"
+            )}
+            aria-label="Profile"
+          >
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="" className="h-5 w-5 md:h-6 md:w-6 rounded-full object-cover" />
+            ) : (
+              <User className="h-[18px] w-[18px] md:h-5 md:w-5" />
+            )}
+          </button>
+        </nav>
       </header>
     </>
   );
