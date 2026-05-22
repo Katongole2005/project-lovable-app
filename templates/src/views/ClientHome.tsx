@@ -687,12 +687,14 @@ function ClientHome() {
 
     const typeSlug = movie.type === "series" ? "series" : "movie";
     const urlSlug = toSlug(movie.title, movie.mobifliks_id, movie.year);
-    requestAnimationFrame(() => {
+    // Delay URL change to allow modal animation to complete smoothly.
+    // Changing URL instantly triggers mobile browser UI jumps (address bar shift) which glitches the animation.
+    setTimeout(() => {
       navigateTo(`/${typeSlug}/${urlSlug}`, {
         replace: false,
         state: { backgroundView: viewMode }
       });
-    });
+    }, 400);
 
     scheduleLowPriorityTask(() => addToRecent(resolvedMovie));
 
