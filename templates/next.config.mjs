@@ -15,10 +15,12 @@ const nextConfig = {
     ignoreBuildErrors: true, // focus on UI functionality first during migration
   },
   async rewrites() {
+    // Allows configuring the backend URL for Cloudflare/Vercel via environment variable
+    const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:8000/api/:path*', // Proxy to Backend
+        destination: `${backendUrl}/api/:path*`, // Proxy to Backend
       },
     ];
   },
