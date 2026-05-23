@@ -17,7 +17,7 @@ export function PlayerBrandLogo({ visible, title, logoUrl }: PlayerBrandLogoProp
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="video-player-brand-logo pointer-events-none absolute inset-x-0 top-[max(4.5rem,calc(env(safe-area-inset-top)+3.5rem))] z-[58] flex justify-center px-8"
+          className="video-player-brand-logo pointer-events-none absolute inset-x-0 top-[max(4.5rem,calc(env(safe-area-inset-top)_+_3.5rem))] z-[58] flex justify-center px-8"
           style={{ bottom: "var(--player-chrome-height, 112px)" }}
         >
           <div className="flex max-w-[min(90vw,520px)] flex-col items-center text-center">

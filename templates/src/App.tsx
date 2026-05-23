@@ -62,6 +62,21 @@ const App = () => {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (
+        e.key === "watchlist" || 
+        e.key === "userRatings" || 
+        e.key === "recentMovies" ||
+        (e.key && e.key.startsWith("sb-"))
+      ) {
+        queryClient.invalidateQueries();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Analytics />

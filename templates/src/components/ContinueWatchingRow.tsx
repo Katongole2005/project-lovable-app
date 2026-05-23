@@ -103,7 +103,7 @@ function ContinueWatchingCard({
           <div className="progress-bar">
             <div
               className="progress-bar-fill"
-              ref={(el) => { if (el) el.style.width = `${progressPercent}%`; }}
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>

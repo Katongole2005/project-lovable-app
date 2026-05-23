@@ -3,22 +3,6 @@ import { useNavigate } from "@/lib/router-polyfill";
 import logoLight from "@/assets/logo.png";
 import { Wrench } from "lucide-react";
 
-/* Inline keyframes for gear spin */
-const gearStyleCw = `
-  @keyframes spin-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  @keyframes spin-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
-  .gear-cw { animation: spin-cw 4s linear infinite; transform-origin: center; }
-  .gear-ccw { animation: spin-ccw 3s linear infinite; transform-origin: center; }
-  .gear-cw-slow { animation: spin-cw 6s linear infinite; transform-origin: center; }
-  @keyframes screwdriver-jiggle {
-    0%, 100% { transform: rotate(-10deg) translateY(0px); }
-    25% { transform: rotate(10deg) translateY(-2px); }
-    50% { transform: rotate(-8deg) translateY(1px); }
-    75% { transform: rotate(8deg) translateY(-1px); }
-  }
-  .screwdriver-anim { animation: screwdriver-jiggle 0.8s ease-in-out infinite; transform-origin: bottom center; }
-`;
-
 const GearIcon = ({ size = 40, className = "" }: { size?: number; className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
     <path
@@ -37,7 +21,6 @@ const Maintenance = () => {
   const navigate = useNavigate();
   return (
     <>
-      <style>{gearStyleCw}</style>
       <div
         className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden bg-[#0a0a0a]"
       >

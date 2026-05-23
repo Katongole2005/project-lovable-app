@@ -56,6 +56,30 @@ import {
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+interface UserProfile {
+  id: string;
+  activity_points: number;
+  watch_time: number;
+  downloads: number;
+  level?: number;
+  referral_code?: string;
+  last_claimed_at?: string;
+  avatar_url?: string;
+  display_name?: string;
+  full_name?: string;
+  username?: string;
+}
+
+interface LeaderboardEntry extends UserProfile {}
+
+interface WatchlistItem {
+  id: string;
+  title: string;
+  image: string;
+  type: "movie" | "series";
+  addedAt?: string;
+}
+
 const SendPushPanel = lazy(() =>
   import("@/components/SendPushPanel").then((module) => ({ default: module.SendPushPanel }))
 );
@@ -467,7 +491,7 @@ const LeaderboardStat = ({ icon, label, value, title }: { icon: ReactNode, label
   </div>
 );
 
-const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: number }) => {
+const PodiumItem = ({ user, rank, points }: { user: LeaderboardEntry, rank: number, points: number }) => {
   const isFirst = rank === 1;
   const name = getDisplayName(user);
   const rankStyle = getRankStyle(rank);
@@ -520,7 +544,7 @@ const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: n
   );
 };
 
-const LeaderboardCard = ({ user, rank, points, isCurrentUser }: { user: any, rank: number, points: number, isCurrentUser: boolean }) => {
+const LeaderboardCard = ({ user, rank, points, isCurrentUser }: { user: LeaderboardEntry, rank: number, points: number, isCurrentUser: boolean }) => {
   const name = getDisplayName(user);
   const watchTime = formatWatchTime(user.watch_time);
   const rawWatchMinutes = Math.floor(getNumber(user.watch_time));
@@ -606,7 +630,7 @@ const LeaderboardEmpty = () => (
 const LeaderboardSection = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [countdown, setCountdown] = useState("");
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<"all" | "top">("all");
 
@@ -740,7 +764,7 @@ export default function Profile() {
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const [showCollapsedName, setShowCollapsedName] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [localProfileData, setLocalProfileData] = useState(() => ({
     recentlyViewed: getRecentlyViewed(),
@@ -805,7 +829,11 @@ export default function Profile() {
     const channel = supabase
       .channel('profile_changes')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, 
-        (payload) => setProfile(payload.new))
+        (payload) => {
+          if (payload.new && typeof payload.new === "object" && "activity_points" in payload.new) {
+            setProfile(payload.new as UserProfile);
+          }
+        })
       .subscribe();
       
     return () => { supabase.removeChannel(channel); };
@@ -943,7 +971,7 @@ export default function Profile() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] opacity-[0.08] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-600 via-cyan-900/20 to-transparent" />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(2rem+env(safe-area-inset-top))] pb-12">
+      <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(2rem_+_env(safe-area-inset-top))] pb-12">
         
         {/* Navigation Header */}
         <header className="flex items-center justify-between mb-8 md:mb-12">
@@ -961,9 +989,10 @@ export default function Profile() {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setTheme(isDark ? "light" : "dark")} 
-              className="p-3 rounded-full bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] backdrop-blur-md transition-all"
+              aria-label="Toggle theme"
+              className="p-3 rounded-full bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 backdrop-blur-md transition-all"
             >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDark ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
             </button>
             {user ? (
               <button 
@@ -1002,11 +1031,12 @@ export default function Profile() {
                     <AvatarImage src={user?.user_metadata?.avatar_url} className="object-cover" />
                     <AvatarFallback className="bg-slate-900 text-4xl font-black text-indigo-400">{initials}</AvatarFallback>
                   </Avatar>
-                  <button 
+                   <button 
                     onClick={() => setEditProfileOpen(true)}
-                    className="absolute bottom-0 right-0 z-20 w-12 h-12 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.5)] hover:bg-indigo-400 hover:scale-110 transition-all border-2 border-black"
+                    aria-label="Edit display name and avatar photo"
+                    className="absolute bottom-0 right-0 z-20 w-12 h-12 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.5)] hover:bg-indigo-400 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-all border-2 border-black"
                   >
-                    <Edit3 className="w-5 h-5" />
+                    <Edit3 className="w-5 h-5" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -1070,22 +1100,24 @@ export default function Profile() {
               <button
                 onClick={handleClaimDaily}
                 disabled={!canClaim || claiming}
+                aria-label={canClaim ? "Claim daily activity points reward" : "Daily activity points reward already claimed today"}
                 className={cn(
-                  "p-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all border backdrop-blur-xl",
+                  "p-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all border backdrop-blur-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
                   canClaim 
                     ? "bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 border-indigo-500/40 text-white hover:border-indigo-400 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]" 
                     : "bg-black/20 border-white/5 text-white/20"
                 )}
               >
-                <Gift className={cn("w-5 h-5", canClaim ? "text-fuchsia-400 animate-pulse" : "opacity-30")} />
+                <Gift className={cn("w-5 h-5", canClaim ? "text-fuchsia-400 animate-pulse" : "opacity-30")} aria-hidden="true" />
                 <span className="text-[10px] font-black uppercase tracking-widest">{canClaim ? "Daily Claim" : "Claimed"}</span>
               </button>
 
               <button
                 onClick={copyReferral}
-                className="p-4 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.05] hover:border-white/20 transition-all group"
+                aria-label="Copy your referral invitation link to clipboard"
+                className="p-4 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.05] hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-all group"
               >
-                <Users className="w-5 h-5 text-white/40 group-hover:text-cyan-400 transition-colors" />
+                <Users className="w-5 h-5 text-white/40 group-hover:text-cyan-400 transition-colors" aria-hidden="true" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">Invite</span>
               </button>
             </div>

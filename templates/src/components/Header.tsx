@@ -123,8 +123,8 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
       <header
         className={cn(
           "pointer-events-none fixed inset-x-0 z-50 flex justify-center px-2 md:px-3",
-          "bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] md:bottom-auto",
-          hasAnnouncement ? "md:top-[calc(env(safe-area-inset-top)+3.5rem)]" : "md:top-[calc(env(safe-area-inset-top)+1.25rem)]"
+          "bottom-[calc(env(safe-area-inset-bottom,0px)_+_16px)] md:bottom-auto",
+          hasAnnouncement ? "md:top-[calc(env(safe-area-inset-top,0px)_+_3.5rem)]" : "md:top-[calc(env(safe-area-inset-top,0px)_+_1.25rem)]"
         )}
       >
         <div className="pointer-events-auto relative z-10 flex items-center gap-2 rounded-full px-[14px] py-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.25)]">

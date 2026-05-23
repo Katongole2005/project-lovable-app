@@ -274,8 +274,6 @@
     background-image:
       radial-gradient(ellipse 100% 60% at 0% 0%, hsl(var(--primary) / 0.06), transparent 40%),
       radial-gradient(ellipse 80% 50% at 100% 100%, hsl(var(--primary) / 0.04), transparent 40%);
-    will-change: transform;
-    transform: translateZ(0);
   }
 
   .dark body::after {
@@ -1675,26 +1673,6 @@ html.perf-low .hero-meta-chip {
 }
 
 /* Chrome on macOS: reduce GPU-heavy hero layers (common jank source vs Safari) */
-html.perf-mac-chrome .hero-grain-overlay,
-html.perf-mac-chrome .hero-light-sweep,
-html.perf-mac-chrome .hero-ambient-wash,
-html.perf-mac-chrome .hero-content-glass {
-  display: none !important;
-}
-
-html.perf-mac-chrome .hero-backdrop-drift,
-html.perf-mac-chrome .animate-ken-burns,
-html.perf-mac-chrome .animate-ken-burns-mobile {
-  animation: none !important;
-}
-
-html.perf-mac-chrome .hero-meta-chip,
-html.perf-mac-chrome .hero-cta-glow,
-html.perf-mac-chrome [class*="backdrop-blur"] {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-
 html.perf-lite body::before {
   display: none;
 }

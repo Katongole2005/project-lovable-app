@@ -261,3 +261,36 @@
     filter: grayscale(100%) contrast(1.05);
   }
 }
+
+/* Maintenance Page Gear Spin & Screwdriver Jiggle Animations */
+@keyframes spin-cw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes spin-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+@keyframes screwdriver-jiggle {
+  0%, 100% { transform: rotate(-10deg) translateY(0px); }
+  25% { transform: rotate(10deg) translateY(-2px); }
+  50% { transform: rotate(-8deg) translateY(1px); }
+  75% { transform: rotate(8deg) translateY(-1px); }
+}
+
+.gear-cw {
+  animation: spin-cw 4s linear infinite;
+  transform-origin: center;
+}
+.gear-ccw {
+  animation: spin-ccw 3s linear infinite;
+  transform-origin: center;
+}
+.gear-cw-slow {
+  animation: spin-cw 6s linear infinite;
+  transform-origin: center;
+}
+.screwdriver-anim {
+  animation: screwdriver-jiggle 0.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}

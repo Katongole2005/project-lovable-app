@@ -90,9 +90,9 @@ function readProfile(): DeviceProfile {
   const slowNetwork = connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g";
   const isMacChrome = isMacChromeBrowser();
   const isWeakDevice =
-    prefersReducedMotion || saveData || lowMemory || lowCpu || slowNetwork || isMacChrome;
+    prefersReducedMotion || saveData || lowMemory || lowCpu || slowNetwork;
   const allowComplexAnimations = !isWeakDevice && !isMobile;
-  const preferLightweightRendering = isWeakDevice || isMacChrome;
+  const preferLightweightRendering = isWeakDevice;
 
   return {
     isMobile,
@@ -104,7 +104,7 @@ function readProfile(): DeviceProfile {
     isWeakDevice,
     allowAmbientEffects: !isWeakDevice && !isCompact,
     allowComplexAnimations,
-    allowHighResImages: !saveData && !lowMemory && !isMobile && !isMacChrome,
+    allowHighResImages: !saveData && !lowMemory && !isMobile,
     autoplayDelayMs: 5000,
     homeGridItems: isMobile ? 8 : isCompact ? 12 : isUltraWideDesktop ? 40 : isLargeDesktop ? 32 : 24,
     recommendationItems: isMobile ? 6 : isCompact ? 8 : isUltraWideDesktop ? 20 : isLargeDesktop ? 16 : 12,
@@ -152,7 +152,6 @@ export function useDeviceProfile() {
       window.removeEventListener("resize", handleResize);
       mediaQuery.removeEventListener("change", updateProfileAndFlags);
       connection?.removeEventListener?.("change", updateProfileAndFlags);
-      document.documentElement.classList.remove("perf-mac-chrome", "perf-lite");
     };
   }, []);
 

@@ -2,9 +2,37 @@
 
 import { useRouter, usePathname, useSearchParams as useNextSearchParams, useParams as useNextParams } from 'next/navigation';
 import NextLink from 'next/link';
-import { forwardRef, useEffect } from 'react';
+import { forwardRef, useEffect, useState, startTransition } from 'react';
 
 let memoryState: any = null;
+const listeners = new Set<() => void>();
+
+function notifyListeners() {
+  listeners.forEach(listener => listener());
+}
+
+if (typeof window !== 'undefined') {
+  const anyWindow = window as any;
+  if (!anyWindow.__wrapped_history__) {
+    anyWindow.__wrapped_history__ = true;
+    const originalPush = window.history.pushState;
+    const originalReplace = window.history.replaceState;
+
+    window.history.pushState = function(state, unused, url) {
+      originalPush.call(this, state, unused, url);
+      notifyListeners();
+    };
+
+    window.history.replaceState = function(state, unused, url) {
+      originalReplace.call(this, state, unused, url);
+      notifyListeners();
+    };
+
+    window.addEventListener('popstate', () => {
+      notifyListeners();
+    });
+  }
+}
 
 export function useNavigate() {
   const router = useRouter();
@@ -49,23 +77,64 @@ export function useNavigate() {
 }
 
 export function useLocation() {
-  const pathname = usePathname();
-  const searchParams = useNextSearchParams();
-  
-  // Try to recover state from memory or session storage
-  let state = memoryState;
-  if (!state && typeof window !== 'undefined') {
-    try {
-      const stored = sessionStorage.getItem('moviebay_router_state');
-      if (stored) state = JSON.parse(stored);
-    } catch (e) {}
-  }
+  const nextPathname = usePathname();
+  const nextSearchParams = useNextSearchParams();
+
+  const [currentPath, setCurrentPath] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname;
+    }
+    return nextPathname || '/';
+  });
+
+  const [currentSearch, setCurrentSearch] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.search;
+    }
+    return nextSearchParams ? `?${nextSearchParams.toString()}` : '';
+  });
+
+  const [locationState, setLocationState] = useState(() => {
+    let state = memoryState;
+    if (!state && typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('moviebay_router_state');
+        if (stored) state = JSON.parse(stored);
+      } catch (e) {}
+    }
+    return state;
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      startTransition(() => {
+        setCurrentPath(window.location.pathname);
+        setCurrentSearch(window.location.search);
+        
+        let state = memoryState;
+        if (!state) {
+          try {
+            const stored = sessionStorage.getItem('moviebay_router_state');
+            if (stored) state = JSON.parse(stored);
+          } catch (e) {}
+        }
+        setLocationState(state);
+      });
+    };
+
+    handleUpdate();
+
+    listeners.add(handleUpdate);
+    return () => {
+      listeners.delete(handleUpdate);
+    };
+  }, []);
 
   return {
-    pathname: pathname || '/',
-    search: searchParams ? `?${searchParams.toString()}` : '',
+    pathname: currentPath,
+    search: currentSearch,
     hash: typeof window !== 'undefined' ? window.location.hash : '',
-    state: state,
+    state: locationState,
   };
 }
 

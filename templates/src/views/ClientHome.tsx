@@ -1249,7 +1249,7 @@ function ClientHome() {
         />
 
         {/* Main Content */}
-        <main className={`container mx-auto px-4 ${viewMode === "home" ? "pt-0 pb-4" : "pb-4 pt-[calc(6.5rem+env(safe-area-inset-top))] md:pt-28"}`}>
+        <main className={`container mx-auto px-4 ${viewMode === "home" ? "pt-0 pb-4" : "pb-4 pt-[calc(6.5rem_+_env(safe-area-inset-top))] md:pt-28"}`}>
           <AnimatePresence mode="wait">
             {/* Home View */}
             {viewMode === "home" && (

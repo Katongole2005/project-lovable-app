@@ -143,7 +143,7 @@ export function HeroCarousel({
 
   if (isLoading || !displayMovies.length) {
     return <div className="overflow-hidden relative" aria-busy="true" aria-label="Loading latest movies">
-      <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem+env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(350px+6.5rem+env(safe-area-inset-top))]">
+      <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem_+_env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(350px_+_6.5rem_+_env(safe-area-inset-top))]">
         <div className="flex justify-between items-center mb-3">
           <div className="h-6 w-32 bg-white/8 rounded-lg shimmer" />
           <div className="h-5 w-14 bg-white/8 rounded-lg shimmer" />
@@ -201,7 +201,7 @@ export function HeroCarousel({
   return (
     <div className="overflow-hidden relative isolate [transform-style:flat]">
       {/* Mobile carousel */}
-      <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem+env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(460px+6.5rem+env(safe-area-inset-top))] flex flex-col justify-between">
+      <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem_+_env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(460px_+_6.5rem_+_env(safe-area-inset-top))] flex flex-col justify-between">
         {/* Dynamic Ambient Blur Background Layer */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none rounded-3xl">
           {currentMovie && (
