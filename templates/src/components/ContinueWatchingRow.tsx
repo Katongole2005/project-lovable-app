@@ -74,7 +74,7 @@ function ContinueWatchingCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="play-ring-pulse w-11 h-11 rounded-full bg-primary/90 backdrop-blur flex items-center justify-center shadow-[0_0_20px_hsl(210_100%_60%/0.4)] transform group-hover:scale-110 transition-transform duration-300">
+          <div className="play-ring-pulse w-11 h-11 rounded-full bg-primary/90 flex items-center justify-center shadow-[0_0_20px_hsl(210_100%_60%/0.4)] transform group-hover:scale-110 transition-transform duration-300">
             <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
           </div>
         </div>
@@ -83,7 +83,7 @@ function ContinueWatchingCard({
           title="Remove from Continue Watching"
           onClick={handleRemove}
           data-testid={`button-remove-${item.id}`}
-          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-destructive/80 border border-white/[0.08]"
+          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/65 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-destructive/85 border border-white/[0.08]"
         >
           <X className="w-3.5 h-3.5 text-white/90" />
         </button>

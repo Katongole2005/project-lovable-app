@@ -23,17 +23,14 @@ function isNewRelease(movie: Movie): boolean {
   const now = Date.now();
   const dayMs = 1000 * 60 * 60 * 24;
 
-  // 1. Check actual release date first (most accurate)
   if (movie.release_date) {
     const releaseDate = new Date(movie.release_date);
     if (!Number.isNaN(releaseDate.getTime())) {
       const daysAgo = (now - releaseDate.getTime()) / dayMs;
-      // If released within the last 60 days, it's definitely NEW
       if (daysAgo >= 0 && daysAgo <= 60) return true;
     }
   }
 
-  // 2. Check when it was added to MovieBay (only for very recent movies)
   if (movie.created_at) {
     const addedAt = new Date(movie.created_at);
     if (!Number.isNaN(addedAt.getTime())) {
@@ -41,7 +38,6 @@ function isNewRelease(movie: Movie): boolean {
       const movieYear = parseInt(movie.year || "0");
       const currentYear = new Date().getFullYear();
 
-      // If added in the last 14 days AND it's a movie from this year or last year
       if (daysSinceAdded >= 0 && daysSinceAdded <= 14 && movieYear >= currentYear - 1) {
         return true;
       }
@@ -64,35 +60,28 @@ function getVjDetail(movie: Movie): string | null {
 
 const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, allowNewBadge = false, onWatchlistChange, style }, ref) {
   const [inWatchlist, setInWatchlist] = useState(false);
-  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     setInWatchlist(isInWatchlist(movie.mobifliks_id));
   }, [movie.mobifliks_id]);
 
-  const primePlayback = useCallback(async () => {
+  const primePlayback = useCallback(() => {
     const targetUrl = movie.server2_url || movie.download_url;
     if (!targetUrl) return;
-    const mediaUrl = await buildMediaUrl({
+    void buildMediaUrl({
       url: targetUrl,
       title: movie.title,
       detailsUrl: movie.video_page_url || movie.details_url,
       mobifliksId: movie.mobifliks_id,
       play: true,
-    });
-    primeMediaAvailability(mediaUrl);
+    }).then(primeMediaAvailability);
   }, [movie]);
 
   const handleMouseEnter = useCallback(() => {
     if (typeof window === "undefined" || window.innerWidth < 768) return;
     preloadMovieBackdrop(movie);
-    primePlayback();
-    setHovered(true);
+    window.requestAnimationFrame(primePlayback);
   }, [movie, primePlayback]);
-
-  const handleMouseLeave = useCallback(() => {
-    setHovered(false);
-  }, []);
 
   const [heartFlip, setHeartFlip] = useState(false);
 
@@ -107,7 +96,6 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
 
   const isNew = allowNewBadge && isNewRelease(movie);
   const trending = isTrending(movie);
-  const hasMultipleVjs = (movie.vj_versions?.length ?? 0) > 1;
   const vjDetail = getVjDetail(movie);
   const isPlayable = Boolean(movie.server2_url || movie.download_url);
 
@@ -123,12 +111,11 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
       onMouseEnter={handleMouseEnter}
       onTouchStart={primePlayback}
       onFocus={primePlayback}
-      onMouseLeave={handleMouseLeave}
       data-testid={`card-movie-${movie.mobifliks_id}`}
     >
       <div
         className={cn(
-          "relative isolate aspect-[2/3] overflow-hidden rounded-[18px] bg-card border border-black/[0.03] shadow-card card-rim-light card-premium-shadow transition-transform duration-300 active:scale-[0.98] md:hover:-translate-y-2 md:hover:scale-[1.02] md:backdrop-blur-sm md:will-change-transform"
+          "movie-card-lift relative isolate aspect-[2/3] overflow-hidden rounded-[18px] bg-card border border-black/[0.03] shadow-card card-rim-light card-premium-shadow active:scale-[0.98]"
         )}
       >
         <BlurImage
@@ -138,24 +125,22 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
           loading={priority ? "eager" : "lazy"}
         />
 
-        <div
-          className="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none md:group-hover:opacity-100 card-gloss-effect"
-        />
+        <div className="absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none md:group-hover:opacity-100 card-gloss-effect" />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 md:group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-200 md:group-hover:opacity-100" />
 
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 md:group-hover:opacity-100">
-          <div className="play-ring-pulse w-12 h-12 rounded-full bg-white/95 dark:bg-white/90 flex items-center justify-center scale-75 transition-transform duration-300 shadow-[0_0_24px_hsl(210_100%_60%/0.4)] md:group-hover:scale-100 md:backdrop-blur-md">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 md:group-hover:opacity-100">
+          <div className="play-ring-pulse w-12 h-12 rounded-full bg-white/95 dark:bg-white/90 flex items-center justify-center scale-90 transition-transform duration-200 md:group-hover:scale-100 shadow-[0_0_24px_hsl(210_100%_60%/0.4)]">
             <Play className="w-5 h-5 text-primary fill-current ml-0.5" data-testid="icon-play" />
           </div>
         </div>
 
-        {hovered && movie.genres && movie.genres.length > 0 && (
-          <div className="absolute bottom-2 left-0 right-0 hidden md:flex flex-wrap justify-center gap-1 px-2 pointer-events-none animate-fade-in">
-            {movie.genres.slice(0, 2).map(g => (
+        {movie.genres && movie.genres.length > 0 && (
+          <div className="absolute bottom-2 left-0 right-0 hidden md:flex flex-wrap justify-center gap-1 px-2 pointer-events-none opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+            {movie.genres.slice(0, 2).map((g) => (
               <span
                 key={g}
-                className="px-2.5 py-0.5 text-[9px] font-semibold rounded-full bg-black/70 text-white/90 border border-white/10 tracking-wide uppercase md:backdrop-blur-sm"
+                className="px-2.5 py-0.5 text-[9px] font-semibold rounded-full bg-neutral-900/95 text-white/90 border border-white/10 tracking-wide uppercase"
               >
                 {g}
               </span>
@@ -171,13 +156,13 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
             </span>
           )}
           {trending && !isNew && (
-            <span className="flex items-center gap-0.5 rounded-full border border-red-400/25 bg-red-500/85 px-2 py-0.5 text-[9px] font-bold text-white shadow-[0_0_16px_rgba(239,68,68,0.26)] backdrop-blur-sm">
+            <span className="flex items-center gap-0.5 rounded-full border border-red-400/20 bg-red-600/90 px-2 py-0.5 text-[9px] font-bold text-white shadow-[0_0_16px_rgba(220,38,38,0.3)]">
               <TrendingUp className="w-2.5 h-2.5" />
               HOT
             </span>
           )}
           {movie.type === "series" && (
-            <span className="rounded-full border border-red-400/25 bg-red-500/85 px-2 py-0.5 text-[9px] font-bold text-white shadow-[0_0_16px_rgba(239,68,68,0.22)] backdrop-blur-sm">
+            <span className="rounded-full border border-red-400/20 bg-red-600/90 px-2 py-0.5 text-[9px] font-bold text-white shadow-[0_0_16px_rgba(220,38,38,0.25)]">
               SERIES
             </span>
           )}
@@ -188,14 +173,14 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
           aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
           data-testid={`button-watchlist-${movie.mobifliks_id}`}
           className={cn(
-            "absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 z-10 shadow-sm",
+            "absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-opacity duration-200 z-10 shadow-sm",
             inWatchlist
               ? "bg-primary text-primary-foreground scale-100"
-              : "bg-black/30 text-white/90 backdrop-blur-md opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/50",
+              : "bg-black/60 text-white/90 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/80",
             heartFlip && "animate-heart-flip"
           )}
         >
-          <Heart className={cn("w-3.5 h-3.5 transition-transform", inWatchlist && "fill-current")} />
+          <Heart className={cn("w-3.5 h-3.5", inWatchlist && "fill-current")} />
         </button>
 
         {showProgress !== undefined && showProgress > 0 && (
@@ -213,10 +198,10 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
             <img
               src={movie.logo_url}
               alt={movie.title}
-              className="h-full w-auto max-w-full object-contain object-left opacity-90 group-hover:opacity-100 transition-opacity"
+              className="h-full w-auto max-w-full object-contain object-left opacity-90 group-hover:opacity-100 transition-opacity duration-200"
             />
           ) : (
-            <h3 className="font-display font-bold text-sm leading-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors tracking-tight" data-testid={`text-title-${movie.mobifliks_id}`}>
+            <h3 className="font-display font-bold text-sm leading-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200 tracking-tight" data-testid={`text-title-${movie.mobifliks_id}`}>
               {movie.title}
             </h3>
           )}
@@ -246,7 +231,7 @@ export const MovieCard = memo(MovieCardBase);
 export function MovieCardSkeleton({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
     <div className={cn("flex-shrink-0", className)} style={style}>
-      <div className="aspect-[2/3] rounded-2xl bg-card/95 md:bg-card/80 border border-white/[0.06] overflow-hidden relative card-premium-shadow md:backdrop-blur-sm">
+      <div className="aspect-[2/3] rounded-2xl bg-card/95 md:bg-card/95 border border-white/[0.06] overflow-hidden relative card-premium-shadow">
         <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40 animate-pulse" />
         <div className="absolute inset-0 shimmer opacity-50" />
         <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">

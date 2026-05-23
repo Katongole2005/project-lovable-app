@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SiteSettingsProvider, useSiteSettingsContext } from "@/hooks/useSiteSettings";
-import { useDeviceProfile } from "@/hooks/useDeviceProfile";
+import { GlobalPerformanceTuning } from "@/components/GlobalPerformanceTuning";
 import Maintenance from "./pages/Maintenance";
 import { AppLoader } from "@/components/AppLoader";
 import { Analytics } from "@vercel/analytics/react";
@@ -103,31 +103,6 @@ const App = () => {
       </ErrorBoundary>
     </QueryClientProvider>
   );
-};
-
-const GlobalPerformanceTuning = () => {
-  const deviceProfile = useDeviceProfile();
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const isTouchDevice = window.matchMedia("(hover: none), (pointer: coarse)").matches;
-    const classes = {
-      "perf-low": deviceProfile.isWeakDevice,
-      "perf-touch": deviceProfile.isMobile || isTouchDevice,
-      "perf-reduced-motion": deviceProfile.prefersReducedMotion,
-      "perf-rich": !deviceProfile.isWeakDevice && !deviceProfile.prefersReducedMotion,
-    };
-
-    Object.entries(classes).forEach(([className, enabled]) => {
-      root.classList.toggle(className, enabled);
-    });
-
-    return () => {
-      Object.keys(classes).forEach((className) => root.classList.remove(className));
-    };
-  }, [deviceProfile.isMobile, deviceProfile.isWeakDevice, deviceProfile.prefersReducedMotion]);
-
-  return null;
 };
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => {

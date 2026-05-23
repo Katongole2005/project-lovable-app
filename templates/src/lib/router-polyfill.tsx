@@ -2,53 +2,137 @@
 
 import { useRouter, usePathname, useSearchParams as useNextSearchParams, useParams as useNextParams } from 'next/navigation';
 import NextLink from 'next/link';
-import { forwardRef, useEffect, useState, startTransition } from 'react';
+import { forwardRef, useEffect, useMemo, useSyncExternalStore } from 'react';
 
-let memoryState: any = null;
+let memoryState: unknown | undefined;
 const listeners = new Set<() => void>();
+let notifyQueued = false;
 
-function notifyListeners() {
-  listeners.forEach(listener => listener());
+type LocationSnapshot = {
+  pathname: string;
+  search: string;
+  state: unknown;
+};
+
+let cachedClientSnapshot: LocationSnapshot | null = null;
+let cachedClientStateKey = '';
+
+function serializeRouterState(state: unknown): string {
+  if (state == null) return '';
+  try {
+    return JSON.stringify(state);
+  } catch {
+    return String(state);
+  }
+}
+
+function readStoredRouterState(): unknown {
+  if (memoryState !== undefined) {
+    return memoryState;
+  }
+
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const stored = sessionStorage.getItem('moviebay_router_state');
+    if (stored) {
+      memoryState = JSON.parse(stored) as unknown;
+      return memoryState;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  memoryState = null;
+  return null;
+}
+
+function getClientLocationSnapshot(): LocationSnapshot {
+  const pathname = window.location.pathname;
+  const search = window.location.search;
+  const state = readStoredRouterState();
+  const stateKey = serializeRouterState(state);
+
+  if (
+    cachedClientSnapshot &&
+    cachedClientSnapshot.pathname === pathname &&
+    cachedClientSnapshot.search === search &&
+    cachedClientStateKey === stateKey
+  ) {
+    return cachedClientSnapshot;
+  }
+
+  cachedClientStateKey = stateKey;
+  cachedClientSnapshot = { pathname, search, state };
+  return cachedClientSnapshot;
+}
+
+function scheduleNotifyListeners() {
+  if (notifyQueued) return;
+  notifyQueued = true;
+  queueMicrotask(() => {
+    notifyQueued = false;
+    listeners.forEach((listener) => listener());
+  });
+}
+
+function subscribeToHistory(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 if (typeof window !== 'undefined') {
-  const anyWindow = window as any;
+  const anyWindow = window as Window & { __wrapped_history__?: boolean };
   if (!anyWindow.__wrapped_history__) {
     anyWindow.__wrapped_history__ = true;
-    const originalPush = window.history.pushState;
-    const originalReplace = window.history.replaceState;
+    const originalPush = window.history.pushState.bind(window.history);
+    const originalReplace = window.history.replaceState.bind(window.history);
 
-    window.history.pushState = function(state, unused, url) {
-      originalPush.call(this, state, unused, url);
-      notifyListeners();
+    window.history.pushState = function pushState(state, unused, url) {
+      originalPush(state, unused, url);
+      scheduleNotifyListeners();
     };
 
-    window.history.replaceState = function(state, unused, url) {
-      originalReplace.call(this, state, unused, url);
-      notifyListeners();
+    window.history.replaceState = function replaceState(state, unused, url) {
+      originalReplace(state, unused, url);
+      scheduleNotifyListeners();
     };
 
     window.addEventListener('popstate', () => {
-      notifyListeners();
+      scheduleNotifyListeners();
     });
   }
 }
 
 export function useNavigate() {
   const router = useRouter();
-  return (path: string | number, options?: { replace?: boolean, state?: any, shallow?: boolean }) => {
+  return (path: string | number, options?: { replace?: boolean; state?: unknown; shallow?: boolean }) => {
     if (typeof path === 'number') {
       if (path === -1) router.back();
       return;
     }
-    
+
     if (options?.shallow) {
       if (options.state !== undefined) {
         memoryState = options.state;
-        try { sessionStorage.setItem('moviebay_router_state', JSON.stringify(options.state)); } catch (e) {}
+        cachedClientSnapshot = null;
+        try {
+          sessionStorage.setItem('moviebay_router_state', JSON.stringify(options.state));
+        } catch {
+          /* ignore */
+        }
       } else {
         memoryState = null;
-        try { sessionStorage.removeItem('moviebay_router_state'); } catch (e) {}
+        cachedClientSnapshot = null;
+        try {
+          sessionStorage.removeItem('moviebay_router_state');
+        } catch {
+          /* ignore */
+        }
       }
       if (options.replace) {
         window.history.replaceState(options.state || {}, '', path);
@@ -57,17 +141,25 @@ export function useNavigate() {
       }
       return;
     }
+
     if (options?.state !== undefined) {
       memoryState = options.state;
+      cachedClientSnapshot = null;
       try {
         sessionStorage.setItem('moviebay_router_state', JSON.stringify(options.state));
-      } catch (e) {}
+      } catch {
+        /* ignore */
+      }
     } else {
       memoryState = null;
+      cachedClientSnapshot = null;
       try {
         sessionStorage.removeItem('moviebay_router_state');
-      } catch (e) {}
+      } catch {
+        /* ignore */
+      }
     }
+
     if (options?.replace) {
       router.replace(path, { scroll: false });
     } else {
@@ -79,63 +171,31 @@ export function useNavigate() {
 export function useLocation() {
   const nextPathname = usePathname();
   const nextSearchParams = useNextSearchParams();
+  const nextSearch = nextSearchParams?.toString() ?? '';
 
-  const [currentPath, setCurrentPath] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.location.pathname;
-    }
-    return nextPathname || '/';
-  });
-
-  const [currentSearch, setCurrentSearch] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.location.search;
-    }
-    return nextSearchParams ? `?${nextSearchParams.toString()}` : '';
-  });
-
-  const [locationState, setLocationState] = useState(() => {
-    let state = memoryState;
-    if (!state && typeof window !== 'undefined') {
-      try {
-        const stored = sessionStorage.getItem('moviebay_router_state');
-        if (stored) state = JSON.parse(stored);
-      } catch (e) {}
-    }
-    return state;
-  });
-
-  useEffect(() => {
-    const handleUpdate = () => {
-      startTransition(() => {
-        setCurrentPath(window.location.pathname);
-        setCurrentSearch(window.location.search);
-        
-        let state = memoryState;
-        if (!state) {
-          try {
-            const stored = sessionStorage.getItem('moviebay_router_state');
-            if (stored) state = JSON.parse(stored);
-          } catch (e) {}
-        }
-        setLocationState(state);
-      });
+  const serverSnapshot = useMemo((): LocationSnapshot => {
+    return {
+      pathname: nextPathname || '/',
+      search: nextSearch ? `?${nextSearch}` : '',
+      state: null,
     };
+  }, [nextPathname, nextSearch]);
 
-    handleUpdate();
+  const snapshot = useSyncExternalStore(
+    subscribeToHistory,
+    getClientLocationSnapshot,
+    () => serverSnapshot,
+  );
 
-    listeners.add(handleUpdate);
-    return () => {
-      listeners.delete(handleUpdate);
-    };
-  }, []);
-
-  return {
-    pathname: currentPath,
-    search: currentSearch,
-    hash: typeof window !== 'undefined' ? window.location.hash : '',
-    state: locationState,
-  };
+  return useMemo(
+    () => ({
+      pathname: snapshot.pathname,
+      search: snapshot.search,
+      hash: typeof window !== 'undefined' ? window.location.hash : '',
+      state: snapshot.state,
+    }),
+    [snapshot],
+  );
 }
 
 export function useParams() {
@@ -146,30 +206,65 @@ export function useSearchParams() {
   const params = useNextSearchParams();
   return [
     params || new URLSearchParams(),
-    (newParams: any) => {
-      // Stub for set params if they use it. Real implementation would use router.push
+    () => {
       console.warn("setSearchParams not fully implemented in polyfill");
-    }
+    },
   ] as const;
 }
 
-export const Link = forwardRef<HTMLAnchorElement, any>(({ to, replace, state, ...props }, ref) => {
-  return <NextLink href={to} replace={replace} ref={ref} {...props} />;
-});
+/** React Router compatibility — Next.js App Router does not expose navigation type. */
+export function useNavigationType() {
+  return "POP" as const;
+}
+
+export function BrowserRouter({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+export function Routes({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+export function Route({ element }: { element?: React.ReactNode; path?: string; index?: boolean }) {
+  return <>{element}</>;
+}
+
+export const Link = forwardRef<HTMLAnchorElement, React.ComponentProps<typeof NextLink> & { to?: string }>(
+  ({ to, href, replace, ...props }, ref) => {
+    const resolvedHref = to ?? href ?? "/";
+    return <NextLink href={resolvedHref} replace={replace} ref={ref} {...props} />;
+  },
+);
 Link.displayName = "Link";
 
-export const NavLink = forwardRef<HTMLAnchorElement, any>(({ to, className, style, ...props }, ref) => {
+export const NavLink = forwardRef<
+  HTMLAnchorElement,
+  React.ComponentProps<typeof NextLink> & {
+    to?: string;
+    className?: string | ((args: { isActive: boolean }) => string);
+    style?: React.CSSProperties | ((args: { isActive: boolean }) => React.CSSProperties);
+  }
+>(({ to, href, className, style, ...props }, ref) => {
   const pathname = usePathname();
-  const isActive = pathname === to;
-  
-  const computedClassName = typeof className === 'function' ? className({ isActive }) : className;
-  const computedStyle = typeof style === 'function' ? style({ isActive }) : style;
-  
-  return <NextLink href={to} className={computedClassName} style={computedStyle} ref={ref} {...props} />;
+  const resolvedHref = to ?? href ?? "/";
+  const isActive = pathname === resolvedHref;
+
+  const computedClassName = typeof className === "function" ? className({ isActive }) : className;
+  const computedStyle = typeof style === "function" ? style({ isActive }) : style;
+
+  return (
+    <NextLink
+      href={resolvedHref}
+      className={computedClassName}
+      style={computedStyle}
+      ref={ref}
+      {...props}
+    />
+  );
 });
 NavLink.displayName = "NavLink";
 
-export function Navigate({ to, replace }: { to: string, replace?: boolean }) {
+export function Navigate({ to, replace }: { to: string; replace?: boolean }) {
   const router = useRouter();
   useEffect(() => {
     if (replace) {

@@ -8,6 +8,7 @@ import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useState, useEffect } from "react";
 import { AppLoader } from "@/components/AppLoader";
+import { GlobalPerformanceTuning } from "@/components/GlobalPerformanceTuning";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -32,6 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <GlobalPerformanceTuning />
           <AuthProvider>
             <SiteSettingsProvider>
               {children}

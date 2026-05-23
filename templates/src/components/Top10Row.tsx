@@ -48,18 +48,18 @@ function Top10Card({
   onClick: (movie: Movie) => void;
   index: number;
 }) {
-  const handleMouseEnter = useCallback(async () => {
+  const handleMouseEnter = useCallback(() => {
+    if (typeof window === "undefined" || window.innerWidth < 768) return;
     preloadMovieBackdrop(movie);
     const targetUrl = movie.server2_url || movie.download_url;
     if (!targetUrl) return;
-    const mediaUrl = await buildMediaUrl({
+    void buildMediaUrl({
       url: targetUrl,
       title: movie.title,
       detailsUrl: movie.video_page_url || movie.details_url,
       mobifliksId: movie.mobifliks_id,
       play: true,
-    });
-    primeMediaAvailability(mediaUrl);
+    }).then(primeMediaAvailability);
   }, [movie]);
 
   return (
@@ -87,7 +87,7 @@ function Top10Card({
           </span>
         </div>
 
-        <div className="relative w-[120px] md:w-[150px] aspect-[2/3] rounded-[14px] overflow-hidden shadow-card card-hover card-rim-light z-10 border border-black/[0.03]"
+        <div className="movie-card-lift relative w-[120px] md:w-[150px] aspect-[2/3] rounded-[14px] overflow-hidden shadow-card card-hover card-rim-light z-10 border border-black/[0.03]"
         >
           <BlurImage
             src={getImageUrl(movie.image_url)}

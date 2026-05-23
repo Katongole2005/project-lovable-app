@@ -737,45 +737,14 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
             transition={allowDesktopMotion ? { duration: 0.35, ease: [0.16, 1, 0.3, 1] } : undefined}
             className="hidden md:flex md:flex-col w-full relative h-full md:rounded-3xl overflow-hidden isolate"
           >
-            {/* Multi-layer background for professional glass effect */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
+            {/* Modal shell background — keep flat; hero section owns the sharp backdrop art */}
+            <div className="absolute inset-0 z-0 pointer-events-none bg-[#070708]">
               {(!backgroundImage || !desktopBackdropLoaded) && (
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] via-transparent to-white/[0.02]">
                   <div className="absolute inset-0 shimmer opacity-30" />
                 </div>
               )}
-
-              {backgroundImage && (
-                <>
-                  <img
-                    src={backgroundImage}
-                    alt=""
-                    className={cn(
-                      "w-full h-full object-cover object-center scale-110 blur-2xl transition-opacity duration-500",
-                      desktopBackdropLoaded ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {deviceProfile.allowAmbientEffects && (
-                    <img
-                      src={backgroundImage}
-                      alt=""
-                      className={cn(
-                        "absolute inset-0 w-full h-full object-cover object-center scale-125 blur-3xl transition-opacity duration-500",
-                        desktopBackdropLoaded ? "opacity-80" : "opacity-0"
-                      )}
-                    />
-                  )}
-                </>
-              )}
-              <div className="absolute inset-0 bg-black/30" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
-              {deviceProfile.allowAmbientEffects && (
-                <motion.div
-                  className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
-                  ref={(el) => { if (el) el.style.backgroundImage = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`; }}
-                />
-              )}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/50 to-black" />
             </div>
 
             <div className="absolute inset-0 md:rounded-3xl pointer-events-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]" />
@@ -807,6 +776,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                       <img
                         src={backgroundImage}
                         alt={`${movie.title} backdrop`}
+                        onLoad={() => setDesktopBackdropLoaded(true)}
                         className={cn(
                           "w-full h-full object-cover object-center transition-opacity duration-500",
                           desktopBackdropLoaded ? "opacity-100" : "opacity-0"
@@ -818,11 +788,9 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                       <div className="absolute inset-0 shimmer" />
                     </div>
                   )}
-                  {/* Premium fade gradients to seamlessly blend the backdrop into the content */}
-                  <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/50 via-black/20 via-40% to-transparent pointer-events-none" />
-                  <div className="absolute inset-x-0 bottom-0 z-[3] h-[300px] bg-gradient-to-t from-black/70 via-black/40 via-50% to-transparent pointer-events-none" />
-                  <div className="absolute inset-x-0 -bottom-12 z-[3] h-56 bg-black/60 blur-3xl opacity-100 pointer-events-none" />
-                  <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/40 via-transparent to-transparent pointer-events-none" />
+                  {/* Bottom edge fade into content — keep the backdrop sharp above the fold */}
+                  <div className="absolute inset-x-0 bottom-0 z-[3] h-48 bg-gradient-to-t from-[#070708] via-black/50 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/25 via-transparent to-transparent pointer-events-none" />
                 </div>
 
                 {/* Content area - overlapping backdrop */}
@@ -830,7 +798,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                   variants={staggerContainer}
                   initial={allowDesktopMotion ? "hidden" : "visible"}
                   animate={allowDesktopMotion ? (entranceVisible ? "visible" : "hidden") : "visible"}
-                  className="relative z-[5] -mt-56 px-10 pb-10 space-y-6 bg-gradient-to-b from-transparent via-black/40 via-30% to-black/60 backdrop-blur-md"
+                  className="relative z-[5] -mt-56 px-10 pb-10 space-y-6 bg-gradient-to-b from-transparent via-[#070708]/85 via-25% to-[#070708]"
                 >
                   {/* Poster + Title row */}
                   <motion.div variants={fadeInUp} className="relative z-[6] flex gap-6 items-start">
@@ -1331,8 +1299,8 @@ function MobileMovieLayout({
       <div className="absolute top-0 left-0 right-0 z-10">
         <div className="relative w-full aspect-[16/15.5] overflow-hidden bg-black/50">
           {!backdropLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210,33%,90%)] via-[hsl(210,33%,95%)] to-[hsl(210,33%,98%)]">
-              <div className="absolute inset-0 shimmer opacity-20" />
+            <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-[#101116]">
+              <div className="absolute inset-0 shimmer opacity-25" />
             </div>
           )}
 
@@ -1344,26 +1312,26 @@ function MobileMovieLayout({
               <img
                 src={backgroundImage}
                 alt={movie.title}
+                onLoad={() => setBackdropLoaded(true)}
                 className={cn(
-                  "w-full h-full object-cover object-center transition-opacity duration-700",
+                  "w-full h-full object-cover object-center transition-opacity duration-500",
                   backdropLoaded ? "opacity-100" : "opacity-0"
                 )}
               />
             </div>
           )}
 
+          {/* Bottom fade only — avoid washing/blurring the whole hero */}
           <div
-            className="absolute inset-0 transition-opacity duration-300"
+            className="absolute inset-x-0 bottom-0 h-[42%] pointer-events-none transition-opacity duration-300"
             ref={(el) => {
               if (el) {
                 Object.assign(el.style, heroOverlayStyle);
-                el.style.background = "linear-gradient(180deg, rgba(16,17,22,0.02) 0%, rgba(16,17,22,0.02) 42%, rgba(16,17,22,0.46) 82%, #101116 100%)";
+                el.style.background = "linear-gradient(180deg, transparent 0%, rgba(16,17,22,0.25) 55%, #101116 100%)";
               }
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10 transition-opacity duration-300" ref={(el) => { if (el) Object.assign(el.style, heroOverlayStyle); }} />
-
-          <div className="absolute inset-0 bg-black/[0.03]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-black/15 pointer-events-none" />
 
           <div
             className="absolute bottom-0 left-0 right-0 z-20 flex gap-4 items-end p-5 transition-[transform,opacity] duration-300 ease-out will-change-transform"

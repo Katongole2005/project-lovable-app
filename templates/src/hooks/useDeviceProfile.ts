@@ -28,7 +28,6 @@ export interface DeviceProfile {
   autoplayDelayMs: number;
   homeGridItems: number;
   recommendationItems: number;
-  isMacChrome: boolean;
   preferLightweightRendering: boolean;
 }
 
@@ -46,22 +45,8 @@ const DEFAULT_PROFILE: DeviceProfile = {
   autoplayDelayMs: 5000,
   homeGridItems: 24,
   recommendationItems: 12,
-  isMacChrome: false,
   preferLightweightRendering: false,
 };
-
-/** Chrome on macOS often struggles with heavy blur/GPU layers vs Safari on the same machine. */
-function isMacChromeBrowser(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  return (
-    /Macintosh|Mac OS X/i.test(ua) &&
-    /Chrome\//i.test(ua) &&
-    !/Edg\//i.test(ua) &&
-    !/OPR\//i.test(ua) &&
-    !/Brave\//i.test(ua)
-  );
-}
 
 function getConnection() {
   if (typeof navigator === "undefined") {
@@ -88,7 +73,6 @@ function readProfile(): DeviceProfile {
   const lowMemory = typeof typedNavigator.deviceMemory === "number" && typedNavigator.deviceMemory <= 4;
   const lowCpu = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4;
   const slowNetwork = connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g";
-  const isMacChrome = isMacChromeBrowser();
   const isWeakDevice =
     prefersReducedMotion || saveData || lowMemory || lowCpu || slowNetwork;
   const allowComplexAnimations = !isWeakDevice && !isMobile;
@@ -108,7 +92,6 @@ function readProfile(): DeviceProfile {
     autoplayDelayMs: 5000,
     homeGridItems: isMobile ? 8 : isCompact ? 12 : isUltraWideDesktop ? 40 : isLargeDesktop ? 32 : 24,
     recommendationItems: isMobile ? 6 : isCompact ? 8 : isUltraWideDesktop ? 20 : isLargeDesktop ? 16 : 12,
-    isMacChrome,
     preferLightweightRendering,
   };
 }
@@ -120,16 +103,10 @@ export function useDeviceProfile() {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const connection = getConnection();
 
-    const applyDocumentPerfFlags = (next: DeviceProfile) => {
-      const root = document.documentElement;
-      root.classList.toggle("perf-mac-chrome", next.isMacChrome);
-      root.classList.toggle("perf-lite", next.preferLightweightRendering);
-    };
-
     const updateProfileAndFlags = () => {
       const next = readProfile();
       setProfile(next);
-      applyDocumentPerfFlags(next);
+      document.documentElement.classList.toggle("perf-lite", next.preferLightweightRendering);
     };
 
     // RAF-debounced resize: batches resize events to once per animation frame
