@@ -435,46 +435,31 @@ const getNumber = (value: unknown) => Math.max(0, Number(value) || 0);
 const getRankStyle = (rank: number) => {
   if (rank === 1) {
     return {
-      ring: "border-amber-400 shadow-amber-500/30",
+      ring: "border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.4)]",
       badge: "from-amber-300 to-amber-500",
-      icon: <Trophy className="w-4 h-4 text-white" />,
+      icon: <Trophy className="w-5 h-5 text-amber-950" />,
       label: "Champion",
     };
   }
-
   if (rank === 2) {
     return {
-      ring: "border-slate-300 shadow-slate-300/20",
+      ring: "border-slate-300 shadow-[0_0_20px_rgba(203,213,225,0.3)]",
       badge: "from-slate-200 to-slate-400",
-      icon: <Medal className="w-4 h-4 text-white" />,
+      icon: <Medal className="w-4 h-4 text-slate-900" />,
       label: "Runner Up",
     };
   }
-
   return {
-    ring: "border-orange-400 shadow-orange-500/20",
+    ring: "border-orange-400 shadow-[0_0_20px_rgba(251,146,60,0.2)]",
     badge: "from-orange-300 to-orange-500",
-    icon: <Award className="w-4 h-4 text-white" />,
+    icon: <Award className="w-4 h-4 text-orange-950" />,
     label: "Top Three",
   };
 };
 
-const LeaderboardStat = ({
-  icon,
-  label,
-  value,
-  title,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  title?: string;
-}) => (
-  <div
-    className="flex items-center justify-between gap-3 rounded-xl border border-cyan-400/10 bg-white/[0.07] px-3 py-2 backdrop-blur-sm"
-    title={title}
-  >
-    <span className="flex min-w-0 items-center gap-2 text-[11px] font-bold text-slate-200">
+const LeaderboardStat = ({ icon, label, value, title }: { icon: ReactNode, label: string, value: string, title?: string }) => (
+  <div className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-black/20 px-3 py-2 backdrop-blur-sm" title={title}>
+    <span className="flex min-w-0 items-center gap-2 text-[10px] font-bold text-white/50 uppercase tracking-widest">
       {icon}
       <span className="truncate">{label}</span>
     </span>
@@ -493,52 +478,43 @@ const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: n
   return (
     <motion.div
       className={cn(
-        "flex min-w-0 flex-col items-center gap-3",
-        rank === 2 && "pt-8 md:pt-12",
-        rank === 3 && "pt-8 md:pt-12"
+        "flex min-w-0 flex-col items-center gap-4 relative",
+        rank === 2 && "pt-8 md:pt-16",
+        rank === 3 && "pt-8 md:pt-16"
       )}
-      initial={{ opacity: 0, y: 20, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: 0.1 * rank, type: "spring", stiffness: 120, damping: 18 }}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 * rank, type: "spring", stiffness: 100 }}
     >
-      <div className={cn("relative", isFirst ? "w-24 h-24 md:w-28 md:h-28" : "w-20 h-20 md:w-24 md:h-24")}>
-        <div className={cn("absolute -inset-2 rounded-full bg-gradient-to-br opacity-20 blur-xl", rankStyle.badge)} />
-        <Avatar className={cn("h-full w-full border-4 shadow-2xl", rankStyle.ring)}>
-          <AvatarImage src={user.avatar_url} alt={name} />
-          <AvatarFallback className="bg-slate-800 text-lg font-black text-cyan-100">{getInitials(name)}</AvatarFallback>
+      <div className={cn("relative", isFirst ? "w-28 h-28 md:w-36 md:h-36" : "w-20 h-20 md:w-28 md:h-28")}>
+        <div className={cn("absolute -inset-4 rounded-full bg-gradient-to-br opacity-20 blur-2xl animate-pulse", rankStyle.badge)} />
+        <Avatar className={cn("h-full w-full border-4 relative z-10", rankStyle.ring)}>
+          <AvatarImage src={user.avatar_url} alt={name} className="object-cover" />
+          <AvatarFallback className="bg-slate-900 text-2xl font-black text-white">{getInitials(name)}</AvatarFallback>
         </Avatar>
         <div className={cn(
-          "absolute -right-2 -top-2 flex items-center justify-center rounded-full bg-gradient-to-br shadow-lg",
+          "absolute -right-2 -top-2 z-20 flex items-center justify-center rounded-full bg-gradient-to-br shadow-xl border-2 border-black",
           rankStyle.badge,
-          isFirst ? "h-9 w-9" : "h-8 w-8"
+          isFirst ? "h-12 w-12" : "h-10 w-10"
         )}>
           {rankStyle.icon}
         </div>
       </div>
 
-      <div className="w-full min-w-0 text-center">
-        <p className={cn("truncate font-black text-white", isFirst ? "text-base md:text-lg" : "text-sm md:text-base")}>{name}</p>
+      <div className="w-full min-w-0 text-center space-y-1">
+        <p className={cn("truncate font-black text-white", isFirst ? "text-lg md:text-xl" : "text-sm md:text-base")}>{name}</p>
         <p className={cn(
-          "bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text font-black text-transparent tabular-nums",
-          isFirst ? "text-xl md:text-2xl" : "text-lg md:text-xl"
+          "bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text font-black text-transparent tabular-nums drop-shadow-sm",
+          isFirst ? "text-2xl md:text-3xl" : "text-xl md:text-2xl"
         )}>
           {points.toLocaleString()}
         </p>
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{rankStyle.label}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-white/30">{rankStyle.label}</p>
       </div>
 
-      <div className="flex w-full flex-col gap-2 px-1">
-        <LeaderboardStat
-          icon={<Clock className="h-3.5 w-3.5 text-cyan-300" />}
-          label="Watch"
-          value={watchTime}
-          title={`${rawWatchMinutes.toLocaleString()} minutes watched`}
-        />
-        <LeaderboardStat
-          icon={<Download className="h-3.5 w-3.5 text-emerald-300" />}
-          label="Downloads"
-          value={downloads.toLocaleString()}
-        />
+      <div className="flex w-full flex-col gap-2 px-2 mt-2">
+        <LeaderboardStat icon={<Clock className="h-3 w-3 text-indigo-400" />} label="Watch" value={watchTime} title={`${rawWatchMinutes.toLocaleString()} minutes watched`} />
+        <LeaderboardStat icon={<Download className="h-3 w-3 text-fuchsia-400" />} label="Dls" value={downloads.toLocaleString()} />
       </div>
     </motion.div>
   );
@@ -553,60 +529,57 @@ const LeaderboardCard = ({ user, rank, points, isCurrentUser }: { user: any, ran
   return (
     <motion.div
       variants={itemVariants}
-      whileHover={{ scale: 1.015, y: -2 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       initial="hidden"
       animate="visible"
       className={cn(
-        "group rounded-2xl border bg-gradient-to-br from-slate-800/70 to-slate-950/70 p-4 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-300",
+        "group rounded-2xl border bg-black/40 p-4 shadow-xl backdrop-blur-xl transition-all duration-300",
         isCurrentUser
-          ? "border-emerald-300/50 shadow-emerald-500/10"
-          : "border-cyan-500/10 hover:border-cyan-400/35 hover:shadow-cyan-500/10"
+          ? "border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.2)] bg-indigo-500/10"
+          : "border-white/5 hover:border-white/20 hover:bg-white/[0.02]"
       )}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-4">
         <div className={cn(
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-gradient-to-br from-slate-700 to-slate-900",
-          isCurrentUser ? "border-emerald-300/50" : "border-cyan-400/20 group-hover:border-cyan-300/40"
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-black/50 shadow-inner",
+          isCurrentUser ? "border-indigo-500/50" : "border-white/10 group-hover:border-white/30"
         )}>
-          <span className="text-sm font-black tabular-nums text-cyan-300">{rank}</span>
+          <span className={cn("text-sm font-black tabular-nums", isCurrentUser ? "text-indigo-400" : "text-white/50 group-hover:text-white")}>{rank}</span>
         </div>
 
         <div className="relative shrink-0">
-          <Avatar className="h-12 w-12 border-2 border-cyan-500/20 transition-all group-hover:border-cyan-300/40 md:h-14 md:w-14">
-            <AvatarImage src={user.avatar_url} alt={name} />
-            <AvatarFallback className="bg-slate-800 text-xs font-black text-cyan-100">{getInitials(name)}</AvatarFallback>
+          <Avatar className="h-12 w-12 border border-white/10 transition-all md:h-14 md:w-14">
+            <AvatarImage src={user.avatar_url} alt={name} className="object-cover" />
+            <AvatarFallback className="bg-slate-800 text-xs font-black text-indigo-200">{getInitials(name)}</AvatarFallback>
           </Avatar>
-          {isCurrentUser && (
-            <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-slate-950 bg-emerald-300" />
-          )}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
             <p className="truncate text-sm font-black text-white md:text-base">{name}</p>
             {isCurrentUser && (
-              <span className="shrink-0 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-200">
+              <span className="shrink-0 rounded-full border border-indigo-400/30 bg-indigo-500/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-indigo-300">
                 You
               </span>
             )}
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-300">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-white/40 uppercase tracking-widest">
             <span className="flex items-center gap-1" title={`${rawWatchMinutes.toLocaleString()} minutes watched`}>
-              <Clock className="h-3 w-3 text-cyan-300" />
+              <Clock className="h-3 w-3 text-indigo-400" />
               {watchTime}
             </span>
             <span className="flex items-center gap-1">
-              <Download className="h-3 w-3 text-emerald-300" />
+              <Download className="h-3 w-3 text-fuchsia-400" />
               {downloads.toLocaleString()}
             </span>
           </div>
         </div>
 
         <div className="shrink-0 text-right">
-          <p className="bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-lg font-black text-transparent tabular-nums md:text-xl">
+          <p className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-xl font-black text-transparent tabular-nums md:text-2xl drop-shadow-sm">
             {points.toLocaleString()}
           </p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">points</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-white/30">points</p>
         </div>
       </div>
     </motion.div>
@@ -614,19 +587,19 @@ const LeaderboardCard = ({ user, rank, points, isCurrentUser }: { user: any, ran
 };
 
 const LeaderboardLoading = () => (
-  <div className="rounded-[2rem] border border-cyan-500/10 bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950 px-6 py-20 shadow-2xl shadow-black/30">
-    <div className="flex flex-col items-center justify-center gap-4 text-cyan-200/80">
-      <Loader2 className="h-10 w-10 animate-spin" />
-      <p className="text-xs font-black uppercase tracking-[0.22em]">Loading the leaderboard</p>
+  <div className="rounded-[2rem] border border-white/5 bg-black/40 px-6 py-24 shadow-2xl backdrop-blur-xl">
+    <div className="flex flex-col items-center justify-center gap-4 text-white/40">
+      <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
+      <p className="text-xs font-black uppercase tracking-[0.2em]">Loading the leaderboard</p>
     </div>
   </div>
 );
 
 const LeaderboardEmpty = () => (
-  <div className="rounded-[2rem] border border-cyan-500/10 bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950 px-6 py-16 text-center shadow-2xl shadow-black/30">
-    <Trophy className="mx-auto mb-4 h-10 w-10 text-cyan-300/70" />
+  <div className="rounded-[2rem] border border-white/5 bg-black/40 px-6 py-24 text-center shadow-2xl backdrop-blur-xl">
+    <Trophy className="mx-auto mb-4 h-12 w-12 text-white/20" />
     <p className="text-lg font-black text-white">No leaderboard data yet</p>
-    <p className="mt-2 text-sm text-slate-400">Watch movies and collect points to appear here.</p>
+    <p className="mt-2 text-sm text-white/40">Watch movies and collect points to appear here.</p>
   </div>
 );
 
@@ -683,73 +656,66 @@ const LeaderboardSection = () => {
   const list = visibleData.slice(3);
 
   return (
-    <div className="rounded-[2rem] border border-cyan-500/15 bg-gradient-to-br from-slate-950 via-cyan-950/60 to-slate-950 p-4 shadow-2xl shadow-black/35 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
-        <div className="flex flex-col gap-5 text-center md:flex-row md:items-end md:justify-between md:text-left">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-300/80">MovieBay rankings</p>
-            <h3 className="mt-2 bg-gradient-to-r from-cyan-300 via-emerald-300 to-cyan-300 bg-clip-text text-3xl font-black tracking-tight text-transparent md:text-4xl">
-              Leaderboard
-            </h3>
-            <p className="mt-2 text-sm font-medium text-slate-300">Compete with MovieBay fans by watch time, downloads, and points.</p>
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">MovieBay rankings</p>
+          <h3 className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-3xl font-black tracking-tight text-transparent">
+            Leaderboard
+          </h3>
+          <p className="mt-2 text-xs font-bold text-white/50 uppercase tracking-widest">Compete with fans by watch time & downloads.</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5">
+            {[
+              { value: "all" as const, label: "All Time" },
+              { value: "top" as const, label: "Top 20" },
+            ].map(tab => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveLeaderboardTab(tab.value)}
+                className={cn(
+                  "px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                  activeLeaderboardTab === tab.value
+                    ? "bg-indigo-500 text-white shadow-lg"
+                    : "text-white/40 hover:text-white"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center md:justify-end">
-            <div className="inline-grid grid-cols-2 rounded-xl border border-cyan-500/20 bg-slate-900/70 p-1 backdrop-blur-sm">
-              {[
-                { value: "all" as const, label: "All Time" },
-                { value: "top" as const, label: "Top 20" },
-              ].map(tab => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setActiveLeaderboardTab(tab.value)}
-                  className={cn(
-                    "h-9 rounded-lg px-4 text-sm font-black transition-all",
-                    activeLeaderboardTab === tab.value
-                      ? "bg-gradient-to-r from-cyan-600 to-emerald-600 text-white shadow-lg shadow-cyan-500/20"
-                      : "text-slate-300 hover:text-white"
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-center gap-3 rounded-xl border border-cyan-500/20 bg-white/[0.06] px-4 py-3 backdrop-blur-sm">
-              <Clock8 className="h-5 w-5 text-cyan-300" />
-              <div className="text-left">
-                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">Season resets in</p>
-                <p className="text-sm font-black tabular-nums text-white">{countdown}</p>
-              </div>
+          <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-black/40 border border-white/5 backdrop-blur-sm">
+            <Clock8 className="w-4 h-4 text-indigo-400" />
+            <div className="text-left">
+              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40">Resets in</p>
+              <p className="text-xs font-black tabular-nums text-white">{countdown}</p>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="rounded-[1.5rem] border border-cyan-500/20 bg-gradient-to-br from-cyan-900/30 via-slate-900/70 to-emerald-900/30 p-5 shadow-2xl shadow-cyan-950/20 backdrop-blur-sm md:p-8">
-          <div className="grid grid-cols-3 gap-3 md:gap-6 lg:gap-8">
-            {podium[1] && <PodiumItem user={podium[1]} rank={2} points={podium[1].activity_points} />}
-            {podium[0] && <PodiumItem user={podium[0]} rank={1} points={podium[0].activity_points} />}
-            {podium[2] && <PodiumItem user={podium[2]} rank={3} points={podium[2].activity_points} />}
-          </div>
-          <div className="mt-6 border-t border-cyan-500/20 pt-4 text-center">
-            <p className="bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-xs font-black uppercase tracking-[0.22em] text-transparent">
-              Showing {visibleData.length.toLocaleString()} ranked user{visibleData.length === 1 ? "" : "s"}
-            </p>
-          </div>
+      <div className="rounded-[2rem] border border-white/5 bg-gradient-to-b from-white/[0.05] to-black/20 p-6 md:p-10 shadow-2xl backdrop-blur-sm relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        <div className="grid grid-cols-3 gap-4 md:gap-8 lg:gap-12 relative z-10">
+          {podium[1] && <PodiumItem user={podium[1]} rank={2} points={podium[1].activity_points} />}
+          {podium[0] && <PodiumItem user={podium[0]} rank={1} points={podium[0].activity_points} />}
+          {podium[2] && <PodiumItem user={podium[2]} rank={3} points={podium[2].activity_points} />}
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-          {list.map((item, idx) => (
-            <LeaderboardCard 
-              key={item.id} 
-              user={item} 
-              rank={idx + 4} 
-              points={item.activity_points} 
-              isCurrentUser={user?.id === item.id}
-            />
-          ))}
-        </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {list.map((item, idx) => (
+          <LeaderboardCard 
+            key={item.id} 
+            user={item} 
+            rank={idx + 4} 
+            points={item.activity_points} 
+            isCurrentUser={user?.id === item.id}
+          />
+        ))}
       </div>
     </div>
   );
@@ -952,7 +918,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white selection:bg-primary/30 overflow-hidden relative">
+    <div className="min-h-screen bg-[#050508] text-white selection:bg-indigo-500/30 overflow-hidden relative font-sans">
       <EditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} user={user} />
       <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
       <PreferencesDialog open={preferencesOpen} onOpenChange={setPreferencesOpen} />
@@ -967,46 +933,49 @@ export default function Profile() {
         }} 
       />
 
-      {/* Cinematic Background Orbs */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px] animate-pulse [animation-delay:2s]" />
+      {/* Dynamic Ambient Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2 }}
+          className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] max-w-[800px] max-h-[800px] rounded-full blur-[140px] opacity-20 bg-gradient-to-br from-violet-600 via-indigo-500 to-fuchsia-600 mix-blend-screen" 
+        />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full blur-[120px] opacity-[0.15] bg-gradient-to-tl from-blue-600 to-cyan-500 mix-blend-screen" />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-6 md:py-12">
+      <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(2rem+env(safe-area-inset-top))] pb-12">
         
         {/* Navigation Header */}
-        <header className="flex items-center justify-between mb-10">
+        <header className="flex items-center justify-between mb-8 md:mb-12">
           <button 
             onPointerDown={preloadHomePage}
             onTouchStart={preloadHomePage}
             onMouseEnter={preloadHomePage}
-            onFocus={preloadHomePage}
             onClick={() => navigate("/")} 
-            className="group flex items-center gap-3 px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all"
+            className="group flex items-center gap-3 px-5 py-2.5 rounded-full bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] backdrop-blur-md transition-all shadow-lg"
           >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-bold tracking-tight">Back to Movies</span>
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-xs font-bold uppercase tracking-wider">Back to Movies</span>
           </button>
           
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setTheme(isDark ? "light" : "dark")} 
-              className="p-3 rounded-lg bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-all"
+              className="p-3 rounded-full bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] backdrop-blur-md transition-all"
             >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             {user ? (
               <button 
                 onClick={handleSignOut}
-                className="px-5 py-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive hover:bg-destructive/20 transition-all text-sm font-bold"
+                className="px-6 py-2.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-all text-xs font-bold uppercase tracking-wider backdrop-blur-md"
               >
                 Log Out
               </button>
             ) : (
               <button 
                 onClick={() => navigate("/auth")}
-                className="px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all text-sm font-bold shadow-glow"
+                className="px-6 py-2.5 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white transition-all text-xs font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(99,102,241,0.4)]"
               >
                 Sign In
               </button>
@@ -1014,205 +983,212 @@ export default function Profile() {
           </div>
         </header>
 
-        {/* OPEN PROFILE LAYOUT */}
-        <div className="flex flex-col lg:flex-row gap-12 items-start">
+        {/* BENTO BOX GRID LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
           
-          {/* LEFT: IDENTITY & INTEGRATED ACTIONS */}
-          <div className="w-full lg:w-[380px] space-y-12 shrink-0">
+          {/* LEFT: HERO & STATS (Cols 1-4) */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
             
-            {/* Identity (Open Design) */}
-            <div className="space-y-8">
-              <div className="relative group/avatar inline-block">
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-2xl blur-lg opacity-20 group-hover/avatar:opacity-40 transition duration-500" />
-                <Avatar className="w-24 h-24 md:w-32 md:h-32 rounded-2xl border border-white/10 relative z-10 bg-black/40 backdrop-blur-3xl">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback className="bg-white/5 text-4xl font-black text-primary">{initials}</AvatarFallback>
-                </Avatar>
-                <button 
-                  onClick={() => setEditProfileOpen(true)}
-                  aria-label="Edit Profile"
-                  title="Edit Profile"
-                  className="absolute -bottom-2 -right-2 z-20 w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
-                >
-                  <Camera className="w-5 h-5" />
-                </button>
-              </div>
+            {/* Identity Card */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+              className="relative p-8 rounded-[2rem] border border-white/[0.08] bg-black/40 backdrop-blur-2xl shadow-2xl overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="relative mb-6">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full blur-xl opacity-40 group-hover:opacity-60 transition duration-500 animate-pulse" />
+                  <Avatar className="w-32 h-32 md:w-40 md:h-40 rounded-full border-2 border-white/20 relative z-10 shadow-2xl">
+                    <AvatarImage src={user?.user_metadata?.avatar_url} className="object-cover" />
+                    <AvatarFallback className="bg-slate-900 text-4xl font-black text-indigo-400">{initials}</AvatarFallback>
+                  </Avatar>
+                  <button 
+                    onClick={() => setEditProfileOpen(true)}
+                    className="absolute bottom-0 right-0 z-20 w-12 h-12 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.5)] hover:bg-indigo-400 hover:scale-110 transition-all border-2 border-black"
+                  >
+                    <Edit3 className="w-5 h-5" />
+                  </button>
+                </div>
 
-              <div className="space-y-2">
-                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none">{displayName}</h2>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest border border-primary/20">
-                    LEVEL {profile?.level || 1}
+                <h2 className="text-3xl font-black text-white tracking-tight mb-2">{displayName}</h2>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-black uppercase tracking-widest border border-indigo-500/30">
+                    Lvl {profile?.level || 1}
                   </span>
-                  <span className="text-white/30 text-[9px] font-black uppercase tracking-widest">{memberSince}</span>
-                  <span className="text-white/20 text-[9px] font-bold truncate max-w-[150px]">{userEmail}</span>
+                  <span className="text-white/40 text-[10px] font-bold uppercase tracking-wider">{memberSince}</span>
                 </div>
-              </div>
+                <p className="text-sm font-medium text-white/40 mb-6 truncate w-full max-w-[200px]">{userEmail}</p>
 
-              {/* Progress (Integrated) */}
-              {profile && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-end text-[9px] font-black uppercase tracking-widest text-white/30">
-                    <span>Rank Mastery</span>
-                    <span className="text-white">{(profile.activity_points % 500)} / 500 XP</span>
+                {/* Progress Bar */}
+                {profile && (
+                  <div className="w-full space-y-2 mt-2">
+                    <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest text-white/40">
+                      <span>XP Progress</span>
+                      <span className="text-indigo-300">{(profile.activity_points % 500)} / 500</span>
+                    </div>
+                    <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden border border-white/5 relative">
+                      <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay" />
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (profile.activity_points % 500) / 5)}%` }}
+                        className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, (profile.activity_points % 500) / 5)}%` }}
-                      className="h-full bg-primary"
-                    />
+                )}
+              </div>
+            </motion.div>
+
+            {/* Stats Bento Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Watch Time", value: formatWatchTime(profile?.watch_time || 0), icon: Clock, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
+                { label: "Downloads", value: Math.floor(getNumber(profile?.downloads)).toLocaleString(), icon: Download, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20" },
+                { label: "Total Points", value: Math.floor(getNumber(profile?.activity_points)).toLocaleString(), icon: Trophy, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20", colSpan: 2 },
+              ].map((stat, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 + (i * 0.05) }}
+                  className={cn(
+                    "p-5 rounded-3xl border bg-black/40 backdrop-blur-xl flex flex-col items-start gap-3 hover:-translate-y-1 transition-transform",
+                    stat.border, stat.colSpan === 2 ? "col-span-2 flex-row items-center justify-between" : ""
+                  )}
+                >
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", stat.bg)}>
+                    <stat.icon className={cn("w-5 h-5", stat.color)} />
                   </div>
-                </div>
-              )}
+                  <div>
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">{stat.label}</p>
+                    <p className={cn("font-black tracking-tight", stat.colSpan === 2 ? "text-3xl" : "text-2xl")}>{stat.value}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
 
-            {/* QUICK ACTIONS (Integrated Grid) */}
+            {/* Actions Grid */}
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={handleClaimDaily}
                 disabled={!canClaim || claiming}
                 className={cn(
-                  "p-5 rounded-2xl flex flex-col items-center gap-2 transition-all border",
+                  "p-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all border backdrop-blur-xl",
                   canClaim 
-                    ? "bg-primary border-primary text-white shadow-glow" 
-                    : "bg-white/[0.02] border-white/5 text-white/20"
+                    ? "bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 border-indigo-500/40 text-white hover:border-indigo-400 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]" 
+                    : "bg-black/20 border-white/5 text-white/20"
                 )}
               >
-                <Gift className={cn("w-6 h-6", canClaim ? "animate-bounce" : "opacity-20")} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{canClaim ? "Claim Daily" : "Claimed"}</span>
+                <Gift className={cn("w-5 h-5", canClaim ? "text-fuchsia-400 animate-pulse" : "opacity-30")} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{canClaim ? "Daily Claim" : "Claimed"}</span>
               </button>
 
               <button
                 onClick={copyReferral}
-                className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col items-center gap-2 hover:bg-white/[0.05] transition-all"
+                className="p-4 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.05] hover:border-white/20 transition-all group"
               >
-                <Users className="w-6 h-6 text-white/40 group-hover:text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Invite</span>
+                <Users className="w-5 h-5 text-white/40 group-hover:text-cyan-400 transition-colors" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">Invite</span>
               </button>
-            </div>
-
-            {/* SYSTEM SETTINGS (Integrated List) */}
-            <div className="space-y-1">
-               <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-4 px-2">Account Settings</h3>
-               {settingsItems.map((item, idx) => (
-                 <button 
-                  key={idx}
-                  onClick={item.onClick}
-                  className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.03] transition-all group"
-                 >
-                   <div className="flex items-center gap-4">
-                     <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", item.color)}>
-                       <item.icon className={cn("w-4 h-4", item.iconColor)} />
-                     </div>
-                     <div className="text-left">
-                       <p className="text-sm font-bold text-white/80 group-hover:text-white transition-colors">{item.label}</p>
-                       <p className="text-[10px] text-white/20 font-medium">{item.desc}</p>
-                     </div>
-                   </div>
-                   <ChevronRight className="w-4 h-4 text-white/10 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                 </button>
-               ))}
             </div>
           </div>
 
-          {/* RIGHT: MAIN CONTENT AREA (Fluid & Spacious) */}
-          <div className="flex-1 w-full space-y-16">
+          {/* RIGHT: TABS & CONTENT (Cols 5-12) */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
             
-            {/* STATS STRIP (No Boxes, Pure Typography) */}
-            <div className="flex flex-wrap gap-x-12 gap-y-8">
-              {stats.map((stat, idx) => (
-                <div key={idx} className="space-y-2">
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">{stat.label}</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-white tracking-tighter leading-none">{stat.value}</span>
-                    <stat.icon className="w-4 h-4 text-primary/40" />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* TABS NAVIGATION (Modern Underline Style) */}
-            <div className="space-y-10">
-              <div className="flex items-center gap-10 overflow-x-auto pb-4 border-b border-white/5 scrollbar-none">
-                {tabs.map((tab) => (
+            {/* Pill Segmented Navigation */}
+            <div className="relative p-1.5 rounded-2xl bg-black/40 backdrop-blur-2xl border border-white/10 flex overflow-x-auto scrollbar-none shadow-2xl">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "flex items-center gap-2 transition-all whitespace-nowrap relative pb-4",
-                      activeTab === tab.id 
-                        ? "text-white" 
-                        : "text-white/20 hover:text-white/40"
+                      "relative flex-1 min-w-[100px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all outline-none",
+                      isActive ? "text-white" : "text-white/40 hover:text-white/80 hover:bg-white/5"
                     )}
                   >
-                    <tab.icon className="w-4 h-4" />
-                    <span className="text-xs font-black uppercase tracking-widest">{tab.label}</span>
-                    {activeTab === tab.id && (
+                    {isActive && (
                       <motion.div 
-                        layoutId="activeTabUnderline"
-                        className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-primary"
+                        layoutId="activeTabPill"
+                        className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl"
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
                       />
                     )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      <tab.icon className={cn("w-4 h-4", isActive ? "text-indigo-400" : "")} />
+                      <span className="text-xs font-black uppercase tracking-wider">{tab.label}</span>
+                    </span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
 
-              {/* FLUID TAB CONTENT */}
+            {/* TAB CONTENT AREA */}
+            <div className="flex-1 bg-black/20 backdrop-blur-xl border border-white/[0.05] rounded-[2rem] p-6 md:p-8 min-h-[500px]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
+                  transition={{ duration: 0.3 }}
+                  className="h-full"
                 >
+                  {/* ACTIVITY TAB */}
                   {activeTab === "activity" && (
                     <div className="space-y-12">
-                      {/* Recently Viewed Grid */}
+                      {/* Recently Viewed */}
                       <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-black text-white uppercase tracking-wider">Recently Viewed</h3>
-                          <button className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">View All History</button>
+                          <h3 className="text-sm font-black text-white/60 uppercase tracking-[0.2em]">Recently Viewed</h3>
+                          <button className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300">View All</button>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {recentlyViewed.slice(0, 10).map((item) => (
-                            <motion.div
-                              key={item.id}
-                              whileHover={{ y: -5 }}
-                              onClick={() => navigateToMovie(item.id, item.title, item.type)}
-                              className="group cursor-pointer space-y-3"
-                            >
-                              <div className="aspect-[2/3] rounded-xl overflow-hidden border border-white/5 bg-white/5 relative">
-                                <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
-                                    <Play className="w-4 h-4 fill-current" />
+                        {recentlyViewed.length > 0 ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {recentlyViewed.slice(0, 5).map((item, i) => (
+                              <motion.div
+                                key={item.id}
+                                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
+                                whileHover={{ y: -5, scale: 1.02 }}
+                                onClick={() => navigateToMovie(item.id, item.title, item.type)}
+                                className="group cursor-pointer space-y-3 relative"
+                              >
+                                <div className="aspect-[2/3] rounded-2xl overflow-hidden border border-white/10 bg-black/40 relative shadow-xl">
+                                  <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <div className="w-12 h-12 rounded-full bg-indigo-500/90 backdrop-blur-sm flex items-center justify-center text-white scale-75 group-hover:scale-100 transition-transform duration-300 shadow-[0_0_20px_rgba(99,102,241,0.5)]">
+                                      <Play className="w-5 h-5 fill-current ml-1" />
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className="text-[11px] font-black text-white truncate">{item.title}</p>
-                                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">{item.type}</p>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
+                                <div className="space-y-1 px-1">
+                                  <p className="text-[11px] font-black text-white truncate leading-tight">{item.title}</p>
+                                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">{item.type}</p>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-12 border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 text-white/20">
+                            <Clock className="w-8 h-8" />
+                            <p className="text-xs font-black uppercase tracking-widest">No watch history yet</p>
+                          </div>
+                        )}
                       </div>
 
                       {isAdmin && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12 border-t border-white/5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-white/[0.05]">
                           <button 
                             onClick={() => navigate("/admin")} 
-                            className="p-8 rounded-2xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all text-left group"
+                            className="p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/20 hover:bg-indigo-500/10 transition-all text-left group"
                           >
-                            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                              <Shield className="w-6 h-6 text-primary" />
+                            <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                              <Shield className="w-6 h-6 text-indigo-400" />
                             </div>
-                            <h4 className="text-xl font-black mb-2 uppercase tracking-tighter">Admin Dashboard</h4>
-                            <p className="text-sm text-white/40 leading-relaxed font-medium">Global system management, movie uploads, and site analytics.</p>
+                            <h4 className="text-sm font-black mb-1 uppercase tracking-widest text-indigo-100">Admin Dashboard</h4>
+                            <p className="text-xs text-indigo-200/50 leading-relaxed font-medium">Manage movies, series, and global site settings.</p>
                           </button>
-                          <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/5">
+                          <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.05]">
                             <Suspense fallback={null}>
                               <SendPushPanel />
                             </Suspense>
@@ -1222,21 +1198,24 @@ export default function Profile() {
                     </div>
                   )}
 
+                  {/* WATCHLIST TAB */}
                   {activeTab === "watchlist" && (
-                    <div className="space-y-10">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Bookmark className="w-6 h-6 text-primary" />
-                          <h3 className="text-xl font-black uppercase tracking-wider">Your Watchlist</h3>
+                    <div className="space-y-8">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-black/20 p-2 rounded-2xl border border-white/[0.05]">
+                        <div className="flex items-center gap-3 px-3">
+                          <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                            <Bookmark className="w-4 h-4 text-pink-400" />
+                          </div>
+                          <h3 className="text-sm font-black uppercase tracking-widest">My List</h3>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1 bg-black/40 p-1 rounded-xl">
                           {["all", "movie", "series"].map(f => (
                             <button 
                               key={f} 
                               onClick={() => setWatchlistFilter(f as any)} 
                               className={cn(
-                                "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border",
-                                watchlistFilter === f ? "bg-primary border-primary text-black" : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                                "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                watchlistFilter === f ? "bg-white/10 text-white shadow-sm" : "text-white/40 hover:text-white hover:bg-white/5"
                               )}
                             >
                               {f}
@@ -1247,53 +1226,59 @@ export default function Profile() {
 
                       {filteredWatchlist.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {filteredWatchlist.map((item, idx) => (
+                          {filteredWatchlist.map((item, i) => (
                             <motion.div
                               key={item.id}
-                              whileHover={{ y: -5 }}
+                              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
+                              whileHover={{ y: -5, scale: 1.02 }}
                               onClick={() => navigateToMovie(item.id, item.title, item.type)}
-                              className="group cursor-pointer space-y-3"
+                              className="group cursor-pointer space-y-3 relative"
                             >
-                              <div className="aspect-[2/3] rounded-xl overflow-hidden border border-white/5 bg-white/5 relative">
-                                <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                              <div className="aspect-[2/3] rounded-2xl overflow-hidden border border-white/10 bg-black/40 relative shadow-xl">
+                                <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3">
+                                  <span className="text-[9px] font-black text-white/80 uppercase tracking-widest bg-black/40 px-2 py-1 rounded-md backdrop-blur-md">{item.type}</span>
+                                </div>
                               </div>
                               <p className="text-[11px] font-black text-white truncate px-1">{item.title}</p>
                             </motion.div>
                           ))}
                         </div>
                       ) : (
-                        <div className="py-20 flex flex-col items-center justify-center gap-4 text-white/10">
-                          <Bookmark className="w-16 h-16 stroke-[1]" />
-                          <p className="text-sm font-black uppercase tracking-widest">Empty Watchlist</p>
+                        <div className="py-24 border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center gap-4 text-white/20">
+                          <Bookmark className="w-12 h-12 stroke-[1.5]" />
+                          <p className="text-xs font-black uppercase tracking-widest">Watchlist is empty</p>
                         </div>
                       )}
                     </div>
                   )}
 
+                  {/* LEADERBOARD TAB */}
                   {activeTab === "leaderboard" && (
                     <LeaderboardSection />
                   )}
 
+                  {/* SETTINGS TAB */}
                   {activeTab === "settings" && (
-                    <div className="max-w-2xl space-y-12">
-                      <div className="space-y-6">
-                        <h3 className="text-lg font-black text-white uppercase tracking-wider">Security & Preferences</h3>
-                        <div className="grid grid-cols-1 gap-3">
+                    <div className="max-w-3xl space-y-10">
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black text-white/50 uppercase tracking-[0.2em] ml-2">Account Management</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {settingsItems.map((item) => {
                             const Icon = item.icon;
                             return (
                               <button 
                                 key={item.label} 
                                 onClick={item.onClick}
-                                className="w-full flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all group"
+                                className="w-full flex items-center justify-between p-5 rounded-2xl bg-black/40 border border-white/[0.05] hover:bg-white/[0.05] hover:border-white/10 hover:shadow-xl transition-all group"
                               >
                                 <div className="flex items-center gap-4">
-                                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", item.color)}>
+                                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110", item.color)}>
                                     <Icon className={cn("w-5 h-5", item.iconColor)} />
                                   </div>
                                   <div className="text-left">
-                                    <p className="text-sm font-black text-white leading-none mb-1">{item.label}</p>
-                                    <p className="text-[10px] text-white/30 font-medium">{item.desc}</p>
+                                    <p className="text-sm font-black text-white/90 group-hover:text-white transition-colors">{item.label}</p>
+                                    <p className="text-[10px] text-white/40 font-medium mt-0.5">{item.desc}</p>
                                   </div>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-white/10 group-hover:text-white group-hover:translate-x-1 transition-all" />
@@ -1304,6 +1289,7 @@ export default function Profile() {
                       </div>
                     </div>
                   )}
+
                 </motion.div>
               </AnimatePresence>
             </div>
