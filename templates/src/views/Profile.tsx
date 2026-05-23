@@ -487,7 +487,7 @@ const PodiumItem = ({ user, rank, points }: { user: any, rank: number, points: n
       transition={{ delay: 0.1 * rank, type: "spring", stiffness: 100 }}
     >
       <div className={cn("relative", isFirst ? "w-28 h-28 md:w-36 md:h-36" : "w-20 h-20 md:w-28 md:h-28")}>
-        <div className={cn("absolute -inset-4 rounded-full bg-gradient-to-br opacity-20 blur-2xl animate-pulse", rankStyle.badge)} />
+        <div className={cn("absolute -inset-4 rounded-full bg-gradient-to-br opacity-20 blur-2xl", rankStyle.badge)} />
         <Avatar className={cn("h-full w-full border-4 relative z-10", rankStyle.ring)}>
           <AvatarImage src={user.avatar_url} alt={name} className="object-cover" />
           <AvatarFallback className="bg-slate-900 text-2xl font-black text-white">{getInitials(name)}</AvatarFallback>
@@ -933,14 +933,14 @@ export default function Profile() {
         }} 
       />
 
-      {/* Dynamic Ambient Background */}
+      {/* Lightweight Ambient Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.02]" />
         <motion.div 
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2 }}
-          className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] max-w-[800px] max-h-[800px] rounded-full blur-[140px] opacity-20 bg-gradient-to-br from-violet-600 via-indigo-500 to-fuchsia-600 mix-blend-screen" 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}
+          className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] max-w-[800px] max-h-[800px] opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-violet-600 via-indigo-900/20 to-transparent" 
         />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full blur-[120px] opacity-[0.15] bg-gradient-to-tl from-blue-600 to-cyan-500 mix-blend-screen" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] opacity-[0.08] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-600 via-cyan-900/20 to-transparent" />
       </div>
 
       <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(2rem+env(safe-area-inset-top))] pb-12">
@@ -992,12 +992,12 @@ export default function Profile() {
             {/* Identity Card */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-              className="relative p-8 rounded-[2rem] border border-white/[0.08] bg-black/40 backdrop-blur-2xl shadow-2xl overflow-hidden group"
+              className="relative p-8 rounded-[2rem] border border-white/[0.08] bg-black/40 backdrop-blur-md shadow-2xl overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="relative mb-6">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full blur-xl opacity-40 group-hover:opacity-60 transition duration-500 animate-pulse" />
+                  <div className="absolute -inset-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full blur-xl opacity-40 group-hover:opacity-60 transition duration-500" />
                   <Avatar className="w-32 h-32 md:w-40 md:h-40 rounded-full border-2 border-white/20 relative z-10 shadow-2xl">
                     <AvatarImage src={user?.user_metadata?.avatar_url} className="object-cover" />
                     <AvatarFallback className="bg-slate-900 text-4xl font-black text-indigo-400">{initials}</AvatarFallback>
@@ -1095,7 +1095,7 @@ export default function Profile() {
           <div className="lg:col-span-8 flex flex-col gap-6">
             
             {/* Pill Segmented Navigation */}
-            <div className="relative p-1.5 rounded-2xl bg-black/40 backdrop-blur-2xl border border-white/10 flex overflow-x-auto scrollbar-none shadow-2xl">
+            <div className="relative p-1.5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex overflow-x-auto scrollbar-none shadow-2xl">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
