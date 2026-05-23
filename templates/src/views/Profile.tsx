@@ -1095,7 +1095,7 @@ export default function Profile() {
           <div className="lg:col-span-8 flex flex-col gap-6">
             
             {/* Pill Segmented Navigation */}
-            <div className="relative p-1.5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex overflow-x-auto scrollbar-none shadow-2xl">
+            <div className="relative p-1.5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 grid grid-cols-2 md:flex md:overflow-x-auto scrollbar-none shadow-2xl gap-1">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -1103,7 +1103,7 @@ export default function Profile() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "relative flex-1 min-w-[100px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all outline-none",
+                      "relative w-full md:flex-1 md:min-w-[100px] flex items-center justify-center gap-2 px-3 py-3 md:px-4 rounded-xl transition-all outline-none",
                       isActive ? "text-white" : "text-white/40 hover:text-white/80 hover:bg-white/5"
                     )}
                   >
@@ -1114,9 +1114,9 @@ export default function Profile() {
                         transition={{ type: "spring", stiffness: 300, damping: 25 }}
                       />
                     )}
-                    <span className="relative z-10 flex items-center gap-2">
-                      <tab.icon className={cn("w-4 h-4", isActive ? "text-indigo-400" : "")} />
-                      <span className="text-xs font-black uppercase tracking-wider">{tab.label}</span>
+                    <span className="relative z-10 flex items-center gap-1.5 md:gap-2">
+                      <tab.icon className={cn("w-3.5 h-3.5 md:w-4 md:h-4", isActive ? "text-indigo-400" : "")} />
+                      <span className="text-[10px] md:text-xs font-black uppercase tracking-wider">{tab.label}</span>
                     </span>
                   </button>
                 );
