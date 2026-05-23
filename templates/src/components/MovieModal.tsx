@@ -61,8 +61,8 @@ async function downloadWithName(url: string, filename: string, detailsUrl?: stri
   const anchor = document.createElement("a");
   anchor.href = mediaUrl;
   anchor.download = fullName;
-  anchor.target = "_blank";
-  anchor.rel = "noopener noreferrer";
+  // Use _top instead of _blank to avoid aggressive mobile popup blockers dropping the async download
+  anchor.target = "_top";
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
