@@ -55,6 +55,7 @@ import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
 import { RecommendationRow } from "@/components/RecommendationRow";
 import { Top10Row } from "@/components/Top10Row";
 import { SearchBar } from "@/components/SearchBar";
+import { MovieCard, MovieCardSkeleton } from "@/components/MovieCard";
 import { BlurImage } from "@/components/BlurImage";
 import { DynamicBackground } from "@/components/DynamicBackground";
 import { StayedAlertModal } from "@/components/StayedAlertModal";
@@ -91,7 +92,7 @@ import type { FilterOptions } from "@/lib/api";
 import { preloadHeroMovies } from "@/lib/heroImages";
 import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
 import type { Movie, Series, ContinueWatching, SkipSegment, SubtitleTrack } from "@/types/movie";
-import { ChevronLeft, Loader2, Play, X } from "lucide-react";
+import { ChevronLeft, Loader2, Play, Search, X } from "lucide-react";
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { buildMovieJsonLd } from "@/hooks/useSeo";
 import { toSlug, fromSlug } from "@/lib/slug";
@@ -644,7 +645,11 @@ function ClientHome() {
     if (!query.trim()) return;
     setSearchQuery(query);
     setSearchInputValue(query);
-    if (!skipNavigate) navigateTo("/search");
+    if (!skipNavigate) {
+      navigateTo(`/search?q=${encodeURIComponent(query)}`, { shallow: true });
+    } else {
+      navigateTo(`/search?q=${encodeURIComponent(query)}`, { replace: true, shallow: true });
+    }
     setCurrentPage(1);
     setIsLoading(true);
     addRecentSearch(query);
@@ -658,7 +663,7 @@ function ClientHome() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [navigateTo]);
 
   const handleSearchInputChange = (val: string) => {
     setSearchInputValue(val);
@@ -685,6 +690,13 @@ function ClientHome() {
         setIsLoading(false);
       }
     }, 300);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (debounceSearchRef.current) clearTimeout(debounceSearchRef.current);
+      handleSearch(searchInputValue, true);
+    }
   };
 
   const defaultRecommendedMovies = useMemo(() => {
@@ -725,15 +737,21 @@ function ClientHome() {
     };
   }, []);
 
-  // Handle direct URL load with search query
+  // Synchronize URL query parameter 'q' with search state
   useEffect(() => {
-    if (viewMode === "search" && searchParams.has("q")) {
-      const q = searchParams.get("q");
-      if (q && q !== searchQuery && searchResults.length === 0 && !isLoading) {
-        void handleSearch(q, true);
+    if (viewMode === "search") {
+      const q = searchParams.get("q") || "";
+      if (q !== searchQuery) {
+        if (q) {
+          void handleSearch(q, true);
+        } else {
+          setSearchQuery("");
+          setSearchInputValue("");
+          setSearchResults([]);
+        }
       }
     }
-  }, [viewMode, searchParams, searchQuery, searchResults.length, isLoading, handleSearch]);
+  }, [viewMode, searchParams, searchQuery, handleSearch]);
 
   const handleMovieClick = useCallback(async (movie: Movie) => {
     let resolvedMovie: Movie | Series = movie;
@@ -1122,8 +1140,10 @@ function ClientHome() {
       setOriginalsPage(1);
       setNextLoadOffset(0);
 
-      if (tab === "home") {
+      if (tab === "home" || tab === "search") {
         setSearchQuery("");
+        setSearchInputValue("");
+        setSearchResults([]);
       }
     });
   }, [navigateTo]);
@@ -1460,161 +1480,51 @@ function ClientHome() {
               </PageTransition>
             )}
 
-            {/* Search View */}
+          {/* Search View */}
           {viewMode === "search" && (
             <PageTransition viewKey="search">
-              <div className="mx-auto max-w-5xl rounded-3xl border border-white/10 bg-[#121218]/90 p-6 shadow-2xl">
-                <div className="mb-5 flex items-center gap-3">
-                  <input
-                    placeholder="Search movies or TV shows"
-                    className="h-11 flex-1 rounded-2xl border border-white/12 bg-white/5 px-4 text-white outline-none focus:border-violet-500/50 transition-colors"
-                    value={searchInputValue}
-                    onChange={(e) => handleSearchInputChange(e.target.value)}
-                    autoFocus
-                  />
-                  <button
-                    onClick={() => handleTabChange("home")}
-                    className="rounded-xl border border-white/10 px-4 py-2 text-white/80 hover:bg-white/5 active:scale-95 transition-all text-sm font-semibold shrink-0"
-                  >
-                    Close
-                  </button>
+              <div className="space-y-6">
+                <div className="max-w-xl mx-auto">
+                  <Suspense fallback={<div className="h-12 rounded-full bg-card/60 border border-border/30" />}>
+                    <SearchBar
+                      onSearch={handleSearch}
+                      onMovieSelect={handleMovieClick}
+                      popularSearches={popularSearches}
+                      initialQuery={searchQuery}
+                    />
+                  </Suspense>
                 </div>
-
-                <div className="mb-5 flex flex-wrap gap-2 items-center">
-                  <button
-                    onClick={() => setTypeFilter("all")}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs transition-all active:scale-95",
-                      typeFilter === "all" ? "bg-white text-black font-semibold" : "border border-white/10 text-white/80 hover:bg-white/5"
-                    )}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setTypeFilter("movie")}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs transition-all active:scale-95",
-                      typeFilter === "movie" ? "bg-white text-black font-semibold" : "border border-white/10 text-white/80 hover:bg-white/5"
-                    )}
-                  >
-                    Movies
-                  </button>
-                  <button
-                    onClick={() => setTypeFilter("series")}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs transition-all active:scale-95",
-                      typeFilter === "series" ? "bg-white text-black font-semibold" : "border border-white/10 text-white/80 hover:bg-white/5"
-                    )}
-                  >
-                    TV
-                  </button>
-
-                  <div className="h-4 w-px bg-white/10 mx-1 self-center" />
-
-                  <button
-                    onClick={() => setSortFilter("popular")}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs transition-all active:scale-95",
-                      sortFilter === "popular" ? "bg-violet-200/90 text-black font-semibold" : "border border-white/10 text-white/80 hover:bg-white/5"
-                    )}
-                  >
-                    Popular
-                  </button>
-                  <button
-                    onClick={() => setSortFilter("rating")}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs transition-all active:scale-95",
-                      sortFilter === "rating" ? "bg-violet-200/90 text-black font-semibold" : "border border-white/10 text-white/80 hover:bg-white/5"
-                    )}
-                  >
-                    Rating
-                  </button>
-                  <button
-                    onClick={() => setSortFilter("newest")}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs transition-all active:scale-95",
-                      sortFilter === "newest" ? "bg-violet-200/90 text-black font-semibold" : "border border-white/10 text-white/80 hover:bg-white/5"
-                    )}
-                  >
-                    Newest
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {isLoading ? (
-                    Array.from({ length: 9 }).map((_, i) => (
-                      <div
-                        key={`search-skeleton-${i}`}
-                        className="flex gap-4 p-3 rounded-2xl border border-white/5 bg-[#1a1a24]/30 animate-pulse"
+ 
+                {searchQuery && (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setSearchQuery("");
+                          setSearchInputValue("");
+                          setSearchResults([]);
+                          navigateTo("/search", { replace: true, shallow: true });
+                        }}
+                        className="shrink-0 p-2.5 rounded-full hover:bg-white/10 text-white transition-all duration-200 active:scale-95 border border-white/5 bg-white/5 backdrop-blur-md"
                       >
-                        <div className="w-28 sm:w-36 aspect-video rounded-xl bg-white/5 shrink-0" />
-                        <div className="flex-1 py-1 space-y-2.5">
-                          <div className="h-3 bg-white/10 rounded w-1/3" />
-                          <div className="h-4 bg-white/15 rounded w-4/5" />
-                          <div className="h-3 bg-white/5 rounded w-1/2" />
-                        </div>
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <div>
+                        <h2 className="text-xl font-semibold text-white">Search Results</h2>
+                        <p className="text-sm text-muted-foreground">
+                          {totalResults} results for "{searchQuery}"
+                        </p>
                       </div>
-                    ))
-                  ) : filteredAndSortedResults.length === 0 ? (
-                    <div className="col-span-full py-12 text-center text-muted-foreground text-sm">
-                      No content found matching the filters.
                     </div>
-                  ) : (
-                    filteredAndSortedResults.map((movie, index) => {
-                      const isPlayable = Boolean(movie.server2_url || movie.download_url);
-                      const vjDetail = movie.vj_count ? `${movie.vj_count} VJ` : movie.vj_name ? `VJ ${movie.vj_name}` : null;
-                      return (
-                        <div
-                          key={movie.mobifliks_id}
-                          onClick={() => handleMovieClick(movie)}
-                          className="group relative flex gap-4 p-3 rounded-2xl border border-white/5 bg-[#1a1a24]/50 hover:bg-[#20202e]/75 hover:border-white/10 transition-all duration-300 card-hover will-change-transform cursor-pointer"
-                          style={{ "--card-index": index % 24 } as React.CSSProperties}
-                        >
-                          <div className="relative w-28 sm:w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-neutral-900 border border-white/5">
-                            <BlurImage
-                              src={getImageUrl(movie.backdrop_url || movie.image_url)}
-                              alt={movie.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg">
-                                <Play className="w-3.5 h-3.5 fill-current text-white ml-0.5" />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
-                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                              {movie.type === "series" && (
-                                <span className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-red-600/90 text-white tracking-wider uppercase">
-                                  TV
-                                </span>
-                              )}
-                              {(movie as any).vote_average && (
-                                <span className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5">
-                                  ★ {Number((movie as any).vote_average).toFixed(1)}
-                                </span>
-                              )}
-                            </div>
-                            <h3 className="font-semibold text-sm text-white leading-tight line-clamp-1 group-hover:text-primary transition-colors">
-                              {movie.title}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-1.5 text-[11px] text-muted-foreground">
-                              {movie.year && <span>{movie.year}</span>}
-                              {vjDetail ? (
-                                <span className="px-1 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-semibold text-red-200/90">
-                                  {vjDetail}
-                                </span>
-                              ) : (
-                                <span>{movie.type === "series" ? "Series" : "Movie"}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+ 
+                    <MovieGrid
+                      movies={searchResults}
+                      onMovieClick={handleMovieClick}
+                      isLoading={isLoading}
+                      emptyMessage={`No results for "${searchQuery}"`}
+                    />
+                  </div>
+                )}
               </div>
             </PageTransition>
           )}

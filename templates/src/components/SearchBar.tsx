@@ -13,10 +13,11 @@ interface SearchBarProps {
   onMovieSelect: (movie: Movie) => void;
   popularSearches?: string[];
   className?: string;
+  initialQuery?: string;
 }
 
-export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], className }: SearchBarProps) {
-  const [query, setQuery] = useState("");
+export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], className, initialQuery = "" }: SearchBarProps) {
+  const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<Movie[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -26,6 +27,10 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
 
   // Memoized to avoid hitting localStorage on every render
   const recentSearches = useMemo(() => getRecentSearches(), []);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   const fetchSuggestionsDebounced = useCallback((searchQuery: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
