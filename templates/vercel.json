@@ -10,12 +10,12 @@
   "rewrites": [
     {
       "source": "/movie/:id",
-      "has": [{ "type": "header", "key": "user-agent", "value": ".*(Googlebot|Google Inspection Tool|Google-Read-Aloud|GoogleInspectionTool|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*" }],
+      "has": [{ "type": "header", "key": "user-agent", "value": ".*(Googlebot|Google Inspection Tool|Google-Read-Aloud|GoogleInspectionTool|bingbot|BingPreview|MSNBot|adidxbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*" }],
       "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/seo-renderer?type=movie&id=:id"
     },
     {
       "source": "/series/:id",
-      "has": [{ "type": "header", "key": "user-agent", "value": ".*(Googlebot|Google Inspection Tool|Google-Read-Aloud|GoogleInspectionTool|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*" }],
+      "has": [{ "type": "header", "key": "user-agent", "value": ".*(Googlebot|Google Inspection Tool|Google-Read-Aloud|GoogleInspectionTool|bingbot|BingPreview|MSNBot|adidxbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*" }],
       "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/seo-renderer?type=series&id=:id"
     }
   ],
