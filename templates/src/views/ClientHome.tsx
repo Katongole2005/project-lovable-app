@@ -511,6 +511,20 @@ function ClientHome() {
     ? selectedMovie.description || `Watch ${selectedMovie.title} translated to Luganda by top VJs on Moviebay Uganda`
     : undefined;
 
+  const homeJsonLd = useMemo(() => {
+    return {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Moviebay",
+      "url": "https://s-u.in",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://s-u.in/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    };
+  }, []);
+
   useDocumentSEO({
     title: selectedMovie?.title || seoTitle || undefined,
     vjName: selectedMovie?.vj_name,
@@ -521,7 +535,7 @@ function ClientHome() {
     canonicalPath: selectedMovie && isModalOpen 
       ? `/${selectedMovie.type === 'series' ? 'series' : 'movie'}/${toSlug(selectedMovie.title, selectedMovie.mobifliks_id, selectedMovie.year)}`
       : `/${viewMode === "home" ? "" : viewMode}`,
-    jsonLd: selectedMovie && isModalOpen ? buildMovieJsonLd(selectedMovie) : undefined,
+    jsonLd: selectedMovie && isModalOpen ? buildMovieJsonLd(selectedMovie) : homeJsonLd,
   });
 
 

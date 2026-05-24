@@ -1,14 +1,20 @@
 import { MetadataRoute } from 'next'
 
+/**
+ * Dynamic robots.ts Route Handler
+ * ──────────────────────────────
+ * Generates custom crawler instructions dynamically.
+ * Helps prevent duplicate content indexing by mirroring environment domain targets,
+ * while cleanly disallowing heavy asset folders to save valuable crawl budget.
+ */
 export default function robots(): MetadataRoute.Robots {
-  // The production domain for the site
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://s-u.in'
 
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/private/'],
+      disallow: ['/api/', '/_next/', '/video-proxy-server/', '/admin/'],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   }

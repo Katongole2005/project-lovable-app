@@ -112,8 +112,7 @@ export function buildMovieJsonLd(movie: {
   const description = movie.description || `Watch ${movie.title}${cleanVj ? ` translated by VJ ${cleanVj}` : ""} in Luganda on Moviebay.`;
   const image = movie.image_url || movie.backdrop_url;
 
-  return {
-    "@context": "https://schema.org",
+  const mainEntity = {
     "@type": movie.type === "series" ? "TVSeries" : "Movie",
     name: movie.title,
     alternateName: cleanVj ? `${movie.title} VJ ${cleanVj}` : movie.title,
@@ -146,5 +145,34 @@ export function buildMovieJsonLd(movie: {
         name: `VJ ${cleanVj}`,
       },
     } : {}),
+  };
+
+  const breadcrumbList = {
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": SITE_URL
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": movie.type === "series" ? "Series" : "Movies",
+        "item": `${SITE_URL}/${typeSlug}s`
+      },
+      ...(cleanVj ? [{
+        "@type": "ListItem",
+        "position": 3,
+        "name": `VJ ${cleanVj} Translations`,
+        "item": `${SITE_URL}/vj/${cleanVj.toLowerCase().replace(/\s+/g, '-')}`
+      }] : [])
+    ]
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [mainEntity, breadcrumbList]
   };
 }
