@@ -1,5 +1,9 @@
 "use client";
-import { Flame, Sword, Heart, Clapperboard, Ghost, Star, Film, Compass, Shield, Sparkles, Rocket, Crosshair, CalendarClock } from "lucide-react";
+import {
+  Flame, Sword, Heart, Clapperboard, Ghost, Star, Film, Compass,
+  Shield, Sparkles, Rocket, Crosshair, CalendarClock, Tv, Skull,
+  Target, Eye, Globe, Hourglass, ShieldAlert, Zap, BookOpen, Search
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CategoryChipsProps {
@@ -10,17 +14,31 @@ interface CategoryChipsProps {
 const categories = [
   { id: "trending", label: "Latest Added", icon: Flame },
   { id: "new-week", label: "New This Week", icon: CalendarClock },
-  { id: "action", label: "Action", icon: Sword },
-  { id: "adventure", label: "Adventure", icon: Compass },
-  { id: "crime", label: "Crime", icon: Shield },
-  { id: "drama", label: "Drama", icon: Film },
-  { id: "fantasy", label: "Fantasy", icon: Sparkles },
-  { id: "horror", label: "Horror", icon: Ghost },
-  { id: "romance", label: "Romance", icon: Heart },
-  { id: "sci-fi", label: "Sci-Fi", icon: Rocket },
-  { id: "thriller", label: "Thriller", icon: Crosshair },
-  { id: "animation", label: "Animation", icon: Clapperboard },
-  { id: "special", label: "Special", icon: Star },
+  { id: "action-movies", label: "Action Movies", icon: Sword },
+  { id: "scifi-movies", label: "Sci-Fi Movies", icon: Rocket },
+  { id: "crime-thrillers", label: "Crime Thrillers", icon: Shield },
+  { id: "action-series", label: "Action Series", icon: Tv },
+  { id: "revenge-stories", label: "Revenge Stories", icon: Flame },
+  { id: "spy-thrillers", label: "Spy Thrillers", icon: Target },
+  { id: "psychological-thrillers", label: "Psychological Thrillers", icon: Eye },
+  { id: "scifi-series", label: "Sci-Fi Series", icon: Tv },
+  { id: "space-adventures", label: "Space Adventures", icon: Globe },
+  { id: "time-travel", label: "Time Travel", icon: Hourglass },
+  { id: "dystopian-worlds", label: "Dystopian Worlds", icon: ShieldAlert },
+  { id: "cyberpunk", label: "Cyberpunk", icon: Zap },
+  { id: "romantic-movies", label: "Romantic Movies", icon: Heart },
+  { id: "romantic-series", label: "Romantic Series", icon: Tv },
+  { id: "erotic-thrillers", label: "Erotic Thrillers", icon: Sparkles },
+  { id: "korean-dramas", label: "Korean Dramas", icon: Film },
+  { id: "teen-romance", label: "Teen Romance", icon: Heart },
+  { id: "teen-drama", label: "Teen Drama", icon: Film },
+  { id: "historical-drama", label: "Historical Drama", icon: BookOpen },
+  { id: "war-series", label: "War Series", icon: Tv },
+  { id: "war-movies", label: "War Movies", icon: Sword },
+  { id: "detective-stories", label: "Detective Stories", icon: Search },
+  { id: "survival-horror", label: "Survival Horror", icon: Skull },
+  { id: "horror-series", label: "Horror Series", icon: Tv },
+  { id: "horror-movies", label: "Horror Movies", icon: Ghost },
 ];
 
 export function CategoryChips({ activeCategory, onCategoryChange }: CategoryChipsProps) {

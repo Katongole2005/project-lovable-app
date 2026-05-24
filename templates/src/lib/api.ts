@@ -1274,3 +1274,110 @@ export async function fetchByGenre(genre: string, contentType: "movie" | "series
   genreQueryRequests.set(cacheKey, request);
   try { return await request; } finally { genreQueryRequests.delete(cacheKey); }
 }
+
+export async function fetchCuratedMovies(
+  category: string,
+  limit: number = 20,
+  filters?: FilterOptions,
+  page: number = 1,
+  offsetOverride?: number
+): Promise<Movie[]> {
+  const fetchLimit = limit;
+  const offset = offsetOverride ?? ((page - 1) * limit);
+  let query = supabase.from("movies").select("*");
+
+  switch (category) {
+    case "action-movies":
+      query = query.eq("type", "movie").filter("genres", "cs", JSON.stringify(["Action"]));
+      break;
+    case "scifi-movies":
+      query = query.eq("type", "movie").filter("genres", "cs", JSON.stringify(["Science Fiction"]));
+      break;
+    case "crime-thrillers":
+      query = query.eq("type", "movie").or('genres.cs.["Crime"],genres.cs.["Thriller"]');
+      break;
+    case "action-series":
+      query = query.eq("type", "series").filter("genres", "cs", JSON.stringify(["Action"]));
+      break;
+    case "revenge-stories":
+      query = query.or("title.ilike.%revenge%,description.ilike.%revenge%,title.ilike.%avenge%,description.ilike.%avenge%");
+      break;
+    case "spy-thrillers":
+      query = query.or("title.ilike.%spy%,description.ilike.%spy%,title.ilike.%agent%,description.ilike.%agent%,title.ilike.%mission%,description.ilike.%mission%");
+      break;
+    case "psychological-thrillers":
+      query = query.or("title.ilike.%psychological%,description.ilike.%psychological%,title.ilike.%mind%,description.ilike.%mind%,title.ilike.%thriller%,description.ilike.%thriller%");
+      break;
+    case "scifi-series":
+      query = query.eq("type", "series").or('genres.cs.["Science Fiction"],genres.cs.["Sci-Fi & Fantasy"]');
+      break;
+    case "space-adventures":
+      query = query.or("title.ilike.%space%,description.ilike.%space%,title.ilike.%galaxy%,description.ilike.%galaxy%,title.ilike.%star%,description.ilike.%star%,title.ilike.%alien%,description.ilike.%alien%");
+      break;
+    case "time-travel":
+      query = query.or("title.ilike.%time travel%,description.ilike.%time travel%,title.ilike.%time%,description.ilike.%time%");
+      break;
+    case "dystopian-worlds":
+      query = query.or("title.ilike.%dystopian%,description.ilike.%dystopian%,title.ilike.%apocalypse%,description.ilike.%apocalypse%,title.ilike.%post-apocalyptic%,description.ilike.%post-apocalyptic%");
+      break;
+    case "cyberpunk":
+      query = query.or("title.ilike.%cyberpunk%,description.ilike.%cyberpunk%,title.ilike.%futuristic%,description.ilike.%futuristic%,title.ilike.%neon%,description.ilike.%neon%");
+      break;
+    case "romantic-movies":
+      query = query.eq("type", "movie").filter("genres", "cs", JSON.stringify(["Romance"]));
+      break;
+    case "romantic-series":
+      query = query.eq("type", "series").filter("genres", "cs", JSON.stringify(["Romance"]));
+      break;
+    case "erotic-thrillers":
+      query = query.or("title.ilike.%erotic%,description.ilike.%erotic%,title.ilike.%seduction%,description.ilike.%seduction%,title.ilike.%passion%,description.ilike.%passion%");
+      break;
+    case "korean-dramas":
+      query = query.or("title.ilike.%korean%,description.ilike.%korean%,title.ilike.%seoul%,description.ilike.%seoul%,title.ilike.%k-drama%,description.ilike.%k-drama%");
+      break;
+    case "teen-romance":
+      query = query.or("title.ilike.%teen%,description.ilike.%teen%,title.ilike.%high school%,description.ilike.%high school%");
+      break;
+    case "teen-drama":
+      query = query.or("title.ilike.%teen%,description.ilike.%teen%,title.ilike.%school%,description.ilike.%school%");
+      break;
+    case "historical-drama":
+      query = query.or('genres.cs.["History"],title.ilike.%historical%,description.ilike.%historical%');
+      break;
+    case "war-series":
+      query = query.eq("type", "series").or('genres.cs.["War"],title.ilike.%war%,description.ilike.%war%');
+      break;
+    case "war-movies":
+      query = query.eq("type", "movie").or('genres.cs.["War"],title.ilike.%war%,description.ilike.%war%');
+      break;
+    case "detective-stories":
+      query = query.or("title.ilike.%detective%,description.ilike.%detective%,title.ilike.%sherlock%,description.ilike.%sherlock%,title.ilike.%murder%,description.ilike.%murder%,title.ilike.%clue%,description.ilike.%clue%");
+      break;
+    case "survival-horror":
+      query = query.or("title.ilike.%survival%,description.ilike.%survival%,title.ilike.%zombie%,description.ilike.%zombie%,title.ilike.%monster%,description.ilike.%monster%,title.ilike.%island%,description.ilike.%island%");
+      break;
+    case "horror-series":
+      query = query.eq("type", "series").filter("genres", "cs", JSON.stringify(["Horror"]));
+      break;
+    case "horror-movies":
+      query = query.eq("type", "movie").filter("genres", "cs", JSON.stringify(["Horror"]));
+      break;
+    default:
+      query = query.order("views", { ascending: false });
+  }
+
+  query = query
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .order("views", { ascending: false, nullsFirst: false })
+    .range(offset, offset + fetchLimit - 1);
+
+  query = applyFilters(query, { vj: filters?.vj, year: filters?.year });
+
+  const { data, error } = await query;
+  if (error) {
+    console.error(`fetchCuratedMovies error for ${category}:`, error.message || error);
+    return [];
+  }
+  return finalizeBrowseResults(normalize(data ?? []), limit);
+}
+

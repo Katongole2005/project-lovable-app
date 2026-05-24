@@ -1,5 +1,5 @@
 "use client";
-import { ChevronLeft, ChevronRight, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronRight as ChevronRightIcon, SlidersHorizontal, Filter } from "lucide-react";
 import { forwardRef, useRef, useState, useEffect } from "react";
 import type { Movie } from "@/types/movie";
 import { LandscapeMovieCard, LandscapeMovieCardSkeleton } from "./LandscapeMovieCard";
@@ -12,6 +12,8 @@ interface LandscapeMovieRowProps {
   onMovieClick: (movie: Movie) => void;
   onViewAll?: () => void;
   isLoading?: boolean;
+  showFilters?: boolean;
+  onFilterClick?: () => void;
   className?: string;
 }
 
@@ -21,6 +23,8 @@ export const LandscapeMovieRow = forwardRef<HTMLElement, LandscapeMovieRowProps>
   onMovieClick,
   onViewAll,
   isLoading,
+  showFilters = false,
+  onFilterClick,
   className
 }, ref) {
   const deviceProfile = useDeviceProfile();
@@ -92,16 +96,37 @@ export const LandscapeMovieRow = forwardRef<HTMLElement, LandscapeMovieRowProps>
           {title}
         </h2>
 
-        {onViewAll && (
-          <button
-            onClick={onViewAll}
-            data-testid="button-view-all"
-            className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors group/btn press-effect"
-          >
-            View All
-            <ChevronRightIcon className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-300" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {showFilters && onFilterClick && (
+            <button
+              onClick={onFilterClick}
+              title="Filters"
+              data-testid="button-filter-mobile"
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-[linear-gradient(135deg,#ff8a3d_0%,#ff5b2e_52%,#ff4d6d_100%)] transition-all duration-200 active:scale-95 shadow-[0_8px_20px_rgba(255,91,46,0.18)]"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-white" />
+            </button>
+          )}
+
+          {showFilters && onFilterClick && (
+            <div className="hidden md:flex items-center gap-1 p-0.5 rounded-full bg-foreground mr-1">
+              <button title="Filter" onClick={onFilterClick} data-testid="button-filter-desktop" className="p-1.5 rounded-full text-background hover:bg-background/10 transition-colors">
+                <Filter className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {onViewAll && (
+            <button
+              onClick={onViewAll}
+              data-testid="button-view-all"
+              className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors group/btn press-effect"
+            >
+              View All
+              <ChevronRightIcon className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-300" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="relative -mx-2 px-2">

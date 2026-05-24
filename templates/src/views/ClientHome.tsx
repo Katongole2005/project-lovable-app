@@ -77,6 +77,7 @@ import {
   getCachedSeriesDetails,
   fetchStats,
   fetchByGenre,
+  fetchCuratedMovies,
   fetchOriginals,
   fetchMoviesSorted,
   preloadMovieBackdrop,
@@ -150,6 +151,34 @@ const CATEGORY_TO_GENRE: Record<string, string> = {
   "sci-fi": "Science Fiction",
   thriller: "Thriller",
 };
+
+const CURATED_CATEGORIES = new Set([
+  "action-movies",
+  "scifi-movies",
+  "crime-thrillers",
+  "action-series",
+  "revenge-stories",
+  "spy-thrillers",
+  "psychological-thrillers",
+  "scifi-series",
+  "space-adventures",
+  "time-travel",
+  "dystopian-worlds",
+  "cyberpunk",
+  "romantic-movies",
+  "romantic-series",
+  "erotic-thrillers",
+  "korean-dramas",
+  "teen-romance",
+  "teen-drama",
+  "historical-drama",
+  "war-series",
+  "war-movies",
+  "detective-stories",
+  "survival-horror",
+  "horror-series",
+  "horror-movies"
+]);
 
 function parseEpisodeInfoFromTitle(title: string): {
   seasonNumber?: number;
@@ -375,6 +404,48 @@ function ClientHome() {
     enabled: viewMode === "originals",
   });
 
+  const { data: actionMoviesData } = useQuery({
+    queryKey: ["movies", "curated", "action-movies"],
+    queryFn: () => fetchCuratedMovies("action-movies", 15),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "home",
+  });
+
+  const { data: scifiMoviesData } = useQuery({
+    queryKey: ["movies", "curated", "scifi-movies"],
+    queryFn: () => fetchCuratedMovies("scifi-movies", 15),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "home",
+  });
+
+  const { data: crimeThrillersData } = useQuery({
+    queryKey: ["movies", "curated", "crime-thrillers"],
+    queryFn: () => fetchCuratedMovies("crime-thrillers", 15),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "home",
+  });
+
+  const { data: cyberpunkData } = useQuery({
+    queryKey: ["movies", "curated", "cyberpunk"],
+    queryFn: () => fetchCuratedMovies("cyberpunk", 15),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "home",
+  });
+
+  const { data: romanceData } = useQuery({
+    queryKey: ["movies", "curated", "romantic-movies"],
+    queryFn: () => fetchCuratedMovies("romantic-movies", 15),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "home",
+  });
+
+  const { data: horrorData } = useQuery({
+    queryKey: ["movies", "curated", "horror-movies"],
+    queryFn: () => fetchCuratedMovies("horror-movies", 15),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "home",
+  });
+
   const shouldShowHero = siteSettings.hero_carousel_enabled;
 
   useEffect(() => {
@@ -443,7 +514,7 @@ function ClientHome() {
 
 
   const sortByYearDesc = useCallback((items: Movie[]) => {
-    return [...items].sort((a, b) => {
+    const sorted = [...items].sort((a, b) => {
       const dateA = a.release_date || "";
       const dateB = b.release_date || "";
       if (dateA && dateB) {
@@ -459,10 +530,24 @@ function ClientHome() {
 
       return 0;
     });
+
+    const junior: Movie[] = [];
+    const others: Movie[] = [];
+    sorted.forEach((item) => {
+      const isJunior =
+        item.vj_name?.toLowerCase().includes("junior") ||
+        item.vj_name?.toLowerCase().replace(/\s+/g, "") === "vjjunior";
+      if (isJunior) {
+        junior.push(item);
+      } else {
+        others.push(item);
+      }
+    });
+    return [...junior, ...others];
   }, []);
 
   const sortByLatestAdded = useCallback((items: Movie[]) => {
-    return [...items].sort((a, b) => {
+    const sorted = [...items].sort((a, b) => {
       const createdA = a.created_at || "";
       const createdB = b.created_at || "";
       if (createdA && createdB) {
@@ -483,6 +568,20 @@ function ClientHome() {
 
       return (b.year || 0) - (a.year || 0);
     });
+
+    const junior: Movie[] = [];
+    const others: Movie[] = [];
+    sorted.forEach((item) => {
+      const isJunior =
+        item.vj_name?.toLowerCase().includes("junior") ||
+        item.vj_name?.toLowerCase().replace(/\s+/g, "") === "vjjunior";
+      if (isJunior) {
+        junior.push(item);
+      } else {
+        others.push(item);
+      }
+    });
+    return [...junior, ...others];
   }, []);
 
   const preloadHeroAssets = useCallback(
@@ -1152,7 +1251,7 @@ function ClientHome() {
   const isDark = theme === "dark" || !theme;
   const currentLogo = isDark ? logoDark.src : logoLight.src;
 
-  const handleTabChange = useCallback((tab: string) => {
+  const handleTabChange = useCallback((tab: string, categoryOverride?: string | null) => {
     const viewToPath: Record<string, string> = {
       home: "/",
       movies: "/movies",
@@ -1167,9 +1266,10 @@ function ClientHome() {
 
     startTransition(() => {
       navigateTo(path);
-      setActiveFilters({ category: null, vj: null, year: null, contentType: tab === "movies" ? "movies" : tab === "series" ? "series" : null });
+      const targetCategory = categoryOverride !== undefined ? categoryOverride : "trending";
+      setActiveFilters({ category: targetCategory === "trending" ? null : targetCategory, vj: null, year: null, contentType: tab === "movies" ? "movies" : tab === "series" ? "series" : null });
       setActiveVJ(null);
-      setActiveCategory("trending");
+      setActiveCategory(targetCategory || "trending");
       setOriginalsPage(1);
       setNextLoadOffset(0);
 
@@ -1178,8 +1278,31 @@ function ClientHome() {
         setSearchInputValue("");
         setSearchResults([]);
       }
+
+      if (categoryOverride && categoryOverride !== "trending") {
+        setIsLoading(true);
+        (async () => {
+          try {
+            let data: Movie[] = [];
+            const dbFilters: FilterOptions = { vj: null };
+            if (CURATED_CATEGORIES.has(categoryOverride)) {
+              data = await fetchCuratedMovies(categoryOverride, 100, dbFilters);
+            } else {
+              const genre = CATEGORY_TO_GENRE[categoryOverride] || categoryOverride;
+              data = await fetchByGenre(genre, tab === "series" ? "series" : "movie", 100, dbFilters);
+            }
+            startTransition(() => {
+              setCategoryMovies(categoryOverride === "new-week" ? sortByLatestAdded(data) : sortByYearDesc(data));
+            });
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setIsLoading(false);
+          }
+        })();
+      }
     });
-  }, [navigateTo]);
+  }, [navigateTo, sortByLatestAdded, sortByYearDesc]);
 
   const handleCategoryChange = useCallback(async (category: string, vjOverride?: string | null) => {
     setActiveCategory(category);
@@ -1198,6 +1321,11 @@ function ClientHome() {
         const data = await fetchNewThisWeek("movie", 40, 0, dbFilters);
         startTransition(() => {
           setRecentMovies(sortByLatestAdded(data));
+        });
+      } else if (CURATED_CATEGORIES.has(category)) {
+        const data = await fetchCuratedMovies(category, 40, dbFilters);
+        startTransition(() => {
+          setRecentMovies(sortByYearDesc(data));
         });
       } else {
         const genre = CATEGORY_TO_GENRE[category] || category;
@@ -1232,6 +1360,8 @@ function ClientHome() {
           if (filters.category && filters.category !== "trending") {
             if (filters.category === "new-week") {
               data = await fetchNewThisWeek("movie", 100, 0, dbFilters);
+            } else if (CURATED_CATEGORIES.has(filters.category)) {
+              data = await fetchCuratedMovies(filters.category, 100, dbFilters);
             } else {
               const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
               data = await fetchByGenre(genre, "movie", 100, dbFilters);
@@ -1243,6 +1373,8 @@ function ClientHome() {
           if (filters.category && filters.category !== "trending") {
             if (filters.category === "new-week") {
               data = await fetchNewThisWeek("series", 100, 0, dbFilters);
+            } else if (CURATED_CATEGORIES.has(filters.category)) {
+              data = await fetchCuratedMovies(filters.category, 100, dbFilters);
             } else {
               const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
               data = await fetchByGenre(genre, "series", 100, dbFilters);
@@ -1268,6 +1400,8 @@ function ClientHome() {
 
         if (filters.category === "new-week") {
           data = await fetchNewThisWeek("movie", 100, 0, dbFilters);
+        } else if (filters.category && CURATED_CATEGORIES.has(filters.category)) {
+          data = await fetchCuratedMovies(filters.category, 100, dbFilters);
         } else if (filters.category && filters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
           data = await fetchByGenre(genre, "movie", 100, dbFilters);
@@ -1303,6 +1437,8 @@ function ClientHome() {
       if (viewMode === "movies") {
         if (activeFilters.category === "new-week") {
           more = await fetchNewThisWeek("movie", browseBatchLimit, nextLoadOffset, dbFilters);
+        } else if (activeFilters.category && CURATED_CATEGORIES.has(activeFilters.category)) {
+          more = await fetchCuratedMovies(activeFilters.category, browseBatchLimit, dbFilters, 1, nextLoadOffset);
         } else if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
           more = await fetchByGenre(genre, "movie", browseBatchLimit, dbFilters, 1, nextLoadOffset);
@@ -1314,6 +1450,9 @@ function ClientHome() {
         if (activeFilters.category === "new-week") {
           more = await fetchNewThisWeek("series", browseBatchLimit, nextLoadOffset, dbFilters);
           setNextLoadOffset((prev) => prev + browseBatchLimit);
+        } else if (activeFilters.category && CURATED_CATEGORIES.has(activeFilters.category)) {
+          more = await fetchCuratedMovies(activeFilters.category, browseBatchLimit, dbFilters, 1, nextLoadOffset);
+          setNextLoadOffset((prev) => prev + seriesFetchBatchLimit);
         } else if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
           more = await fetchByGenre(genre, "series", browseBatchLimit, dbFilters, 1, nextLoadOffset);
@@ -1358,12 +1497,110 @@ function ClientHome() {
       fantasy: "Fantasy",
       "sci-fi": "Sci-Fi",
       thriller: "Thriller",
+      "action-movies": "Action Movies",
+      "scifi-movies": "Sci-Fi Movies",
+      "crime-thrillers": "Crime Thrillers",
+      "action-series": "Action Series",
+      "revenge-stories": "Revenge Stories",
+      "spy-thrillers": "Spy Thrillers",
+      "psychological-thrillers": "Psychological Thrillers",
+      "scifi-series": "Sci-Fi Series",
+      "space-adventures": "Space Adventures",
+      "time-travel": "Time Travel",
+      "dystopian-worlds": "Dystopian Worlds",
+      "cyberpunk": "Cyberpunk",
+      "romantic-movies": "Romantic Movies",
+      "romantic-series": "Romantic Series",
+      "erotic-thrillers": "Erotic Thrillers",
+      "korean-dramas": "Korean Dramas",
+      "teen-romance": "Teen Romance",
+      "teen-drama": "Teen Drama",
+      "historical-drama": "Historical Drama",
+      "war-series": "War Series",
+      "war-movies": "War Movies",
+      "detective-stories": "Detective Stories",
+      "survival-horror": "Survival Horror",
+      "horror-series": "Horror Series",
+      "horror-movies": "Horror Movies",
     };
     if (activeCategory === "trending") return "Latest Added";
     if (activeCategory === "new-week") return "New This Week";
+    if (CURATED_CATEGORIES.has(activeCategory)) return titles[activeCategory] || activeCategory;
     return `Trending in ${titles[activeCategory] || "All"}`;
   };
 
+
+  const {
+    displayCategoryMovies,
+    displayPopularSeries,
+    displaySpotlightMovies,
+    displayActionMovies,
+    displayScifiMovies,
+    displayCrimeThrillers,
+    displayCyberpunkMovies,
+    displayRomanceMovies,
+    displayHorrorMovies,
+  } = useMemo(() => {
+    const getCleanTitleKey = (title: string): string => {
+      return title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    };
+
+    const filterRowUnique = (items: Movie[] | undefined, limit: number): Movie[] => {
+      if (!items) return [];
+      const rowSeen = new Set<string>();
+      const filtered: Movie[] = [];
+      for (const item of items) {
+        const titleKey = getCleanTitleKey(item.title);
+        if (!rowSeen.has(titleKey)) {
+          filtered.push(item);
+          rowSeen.add(titleKey);
+          if (filtered.length >= limit) break;
+        }
+      }
+      return filtered;
+    };
+
+    // 1. Dynamic category row (Latest Added / Active Selection)
+    const catDisplay = filterRowUnique(recentMovies, 20);
+
+    // 2. Popular Series
+    const seriesDisplay = filterRowUnique(recentSeries, 15);
+
+    // 3. Spotlight Selection
+    const spotlightDisplay = filterRowUnique(recentMovies, 12);
+
+    // 4. Curated Rows (fully populated to their limits)
+    const actionDisplay = filterRowUnique(actionMoviesData, 15);
+    const scifiDisplay = filterRowUnique(scifiMoviesData, 15);
+    const crimeDisplay = filterRowUnique(crimeThrillersData, 15);
+    const cyberpunkDisplay = filterRowUnique(cyberpunkData, 15);
+    const romanceDisplay = filterRowUnique(romanceData, 15);
+    const horrorDisplay = filterRowUnique(horrorData, 15);
+
+    return {
+      displayCategoryMovies: catDisplay,
+      displayPopularSeries: seriesDisplay,
+      displaySpotlightMovies: spotlightDisplay,
+      displayActionMovies: actionDisplay,
+      displayScifiMovies: scifiDisplay,
+      displayCrimeThrillers: crimeDisplay,
+      displayCyberpunkMovies: cyberpunkDisplay,
+      displayRomanceMovies: romanceDisplay,
+      displayHorrorMovies: horrorDisplay,
+    };
+  }, [
+    recentMovies,
+    recentSeries,
+    actionMoviesData,
+    scifiMoviesData,
+    crimeThrillersData,
+    cyberpunkData,
+    romanceData,
+    horrorData,
+  ]);
 
   return (
     <div suppressHydrationWarning className="min-h-screen pb-safe relative">
@@ -1447,9 +1684,9 @@ function ClientHome() {
 
               <div className="mt-4">
                 <div className="section-divider mb-2" />
-                <MovieRow
+                <LandscapeMovieRow
                   title={getCategoryTitle()}
-                  movies={recentMovies}
+                  movies={displayCategoryMovies}
                   onMovieClick={handleMovieClick}
                   onViewAll={() => handleTabChange("movies")}
                   isLoading={isLoading && recentMovies.length === 0}
@@ -1489,9 +1726,9 @@ function ClientHome() {
 
                     <SectionReveal delay={300}>
                       <div className="section-divider mb-4" />
-                      <MovieRow
+                      <LandscapeMovieRow
                         title="Popular Series"
-                        movies={recentSeries}
+                        movies={displayPopularSeries}
                         onMovieClick={handleMovieClick}
                         onViewAll={() => handleTabChange("series")}
                         isLoading={isLoading && recentSeries.length === 0}
@@ -1502,11 +1739,83 @@ function ClientHome() {
                       <div className="section-divider mb-4" />
                       <LandscapeMovieRow
                         title="Spotlight Selection"
-                        movies={recentMovies}
+                        movies={displaySpotlightMovies}
                         onMovieClick={handleMovieClick}
                         isLoading={isLoading && recentMovies.length === 0}
                       />
                     </SectionReveal>
+
+                    {actionMoviesData && actionMoviesData.length > 0 && (
+                      <SectionReveal delay={450}>
+                        <div className="section-divider mb-4" />
+                        <LandscapeMovieRow
+                          title="Action Movies"
+                          movies={displayActionMovies}
+                          onMovieClick={handleMovieClick}
+                          onViewAll={() => handleTabChange("movies", "action-movies")}
+                        />
+                      </SectionReveal>
+                    )}
+
+                    {scifiMoviesData && scifiMoviesData.length > 0 && (
+                      <SectionReveal delay={500}>
+                        <div className="section-divider mb-4" />
+                        <LandscapeMovieRow
+                          title="Sci-Fi Movies"
+                          movies={displayScifiMovies}
+                          onMovieClick={handleMovieClick}
+                          onViewAll={() => handleTabChange("movies", "scifi-movies")}
+                        />
+                      </SectionReveal>
+                    )}
+
+                    {crimeThrillersData && crimeThrillersData.length > 0 && (
+                      <SectionReveal delay={550}>
+                        <div className="section-divider mb-4" />
+                        <LandscapeMovieRow
+                          title="Crime Thrillers"
+                          movies={displayCrimeThrillers}
+                          onMovieClick={handleMovieClick}
+                          onViewAll={() => handleTabChange("movies", "crime-thrillers")}
+                        />
+                      </SectionReveal>
+                    )}
+
+                    {cyberpunkData && cyberpunkData.length > 0 && (
+                      <SectionReveal delay={600}>
+                        <div className="section-divider mb-4" />
+                        <LandscapeMovieRow
+                          title="Cyberpunk"
+                          movies={displayCyberpunkMovies}
+                          onMovieClick={handleMovieClick}
+                          onViewAll={() => handleTabChange("movies", "cyberpunk")}
+                        />
+                      </SectionReveal>
+                    )}
+
+                    {romanceData && romanceData.length > 0 && (
+                      <SectionReveal delay={650}>
+                        <div className="section-divider mb-4" />
+                        <LandscapeMovieRow
+                          title="Romantic Movies"
+                          movies={displayRomanceMovies}
+                          onMovieClick={handleMovieClick}
+                          onViewAll={() => handleTabChange("movies", "romantic-movies")}
+                        />
+                      </SectionReveal>
+                    )}
+
+                    {horrorData && horrorData.length > 0 && (
+                      <SectionReveal delay={700}>
+                        <div className="section-divider mb-4" />
+                        <LandscapeMovieRow
+                          title="Horror Movies"
+                          movies={displayHorrorMovies}
+                          onMovieClick={handleMovieClick}
+                          onViewAll={() => handleTabChange("movies", "horror-movies")}
+                        />
+                      </SectionReveal>
+                    )}
                   </div>
                 </Suspense>
               )}
