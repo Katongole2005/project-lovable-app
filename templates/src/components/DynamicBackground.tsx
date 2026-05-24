@@ -12,10 +12,10 @@ function DynamicBackgroundInner({ className }: DynamicBackgroundProps) {
   const deviceProfile = useDeviceProfile();
 
   return (
-    <div className={cn("fixed inset-0 -z-10 overflow-hidden pointer-events-none", className)}>
-      <div className="absolute inset-0 bg-background" />
+    <div suppressHydrationWarning className={cn("fixed inset-0 -z-10 overflow-hidden pointer-events-none", className)}>
+      <div suppressHydrationWarning className="absolute inset-0 bg-background" />
       {!deviceProfile.isWeakDevice && (
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none glass-noise-overlay" />
+        <div suppressHydrationWarning className="absolute inset-0 opacity-[0.03] pointer-events-none glass-noise-overlay" />
       )}
     </div>
   );

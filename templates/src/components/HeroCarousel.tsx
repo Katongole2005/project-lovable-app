@@ -291,19 +291,19 @@ export function HeroCarousel({
         </div>
 
         {currentMovie && (
-            <div key={currentMovie.mobifliks_id} className="relative z-10 mt-2 text-center">
+            <div key={`${currentMovie.mobifliks_id}-${activeIndex}`} className="relative z-10 mt-2 text-center">
               <div className="flex flex-col items-center justify-center gap-2 px-4">
                 {currentMovie.logo_url ? (
                   <img
                     src={currentMovie.logo_url}
                     alt={currentMovie.title}
-                    className="h-10 w-auto max-w-full object-contain drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
+                    className="hero-stagger-logo h-10 w-auto max-w-full object-contain drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
                     loading="eager"
                   />
                 ) : (
-                  <h3 className="text-lg font-display font-bold text-white tracking-tight drop-shadow-md line-clamp-1">{currentMovie.title}</h3>
+                  <h3 className="hero-stagger-logo text-lg font-display font-bold text-white tracking-tight drop-shadow-md line-clamp-1">{currentMovie.title}</h3>
                 )}
-                <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5">
+                <div className="hero-stagger-meta flex max-w-full flex-wrap items-center justify-center gap-1.5">
                   {heroMetaChips.slice(0, 4).map((chip) => (
                     <span
                       key={chip}
@@ -315,7 +315,7 @@ export function HeroCarousel({
                 </div>
                 
                 {/* Mobile Hero Actions */}
-                <div className="flex items-center justify-center gap-3 mt-3 w-full max-w-[280px]">
+                <div className="hero-stagger-cta flex items-center justify-center gap-3 mt-3 w-full max-w-[280px]">
                   <button
                     onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
                     className="btn-premium-red flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-full text-white font-bold text-xs shadow-lg shadow-red-600/20 active:scale-95 transition-transform"
@@ -410,18 +410,18 @@ export function HeroCarousel({
                         <img
                           src={currentMovie.logo_url}
                           alt={currentMovie.title}
-                          className="hero-title-reveal max-h-[96px] w-auto max-w-[min(560px,42vw)] object-contain object-left drop-shadow-[0_12px_34px_rgba(0,0,0,0.92)] lg:max-h-[118px] xl:max-h-[132px] 2xl:max-h-[148px]"
+                          className="hero-stagger-logo max-h-[96px] w-auto max-w-[min(560px,42vw)] object-contain object-left drop-shadow-[0_12px_34px_rgba(0,0,0,0.92)] lg:max-h-[118px] xl:max-h-[132px] 2xl:max-h-[148px]"
                           loading="eager"
                         />
                       ) : (
-                        <h2 className="hero-title-reveal font-display text-4xl font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-6xl 2xl:text-7xl">
+                        <h2 className="hero-stagger-logo font-display text-4xl font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-6xl 2xl:text-7xl">
                           {currentMovie.title}
                         </h2>
                       )}
-                      <div className="mt-4 h-px w-28 bg-gradient-to-r from-red-500/85 via-white/35 to-transparent shadow-[0_0_18px_rgba(239,68,68,0.45)]" />
+                      <div className="hero-stagger-line mt-4 h-px w-28 bg-gradient-to-r from-red-500/85 via-white/35 to-transparent shadow-[0_0_18px_rgba(239,68,68,0.45)]" />
                     </div>
                     <div
-                      className="flex flex-wrap items-center gap-2 mb-3 lg:mb-4"
+                      className="hero-stagger-meta flex flex-wrap items-center gap-2 mb-3 lg:mb-4"
                     >
                       {heroMetaChips.map((chip) => (
                         <span
@@ -435,13 +435,13 @@ export function HeroCarousel({
 
                     {currentMovie.description && (
                       <p 
-                        className="text-sm lg:text-base 2xl:text-lg text-white/[0.82] max-w-lg 2xl:max-w-2xl line-clamp-2 mb-5 lg:mb-6 leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
+                        className="hero-stagger-desc text-sm lg:text-base 2xl:text-lg text-white/[0.82] max-w-lg 2xl:max-w-2xl line-clamp-2 mb-5 lg:mb-6 leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
                       >
                         {currentMovie.description}
                       </p>
                     )}
 
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="hero-stagger-cta flex items-center gap-3 flex-wrap">
                       <button
                         onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
                         data-testid="button-hero-play"

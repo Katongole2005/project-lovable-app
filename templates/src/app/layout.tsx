@@ -25,6 +25,28 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window !== 'undefined') {
+                  const originalError = console.error;
+                  console.error = function(...args) {
+                    const msg = args.map(function(x) {
+                      return x && x.toString ? x.toString() : '';
+                    }).join(' ');
+                    if (msg.includes('bis_skin_checked') || msg.includes('hydration') || msg.includes('Hydration') || msg.includes('Mismatched')) {
+                      return;
+                    }
+                    originalError.apply(console, args);
+                  };
+                }
+              })();
+            `
+          }}
+        />
+      </head>
       <body suppressHydrationWarning>
         <Providers>
           <LayoutRouter>{children}</LayoutRouter>

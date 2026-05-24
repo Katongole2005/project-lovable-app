@@ -349,10 +349,15 @@ function PreferencesDialog({
 }) {
   const [quality, setQuality] = useState(() => localStorage.getItem("pref_quality") || "auto");
   const [autoplay, setAutoplay] = useState(() => localStorage.getItem("pref_autoplay") !== "false");
+  const [reducedMotion, setReducedMotion] = useState(() => localStorage.getItem("pref_reduced_motion") === "true");
+  const [perfLite, setPerfLite] = useState(() => localStorage.getItem("pref_perf_lite") === "true");
 
   const save = () => {
     localStorage.setItem("pref_quality", quality);
     localStorage.setItem("pref_autoplay", String(autoplay));
+    localStorage.setItem("pref_reduced_motion", String(reducedMotion));
+    localStorage.setItem("pref_perf_lite", String(perfLite));
+    window.dispatchEvent(new Event("device-profile-change"));
     toast.success("Preferences saved!");
     onOpenChange(false);
   };
@@ -384,7 +389,8 @@ function PreferencesDialog({
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between py-2">
+          
+          <div className="flex items-center justify-between py-2 border-t border-white/[0.04] pt-4">
             <div>
               <p className="text-sm font-medium text-foreground">Autoplay Next</p>
               <p className="text-[11px] text-muted-foreground">Auto-play next episode</p>
@@ -395,7 +401,7 @@ function PreferencesDialog({
                 role="switch"
                 aria-checked="true"
                 aria-label="Toggle autoplay"
-                className="w-12 h-7 rounded-full transition-colors relative bg-primary"
+                className="w-12 h-7 rounded-full transition-colors relative bg-primary shrink-0"
               >
                 <div className="absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform translate-x-5" />
               </button>
@@ -405,13 +411,70 @@ function PreferencesDialog({
                 role="switch"
                 aria-checked="false"
                 aria-label="Toggle autoplay"
-                className="w-12 h-7 rounded-full transition-colors relative bg-muted"
+                className="w-12 h-7 rounded-full transition-colors relative bg-muted shrink-0"
               >
                 <div className="absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform translate-x-0.5" />
               </button>
             )}
           </div>
-          <Button onClick={save} className="w-full h-11 rounded-xl gap-2">
+
+          <div className="flex items-center justify-between py-2 border-t border-white/[0.04] pt-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Reduce Motion</p>
+              <p className="text-[11px] text-muted-foreground">Disable dynamic scales and transitions</p>
+            </div>
+            {reducedMotion ? (
+              <button
+                onClick={() => setReducedMotion(false)}
+                role="switch"
+                aria-checked="true"
+                aria-label="Toggle reduce motion"
+                className="w-12 h-7 rounded-full transition-colors relative bg-primary shrink-0"
+              >
+                <div className="absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform translate-x-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setReducedMotion(true)}
+                role="switch"
+                aria-checked="false"
+                aria-label="Toggle reduce motion"
+                className="w-12 h-7 rounded-full transition-colors relative bg-muted shrink-0"
+              >
+                <div className="absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform translate-x-0.5" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between py-2 border-t border-white/[0.04] pt-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Battery Saver (Lite Mode)</p>
+              <p className="text-[11px] text-muted-foreground">Restrict blurs, grains, and ambient washes</p>
+            </div>
+            {perfLite ? (
+              <button
+                onClick={() => setPerfLite(false)}
+                role="switch"
+                aria-checked="true"
+                aria-label="Toggle battery saver"
+                className="w-12 h-7 rounded-full transition-colors relative bg-primary shrink-0"
+              >
+                <div className="absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform translate-x-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setPerfLite(true)}
+                role="switch"
+                aria-checked="false"
+                aria-label="Toggle battery saver"
+                className="w-12 h-7 rounded-full transition-colors relative bg-muted shrink-0"
+              >
+                <div className="absolute top-0.5 w-6 h-6 rounded-full bg-background shadow transition-transform translate-x-0.5" />
+              </button>
+            )}
+          </div>
+
+          <Button onClick={save} className="w-full h-11 rounded-xl gap-2 mt-2">
             <Check className="w-4 h-4" />
             Save Preferences
           </Button>

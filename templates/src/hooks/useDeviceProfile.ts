@@ -68,13 +68,20 @@ function readProfile(): DeviceProfile {
   const isCompact = window.innerWidth < 1024;
   const isLargeDesktop = window.innerWidth >= 1536;
   const isUltraWideDesktop = window.innerWidth >= 1800;
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const prefersReducedMotion =
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    (typeof localStorage !== "undefined" && localStorage.getItem("pref_reduced_motion") === "true");
   const saveData = connection?.saveData === true;
   const lowMemory = typeof typedNavigator.deviceMemory === "number" && typedNavigator.deviceMemory <= 4;
   const lowCpu = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4;
   const slowNetwork = connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g";
   const isWeakDevice =
-    prefersReducedMotion || saveData || lowMemory || lowCpu || slowNetwork;
+    prefersReducedMotion ||
+    saveData ||
+    lowMemory ||
+    lowCpu ||
+    slowNetwork ||
+    (typeof localStorage !== "undefined" && localStorage.getItem("pref_perf_lite") === "true");
   const allowComplexAnimations = !isWeakDevice && !isMobile;
   const preferLightweightRendering = isWeakDevice;
 
@@ -107,6 +114,7 @@ export function useDeviceProfile() {
       const next = readProfile();
       setProfile(next);
       document.documentElement.classList.toggle("perf-lite", next.preferLightweightRendering);
+      document.documentElement.classList.toggle("prefers-reduced-motion", next.prefersReducedMotion);
     };
 
     // RAF-debounced resize: batches resize events to once per animation frame
@@ -121,12 +129,14 @@ export function useDeviceProfile() {
 
     updateProfileAndFlags();
     window.addEventListener("resize", handleResize, { passive: true });
+    window.addEventListener("device-profile-change", updateProfileAndFlags, { passive: true });
     mediaQuery.addEventListener("change", updateProfileAndFlags);
     connection?.addEventListener?.("change", updateProfileAndFlags);
 
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("device-profile-change", updateProfileAndFlags);
       mediaQuery.removeEventListener("change", updateProfileAndFlags);
       connection?.removeEventListener?.("change", updateProfileAndFlags);
     };
