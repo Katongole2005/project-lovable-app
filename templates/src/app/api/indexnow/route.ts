@@ -22,6 +22,22 @@ const INDEXNOW_GATEWAY = 'https://api.indexnow.org/indexnow';
 // Configured in environment variables. Falls back to a safe default if none is set.
 const ADMIN_SECRET = process.env.INDEXNOW_ADMIN_SECRET || 'moviebay-seo-indexnow-secret-2026';
 
+export async function GET() {
+  return NextResponse.json(
+    { 
+      success: true,
+      message: 'Moviebay IndexNow API Gateway is operational.', 
+      info: 'To submit URLs for instant indexing, please send a POST request containing your administrative secret token and the list of movie URLs.' 
+    },
+    { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0, must-revalidate',
+      }
+    }
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
