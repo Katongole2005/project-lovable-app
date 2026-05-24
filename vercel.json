@@ -19,7 +19,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*"
+          "value": ".*(Googlebot|Google Inspection Tool|Google-Read-Aloud|GoogleInspectionTool|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*"
         }
       ],
       "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/seo-renderer?type=movie&id=:id"
@@ -30,7 +30,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*"
+          "value": ".*(Googlebot|Google Inspection Tool|Google-Read-Aloud|GoogleInspectionTool|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Applebot|PinterestBot).*"
         }
       ],
       "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/seo-renderer?type=series&id=:id"
@@ -38,58 +38,6 @@
     {
       "source": "/sitemap.xml",
       "destination": "https://qiwwokfqunzgnbmfvgxo.supabase.co/functions/v1/sitemap-generator"
-    },
-    {
-      "source": "/",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/movies",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/series",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/search",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/originals",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/movie/:id",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/series/:id",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/auth",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/vj/:vjName",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/profile",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/privacy",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/terms",
-      "destination": "/index.html"
     }
   ],
   "headers": [
