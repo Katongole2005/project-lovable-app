@@ -109,11 +109,35 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
     }).then(primeMediaAvailability);
   }, [movie]);
 
+  const hoverTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        window.clearTimeout(hoverTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleMouseEnter = useCallback(() => {
     if (typeof window === "undefined" || window.innerWidth < 768) return;
     preloadMovieBackdrop(movie);
-    window.requestAnimationFrame(primePlayback);
+
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+    }
+
+    hoverTimerRef.current = window.setTimeout(() => {
+      primePlayback();
+    }, 250);
   }, [movie, primePlayback]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  }, []);
 
   const [heartFlip, setHeartFlip] = useState(false);
 
@@ -141,6 +165,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
       )}
       onClick={() => onClick(movie)}
       onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onTouchStart={primePlayback}
       onFocus={primePlayback}
       data-testid={`card-movie-${movie.mobifliks_id}`}

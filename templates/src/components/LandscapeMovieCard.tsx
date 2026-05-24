@@ -109,11 +109,35 @@ const LandscapeMovieCardBase = forwardRef<HTMLDivElement, LandscapeMovieCardProp
     }).then(primeMediaAvailability);
   }, [movie]);
 
+  const hoverTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        window.clearTimeout(hoverTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleMouseEnter = useCallback(() => {
     if (typeof window === "undefined" || window.innerWidth < 768) return;
     preloadMovieBackdrop(movie);
-    window.requestAnimationFrame(primePlayback);
+
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+    }
+
+    hoverTimerRef.current = window.setTimeout(() => {
+      primePlayback();
+    }, 250);
   }, [movie, primePlayback]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  }, []);
 
   const handleWatchlistToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -141,6 +165,7 @@ const LandscapeMovieCardBase = forwardRef<HTMLDivElement, LandscapeMovieCardProp
       )}
       onClick={() => onClick(movie)}
       onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onTouchStart={primePlayback}
       onFocus={primePlayback}
       data-testid={`card-landscape-${movie.mobifliks_id}`}
