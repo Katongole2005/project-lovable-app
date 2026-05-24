@@ -4,15 +4,22 @@ import { fromSlug } from '@/lib/slug';
 // Generate dynamic metadata for SEO by fetching the actual series
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const numericId = fromSlug(id);
+  const slugId = fromSlug(id);
+  const parsedId = parseInt(slugId, 10);
   
   let series = null;
   try {
-    const { data } = await supabase
+    let query = supabase
       .from('movies')
-      .select('title, description, image_url, vj_name, year')
-      .eq('mobifliks_id', numericId)
-      .single();
+      .select('id, title, description, image_url, vj_name, year');
+
+    if (!isNaN(parsedId) && String(parsedId) === slugId) {
+      query = query.eq('id', parsedId);
+    } else {
+      query = query.eq('mobifliks_id', slugId);
+    }
+
+    const { data } = await query.single();
     series = data;
   } catch (err) {
     console.error("SEO metadata fetch error:", err);

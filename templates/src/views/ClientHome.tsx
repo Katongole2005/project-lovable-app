@@ -533,7 +533,7 @@ function ClientHome() {
     imageUrl: selectedMovie?.image_url || selectedMovie?.backdrop_url || undefined,
     genres: selectedMovie?.genres,
     canonicalPath: selectedMovie && isModalOpen 
-      ? `/${selectedMovie.type === 'series' ? 'series' : 'movie'}/${toSlug(selectedMovie.title, selectedMovie.mobifliks_id, selectedMovie.year)}`
+      ? `/${selectedMovie.type === 'series' ? 'series' : 'movie'}/${toSlug(selectedMovie.title, selectedMovie.id, selectedMovie.year)}`
       : `/${viewMode === "home" ? "" : viewMode}`,
     jsonLd: selectedMovie && isModalOpen ? buildMovieJsonLd(selectedMovie) : homeJsonLd,
   });
@@ -929,7 +929,7 @@ function ClientHome() {
     setIsModalOpen(true);
 
     const typeSlug = movie.type === "series" ? "series" : "movie";
-    const urlSlug = toSlug(movie.title, movie.mobifliks_id, movie.year);
+    const urlSlug = toSlug(movie.title, movie.id, movie.year);
     // Delay URL change to allow modal animation to complete smoothly.
     // Changing URL instantly triggers mobile browser UI jumps (address bar shift) which glitches the animation.
     setTimeout(() => {
@@ -945,8 +945,8 @@ function ClientHome() {
     void (async () => {
       try {
         const details = movie.type === "series"
-          ? await fetchSeriesDetails(movie.mobifliks_id)
-          : await fetchMovieDetails(movie.mobifliks_id);
+          ? await fetchSeriesDetails(String(movie.id))
+          : await fetchMovieDetails(String(movie.id));
 
         if (details) {
           startTransition(() => {

@@ -66,16 +66,21 @@ serve(async (req: Request) => {
 
     const encodedId = rawId.includes("-") ? rawId.split("-").pop() || rawId : rawId
     const id = decodeURIComponent(encodedId)
+    const parsedId = parseInt(id, 10)
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     )
 
-    const { data: movie, error } = await supabase
-      .from("movies")
-      .select("*")
-      .eq("mobifliks_id", id)
-      .single()
+    let query = supabase.from("movies").select("*")
+    if (!isNaN(parsedId) && String(parsedId) === id) {
+      query = query.eq("id", parsedId)
+    } else {
+      query = query.eq("mobifliks_id", id)
+    }
+
+    const { data: movie, error } = await query.single()
 
     if (error || !movie) return new Response("Not Found", { status: 404 })
 
@@ -89,7 +94,7 @@ serve(async (req: Request) => {
     const fullTitle = buildSeoTitle(title, vjRaw)
     const description = buildSeoDescription(movie, title, vjRaw)
     const imageUrl = movie.image_url || movie.backdrop_url || DEFAULT_IMAGE
-    const canonicalUrl = `${BASE_URL}/${typeSlug}/${toSlug(title, id, year)}`
+    const canonicalUrl = `${BASE_URL}/${typeSlug}/${toSlug(title, String(movie.id), year)}`
     const genres = Array.isArray(movie.genres) ? movie.genres : []
     const cast = Array.isArray(movie.cast) ? movie.cast : []
     const releaseDate = movie.release_date || (year ? `${year}-01-01` : undefined)

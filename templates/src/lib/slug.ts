@@ -1,8 +1,8 @@
 /**
  * Generate a URL-friendly slug from a movie/series title + id.
- * e.g. "Inception" + "10281" + 2010 → "inception-2010-10281"
+ * e.g. "Inception" + 184025 + 2010 → "inception-2010-184025"
  */
-export function toSlug(title: string, id: string, year?: number): string {
+export function toSlug(title: string, id: number | string, year?: number | null): string {
   const base = title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "") // remove special chars
@@ -12,15 +12,15 @@ export function toSlug(title: string, id: string, year?: number): string {
 
   const parts = [base];
   if (year) parts.push(String(year));
-  parts.push(encodeURIComponent(id));
+  parts.push(encodeURIComponent(String(id)));
 
   return parts.join("-");
 }
 
 /**
- * Extract the mobifliks_id from a slug.
+ * Extract the numeric/string ID from a slug.
  * The ID is always the last segment after the final hyphen.
- * Also handles raw IDs (e.g. "10281") for backwards compatibility.
+ * Also handles raw IDs (e.g. "184025") for backwards compatibility.
  */
 export function fromSlug(slug: string): string {
   // If it's purely numeric, it's a raw ID

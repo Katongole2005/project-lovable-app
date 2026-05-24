@@ -1229,7 +1229,16 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
   if (inFlight) return inFlight;
 
   const request = (async () => {
-    const { data, error } = await supabase.from("movies").select("*").eq("mobifliks_id", id).single();
+    const parsedId = parseInt(id, 10);
+    let query = supabase.from("movies").select("*");
+    
+    if (!isNaN(parsedId) && String(parsedId) === id) {
+      query = query.eq("id", parsedId);
+    } else {
+      query = query.eq("mobifliks_id", id);
+    }
+
+    const { data, error } = await query.single();
     if (error) { console.error("fetchMovieDetails error:", error.message || error, error.details || "", error.hint || ""); return null; }
     const movie = normalize([data])[0];
     if (!movie) return null;
@@ -1256,7 +1265,16 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
   if (inFlight) return inFlight;
 
   const request = (async () => {
-    const { data, error } = await supabase.from("movies").select("*").eq("mobifliks_id", id).eq("type", "series").single();
+    const parsedId = parseInt(id, 10);
+    let query = supabase.from("movies").select("*").eq("type", "series");
+    
+    if (!isNaN(parsedId) && String(parsedId) === id) {
+      query = query.eq("id", parsedId);
+    } else {
+      query = query.eq("mobifliks_id", id);
+    }
+
+    const { data, error } = await query.single();
     if (error || !data) { console.error("fetchSeriesDetails error:", error ? (error.message || error) : "No data", error ? (error.details || "") : "", error ? (error.hint || "") : ""); return null; }
     const series = normalize([data])[0];
     if (!series) return null;
