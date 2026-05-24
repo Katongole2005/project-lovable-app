@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface BlurImageProps {
@@ -10,8 +11,8 @@ interface BlurImageProps {
 }
 
 /**
- * Progressive image load: shimmer placeholder, then opacity fade-in.
- * Avoids animating CSS filter (slow in Chromium).
+ * Progressive image load using Next.js Image component for ultimate speed.
+ * Serves modern WebP/AVIF formats on the fly and utilizes edge optimization.
  */
 export function BlurImage({ src, alt, className, loading = "lazy" }: BlurImageProps) {
   const [loaded, setLoaded] = useState(false);
@@ -20,18 +21,25 @@ export function BlurImage({ src, alt, className, loading = "lazy" }: BlurImagePr
     setLoaded(true);
   }, []);
 
+  if (!src) {
+    return (
+      <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-muted/60 via-card to-muted/35" />
+    );
+  }
+
   return (
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-muted/60 via-card to-muted/35">
-      <img
+      <Image
         src={src}
         alt={alt}
-        decoding="async"
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 30vw, 20vw"
+        priority={loading === "eager"}
         className={cn(
-          "w-full h-full object-cover transition-opacity duration-400 ease-out",
+          "object-cover transition-opacity duration-400 ease-out",
           loaded ? "opacity-100" : "opacity-0",
           className
         )}
-        loading={loading}
         onLoad={handleLoad}
       />
       <div
