@@ -916,6 +916,73 @@ function applyFilters(query: any, filters?: FilterOptions) {
 
 // ─── Data Fetching ───────────────────────────────────────────────────────────
 
+// ── Home Feed (consolidated endpoint) ────────────────────────────────────────
+
+export interface HomeFeedPayload {
+  hero: Movie[];
+  trending: Movie[];
+  movies: Movie[];
+  series: Movie[];
+  meta?: {
+    generatedAt: string;
+    limits: { hero: number; movies: number; series: number };
+    errors: Record<string, string | null>;
+  };
+}
+
+/**
+ * fetchHomeFeed — single consolidated request to /api/home-feed
+ *
+ * Instead of firing 4 separate Supabase queries from the browser,
+ * this hits a Next.js Route Handler that:
+ *  1. Runs all queries in parallel (Promise.all) server-side
+ *  2. Returns a single JSON payload
+ *  3. Is cached by Cloudflare/Vercel edge for 5 minutes
+ *
+ * Net result: first paint gets its data from 1 request instead of 4,
+ * and on cache hit the response arrives in <10ms from the edge.
+ */
+export async function fetchHomeFeed(opts?: {
+  heroLimit?: number;
+  moviesLimit?: number;
+  seriesLimit?: number;
+}): Promise<HomeFeedPayload> {
+  const params = new URLSearchParams();
+  if (opts?.heroLimit)   params.set('hero',   String(opts.heroLimit));
+  if (opts?.moviesLimit) params.set('movies', String(opts.moviesLimit));
+  if (opts?.seriesLimit) params.set('series', String(opts.seriesLimit));
+
+  const url = `/api/home-feed${params.size > 0 ? `?${params}` : ''}`;
+
+  try {
+    const res = await fetch(url, {
+      // Let the browser respect the Cache-Control header from the server
+      // (max-age=60). React Query also adds its own staleTime layer on top.
+      cache: 'default',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!res.ok) {
+      console.warn('[fetchHomeFeed] Non-ok response:', res.status);
+      return { hero: [], trending: [], movies: [], series: [] };
+    }
+
+    const data = (await res.json()) as HomeFeedPayload;
+
+    // Normalize all arrays through the existing pipeline
+    return {
+      hero:     finalizeBrowseResults(normalize(data.hero ?? []).filter((m) => isUsableArtworkUrl(m.backdrop_url)), opts?.heroLimit),
+      trending: finalizeBrowseResults(normalize(data.trending ?? []), 30),
+      movies:   finalizeBrowseResults(normalize(data.movies ?? []), opts?.moviesLimit),
+      series:   finalizeBrowseResults(normalize(data.series ?? []), opts?.seriesLimit),
+      meta: data.meta,
+    };
+  } catch (err) {
+    console.error('[fetchHomeFeed] Fetch failed:', err);
+    return { hero: [], trending: [], movies: [], series: [] };
+  }
+}
+
 export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
   const targetLimit = filters?.vj || filters?.year ? 60 : 30;
   let query = supabase

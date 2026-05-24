@@ -81,6 +81,7 @@ import {
   fetchCuratedMovies,
   fetchOriginals,
   fetchMoviesSorted,
+  fetchHomeFeed,
   preloadMovieBackdrop,
   preloadImage,
   getImageUrl,
@@ -375,34 +376,32 @@ function ClientHome() {
     return () => clearTimeout(timer);
   }, [user]);
 
-  // React Query for instant tab switching and caching
-  const { data: heroData, isLoading: isHeroLoading } = useQuery({
-    queryKey: ["hero", "latest", heroMovieLimit],
-    queryFn: () => fetchHeroLatest(heroMovieLimit),
-    staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "home",
+  // ── Consolidated home feed — 1 request instead of 4 ─────────────────────
+  // fetchHomeFeed hits /api/home-feed which runs all 4 queries in Promise.all
+  // server-side and returns a single JSON payload with 5-minute edge caching.
+  const { data: homeFeedData, isLoading: isHomeFeedLoading } = useQuery({
+    queryKey: ["home-feed", heroMovieLimit, browseBatchLimit],
+    queryFn: () =>
+      fetchHomeFeed({
+        heroLimit:   heroMovieLimit,
+        moviesLimit: browseBatchLimit,
+        seriesLimit: browseBatchLimit,
+      }),
+    staleTime: 1000 * 60 * 5, // 5 minutes — matches server-side edge cache TTL
+    enabled: viewMode === "home" || viewMode === "movies" || viewMode === "series",
   });
 
-  const { data: trendingData } = useQuery({
-    queryKey: ["trending"],
-    queryFn: () => fetchTrending(),
-    staleTime: 1000 * 60 * 10, // 10 minutes
-  });
+  // Spread the consolidated feed into the existing named variables
+  // so zero other code needs to change downstream.
+  const heroData        = homeFeedData?.hero;
+  const isHeroLoading   = isHomeFeedLoading && !homeFeedData?.hero;
+  const trendingData    = homeFeedData?.trending;
+  const moviesQueryData = homeFeedData?.movies;
+  const isMoviesLoading = isHomeFeedLoading && !homeFeedData?.movies;
+  const seriesQueryData = homeFeedData?.series;
+  const isSeriesLoading = isHomeFeedLoading && !homeFeedData?.series;
 
-  const { data: moviesQueryData, isLoading: isMoviesLoading } = useQuery({
-    queryKey: ["movies", "recent", 1, browseBatchLimit],
-    queryFn: () => fetchMoviesSorted("movie", browseBatchLimit, 1),
-    staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "movies" || viewMode === "home",
-  });
-
-  const { data: seriesQueryData, isLoading: isSeriesLoading } = useQuery({
-    queryKey: ["series", "recent", 1, browseBatchLimit],
-    queryFn: () => fetchSeries(browseBatchLimit, 1),
-    staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "series" || viewMode === "home",
-  });
-
+  // Originals remain a separate query (only loaded when on /originals tab)
   const { data: originalsQueryData, isLoading: isOriginalsLoading } = useQuery({
     queryKey: ["movies", "originals", 1, originalsInitialLimit],
     queryFn: () => fetchOriginals(originalsInitialLimit, 1),
