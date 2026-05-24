@@ -1,9 +1,8 @@
 "use client";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Search, X, TrendingUp, Clock } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { fetchSuggestions } from "@/lib/api";
-import { getRecentSearches } from "@/lib/storage";
 import type { Movie } from "@/types/movie";
 import { getImageUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -12,11 +11,21 @@ interface SearchBarProps {
   onSearch: (query: string) => void;
   onMovieSelect: (movie: Movie) => void;
   popularSearches?: string[];
+  recentSearches?: string[];
+  onRemoveRecentSearch?: (term: string) => void;
+  onClearRecentSearches?: () => void;
   className?: string;
   initialQuery?: string;
+  isLoadingResults?: boolean;
 }
 
-export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], className, initialQuery = "" }: SearchBarProps) {
+export function SearchBar({ 
+  onSearch, 
+  onMovieSelect, 
+  className, 
+  initialQuery = "",
+  isLoadingResults = false
+}: SearchBarProps) {
   const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<Movie[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -24,9 +33,6 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
-
-  // Memoized to avoid hitting localStorage on every render
-  const recentSearches = useMemo(() => getRecentSearches(), []);
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -42,8 +48,8 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
 
     debounceRef.current = setTimeout(async () => {
       const results = await fetchSuggestions(searchQuery);
-      setSuggestions(results.slice(0, 8));
-    }, 300);
+      setSuggestions(results.slice(0, 6));
+    }, 250);
   }, []);
 
   useEffect(() => {
@@ -104,19 +110,20 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
     }
   };
 
-  const handleChipClick = (term: string) => {
-    setQuery(term);
-    onSearch(term);
-    setIsOpen(false);
-  };
-
-  const showDropdown = isOpen && (query.length > 0 || recentSearches.length > 0 || popularSearches.length > 0);
+  const showDropdown = isOpen && query.trim().length >= 2 && suggestions.length > 0;
 
   return (
     <div ref={containerRef} className={cn("relative w-full max-w-xl", className)}>
-      <form onSubmit={handleSubmit} className="relative">
+      <form onSubmit={handleSubmit} className="relative z-20">
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          {/* Animated gradient rim light border */}
+          <div className="absolute -inset-[1px] rounded-full bg-gradient-to-r from-primary/30 via-violet-500/25 to-secondary/30 opacity-60 group-focus-within:opacity-100 group-hover:opacity-80 blur-[2px] transition-all duration-500 pointer-events-none" />
+          
+          <Search className={cn(
+            "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground transition-all duration-300 pointer-events-none",
+            query ? "text-primary scale-110" : "group-focus-within:text-primary group-focus-within:scale-105"
+          )} />
+          
           <Input
             ref={inputRef}
             type="text"
@@ -127,124 +134,95 @@ export function SearchBar({ onSearch, onMovieSelect, popularSearches = [], class
             }}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Search movies, series..."
-            className="w-full pl-12 pr-20 py-3 h-12 rounded-full bg-card/80 backdrop-blur-xl border-border/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/25 focus:shadow-[0_0_20px_hsl(210_100%_60%/0.15)] text-foreground placeholder:text-muted-foreground transition-all duration-300"
+            placeholder="Search movies, TV shows, actors..."
+            className="w-full pl-12 pr-24 py-3.5 h-13 rounded-full bg-black/40 backdrop-blur-2xl border-white/[0.08] focus:border-primary/40 focus:ring-0 text-foreground placeholder:text-muted-foreground/60 focus:shadow-[0_0_30px_hsl(var(--primary)/0.2)] text-base transition-all duration-500 relative z-10"
             data-testid="input-search"
           />
-          {query && (
+
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-20">
+            {/* Loading / Clear controls */}
+            {isLoadingResults ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin mr-1" />
+            ) : query ? (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => {
+                  setQuery("");
+                  setSuggestions([]);
+                  inputRef.current?.focus();
+                }}
+                className="p-1.5 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground active:scale-90 transition-all duration-200 mr-0.5"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            ) : null}
+
             <button
-              type="button"
-              aria-label="Clear search"
-              onClick={() => {
-                setQuery("");
-                setSuggestions([]);
-                inputRef.current?.focus();
-              }}
-              className="absolute right-16 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+              type="submit"
+              className="px-4 py-1.5 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground text-xs font-bold hover:opacity-95 active:scale-95 transition-all duration-300 hover:shadow-[0_0_15px_hsl(var(--primary)/0.4)]"
+              data-testid="button-search"
             >
-              <X className="w-4 h-4" />
+              Search
             </button>
-          )}
-          <button
-            type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all duration-200 hover:shadow-[0_0_14px_hsl(210_100%_60%/0.3)]"
-            data-testid="button-search"
-          >
-            Search
-          </button>
+          </div>
         </div>
       </form>
 
-      {/* Dropdown */}
+      {/* Autocomplete Dropdown overlay */}
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-2 rounded-xl bg-popover/95 backdrop-blur-xl border border-border/50 shadow-elevated overflow-hidden z-50 animate-scale-in">
-          {/* Suggestions */}
-          {suggestions.length > 0 && (
-            <div className="p-2">
-              {suggestions.map((movie, index) => (
-                <button
-                  key={movie.mobifliks_id}
-                  type="button"
-                  onClick={() => {
-                    onMovieSelect(movie);
-                    setIsOpen(false);
-                    setQuery("");
-                  }}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-2 rounded-lg transition-colors text-left",
-                    selectedIndex === index ? "bg-accent" : "hover:bg-accent/50"
-                  )}
-                >
+        <div className="absolute top-[calc(100%_+_8px)] left-0 right-0 rounded-2xl bg-black/80 backdrop-blur-3xl border border-white/[0.08] shadow-[0_24px_60px_rgba(0,0,0,0.85)] overflow-hidden z-50 animate-scale-in">
+          <div className="p-2 space-y-1">
+            <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-muted-foreground/50 uppercase border-b border-white/[0.04] mb-1">
+              Suggestions
+            </div>
+            {suggestions.map((movie, index) => (
+              <button
+                key={movie.mobifliks_id}
+                type="button"
+                onClick={() => {
+                  onMovieSelect(movie);
+                  setIsOpen(false);
+                  setQuery("");
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3.5 p-2 rounded-xl transition-all duration-300 text-left relative overflow-hidden group/item",
+                  selectedIndex === index 
+                    ? "bg-white/10 border-l-4 border-l-primary pl-4 shadow-sm" 
+                    : "hover:bg-white/5 pl-3 border-l-4 border-l-transparent"
+                )}
+              >
+                <div className="relative w-9 h-13 rounded-lg overflow-hidden shrink-0 bg-neutral-900 shadow-md">
                   <img
                     src={getImageUrl(movie.image_url)}
                     alt={movie.title}
-                    className="w-10 h-14 rounded object-cover bg-muted"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="flex-1 min-w-0">
-                    {movie.logo_url ? (
-                      <img
-                        src={movie.logo_url}
-                        alt={movie.title}
-                        className="h-5 w-auto max-w-full object-contain object-left mb-1"
-                      />
-                    ) : (
-                      <p className="font-medium text-sm text-foreground truncate">{movie.title}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {[movie.year, movie.language, movie.type === "series" ? "Series" : "Movie"]
-                        .filter(Boolean)
-                        .join(" • ")}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Recent & Popular */}
-          {suggestions.length === 0 && (
-            <div className="p-3 space-y-3">
-              {recentSearches.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                    <Clock className="w-3 h-3" />
-                    <span>Recent</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {recentSearches.slice(0, 5).map((term, index) => (
-                      <button
-                        key={`${term}-${index}`}
-                        onClick={() => handleChipClick(term)}
-                        className="px-3 py-1.5 rounded-full bg-muted/30 text-sm text-foreground hover:bg-muted/50 transition-colors"
-                      >
-                        {term}
-                      </button>
-                    ))}
-                  </div>
                 </div>
-              )}
-
-              {popularSearches.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>Trending</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {popularSearches.slice(0, 5).map((term, index) => (
-                      <button
-                        key={`${term}-${index}`}
-                        onClick={() => handleChipClick(term)}
-                        className="px-3 py-1.5 rounded-full bg-primary/10 text-sm text-primary hover:bg-primary/20 transition-colors"
-                      >
-                        {term}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex-1 min-w-0 py-0.5">
+                  {movie.logo_url ? (
+                    <img
+                      src={movie.logo_url}
+                      alt={movie.title}
+                      className="h-4.5 w-auto max-w-[85%] object-contain object-left mb-0.5 filter brightness-100 group-hover/item:scale-102 transition-transform"
+                    />
+                  ) : (
+                    <p className="font-semibold text-sm text-white truncate leading-tight group-hover/item:text-primary transition-colors">{movie.title}</p>
+                  )}
+                  <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                    {[
+                      movie.year,
+                      movie.language,
+                      movie.type === "series" ? "Series" : "Movie",
+                      movie.vj_name ? `VJ ${movie.vj_name}` : null
+                    ]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

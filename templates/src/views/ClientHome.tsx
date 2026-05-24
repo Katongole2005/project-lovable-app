@@ -90,9 +90,26 @@ import {
 } from "@/lib/api";
 import type { FilterOptions } from "@/lib/api";
 import { preloadHeroMovies } from "@/lib/heroImages";
-import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching } from "@/lib/storage";
+import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching, getRecentSearches, removeRecentSearch, clearRecentSearches } from "@/lib/storage";
 import type { Movie, Series, ContinueWatching, SkipSegment, SubtitleTrack } from "@/types/movie";
-import { ChevronLeft, Loader2, Play, Search, X } from "lucide-react";
+import { 
+  ChevronLeft, Loader2, Play, Search, X, 
+  Flame, Compass, ShieldAlert, Heart, Sparkles, 
+  Skull, Tv, Atom, Zap, TrendingUp, Clock 
+} from "lucide-react";
+
+const genreBentoCards = [
+  { id: "action", label: "Action", icon: Flame, gradient: "from-red-600/20 to-red-950/30 border-red-500/20 text-red-400 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)]" },
+  { id: "adventure", label: "Adventure", icon: Compass, gradient: "from-blue-600/20 to-blue-950/30 border-blue-500/20 text-blue-400 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]" },
+  { id: "crime", label: "Crime", icon: ShieldAlert, gradient: "from-indigo-600/20 to-indigo-950/30 border-indigo-500/20 text-indigo-400 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]" },
+  { id: "romance", label: "Romance", icon: Heart, gradient: "from-pink-600/20 to-pink-950/30 border-pink-500/20 text-pink-400 hover:shadow-[0_0_20px_rgba(236,72,153,0.15)]" },
+  { id: "animation", label: "Animation", icon: Sparkles, gradient: "from-amber-500/20 to-amber-950/30 border-amber-500/20 text-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]" },
+  { id: "horror", label: "Horror", icon: Skull, gradient: "from-purple-600/20 to-purple-950/30 border-purple-500/20 text-purple-400 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]" },
+  { id: "drama", label: "Drama", icon: Tv, gradient: "from-orange-600/20 to-orange-950/30 border-orange-500/20 text-orange-400 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)]" },
+  { id: "fantasy", label: "Fantasy", icon: Sparkles, gradient: "from-emerald-600/20 to-emerald-950/30 border-emerald-500/20 text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]" },
+  { id: "sci-fi", label: "Sci-Fi", icon: Atom, gradient: "from-cyan-600/20 to-cyan-950/30 border-cyan-500/20 text-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]" },
+  { id: "thriller", label: "Thriller", icon: Zap, gradient: "from-fuchsia-600/20 to-fuchsia-950/30 border-fuchsia-500/20 text-fuchsia-400 hover:shadow-[0_0_20px_rgba(217,70,239,0.15)]" },
+];
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { buildMovieJsonLd } from "@/hooks/useSeo";
 import { toSlug, fromSlug } from "@/lib/slug";
@@ -243,7 +260,22 @@ function ClientHome() {
   const [searchInputValue, setSearchInputValue] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "movie" | "series">("all");
   const [sortFilter, setSortFilter] = useState<"popular" | "rating" | "newest">("popular");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const debounceSearchRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
+
+  const handleRemoveRecentSearch = useCallback((term: string) => {
+    removeRecentSearch(term);
+    setRecentSearches(getRecentSearches());
+  }, []);
+
+  const handleClearRecentSearches = useCallback(() => {
+    clearRecentSearches();
+    setRecentSearches([]);
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
@@ -653,6 +685,7 @@ function ClientHome() {
     setCurrentPage(1);
     setIsLoading(true);
     addRecentSearch(query);
+    setRecentSearches(getRecentSearches());
 
     try {
       const results = await searchMovies(query, 1, 50);
@@ -1483,46 +1516,236 @@ function ClientHome() {
           {/* Search View */}
           {viewMode === "search" && (
             <PageTransition viewKey="search">
-              <div className="space-y-6">
+              <div className="space-y-8 pb-12">
                 <div className="max-w-xl mx-auto">
-                  <Suspense fallback={<div className="h-12 rounded-full bg-card/60 border border-border/30" />}>
+                  <Suspense fallback={<div className="h-12 rounded-full bg-card/60 border border-border/30 animate-pulse" />}>
                     <SearchBar
                       onSearch={handleSearch}
                       onMovieSelect={handleMovieClick}
                       popularSearches={popularSearches}
                       initialQuery={searchQuery}
+                      isLoadingResults={isLoading}
                     />
                   </Suspense>
                 </div>
  
+                {/* Clean Slate Bento Landing State */}
+                {!searchQuery && (
+                  <div className="space-y-8 animate-fade-in">
+                    {/* Recent & Popular Searches bento grid */}
+                    {(recentSearches.length > 0 || popularSearches.length > 0) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Recent Searches */}
+                        {recentSearches.length > 0 && (
+                          <div className="glass-card-premium p-5 rounded-2xl border-white/[0.05] space-y-4 shadow-elevated">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-primary" />
+                                Recent Searches
+                              </h3>
+                              <button
+                                onClick={handleClearRecentSearches}
+                                className="text-xs text-primary hover:text-primary/80 hover:underline transition-all active:scale-95 font-semibold"
+                              >
+                                Clear All
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-2.5">
+                              {recentSearches.map((term, index) => (
+                                <div
+                                  key={`recent-${term}-${index}`}
+                                  className="group inline-flex items-center gap-1.5 pl-3.5 pr-2 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-sm text-white/95 transition-all duration-300 shadow-sm"
+                                >
+                                  <button
+                                    onClick={() => handleSearch(term)}
+                                    className="font-medium hover:text-primary transition-colors text-left"
+                                  >
+                                    {term}
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemoveRecentSearch(term)}
+                                    className="p-0.5 rounded-full hover:bg-white/15 text-muted-foreground hover:text-foreground transition-all duration-200"
+                                    aria-label={`Remove ${term}`}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Trending Searches */}
+                        {popularSearches.length > 0 && (
+                          <div className="glass-card-premium p-5 rounded-2xl border-white/[0.05] space-y-4 shadow-elevated">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                              <TrendingUp className="w-4 h-4 text-emerald-400" />
+                              Trending Searches
+                            </h3>
+                            <div className="flex flex-wrap gap-2.5">
+                              {popularSearches.map((term, index) => (
+                                <button
+                                  key={`trending-${term}-${index}`}
+                                  onClick={() => handleSearch(term)}
+                                  className="px-4 py-2 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/30 text-sm text-primary font-semibold transition-all duration-300 active:scale-95 hover:shadow-[0_0_12px_rgba(239,68,68,0.12)]"
+                                >
+                                  {term}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+
+
+                    {/* Featured / Recommended strip */}
+                    {recentMovies.length > 0 && (
+                      <div className="space-y-4 pt-4">
+                        <div className="section-divider opacity-40" />
+                        <LandscapeMovieRow
+                          title="Highly Recommended For You"
+                          movies={recentMovies.slice(0, 10)}
+                          onMovieClick={handleMovieClick}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+ 
+                {/* Search Results State */}
                 {searchQuery && (
-                  <div className="space-y-4 animate-fade-in">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => {
-                          setSearchQuery("");
-                          setSearchInputValue("");
-                          setSearchResults([]);
-                          navigateTo("/search", { replace: true, shallow: true });
-                        }}
-                        className="shrink-0 p-2.5 rounded-full hover:bg-white/10 text-white transition-all duration-200 active:scale-95 border border-white/5 bg-white/5 backdrop-blur-md"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </button>
-                      <div>
-                        <h2 className="text-xl font-semibold text-white">Search Results</h2>
-                        <p className="text-sm text-muted-foreground">
-                          {totalResults} results for "{searchQuery}"
-                        </p>
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setSearchQuery("");
+                            setSearchInputValue("");
+                            setSearchResults([]);
+                            navigateTo("/search", { replace: true, shallow: true });
+                          }}
+                          className="shrink-0 p-2.5 rounded-full hover:bg-white/10 text-white transition-all duration-200 active:scale-95 border border-white/5 bg-white/5 backdrop-blur-md"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                          <h2 className="text-xl font-semibold text-white">Search Results</h2>
+                          <p className="text-sm text-muted-foreground">
+                            {filteredAndSortedResults.length} results for "{searchQuery}"
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Interactive Sort & Filter pill panel */}
+                      <div className="flex flex-wrap items-center gap-4">
+                        {/* Media Type Filter */}
+                        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                          <button
+                            onClick={() => setTypeFilter("all")}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95",
+                              typeFilter === "all"
+                                ? "bg-white text-black shadow-sm"
+                                : "text-muted-foreground hover:text-white"
+                            )}
+                          >
+                            All Content
+                          </button>
+                          <button
+                            onClick={() => setTypeFilter("movie")}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95",
+                              typeFilter === "movie"
+                                ? "bg-white text-black shadow-sm"
+                                : "text-muted-foreground hover:text-white"
+                            )}
+                          >
+                            Movies
+                          </button>
+                          <button
+                            onClick={() => setTypeFilter("series")}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95",
+                              typeFilter === "series"
+                                ? "bg-white text-black shadow-sm"
+                                : "text-muted-foreground hover:text-white"
+                            )}
+                          >
+                            TV Shows
+                          </button>
+                        </div>
+
+                        {/* Sort Order */}
+                        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                          <button
+                            onClick={() => setSortFilter("popular")}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95",
+                              sortFilter === "popular"
+                                ? "bg-primary text-white shadow-sm"
+                                : "text-muted-foreground hover:text-white"
+                            )}
+                          >
+                            Popular
+                          </button>
+                          <button
+                            onClick={() => setSortFilter("rating")}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95",
+                              sortFilter === "rating"
+                                ? "bg-primary text-white shadow-sm"
+                                : "text-muted-foreground hover:text-white"
+                            )}
+                          >
+                            Rating
+                          </button>
+                          <button
+                            onClick={() => setSortFilter("newest")}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95",
+                              sortFilter === "newest"
+                                ? "bg-primary text-white shadow-sm"
+                                : "text-muted-foreground hover:text-white"
+                            )}
+                          >
+                            Newest
+                          </button>
+                        </div>
                       </div>
                     </div>
- 
-                    <MovieGrid
-                      movies={searchResults}
-                      onMovieClick={handleMovieClick}
-                      isLoading={isLoading}
-                      emptyMessage={`No results for "${searchQuery}"`}
-                    />
+
+                    {/* Results MovieGrid or Redesigned Empty State */}
+                    {filteredAndSortedResults.length === 0 && !isLoading ? (
+                      <div className="flex flex-col items-center justify-center py-20 px-4 text-center space-y-5 animate-fade-in glass-card-premium rounded-3xl border-white/[0.05]">
+                        <div className="p-5 rounded-full bg-white/5 border border-white/10 text-muted-foreground/60 shadow-inner">
+                          <Search className="w-10 h-10 animate-pulse text-primary" />
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-bold text-white">No Matching Content</h3>
+                          <p className="text-sm text-muted-foreground max-w-sm">
+                            We couldn't find any results for <span className="text-white font-semibold">"{searchQuery}"</span> with the selected filter. Try adjusting your categories.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setTypeFilter("all");
+                            setSortFilter("popular");
+                          }}
+                          className="px-5 py-2 rounded-full border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-all active:scale-95 hover:shadow-glow"
+                        >
+                          Reset Filter Tags
+                        </button>
+                      </div>
+                    ) : (
+                      <MovieGrid
+                        movies={filteredAndSortedResults}
+                        onMovieClick={handleMovieClick}
+                        isLoading={isLoading}
+                        emptyMessage={`No results found for "${searchQuery}"`}
+                      />
+                    )}
                   </div>
                 )}
               </div>

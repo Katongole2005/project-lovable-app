@@ -276,6 +276,16 @@ export function addRecentSearch(query: string): void {
   localStorage.setItem(SEARCH_KEY, JSON.stringify(searches.slice(0, 10)));
 }
 
+export function removeRecentSearch(query: string): void {
+  const cleaned = query.trim().toLowerCase();
+  const searches = getRecentSearches().filter(s => s.trim().toLowerCase() !== cleaned);
+  localStorage.setItem(SEARCH_KEY, JSON.stringify(searches));
+}
+
+export function clearRecentSearches(): void {
+  localStorage.removeItem(SEARCH_KEY);
+}
+
 // ===== WATCHLIST =====
 export interface WatchlistItem {
   id: string;
