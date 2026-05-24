@@ -365,12 +365,19 @@ function ClientHome() {
   useEffect(() => {
     if (!isModalOpen || !selectedMovie) return;
 
-    const mediaUrl = buildPrimaryPlaybackUrl(selectedMovie);
-    if (!mediaUrl) return;
+    let active = true;
+    const prime = async () => {
+      const mediaUrl = await buildPrimaryPlaybackUrl(selectedMovie);
+      if (!mediaUrl || !active) return;
+      scheduleLowPriorityTask(() => {
+        primeMediaAvailability(mediaUrl);
+      });
+    };
+    void prime();
 
-    scheduleLowPriorityTask(() => {
-      primeMediaAvailability(mediaUrl);
-    });
+    return () => {
+      active = false;
+    };
   }, [isModalOpen, selectedMovie]);
 
   // Dynamic SEO per view/modal
@@ -700,12 +707,12 @@ function ClientHome() {
       if (sortFilter === "popular") {
         return (b.views ?? 0) - (a.views ?? 0);
       } else if (sortFilter === "rating") {
-        const rA = a.vote_average ?? a.rating ?? 0;
-        const rB = b.vote_average ?? b.rating ?? 0;
+        const rA = (a as any).vote_average ?? (a as any).rating ?? 0;
+        const rB = (b as any).vote_average ?? (b as any).rating ?? 0;
         return rB - rA;
       } else if (sortFilter === "newest") {
-        const yA = parseInt(a.year || "0");
-        const yB = parseInt(b.year || "0");
+        const yA = parseInt(a.year?.toString() || "0");
+        const yB = parseInt(b.year?.toString() || "0");
         return yB - yA;
       }
       return 0;
@@ -1315,7 +1322,7 @@ function ClientHome() {
         {/* Header — memo'd at component level, properly bails out on unchanged props */}
         <Header
           onSearch={handleSearch}
-          onMovieSelect={handleMovieClick}
+          onMovieSelect={handleMovieClick as any}
           popularSearches={popularSearches}
           activeTab={activeTab}
           onTabChange={handleTabChange}
@@ -1582,9 +1589,9 @@ function ClientHome() {
                                   TV
                                 </span>
                               )}
-                              {movie.vote_average && (
+                              {(movie as any).vote_average && (
                                 <span className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5">
-                                  ★ {Number(movie.vote_average).toFixed(1)}
+                                  ★ {Number((movie as any).vote_average).toFixed(1)}
                                 </span>
                               )}
                             </div>
@@ -1749,10 +1756,10 @@ function ClientHome() {
               />
             </div>
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground/60">
-              <Link className="hover:text-white transition-colors" to="/dmca" suppressHydrationWarning>DMCA</Link>
-              <Link className="hover:text-white transition-colors" to="/settings" suppressHydrationWarning>Settings</Link>
-              <Link className="hover:text-white transition-colors" to="/privacy" suppressHydrationWarning>Privacy</Link>
-              <Link className="hover:text-white transition-colors" to="/terms" suppressHydrationWarning>Terms</Link>
+              <Link className="hover:text-white transition-colors" href="/dmca" suppressHydrationWarning>DMCA</Link>
+              <Link className="hover:text-white transition-colors" href="/settings" suppressHydrationWarning>Settings</Link>
+              <Link className="hover:text-white transition-colors" href="/privacy" suppressHydrationWarning>Privacy</Link>
+              <Link className="hover:text-white transition-colors" href="/terms" suppressHydrationWarning>Terms</Link>
             </div>
           </footer>
         )}

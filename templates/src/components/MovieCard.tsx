@@ -35,7 +35,7 @@ function isNewRelease(movie: Movie): boolean {
     const addedAt = new Date(movie.created_at);
     if (!Number.isNaN(addedAt.getTime())) {
       const daysSinceAdded = (now - addedAt.getTime()) / dayMs;
-      const movieYear = parseInt(movie.year || "0");
+      const movieYear = parseInt(movie.year?.toString() || "0");
       const currentYear = new Date().getFullYear();
 
       if (daysSinceAdded >= 0 && daysSinceAdded <= 14 && movieYear >= currentYear - 1) {

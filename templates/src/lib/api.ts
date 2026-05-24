@@ -39,14 +39,20 @@ function boundedSet<T>(set: Set<T>, max: number): void {
   if (set.size <= max) return;
   const iter = set.values();
   let n = set.size - max;
-  while (n-- > 0) set.delete(iter.next().value);
+  while (n-- > 0) {
+    const val = iter.next().value;
+    if (val !== undefined) set.delete(val);
+  }
 }
 
 function boundedMap<K, V>(map: Map<K, V>, max: number): void {
   if (map.size <= max) return;
   const iter = map.keys();
   let n = map.size - max;
-  while (n-- > 0) map.delete(iter.next().value);
+  while (n-- > 0) {
+    const val = iter.next().value;
+    if (val !== undefined) map.delete(val);
+  }
 }
 
 function getUrlBase(): string {
@@ -67,12 +73,12 @@ function buildApiEndpoint(path: string): URL | null {
 }
 
 export const getImageUrl = (url?: string) => {
-  if (!isUsableArtworkUrl(url)) return fallbackPoster;
+  if (!isUsableArtworkUrl(url) || !url) return fallbackPoster;
   return url.replace('/original/', '/w500/');
 };
 
 export const getOptimizedBackdropUrl = (url?: string): string => {
-  if (!isUsableArtworkUrl(url)) return fallbackPoster;
+  if (!isUsableArtworkUrl(url) || !url) return fallbackPoster;
   return url.replace('/w1280/', '/w780/').replace('/original/', '/w780/');
 };
 
@@ -774,7 +780,7 @@ async function fetchMovieVariants(movie: Movie): Promise<Movie[]> {
 
   const { data, error } = await query;
   if (error) {
-    console.error("fetchMovieVariants error:", error);
+    console.error("fetchMovieVariants error:", error.message || error, error.details || "", error.hint || "");
     return [];
   }
 
@@ -915,7 +921,7 @@ export async function fetchTrending(filters?: FilterOptions): Promise<Movie[]> {
     .limit(Math.min(targetLimit * 2, 120));
   query = applyFilters(query, filters);
   const { data, error } = await query;
-  if (error) { console.error("fetchTrending error:", error); return []; }
+  if (error) { console.error("fetchTrending error:", error.message || error, error.details || "", error.hint || ""); return []; }
   return finalizeBrowseResults(normalize(data ?? []), targetLimit);
 }
 
@@ -931,7 +937,7 @@ export async function fetchHeroLatest(limit: number = 12): Promise<Movie[]> {
     .limit(Math.min(targetLimit * 2, 48));
 
   if (error) {
-    console.error("fetchHeroLatest error:", error);
+    console.error("fetchHeroLatest error:", error.message || error, error.details || "", error.hint || "");
     return [];
   }
 
@@ -951,7 +957,7 @@ export async function fetchNewThisWeek(contentType: "movie" | "series" = "movie"
     .range(offsetOverride, offsetOverride + fetchLimit - 1);
   query = applyFilters(query, filters);
   const { data, error } = await query;
-  if (error) { console.error("fetchNewThisWeek error:", error); return []; }
+  if (error) { console.error("fetchNewThisWeek error:", error.message || error, error.details || "", error.hint || ""); return []; }
   return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
@@ -965,7 +971,7 @@ export async function fetchRecent(contentType: string = "movie", limit: number =
     .order("release_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .range(offset, offset + fetchLimit - 1);
-  if (error) { console.error("fetchRecent error:", error); return []; }
+  if (error) { console.error("fetchRecent error:", error.message, error.details || "", error.hint || ""); return []; }
   return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
@@ -982,7 +988,7 @@ export async function fetchMoviesSorted(contentType: string = "movie", limit: nu
     .range(offset, offset + fetchLimit - 1);
   query = applyFilters(query, filters);
   const { data, error } = await query;
-  if (error) { console.error("fetchMoviesSorted error:", error); return []; }
+  if (error) { console.error("fetchMoviesSorted error:", error.message || error, error.details || "", error.hint || ""); return []; }
   return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
@@ -999,7 +1005,7 @@ export async function fetchSeries(limit: number = 20, page: number = 1, language
   query = applyFilters(query, filters);
   if (language) query = query.eq("language", language);
   const { data, error } = await query;
-  if (error) { console.error("fetchSeries error:", error); return []; }
+  if (error) { console.error("fetchSeries error:", error.message || error, error.details || "", error.hint || ""); return []; }
   return finalizeBrowseResults(normalize(data ?? []), limit);
 }
 
@@ -1109,7 +1115,7 @@ export async function searchMovies(query: string, page: number = 1, limit: numbe
     .or(searchClauses.join(","))
     .order("views", { ascending: false })
     .range(offset, offset + Math.min(fetchLimit * 3, 300) - 1);
-  if (error) { console.error("searchMovies error:", error); return { results: [], total_results: 0, page }; }
+  if (error) { console.error("searchMovies error:", error.message || error, error.details || "", error.hint || ""); return { results: [], total_results: 0, page }; }
   const grouped = finalizeBrowseResults(sortSmartSearchResults(normalize(data ?? []), normalizedQuery, tokens));
   return { results: grouped.slice(0, limit), total_results: count ?? 0, page };
 }
@@ -1137,7 +1143,7 @@ export async function searchAll(query: string, page: number = 1, limit: number =
     .or(searchClauses.join(","))
     .order("views", { ascending: false })
     .range(offset, offset + Math.min(fetchLimit * 3, 300) - 1);
-  if (error) { console.error("searchAll error:", error); return []; }
+  if (error) { console.error("searchAll error:", error.message || error, error.details || "", error.hint || ""); return []; }
   return finalizeBrowseResults(sortSmartSearchResults(normalize(data ?? []), normalizeSearchText(query), tokens), limit);
 }
 
@@ -1148,7 +1154,7 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
 
   const request = (async () => {
     const { data, error } = await supabase.from("movies").select("*").eq("mobifliks_id", id).single();
-    if (error) { console.error("fetchMovieDetails error:", error); return null; }
+    if (error) { console.error("fetchMovieDetails error:", error.message || error, error.details || "", error.hint || ""); return null; }
     const movie = normalize([data])[0];
     if (!movie) return null;
     const versions = await fetchMovieVariants(movie);
@@ -1175,13 +1181,13 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
 
   const request = (async () => {
     const { data, error } = await supabase.from("movies").select("*").eq("mobifliks_id", id).eq("type", "series").single();
-    if (error || !data) { console.error("fetchSeriesDetails error:", error); return null; }
+    if (error || !data) { console.error("fetchSeriesDetails error:", error ? (error.message || error) : "No data", error ? (error.details || "") : "", error ? (error.hint || "") : ""); return null; }
     const series = normalize([data])[0];
     if (!series) return null;
     const baseName = getSeriesBaseName(series.title);
     const { data: allRelated } = await supabase.from("movies").select("mobifliks_id, title").eq("type", "series").ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`).order("title", { ascending: true });
     const seasonEntries = (allRelated ?? []).filter((r) => getSeriesBaseName(r.title) === baseName).sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
-    const seasonIds = seasonEntries.length > 1 ? seasonEntries.map((s) => s.mobifliks_id) : [id];
+    const seasonIds = (seasonEntries.length > 1 ? seasonEntries.map((s) => s.mobifliks_id) : [id]).filter((x): x is string => Boolean(x));
     const assignedSeasons = new Set<number>();
     const seasonNumbers: number[] = [];
     for (const entry of seasonEntries) {
@@ -1222,7 +1228,7 @@ export function hasPendingSeriesDetailsRequest(id: string): boolean { return ser
 export async function fetchSuggestions(query: string): Promise<Movie[]> {
   const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
   const { data, error } = await supabase.from("movies").select("*").in("type", ["movie", "series"]).ilike("title", `%${safeQuery}%`).order("views", { ascending: false }).limit(20);
-  if (error) { console.error("fetchSuggestions error:", error); return []; }
+  if (error) { console.error("fetchSuggestions error:", error.message || error, error.details || "", error.hint || ""); return []; }
   return finalizeBrowseResults(normalize(data ?? []), 10);
 }
 
@@ -1235,7 +1241,7 @@ export async function fetchStats(): Promise<{ popular_searches: string[] }> {
 export async function fetchOriginals(limit: number = 50, page: number = 1): Promise<Movie[]> {
   const offset = (page - 1) * limit;
   const { data, error } = await supabase.from("movies").select(BROWSE_MOVIE_SELECT).eq("type", "movie").is("vj_name", null).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
-  if (error) { console.error("fetchOriginals error:", error); return []; }
+  if (error) { console.error("fetchOriginals error:", error.message || error, error.details || "", error.hint || ""); return []; }
   return normalize(data ?? []);
 }
 
@@ -1252,7 +1258,7 @@ export async function fetchByGenre(genre: string, contentType: "movie" | "series
     if (contentType !== "all") query = query.eq("type", contentType);
     query = applyFilters(query, { vj: filters?.vj, year: filters?.year });
     const { data, error } = await query;
-    if (error) { console.error("fetchByGenre error:", error); return []; }
+    if (error) { console.error("fetchByGenre error:", error.message || error, error.details || "", error.hint || ""); return []; }
     const results = normalize(data ?? []);
     const groupedResults = finalizeBrowseResults(results, limit);
     genreQueryCache.set(cacheKey, groupedResults);
