@@ -4,8 +4,8 @@ import '../index.css';
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://s-u.in'),
-  title: 'Moviebay - Stream Movies & TV Shows',
-  description: 'Watch the latest movies and TV shows online in high quality.',
+  title: 'Moviebay — Watch Luganda Translated Movies & Series Online in HD',
+  description: 'Stream or download the latest movies and series translated by VJ Junior, VJ Emmy, VJ Ice P, and more. Instant downloads & free streaming!',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -15,6 +15,28 @@ export const metadata = {
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
+  },
+  openGraph: {
+    url: 'https://www.s-u.in/',
+    type: 'website',
+    title: 'Moviebay — Watch Luganda Translated Movies & Series Online in HD',
+    description: 'Stream or download the latest movies and series translated by VJ Junior, VJ Emmy, VJ Ice P, and more. Instant downloads & free streaming!',
+    images: [
+      {
+        url: 'https://opengraph.b-cdn.net/production/images/25761c18-9506-4190-b1c1-5d5802661dcb.jpg?token=fEJiQ52XMTQopK-xQHzbXhciYWEm__5xikKyrqv3cXU&height=1280&width=1024&expires=33315649292',
+        width: 1024,
+        height: 1280,
+        alt: 'Moviebay — Watch Luganda Translated Movies & Series Online in HD',
+      }
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    domain: 's-u.in',
+    url: 'https://www.s-u.in/',
+    title: 'Moviebay — Watch Luganda Translated Movies & Series Online in HD',
+    description: 'Stream or download the latest movies and series translated by VJ Junior, VJ Emmy, VJ Ice P, and more. Instant downloads & free streaming!',
+    images: ['https://opengraph.b-cdn.net/production/images/25761c18-9506-4190-b1c1-5d5802661dcb.jpg?token=fEJiQ52XMTQopK-xQHzbXhciYWEm__5xikKyrqv3cXU&height=1280&width=1024&expires=33315649292'],
   },
 };
 
