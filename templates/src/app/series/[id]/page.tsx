@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const cleanDesc = series.description ? series.description.replace(/\s+/g, ' ').trim() : '';
   const fallbackDesc = cleanVj
-    ? `Stream or download ${series.title} Luganda translated by VJ ${cleanVj} in high definition on Moviebay. Access Translated Agasobanuye / Filimu Enjogerere commentary and rapid downloads.`
+    ? `Stream or download ${series.title} Luganda translated by VJ ${cleanVj} in high definition on Moviebay. Access translated commentary and rapid downloads.`
     : `Stream or download ${series.title} in HD on Moviebay. Watch translated and original blockbuster series online with rapid downloads.`;
   const seoDesc = cleanDesc ? `${cleanDesc.slice(0, 150)}... Translated by VJ ${cleanVj || 'Junior'}.` : fallbackDesc;
 
