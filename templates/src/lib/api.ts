@@ -143,10 +143,9 @@ export function warmMediaElement(url?: string | null): void {
   }
 }
 
-function unwrapLegacyWorkerUrl(url: string): string {
+export function unwrapLegacyWorkerUrl(url: string): string {
   try {
     const parsed = new URL(url);
-    if (!/cdn\.s-u\.in$/i.test(parsed.hostname)) return url;
     return parsed.searchParams.get("url") || url;
   } catch {
     return url;
@@ -165,7 +164,14 @@ function shouldUseDirectPlayback(url?: string): boolean {
 }
 
 function shouldPreferDirectPlaybackOnThisDevice(url?: string): boolean {
-  return false;
+  if (typeof window === "undefined" || !url) return false;
+  
+  const ua = navigator.userAgent;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isMac = /Macintosh|MacIntel/i.test(ua);
+  
+  return isSafari || isIOS || isMac;
 }
 
 async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise<string | null> {

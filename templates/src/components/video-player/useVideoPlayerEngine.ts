@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getImageUrl } from "@/lib/api";
+import { getImageUrl, buildMediaUrl, unwrapLegacyWorkerUrl } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { incrementUserStat } from "@/lib/stats";
 import type { Movie, Series, SkipSegment, SubtitleTrack } from "@/types/movie";
@@ -423,6 +423,7 @@ export function useVideoPlayerEngine({
 
   useEffect(() => {
     if (!isOpen) return;
+    triedUrlsRef.current.clear();
     lastSessionKeyRef.current = sessionKey;
     lastPlaybackProgressRef.current = Date.now();
     pauseRequestedRef.current = false;
@@ -723,6 +724,8 @@ export function useVideoPlayerEngine({
     });
   }, [activeSubtitleId, isEmbeddableVideo, isPlaying, usableSubtitles]);
 
+  const triedUrlsRef = useRef<Set<string>>(new Set());
+
   const videoHandlers = {
     onLoadedMetadata: () => {
       const video = videoRef.current;
@@ -793,13 +796,118 @@ export function useVideoPlayerEngine({
       setIsBuffering(false);
       setShowControls(true);
     },
-    onError: () => {
+    onError: async () => {
       pauseRequestedRef.current = false;
       setIsPaused(true);
       setIsBuffering(false);
-      setPlaybackError(
-        "This stream failed to load. Try replaying or switch to another server.",
-      );
+
+      const currentActive = activeVideoUrl;
+      triedUrlsRef.current.add(currentActive);
+      const rawActiveUrl = unwrapLegacyWorkerUrl(currentActive);
+      if (rawActiveUrl) {
+        triedUrlsRef.current.add(rawActiveUrl);
+      }
+
+      console.warn("[Self-Healing Player] Stream failed to load:", currentActive);
+
+      const candidates: string[] = [];
+      if (rawActiveUrl) candidates.push(rawActiveUrl);
+      
+      const rawOriginal = unwrapLegacyWorkerUrl(videoUrl);
+      if (rawOriginal) candidates.push(rawOriginal);
+
+      if (activeMovie) {
+        if (
+          activeMovie.type === "series" &&
+          "episodes" in activeMovie &&
+          Array.isArray(activeMovie.episodes)
+        ) {
+          const episodes = activeMovie.episodes;
+          const currentEp = episodes.find((ep) => {
+            const epDownload = ep.download_url;
+            const epServer2 = ep.server2_url;
+            return (
+              (epDownload &&
+                (epDownload === rawActiveUrl ||
+                  epDownload === currentActive ||
+                  epDownload === videoUrl ||
+                  epDownload === rawOriginal)) ||
+              (epServer2 &&
+                (epServer2 === rawActiveUrl ||
+                  epServer2 === currentActive ||
+                  epServer2 === videoUrl ||
+                  epServer2 === rawOriginal))
+            );
+          });
+
+          if (currentEp) {
+            if (currentEp.server2_url) candidates.push(currentEp.server2_url);
+            if (currentEp.download_url) candidates.push(currentEp.download_url);
+          }
+        } else {
+          if (activeMovie.server2_url) candidates.push(activeMovie.server2_url);
+          if (activeMovie.download_url) candidates.push(activeMovie.download_url);
+        }
+      }
+
+      // Filter candidates to find the first one that has not been tried yet
+      const nextRawUrl = candidates.find((url) => {
+        if (!url) return false;
+        const unwrapped = unwrapLegacyWorkerUrl(url);
+        return !triedUrlsRef.current.has(url) && !triedUrlsRef.current.has(unwrapped);
+      });
+
+      if (nextRawUrl) {
+        console.log("[Self-Healing Player] Trying fallback stream:", nextRawUrl);
+        setIsBuffering(true);
+        try {
+          const nextUrl = await buildMediaUrl({
+            url: nextRawUrl,
+            title: activeTitle,
+            mobifliksId: activeMovie?.mobifliks_id,
+            play: true,
+          });
+
+          if (!videoRef.current) return;
+
+          triedUrlsRef.current.add(nextUrl);
+          setActiveVideoUrl(nextUrl);
+
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.load();
+              const playPromise = videoRef.current.play();
+              if (playPromise !== undefined) {
+                playPromise.catch((e) => {
+                  console.error("[Self-Healing Player] Autoplay failed on fallback:", e);
+                });
+              }
+            }
+          }, 50);
+          return;
+        } catch (err) {
+          console.error("[Self-Healing Player] Failed to resolve alternate URL:", err);
+        }
+      }
+
+      // No fallbacks left
+      const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+      const isAppleSafari =
+        /^((?!chrome|android).)*safari/i.test(ua) ||
+        /iPad|iPhone|iPod|Macintosh/i.test(ua) ||
+        (typeof navigator !== "undefined" &&
+          navigator.platform === "MacIntel" &&
+          navigator.maxTouchPoints > 1);
+
+      if (isAppleSafari) {
+        setPlaybackError(
+          "Format not supported by Safari. Please switch to another server or try another version.",
+        );
+      } else {
+        setPlaybackError(
+          "This stream failed to load. Try replaying or switch to another server.",
+        );
+      }
     },
   };
 
