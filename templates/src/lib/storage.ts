@@ -75,6 +75,7 @@ function normalizeContinueWatchingItem(raw: unknown): ContinueWatching | null {
   const title = typeof source.title === "string" ? source.title.trim() : "";
   const image = typeof source.image === "string" ? source.image : "";
   const url = typeof source.url === "string" ? source.url : "";
+  const logoUrl = typeof source.logoUrl === "string" ? source.logoUrl : undefined;
 
   if (!contentId || !title || !url) return null;
 
@@ -114,6 +115,7 @@ function normalizeContinueWatchingItem(raw: unknown): ContinueWatching | null {
     seasonNumber,
     episodeNumber,
     episodeInfo,
+    logoUrl,
   };
 }
 

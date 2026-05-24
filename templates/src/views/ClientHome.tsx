@@ -861,6 +861,7 @@ function ClientHome() {
         episodeInfo: parsedEpisode.seasonNumber && parsedEpisode.episodeNumber
           ? `S${parsedEpisode.seasonNumber}:E${parsedEpisode.episodeNumber}`
           : undefined,
+        logoUrl: movie.logo_url,
       }
       : null;
 

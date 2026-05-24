@@ -90,6 +90,7 @@ export interface ContinueWatching {
   seasonNumber?: number;
   episodeNumber?: number;
   episodeInfo?: string;
+  logoUrl?: string;
 }
 
 export interface RecentMovie {
