@@ -254,6 +254,10 @@ export function removeContinueWatching(id: string): void {
   writeContinueWatching(list);
 }
 
+export function clearAllContinueWatching(): void {
+  writeContinueWatching([]);
+}
+
 export function getRecentSearches(): string[] {
   try {
     return JSON.parse(localStorage.getItem(SEARCH_KEY) || "[]");
