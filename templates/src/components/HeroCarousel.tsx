@@ -76,13 +76,18 @@ export function HeroCarousel({
   const railRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (!railRef.current) return;
-    const activeChild = railRef.current.children[activeIndex] as HTMLElement;
+    const container = railRef.current;
+    if (!container) return;
+    const activeChild = container.children[activeIndex] as HTMLElement;
     if (activeChild) {
-      activeChild.scrollIntoView({
+      const containerWidth = container.clientWidth;
+      const childWidth = activeChild.clientWidth;
+      const childLeft = activeChild.offsetLeft;
+      const targetScrollLeft = childLeft - (containerWidth / 2) + (childWidth / 2);
+      
+      container.scrollTo({
+        left: targetScrollLeft,
         behavior: "smooth",
-        block: "nearest",
-        inline: "center",
       });
     }
   }, [activeIndex]);

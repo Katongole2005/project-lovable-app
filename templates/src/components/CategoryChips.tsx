@@ -14,6 +14,7 @@ interface CategoryChipsProps {
 const categories = [
   { id: "trending", label: "Latest Added", icon: Flame },
   { id: "new-week", label: "New This Week", icon: CalendarClock },
+  { id: "popular-su-in", label: "Popular on s-u.in", icon: Zap },
   { id: "action-movies", label: "Action Movies", icon: Sword },
   { id: "scifi-movies", label: "Sci-Fi Movies", icon: Rocket },
   { id: "crime-thrillers", label: "Crime Thrillers", icon: Shield },

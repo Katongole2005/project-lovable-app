@@ -1293,6 +1293,9 @@ export async function fetchCuratedMovies(
   let query = supabase.from("movies").select("*");
 
   switch (category) {
+    case "popular-su-in":
+      query = query.or("download_url.ilike.%s-u.in%,server2_url.ilike.%s-u.in%");
+      break;
     case "action-movies":
       query = query.eq("type", "movie").filter("genres", "cs", JSON.stringify(["Action"]));
       break;

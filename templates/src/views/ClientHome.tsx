@@ -153,6 +153,7 @@ const CATEGORY_TO_GENRE: Record<string, string> = {
 };
 
 const CURATED_CATEGORIES = new Set([
+  "popular-su-in",
   "action-movies",
   "scifi-movies",
   "crime-thrillers",
@@ -402,6 +403,13 @@ function ClientHome() {
     queryFn: () => fetchOriginals(originalsInitialLimit, 1),
     staleTime: 1000 * 60 * 10,
     enabled: viewMode === "originals",
+  });
+
+  const { data: suInMoviesData } = useQuery({
+    queryKey: ["movies", "curated", "popular-su-in"],
+    queryFn: () => fetchCuratedMovies("popular-su-in", 15),
+    staleTime: 1000 * 60 * 10,
+    enabled: viewMode === "home",
   });
 
   const { data: actionMoviesData } = useQuery({
@@ -1497,6 +1505,7 @@ function ClientHome() {
       fantasy: "Fantasy",
       "sci-fi": "Sci-Fi",
       thriller: "Thriller",
+      "popular-su-in": "Popular on s-u.in",
       "action-movies": "Action Movies",
       "scifi-movies": "Sci-Fi Movies",
       "crime-thrillers": "Crime Thrillers",
@@ -1533,6 +1542,7 @@ function ClientHome() {
   const {
     displayCategoryMovies,
     displayPopularSeries,
+    displaySuInMovies,
     displaySpotlightMovies,
     displayActionMovies,
     displayScifiMovies,
@@ -1569,6 +1579,9 @@ function ClientHome() {
     // 2. Popular Series
     const seriesDisplay = filterRowUnique(recentSeries, 15);
 
+    // 2b. Popular on s-u.in
+    const suInDisplay = filterRowUnique(suInMoviesData, 15);
+
     // 3. Spotlight Selection
     const spotlightDisplay = filterRowUnique(recentMovies, 12);
 
@@ -1583,6 +1596,7 @@ function ClientHome() {
     return {
       displayCategoryMovies: catDisplay,
       displayPopularSeries: seriesDisplay,
+      displaySuInMovies: suInDisplay,
       displaySpotlightMovies: spotlightDisplay,
       displayActionMovies: actionDisplay,
       displayScifiMovies: scifiDisplay,
@@ -1594,6 +1608,7 @@ function ClientHome() {
   }, [
     recentMovies,
     recentSeries,
+    suInMoviesData,
     actionMoviesData,
     scifiMoviesData,
     crimeThrillersData,
@@ -1734,6 +1749,18 @@ function ClientHome() {
                         isLoading={isLoading && recentSeries.length === 0}
                       />
                     </SectionReveal>
+
+                    {suInMoviesData && suInMoviesData.length > 0 && (
+                      <SectionReveal delay={350}>
+                        <div className="section-divider mb-4" />
+                        <LandscapeMovieRow
+                          title="Popular on s-u.in"
+                          movies={displaySuInMovies}
+                          onMovieClick={handleMovieClick}
+                          onViewAll={() => handleTabChange("movies", "popular-su-in")}
+                        />
+                      </SectionReveal>
+                    )}
 
                     <SectionReveal delay={400}>
                       <div className="section-divider mb-4" />
