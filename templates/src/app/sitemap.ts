@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { supabase } from '@/integrations/supabase/client'
+import { toSlug } from '@/lib/slug'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // The production domain for the site
@@ -42,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     while (hasMore && dynamicRoutes.length < 40000) {
       const { data, error } = await supabase
         .from('movies')
-        .select('mobifliks_id, type, last_updated, created_at')
+        .select('mobifliks_id, type, last_updated, created_at, title, year')
         .not('mobifliks_id', 'is', null)
         .order('created_at', { ascending: false })
         .range(page * limit, (page + 1) * limit - 1);
@@ -60,12 +61,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           
           // Ensure valid date
           const validDate = isNaN(lastMod.getTime()) ? new Date() : lastMod;
+          
+          // Determine if the item is recent (added in the last 7 days)
+          const isRecent = Date.now() - validDate.getTime() < 1000 * 60 * 60 * 24 * 7;
 
           dynamicRoutes.push({
-            url: `${baseUrl}/${typeSlug}/${encodeURIComponent(item.mobifliks_id)}`,
+            url: `${baseUrl}/${typeSlug}/${toSlug(item.title || 'video', item.mobifliks_id, item.year)}`,
             lastModified: validDate,
-            changeFrequency: 'monthly',
-            priority: 0.7,
+            changeFrequency: isRecent ? 'daily' : 'monthly',
+            priority: isRecent ? 0.8 : 0.6,
           });
         }
       });

@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   
   const { data: movie } = await supabase
     .from('movies')
-    .select('title, description, image_url')
+    .select('title, description, image_url, vj_name, year')
     .eq('mobifliks_id', numericId)
     .single();
 
@@ -19,12 +19,23 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
   }
 
+  const cleanVj = movie.vj_name ? movie.vj_name.replace(/^VJ\s+/i, '').trim() : '';
+  const seoTitle = cleanVj
+    ? `${movie.title} Luganda Translated by VJ ${cleanVj} - Watch Online | Moviebay`
+    : `Watch ${movie.title} Online in HD - Moviebay`;
+
+  const cleanDesc = movie.description ? movie.description.replace(/\s+/g, ' ').trim() : '';
+  const fallbackDesc = cleanVj
+    ? `Stream or download ${movie.title} Luganda translated by VJ ${cleanVj} in high definition on Moviebay. Access Translated Agasobanuye / Filimu Enjogerere commentary and rapid downloads.`
+    : `Stream or download ${movie.title} in HD on Moviebay. Watch translated and original blockbuster movies online with rapid downloads.`;
+  const seoDesc = cleanDesc ? `${cleanDesc.slice(0, 150)}... Translated by VJ ${cleanVj || 'Junior'}.` : fallbackDesc;
+
   return {
-    title: `Watch ${movie.title} Online - Moviebay`,
-    description: movie.description ? `${movie.description.slice(0, 150)}...` : `Stream or download ${movie.title} in HD on Moviebay.`,
+    title: seoTitle,
+    description: seoDesc,
     openGraph: {
-      title: `Watch ${movie.title} Online - Moviebay`,
-      description: movie.description ? `${movie.description.slice(0, 150)}...` : `Stream or download ${movie.title} in HD on Moviebay.`,
+      title: seoTitle,
+      description: seoDesc,
       images: movie.image_url ? [{ url: movie.image_url }] : [],
     }
   };

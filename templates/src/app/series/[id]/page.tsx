@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   try {
     const { data } = await supabase
       .from('movies')
-      .select('title, description, image_url')
+      .select('title, description, image_url, vj_name, year')
       .eq('mobifliks_id', numericId)
       .single();
     series = data;
@@ -29,14 +29,24 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
   }
 
+  const cleanVj = series.vj_name ? series.vj_name.replace(/^VJ\s+/i, '').trim() : '';
   const cleanTitle = series.title.length > 45 ? `${series.title.slice(0, 42)}...` : series.title;
+  const seoTitle = cleanVj
+    ? `${cleanTitle} Luganda Translated by VJ ${cleanVj} - Watch Online | Moviebay`
+    : `Watch ${cleanTitle} Online - Moviebay`;
+
+  const cleanDesc = series.description ? series.description.replace(/\s+/g, ' ').trim() : '';
+  const fallbackDesc = cleanVj
+    ? `Stream or download ${series.title} Luganda translated by VJ ${cleanVj} in high definition on Moviebay. Access Translated Agasobanuye / Filimu Enjogerere commentary and rapid downloads.`
+    : `Stream or download ${series.title} in HD on Moviebay. Watch translated and original blockbuster series online with rapid downloads.`;
+  const seoDesc = cleanDesc ? `${cleanDesc.slice(0, 150)}... Translated by VJ ${cleanVj || 'Junior'}.` : fallbackDesc;
 
   return {
-    title: `Watch ${cleanTitle} Online - Moviebay`,
-    description: series.description ? `${series.description.slice(0, 150)}...` : `Stream or download ${series.title} in HD on Moviebay.`,
+    title: seoTitle,
+    description: seoDesc,
     openGraph: {
-      title: `Watch ${series.title} Online - Moviebay`,
-      description: series.description ? `${series.description.slice(0, 150)}...` : `Stream or download ${series.title} in HD on Moviebay.`,
+      title: seoTitle,
+      description: seoDesc,
       images: series.image_url ? [{ url: series.image_url }] : [],
     }
   };
