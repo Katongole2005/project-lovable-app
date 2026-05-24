@@ -2483,3 +2483,22 @@ html.prefers-reduced-motion *::after {
   }
 }
 
+/* GPU Accelerated Smooth Horizontal Scroll Elements & Movie Cards */
+.hardware-accelerated-scroll {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+}
+
+.hardware-accelerated-card {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Reduce transition latency on desktop scroll bars */
+html.perf-rich .hardware-accelerated-scroll {
+  scroll-behavior: smooth;
+}
+

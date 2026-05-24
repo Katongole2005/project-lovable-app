@@ -1,10 +1,10 @@
 "use client";
 import { Play, Heart, TrendingUp, Sparkles } from "lucide-react";
 import type { Movie } from "@/types/movie";
-import { buildMediaUrl, getImageUrl, getOptimizedBackdropUrl, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
+import { buildMediaUrl, getImageUrl, getOptimizedBackdropUrl, preloadImage, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { CSSProperties } from "react";
-import { useCallback, useState, useEffect, forwardRef, memo } from "react";
+import { useCallback, useState, useEffect, forwardRef, memo, useRef } from "react";
 import { isInWatchlist, toggleWatchlist } from "@/lib/storage";
 import { BlurImage } from "./BlurImage";
 
@@ -60,6 +60,38 @@ function getVjDetail(movie: Movie): string | null {
 const LandscapeMovieCardBase = forwardRef<HTMLDivElement, LandscapeMovieCardProps>(function LandscapeMovieCard({ movie, onClick, className, priority, allowNewBadge = false, onWatchlistChange, style }, ref) {
   const [inWatchlist, setInWatchlist] = useState(false);
   const [heartFlip, setHeartFlip] = useState(false);
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ref) return;
+    if (typeof ref === "function") {
+      ref(cardRef.current);
+    } else {
+      (ref as any).current = cardRef.current;
+    }
+  }, [ref]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !cardRef.current) return;
+
+    // Use a rootMargin of 400px to prefetch ahead of scroll
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsNearViewport(true);
+          const cardImage = movie.backdrop_url ? getOptimizedBackdropUrl(movie.backdrop_url) : getImageUrl(movie.image_url);
+          preloadImage(cardImage).catch(() => {});
+          preloadMovieBackdrop(movie);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [movie]);
 
   useEffect(() => {
     setInWatchlist(isInWatchlist(movie.mobifliks_id));
@@ -101,10 +133,10 @@ const LandscapeMovieCardBase = forwardRef<HTMLDivElement, LandscapeMovieCardProp
 
   return (
     <div
-      ref={ref}
+      ref={cardRef}
       style={style}
       className={cn(
-        "group relative flex-shrink-0 cursor-pointer overflow-visible touch-manipulation will-change-transform",
+        "group relative flex-shrink-0 cursor-pointer overflow-visible touch-manipulation will-change-transform hardware-accelerated-card",
         className
       )}
       onClick={() => onClick(movie)}
@@ -122,7 +154,7 @@ const LandscapeMovieCardBase = forwardRef<HTMLDivElement, LandscapeMovieCardProp
           src={cardImage}
           alt={movie.title}
           className="relative z-0 card-image-zoom w-full h-full object-cover"
-          loading={priority ? "eager" : "lazy"}
+          loading={priority || isNearViewport ? "eager" : "lazy"}
         />
 
         {/* Ambient Gradient overlay always visible at bottom to guarantee logo/title readability */}

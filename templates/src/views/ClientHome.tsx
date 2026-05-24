@@ -12,6 +12,7 @@ import { LandscapeMovieRow } from "@/components/LandscapeMovieRow";
 import { MovieGrid } from "@/components/MovieGrid";
 import { FilterState } from "@/components/FilterModal";
 import { PageTransition, SectionReveal } from "@/components/PageTransition";
+import { DeferredSection } from "@/components/DeferredSection";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import logoLight from "@/assets/logo.png";
@@ -332,6 +333,10 @@ function ClientHome() {
   const { user, loading: authLoading } = useAuth();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showDeferredHomeSections, setShowDeferredHomeSections] = useState(true);
+  const [enabledQueries, setEnabledQueries] = useState<Record<string, boolean>>({});
+  const enableQuery = useCallback((key: string) => {
+    setEnabledQueries((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+  }, []);
   const [isStayedAlertOpen, setIsStayedAlertOpen] = useState(false);
 
   const [activeFilters, setActiveFilters] = useState<FilterState>({
@@ -409,49 +414,49 @@ function ClientHome() {
     queryKey: ["movies", "curated", "popular-su-in"],
     queryFn: () => fetchCuratedMovies("popular-su-in", 15),
     staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "home",
+    enabled: viewMode === "home" && Boolean(enabledQueries["popular-su-in"]),
   });
 
   const { data: actionMoviesData } = useQuery({
     queryKey: ["movies", "curated", "action-movies"],
     queryFn: () => fetchCuratedMovies("action-movies", 15),
     staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "home",
+    enabled: viewMode === "home" && Boolean(enabledQueries["action-movies"]),
   });
 
   const { data: scifiMoviesData } = useQuery({
     queryKey: ["movies", "curated", "scifi-movies"],
     queryFn: () => fetchCuratedMovies("scifi-movies", 15),
     staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "home",
+    enabled: viewMode === "home" && Boolean(enabledQueries["scifi-movies"]),
   });
 
   const { data: crimeThrillersData } = useQuery({
     queryKey: ["movies", "curated", "crime-thrillers"],
     queryFn: () => fetchCuratedMovies("crime-thrillers", 15),
     staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "home",
+    enabled: viewMode === "home" && Boolean(enabledQueries["crime-thrillers"]),
   });
 
   const { data: cyberpunkData } = useQuery({
     queryKey: ["movies", "curated", "cyberpunk"],
     queryFn: () => fetchCuratedMovies("cyberpunk", 15),
     staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "home",
+    enabled: viewMode === "home" && Boolean(enabledQueries["cyberpunk"]),
   });
 
   const { data: romanceData } = useQuery({
     queryKey: ["movies", "curated", "romantic-movies"],
     queryFn: () => fetchCuratedMovies("romantic-movies", 15),
     staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "home",
+    enabled: viewMode === "home" && Boolean(enabledQueries["romantic-movies"]),
   });
 
   const { data: horrorData } = useQuery({
     queryKey: ["movies", "curated", "horror-movies"],
     queryFn: () => fetchCuratedMovies("horror-movies", 15),
     staleTime: 1000 * 60 * 10,
-    enabled: viewMode === "home",
+    enabled: viewMode === "home" && Boolean(enabledQueries["horror-movies"]),
   });
 
   const shouldShowHero = siteSettings.hero_carousel_enabled;
@@ -1750,16 +1755,29 @@ function ClientHome() {
                       />
                     </SectionReveal>
 
-                    {suInMoviesData && suInMoviesData.length > 0 && (
-                      <SectionReveal delay={350}>
-                        <div className="section-divider mb-4" />
-                        <LandscapeMovieRow
-                          title="Popular on s-u.in"
-                          movies={displaySuInMovies}
-                          onMovieClick={handleMovieClick}
-                          onViewAll={() => handleTabChange("movies", "popular-su-in")}
-                        />
-                      </SectionReveal>
+                    {!(suInMoviesData !== undefined && suInMoviesData.length === 0) && (
+                      <DeferredSection id="popular-su-in" onNearViewport={() => enableQuery("popular-su-in")}>
+                        {suInMoviesData && suInMoviesData.length > 0 ? (
+                          <SectionReveal delay={350}>
+                            <div className="section-divider mb-4" />
+                            <LandscapeMovieRow
+                              title="Popular on s-u.in"
+                              movies={displaySuInMovies}
+                              onMovieClick={handleMovieClick}
+                              onViewAll={() => handleTabChange("movies", "popular-su-in")}
+                            />
+                          </SectionReveal>
+                        ) : (
+                          <div className="pt-6">
+                            <LandscapeMovieRow
+                              title="Popular on s-u.in"
+                              movies={[]}
+                              isLoading={true}
+                              onMovieClick={handleMovieClick}
+                            />
+                          </div>
+                        )}
+                      </DeferredSection>
                     )}
 
                     <SectionReveal delay={400}>
@@ -1772,76 +1790,154 @@ function ClientHome() {
                       />
                     </SectionReveal>
 
-                    {actionMoviesData && actionMoviesData.length > 0 && (
-                      <SectionReveal delay={450}>
-                        <div className="section-divider mb-4" />
-                        <LandscapeMovieRow
-                          title="Action Movies"
-                          movies={displayActionMovies}
-                          onMovieClick={handleMovieClick}
-                          onViewAll={() => handleTabChange("movies", "action-movies")}
-                        />
-                      </SectionReveal>
+                    {!(actionMoviesData !== undefined && actionMoviesData.length === 0) && (
+                      <DeferredSection id="action-movies" onNearViewport={() => enableQuery("action-movies")}>
+                        {actionMoviesData && actionMoviesData.length > 0 ? (
+                          <SectionReveal delay={450}>
+                            <div className="section-divider mb-4" />
+                            <LandscapeMovieRow
+                              title="Action Movies"
+                              movies={displayActionMovies}
+                              onMovieClick={handleMovieClick}
+                              onViewAll={() => handleTabChange("movies", "action-movies")}
+                            />
+                          </SectionReveal>
+                        ) : (
+                          <div className="pt-6">
+                            <LandscapeMovieRow
+                              title="Action Movies"
+                              movies={[]}
+                              isLoading={true}
+                              onMovieClick={handleMovieClick}
+                            />
+                          </div>
+                        )}
+                      </DeferredSection>
                     )}
 
-                    {scifiMoviesData && scifiMoviesData.length > 0 && (
-                      <SectionReveal delay={500}>
-                        <div className="section-divider mb-4" />
-                        <LandscapeMovieRow
-                          title="Sci-Fi Movies"
-                          movies={displayScifiMovies}
-                          onMovieClick={handleMovieClick}
-                          onViewAll={() => handleTabChange("movies", "scifi-movies")}
-                        />
-                      </SectionReveal>
+                    {!(scifiMoviesData !== undefined && scifiMoviesData.length === 0) && (
+                      <DeferredSection id="scifi-movies" onNearViewport={() => enableQuery("scifi-movies")}>
+                        {scifiMoviesData && scifiMoviesData.length > 0 ? (
+                          <SectionReveal delay={500}>
+                            <div className="section-divider mb-4" />
+                            <LandscapeMovieRow
+                              title="Sci-Fi Movies"
+                              movies={displayScifiMovies}
+                              onMovieClick={handleMovieClick}
+                              onViewAll={() => handleTabChange("movies", "scifi-movies")}
+                            />
+                          </SectionReveal>
+                        ) : (
+                          <div className="pt-6">
+                            <LandscapeMovieRow
+                              title="Sci-Fi Movies"
+                              movies={[]}
+                              isLoading={true}
+                              onMovieClick={handleMovieClick}
+                            />
+                          </div>
+                        )}
+                      </DeferredSection>
                     )}
 
-                    {crimeThrillersData && crimeThrillersData.length > 0 && (
-                      <SectionReveal delay={550}>
-                        <div className="section-divider mb-4" />
-                        <LandscapeMovieRow
-                          title="Crime Thrillers"
-                          movies={displayCrimeThrillers}
-                          onMovieClick={handleMovieClick}
-                          onViewAll={() => handleTabChange("movies", "crime-thrillers")}
-                        />
-                      </SectionReveal>
+                    {!(crimeThrillersData !== undefined && crimeThrillersData.length === 0) && (
+                      <DeferredSection id="crime-thrillers" onNearViewport={() => enableQuery("crime-thrillers")}>
+                        {crimeThrillersData && crimeThrillersData.length > 0 ? (
+                          <SectionReveal delay={550}>
+                            <div className="section-divider mb-4" />
+                            <LandscapeMovieRow
+                              title="Crime Thrillers"
+                              movies={displayCrimeThrillers}
+                              onMovieClick={handleMovieClick}
+                              onViewAll={() => handleTabChange("movies", "crime-thrillers")}
+                            />
+                          </SectionReveal>
+                        ) : (
+                          <div className="pt-6">
+                            <LandscapeMovieRow
+                              title="Crime Thrillers"
+                              movies={[]}
+                              isLoading={true}
+                              onMovieClick={handleMovieClick}
+                            />
+                          </div>
+                        )}
+                      </DeferredSection>
                     )}
 
-                    {cyberpunkData && cyberpunkData.length > 0 && (
-                      <SectionReveal delay={600}>
-                        <div className="section-divider mb-4" />
-                        <LandscapeMovieRow
-                          title="Cyberpunk"
-                          movies={displayCyberpunkMovies}
-                          onMovieClick={handleMovieClick}
-                          onViewAll={() => handleTabChange("movies", "cyberpunk")}
-                        />
-                      </SectionReveal>
+                    {!(cyberpunkData !== undefined && cyberpunkData.length === 0) && (
+                      <DeferredSection id="cyberpunk" onNearViewport={() => enableQuery("cyberpunk")}>
+                        {cyberpunkData && cyberpunkData.length > 0 ? (
+                          <SectionReveal delay={600}>
+                            <div className="section-divider mb-4" />
+                            <LandscapeMovieRow
+                              title="Cyberpunk"
+                              movies={displayCyberpunkMovies}
+                              onMovieClick={handleMovieClick}
+                              onViewAll={() => handleTabChange("movies", "cyberpunk")}
+                            />
+                          </SectionReveal>
+                        ) : (
+                          <div className="pt-6">
+                            <LandscapeMovieRow
+                              title="Cyberpunk"
+                              movies={[]}
+                              isLoading={true}
+                              onMovieClick={handleMovieClick}
+                            />
+                          </div>
+                        )}
+                      </DeferredSection>
                     )}
 
-                    {romanceData && romanceData.length > 0 && (
-                      <SectionReveal delay={650}>
-                        <div className="section-divider mb-4" />
-                        <LandscapeMovieRow
-                          title="Romantic Movies"
-                          movies={displayRomanceMovies}
-                          onMovieClick={handleMovieClick}
-                          onViewAll={() => handleTabChange("movies", "romantic-movies")}
-                        />
-                      </SectionReveal>
+                    {!(romanceData !== undefined && romanceData.length === 0) && (
+                      <DeferredSection id="romantic-movies" onNearViewport={() => enableQuery("romantic-movies")}>
+                        {romanceData && romanceData.length > 0 ? (
+                          <SectionReveal delay={650}>
+                            <div className="section-divider mb-4" />
+                            <LandscapeMovieRow
+                              title="Romantic Movies"
+                              movies={displayRomanceMovies}
+                              onMovieClick={handleMovieClick}
+                              onViewAll={() => handleTabChange("movies", "romantic-movies")}
+                            />
+                          </SectionReveal>
+                        ) : (
+                          <div className="pt-6">
+                            <LandscapeMovieRow
+                              title="Romantic Movies"
+                              movies={[]}
+                              isLoading={true}
+                              onMovieClick={handleMovieClick}
+                            />
+                          </div>
+                        )}
+                      </DeferredSection>
                     )}
 
-                    {horrorData && horrorData.length > 0 && (
-                      <SectionReveal delay={700}>
-                        <div className="section-divider mb-4" />
-                        <LandscapeMovieRow
-                          title="Horror Movies"
-                          movies={displayHorrorMovies}
-                          onMovieClick={handleMovieClick}
-                          onViewAll={() => handleTabChange("movies", "horror-movies")}
-                        />
-                      </SectionReveal>
+                    {!(horrorData !== undefined && horrorData.length === 0) && (
+                      <DeferredSection id="horror-movies" onNearViewport={() => enableQuery("horror-movies")}>
+                        {horrorData && horrorData.length > 0 ? (
+                          <SectionReveal delay={700}>
+                            <div className="section-divider mb-4" />
+                            <LandscapeMovieRow
+                              title="Horror Movies"
+                              movies={displayHorrorMovies}
+                              onMovieClick={handleMovieClick}
+                              onViewAll={() => handleTabChange("movies", "horror-movies")}
+                            />
+                          </SectionReveal>
+                        ) : (
+                          <div className="pt-6">
+                            <LandscapeMovieRow
+                              title="Horror Movies"
+                              movies={[]}
+                              isLoading={true}
+                              onMovieClick={handleMovieClick}
+                            />
+                          </div>
+                        )}
+                      </DeferredSection>
                     )}
                   </div>
                 </Suspense>

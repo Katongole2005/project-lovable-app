@@ -155,7 +155,7 @@ export const LandscapeMovieRow = forwardRef<HTMLElement, LandscapeMovieRowProps>
         {/* Scrolling Cards Wrapper */}
         <div
           ref={scrollContainerRef}
-          className="flex gap-3 md:gap-4 2xl:gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-none pb-4 pt-1 px-1 -mx-1"
+          className="flex gap-3 md:gap-4 2xl:gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-none pb-4 pt-1 px-1 -mx-1 hardware-accelerated-scroll"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {visibleMovies.map((movie) => (

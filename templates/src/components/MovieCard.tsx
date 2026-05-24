@@ -1,10 +1,10 @@
 "use client";
 import { Play, Heart, TrendingUp, Sparkles } from "lucide-react";
 import type { Movie } from "@/types/movie";
-import { buildMediaUrl, getImageUrl, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
+import { buildMediaUrl, getImageUrl, preloadImage, preloadMovieBackdrop, primeMediaAvailability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { CSSProperties } from "react";
-import { useCallback, useState, useEffect, forwardRef, memo } from "react";
+import { useCallback, useState, useEffect, forwardRef, memo, useRef } from "react";
 import { isInWatchlist, toggleWatchlist } from "@/lib/storage";
 import { BlurImage } from "./BlurImage";
 
@@ -60,6 +60,38 @@ function getVjDetail(movie: Movie): string | null {
 
 const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieCard({ movie, onClick, showProgress, className, priority, allowNewBadge = false, onWatchlistChange, style }, ref) {
   const [inWatchlist, setInWatchlist] = useState(false);
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ref) return;
+    if (typeof ref === "function") {
+      ref(cardRef.current);
+    } else {
+      (ref as any).current = cardRef.current;
+    }
+  }, [ref]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !cardRef.current) return;
+
+    // Use a rootMargin of 400px to prefetch ahead of scroll
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsNearViewport(true);
+          const cardImage = getImageUrl(movie.image_url);
+          preloadImage(cardImage).catch(() => {});
+          preloadMovieBackdrop(movie);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [movie]);
 
   useEffect(() => {
     setInWatchlist(isInWatchlist(movie.mobifliks_id));
@@ -101,10 +133,10 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
 
   return (
     <div
-      ref={ref}
+      ref={cardRef}
       style={style}
       className={cn(
-        "group relative flex-shrink-0 cursor-pointer overflow-visible touch-manipulation",
+        "group relative flex-shrink-0 cursor-pointer overflow-visible touch-manipulation hardware-accelerated-card",
         className
       )}
       onClick={() => onClick(movie)}
@@ -122,7 +154,7 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
           src={getImageUrl(movie.image_url)}
           alt={movie.title}
           className="relative z-0 card-image-zoom"
-          loading={priority ? "eager" : "lazy"}
+          loading={priority || isNearViewport ? "eager" : "lazy"}
         />
 
         <div className="absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none md:group-hover:opacity-100 card-gloss-effect" />
