@@ -4,12 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 export function useAdmin(options: { enabled?: boolean } = {}) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const enabled = options.enabled ?? true;
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     if (!enabled) {
       setIsAdmin(false);
       setLoading(false);
@@ -42,7 +47,7 @@ export function useAdmin(options: { enabled?: boolean } = {}) {
     };
 
     checkAdmin();
-  }, [enabled, user]);
+  }, [enabled, user, authLoading]);
 
   return { isAdmin, loading };
 }

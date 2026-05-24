@@ -117,9 +117,13 @@ export default function Admin() {
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
-      navigate("/");
+      if (!user) {
+        navigate("/auth?redirect=/admin");
+      } else {
+        navigate("/");
+      }
     }
-  }, [isAdmin, adminLoading, navigate]);
+  }, [isAdmin, adminLoading, user, navigate]);
 
   useEffect(() => {
     if (settings.site_announcement) {
