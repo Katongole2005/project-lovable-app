@@ -951,7 +951,8 @@ export async function fetchHeroLatest(limit: number = 12): Promise<Movie[]> {
 }
 
 export async function fetchNewThisWeek(contentType: "movie" | "series" = "movie", limit: number = 40, offsetOverride = 0, filters?: FilterOptions): Promise<Movie[]> {
-  const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+  const multiplier = contentType === "series" ? 2.5 : 4;
+  const fetchLimit = Math.min(Math.round(limit * multiplier), 200);
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   let query = supabase
@@ -968,7 +969,8 @@ export async function fetchNewThisWeek(contentType: "movie" | "series" = "movie"
 }
 
 export async function fetchRecent(contentType: string = "movie", limit: number = 20, page: number = 1): Promise<Movie[]> {
-  const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+  const multiplier = contentType === "series" ? 2.5 : 4;
+  const fetchLimit = Math.min(Math.round(limit * multiplier), 200);
   const offset = (page - 1) * limit;
   const { data, error } = await supabase
     .from("movies")
@@ -982,7 +984,8 @@ export async function fetchRecent(contentType: string = "movie", limit: number =
 }
 
 export async function fetchMoviesSorted(contentType: string = "movie", limit: number = 20, page: number = 1, filters?: FilterOptions, offsetOverride?: number): Promise<Movie[]> {
-  const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+  const multiplier = contentType === "series" ? 2.5 : 4;
+  const fetchLimit = Math.min(Math.round(limit * multiplier), 200);
   const offset = offsetOverride ?? ((page - 1) * limit);
   let query = supabase
     .from("movies")
@@ -999,7 +1002,7 @@ export async function fetchMoviesSorted(contentType: string = "movie", limit: nu
 }
 
 export async function fetchSeries(limit: number = 20, page: number = 1, language?: string, filters?: FilterOptions, offsetOverride?: number): Promise<Movie[]> {
-  const fetchLimit = Math.min(limit * 2, 200);
+  const fetchLimit = Math.min(Math.round(limit * 2.5), 200);
   const offset = offsetOverride ?? ((page - 1) * fetchLimit);
   let query = supabase
     .from("movies")
@@ -1258,7 +1261,8 @@ export async function fetchByGenre(genre: string, contentType: "movie" | "series
   if (inFlight) return inFlight;
 
   const request = (async () => {
-    const fetchLimit = contentType === "series" ? Math.min(limit * 2, 200) : limit;
+    const multiplier = contentType === "series" ? 2.5 : 4;
+    const fetchLimit = Math.min(Math.round(limit * multiplier), 200);
     const offset = offsetOverride ?? ((page - 1) * fetchLimit);
     let query = supabase.from("movies").select("*").filter("genres", "cs", JSON.stringify([genre])).order("release_date", { ascending: false, nullsFirst: false }).order("views", { ascending: false, nullsFirst: false }).order("year", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).range(offset, offset + fetchLimit - 1);
     if (contentType !== "all") query = query.eq("type", contentType);
@@ -1282,7 +1286,9 @@ export async function fetchCuratedMovies(
   page: number = 1,
   offsetOverride?: number
 ): Promise<Movie[]> {
-  const fetchLimit = limit;
+  const isSeriesCategory = category.endsWith("-series") || category === "korean-dramas";
+  const multiplier = isSeriesCategory ? 2.5 : 4;
+  const fetchLimit = Math.max(Math.round(limit * multiplier), 80);
   const offset = offsetOverride ?? ((page - 1) * limit);
   let query = supabase.from("movies").select("*");
 

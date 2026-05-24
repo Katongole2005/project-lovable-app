@@ -2330,3 +2330,156 @@ html.prefers-reduced-motion *::after {
   }
 }
 
+/* ============================================================
+   Desktop Hero Premium Animation Extensions (Optimized for High Performance)
+   ============================================================ */
+
+.hero-premium-title {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #ffc3c3 50%,
+    #ff4d4d 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+  will-change: transform;
+}
+
+.hero-backdrop-incoming {
+  animation: heroBackdropFadeIn 750ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-backdrop-outgoing {
+  animation: heroBackdropFadeOut 750ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes heroBackdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes heroBackdropFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Deluxe high-performance entrance staggers (GPU-accelerated, zero redraws) */
+@keyframes hero-wipe-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.hero-stagger-logo {
+  animation: hero-wipe-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 40ms;
+}
+
+.hero-stagger-line {
+  animation: hero-wipe-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 110ms;
+}
+
+.hero-stagger-meta {
+  animation: hero-wipe-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 180ms;
+}
+
+.hero-stagger-desc {
+  animation: hero-wipe-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 250ms;
+}
+
+.hero-stagger-cta {
+  animation: hero-wipe-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 320ms;
+}
+
+/* Interactive Preview Bottom Rail Cards (GPU composited) */
+.hero-rail-card {
+  background: rgba(10, 10, 15, 0.45);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, border-color, box-shadow;
+}
+
+.hero-rail-card:hover {
+  transform: translate3d(0, -5px, 0) scale(1.02);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 10px rgba(255, 255, 255, 0.08);
+  opacity: 1 !important;
+}
+
+.hero-rail-card.active {
+  border-color: rgba(239, 68, 68, 0.9);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.38);
+  transform: translate3d(0, -2px, 0) scale(1.03);
+  opacity: 1 !important;
+  animation: activeGlowPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes activeGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.38);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(239, 68, 68, 0.65);
+  }
+}
+
+/* Autoplay Sync active bar loader */
+@keyframes railProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.animate-rail-progress {
+  animation-name: railProgress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+/* Staggered entrance physics for preview rail */
+.hero-rail-card-enter {
+  opacity: 0;
+  transform: translate3d(24px, 0, 0);
+  animation: heroRailCardEnter 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes heroRailCardEnter {
+  to {
+    opacity: 0.5;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.hero-rail-card-enter.active {
+  animation-name: heroRailActiveCardEnter;
+}
+
+@keyframes heroRailActiveCardEnter {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.03);
+  }
+}
+

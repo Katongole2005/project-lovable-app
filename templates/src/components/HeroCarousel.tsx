@@ -51,6 +51,74 @@ export function HeroCarousel({
   const displayMovies = React.useMemo(() => safeMovies.slice(0, totalSlides), [safeMovies, totalSlides]);
   const mobileDeck = displayMovies;
   const activeIndex = totalSlides > 0 ? Math.min(selectedIndex, totalSlides - 1) : 0;
+
+  const [previousMovie, setPreviousMovie] = React.useState<Movie | null>(null);
+  const [isCrossFading, setIsCrossFading] = React.useState(false);
+  const prevActiveIndexRef = React.useRef(activeIndex);
+
+  React.useEffect(() => {
+    if (prevActiveIndexRef.current !== activeIndex) {
+      const prevMovie = displayMovies[prevActiveIndexRef.current];
+      if (prevMovie) {
+        setPreviousMovie(prevMovie);
+        setIsCrossFading(true);
+        const timer = setTimeout(() => {
+          setIsCrossFading(false);
+          setPreviousMovie(null);
+        }, 800);
+        prevActiveIndexRef.current = activeIndex;
+        return () => clearTimeout(timer);
+      }
+      prevActiveIndexRef.current = activeIndex;
+    }
+  }, [activeIndex, displayMovies]);
+
+  const railRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!railRef.current) return;
+    const activeChild = railRef.current.children[activeIndex] as HTMLElement;
+    if (activeChild) {
+      activeChild.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  }, [activeIndex]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const xc = rect.width / 2;
+    const yc = rect.height / 2;
+    const dx = x - xc;
+    const dy = y - yc;
+    
+    const tiltX = -(dy / yc) * 10;
+    const tiltY = (dx / xc) * 10;
+    
+    card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.05, 1.05, 1.05) translate3d(0, -5px, 0)`;
+    
+    const glare = card.querySelector(".hero-glare-sweep") as HTMLElement;
+    if (glare) {
+      const px = (x / rect.width) * 100;
+      const py = (y / rect.height) * 100;
+      glare.style.background = `radial-gradient(circle at ${px}% ${py}%, rgba(255, 255, 255, 0.16) 0%, transparent 60%)`;
+      glare.style.opacity = "1";
+    }
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const card = e.currentTarget;
+    card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1) translate3d(0, 0, 0)`;
+    const glare = card.querySelector(".hero-glare-sweep") as HTMLElement;
+    if (glare) {
+      glare.style.opacity = "0";
+    }
+  };
   const transitionDuration = deviceProfile.allowComplexAnimations ? 420 : 180;
   const autoplayDelayMs = deviceProfile.autoplayDelayMs;
   const sideCardCount = deviceProfile.isWeakDevice ? 2 : 3;
@@ -360,9 +428,27 @@ export function HeroCarousel({
       <div className="hidden md:block">
         <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden hero-cinematic-container">
           <div className="absolute inset-0 bg-[#0a0a0f]" />
-          <>
-            {(backdropSrc || posterFallbackSrc) && (
-              <div key={`backdrop-${currentMovie.mobifliks_id}-${activeIndex}`} className="absolute inset-0">
+          <div className="absolute inset-0 select-none pointer-events-none">
+            {/* Outgoing previous slide backdrop */}
+            {previousMovie && isCrossFading && (
+              <div className="absolute inset-0 hero-backdrop-outgoing z-0">
+                <HeroMediaImage
+                  primarySrc={getBackdrop(previousMovie)}
+                  fallbackSrc={getHeroPosterUrl(previousMovie)}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
+            {/* Incoming current slide backdrop */}
+            {currentMovie && (
+              <div 
+                key={`backdrop-${currentMovie.mobifliks_id}`} 
+                className={cn(
+                  "absolute inset-0 z-0",
+                  isCrossFading ? "hero-backdrop-incoming" : ""
+                )}
+              >
                 <HeroMediaImage
                   primarySrc={backdropSrc}
                   fallbackSrc={posterFallbackSrc}
@@ -375,7 +461,7 @@ export function HeroCarousel({
                 />
               </div>
             )}
-          </>
+          </div>
 
 	          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-black/45" />
 	          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/35" />
@@ -414,8 +500,8 @@ export function HeroCarousel({
                           loading="eager"
                         />
                       ) : (
-                        <h2 className="hero-stagger-logo font-display text-4xl font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-6xl 2xl:text-7xl">
-                          {currentMovie.title}
+                        <h2 className="hero-stagger-logo font-display text-4xl font-bold leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-6xl 2xl:text-7xl">
+                          <span className="hero-premium-title">{currentMovie.title}</span>
                         </h2>
                       )}
                       <div className="hero-stagger-line mt-4 h-px w-28 bg-gradient-to-r from-red-500/85 via-white/35 to-transparent shadow-[0_0_18px_rgba(239,68,68,0.45)]" />
@@ -488,9 +574,8 @@ export function HeroCarousel({
                 </>
             </div>
 
-            {/* Trending backdrop rail */}
-            <div className="pb-6 lg:pb-8 xl:pb-10 2xl:pb-12 mt-4 lg:mt-5">
-              <div className="flex items-end gap-2.5 overflow-x-auto hide-scrollbar px-4 lg:px-8 xl:px-12 2xl:px-14 snap-x">
+             <div className="pb-6 lg:pb-8 xl:pb-10 2xl:pb-12 mt-4 lg:mt-5">
+              <div ref={railRef} className="flex items-end gap-2.5 overflow-x-auto hide-scrollbar px-4 lg:px-8 xl:px-12 2xl:px-14 snap-x">
                 {displayMovies.map((movie, idx) => {
                   const isActiveCard = idx === activeIndex;
                   const mBackdrop = getBackdrop(movie);
@@ -499,14 +584,18 @@ export function HeroCarousel({
                     <button
                       key={movie.mobifliks_id}
                       onClick={() => scrollTo(idx)}
+                      onMouseMove={handleMouseMove}
+                      onMouseLeave={handleMouseLeave}
                       aria-label={`Go to ${movie.title}`}
                       className={cn(
-                        "relative flex-shrink-0 w-[160px] xl:w-[185px] 2xl:w-[210px] aspect-video rounded-xl overflow-hidden border transition-all duration-300 snap-start",
-                        isActiveCard
-                          ? "border-white/50 shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-[1.03]"
-                          : "border-white/10 opacity-50 hover:opacity-80 hover:border-white/25 hover:-translate-y-1"
+                        "relative flex-shrink-0 w-[160px] xl:w-[185px] 2xl:w-[210px] aspect-video rounded-xl overflow-hidden border transition-all duration-300 snap-start hero-rail-card hero-rail-card-enter",
+                        isActiveCard ? "active" : ""
                       )}
+                      style={{
+                        animationDelay: `${idx * 45}ms`
+                      }}
                     >
+                      <div className="hero-glare-sweep absolute inset-0 pointer-events-none z-20 opacity-0 transition-opacity duration-300" />
                       <HeroMediaImage
                         primarySrc={mBackdrop}
                         fallbackSrc={mPoster}
@@ -519,15 +608,18 @@ export function HeroCarousel({
                         <img
                           src={movie.logo_url}
                           alt={movie.title}
-                          className="absolute bottom-2 right-2 h-5 xl:h-6 w-auto max-w-[70px] object-contain drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]"
+                          className="absolute bottom-2 right-2 h-5 xl:h-6 w-auto max-w-[70px] object-contain drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] z-10"
                         />
                       ) : (
-                        <span className="absolute bottom-1.5 left-2 text-[9px] xl:text-[10px] font-bold text-white/85 line-clamp-1 max-w-[90%]">
+                        <span className="absolute bottom-1.5 left-2 text-[9px] xl:text-[10px] font-bold text-white/85 line-clamp-1 max-w-[90%] z-10">
                           {movie.title}
                         </span>
                       )}
                       {isActiveCard && (
-                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/80" />
+                        <div 
+                          className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-red-500 origin-left animate-rail-progress z-20 shadow-[0_0_10px_#ef4444]"
+                          style={{ animationDuration: shouldAutoplay ? `${autoplayDelayMs}ms` : "0ms" }}
+                        />
                       )}
                     </button>
                   );
