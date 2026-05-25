@@ -1730,7 +1730,7 @@ function ClientHome() {
 
               {showDeferredHomeSections && (
                 <Suspense fallback={null}>
-                  <div className="mt-12 space-y-12 pb-12">
+                  <div className="mt-6 md:mt-8 space-y-6 md:space-y-8 pb-8">
                     <div className="text-center space-y-2">
                       <h2 className="text-2xl font-bold tracking-tight">Discover More</h2>
                       <p className="text-muted-foreground text-sm">Hand-picked collections just for you</p>
@@ -1738,7 +1738,7 @@ function ClientHome() {
 
                     {siteSettings.top10_enabled && (
                       <SectionReveal delay={100}>
-                        <div className="section-divider mb-4" />
+                        <div className="section-divider mb-2" />
                         <Top10Row
                           movies={recentMovies}
                           onMovieClick={handleMovieClick}
@@ -1748,7 +1748,7 @@ function ClientHome() {
 
                     {continueWatching.length > 0 && recentMovies.length > 0 && (
                       <SectionReveal delay={200}>
-                        <div className="section-divider mb-4" />
+                        <div className="section-divider mb-2" />
                         <RecommendationRow
                           continueWatching={continueWatching}
                           allMovies={[...recentMovies, ...recentSeries]}
@@ -1758,7 +1758,7 @@ function ClientHome() {
                     )}
 
                     <SectionReveal delay={300}>
-                      <div className="section-divider mb-4" />
+                      <div className="section-divider mb-2" />
                       <LandscapeMovieRow
                         title="Popular Series"
                         movies={displayPopularSeries}
@@ -1772,7 +1772,7 @@ function ClientHome() {
                       <DeferredSection id="popular-su-in" onNearViewport={() => enableQuery("popular-su-in")}>
                         {suInMoviesData && suInMoviesData.length > 0 ? (
                           <SectionReveal delay={350}>
-                            <div className="section-divider mb-4" />
+                            <div className="section-divider mb-2" />
                             <LandscapeMovieRow
                               title="Popular on s-u.in"
                               movies={displaySuInMovies}
@@ -1781,7 +1781,7 @@ function ClientHome() {
                             />
                           </SectionReveal>
                         ) : (
-                          <div className="pt-6">
+                          <div className="pt-2">
                             <LandscapeMovieRow
                               title="Popular on s-u.in"
                               movies={[]}
@@ -1794,7 +1794,7 @@ function ClientHome() {
                     )}
 
                     <SectionReveal delay={400}>
-                      <div className="section-divider mb-4" />
+                      <div className="section-divider mb-2" />
                       <LandscapeMovieRow
                         title="Spotlight Selection"
                         movies={displaySpotlightMovies}
@@ -1807,7 +1807,7 @@ function ClientHome() {
                       <DeferredSection id="action-movies" onNearViewport={() => enableQuery("action-movies")}>
                         {actionMoviesData && actionMoviesData.length > 0 ? (
                           <SectionReveal delay={450}>
-                            <div className="section-divider mb-4" />
+                            <div className="section-divider mb-2" />
                             <LandscapeMovieRow
                               title="Action Movies"
                               movies={displayActionMovies}
@@ -1816,7 +1816,7 @@ function ClientHome() {
                             />
                           </SectionReveal>
                         ) : (
-                          <div className="pt-6">
+                          <div className="pt-2">
                             <LandscapeMovieRow
                               title="Action Movies"
                               movies={[]}
@@ -1832,7 +1832,7 @@ function ClientHome() {
                       <DeferredSection id="scifi-movies" onNearViewport={() => enableQuery("scifi-movies")}>
                         {scifiMoviesData && scifiMoviesData.length > 0 ? (
                           <SectionReveal delay={500}>
-                            <div className="section-divider mb-4" />
+                            <div className="section-divider mb-2" />
                             <LandscapeMovieRow
                               title="Sci-Fi Movies"
                               movies={displayScifiMovies}
@@ -1841,7 +1841,7 @@ function ClientHome() {
                             />
                           </SectionReveal>
                         ) : (
-                          <div className="pt-6">
+                          <div className="pt-2">
                             <LandscapeMovieRow
                               title="Sci-Fi Movies"
                               movies={[]}
@@ -1857,7 +1857,7 @@ function ClientHome() {
                       <DeferredSection id="crime-thrillers" onNearViewport={() => enableQuery("crime-thrillers")}>
                         {crimeThrillersData && crimeThrillersData.length > 0 ? (
                           <SectionReveal delay={550}>
-                            <div className="section-divider mb-4" />
+                            <div className="section-divider mb-2" />
                             <LandscapeMovieRow
                               title="Crime Thrillers"
                               movies={displayCrimeThrillers}
@@ -1866,7 +1866,7 @@ function ClientHome() {
                             />
                           </SectionReveal>
                         ) : (
-                          <div className="pt-6">
+                          <div className="pt-2">
                             <LandscapeMovieRow
                               title="Crime Thrillers"
                               movies={[]}
@@ -1882,7 +1882,7 @@ function ClientHome() {
                       <DeferredSection id="cyberpunk" onNearViewport={() => enableQuery("cyberpunk")}>
                         {cyberpunkData && cyberpunkData.length > 0 ? (
                           <SectionReveal delay={600}>
-                            <div className="section-divider mb-4" />
+                            <div className="section-divider mb-2" />
                             <LandscapeMovieRow
                               title="Cyberpunk"
                               movies={displayCyberpunkMovies}
@@ -1891,7 +1891,7 @@ function ClientHome() {
                             />
                           </SectionReveal>
                         ) : (
-                          <div className="pt-6">
+                          <div className="pt-2">
                             <LandscapeMovieRow
                               title="Cyberpunk"
                               movies={[]}
@@ -1907,7 +1907,7 @@ function ClientHome() {
                       <DeferredSection id="romantic-movies" onNearViewport={() => enableQuery("romantic-movies")}>
                         {romanceData && romanceData.length > 0 ? (
                           <SectionReveal delay={650}>
-                            <div className="section-divider mb-4" />
+                            <div className="section-divider mb-2" />
                             <LandscapeMovieRow
                               title="Romantic Movies"
                               movies={displayRomanceMovies}
@@ -1916,7 +1916,7 @@ function ClientHome() {
                             />
                           </SectionReveal>
                         ) : (
-                          <div className="pt-6">
+                          <div className="pt-2">
                             <LandscapeMovieRow
                               title="Romantic Movies"
                               movies={[]}
@@ -1932,7 +1932,7 @@ function ClientHome() {
                       <DeferredSection id="horror-movies" onNearViewport={() => enableQuery("horror-movies")}>
                         {horrorData && horrorData.length > 0 ? (
                           <SectionReveal delay={700}>
-                            <div className="section-divider mb-4" />
+                            <div className="section-divider mb-2" />
                             <LandscapeMovieRow
                               title="Horror Movies"
                               movies={displayHorrorMovies}
@@ -1941,7 +1941,7 @@ function ClientHome() {
                             />
                           </SectionReveal>
                         ) : (
-                          <div className="pt-6">
+                          <div className="pt-2">
                             <LandscapeMovieRow
                               title="Horror Movies"
                               movies={[]}
