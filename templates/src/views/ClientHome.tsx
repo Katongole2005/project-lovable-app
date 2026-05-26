@@ -1697,16 +1697,54 @@ function ClientHome() {
                           const resumeTitle = item.episodeInfo
                             ? `${item.title} - ${item.episodeInfo}`
                             : item.title;
+
+                          let freshTargetUrl = item.url;
+                          let freshMobifliksId = item.contentId;
+                          let detailedMovie: any = null;
+
+                          try {
+                            if (item.type === "series") {
+                              const series = await fetchSeriesDetails(item.contentId);
+                              detailedMovie = series;
+                              const episode = series?.episodes?.find((ep) => {
+                                if (item.episodeId && ep.mobifliks_id === item.episodeId) return true;
+                                const sNum = item.seasonNumber ?? 1;
+                                const epNum = item.episodeNumber ?? 1;
+                                return (ep.season_number || 1) === sNum && ep.episode_number === epNum;
+                              });
+                              if (episode) {
+                                freshTargetUrl = episode.server2_url || episode.download_url || freshTargetUrl;
+                                freshMobifliksId = episode.mobifliks_id || freshMobifliksId;
+                              }
+                            } else {
+                              const movie = await fetchMovieDetails(item.contentId);
+                              detailedMovie = movie;
+                              if (movie) {
+                                freshTargetUrl = movie.server2_url || movie.download_url || freshTargetUrl;
+                              }
+                            }
+                          } catch (err) {
+                            console.error("[Continue Watching] Self-healing resolution error:", err);
+                          }
+
                           const mediaUrl = await buildMediaUrl({
-                            url: item.url,
+                            url: freshTargetUrl,
                             title: resumeTitle,
-                            mobifliksId: item.contentId,
+                            mobifliksId: freshMobifliksId,
                             play: true,
                           });
-                          handlePlayVideo(mediaUrl, resumeTitle, Number(item.progress) || 0, {
-                            ...item,
-                            url: mediaUrl,
-                          });
+
+                          handlePlayVideo(
+                            mediaUrl,
+                            resumeTitle,
+                            Number(item.progress) || 0,
+                            {
+                              ...item,
+                              url: mediaUrl,
+                            },
+                            freshMobifliksId,
+                            detailedMovie?.video_page_url || detailedMovie?.details_url
+                          );
                         }}
                         onRemove={(id) => removeContinueWatching(id)}
                       />

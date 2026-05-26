@@ -197,7 +197,14 @@ interface MovieModalProps {
   movie: Movie | Series | null;
   isOpen: boolean;
   onClose: () => void;
-  onPlay: (url: string, title: string) => void;
+  onPlay: (
+    url: string,
+    title: string,
+    startTime?: number,
+    playbackItem?: ContinueWatching,
+    mobifliksId?: string | null,
+    detailsUrl?: string | null
+  ) => void;
   detailsLoading?: boolean;
   onMovieSelect?: (movie: Movie) => void;
   onAuthRequired?: (action: "watch" | "download") => void;
@@ -476,8 +483,26 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
     if (user?.id) {
       incrementUserStat(user.id, 'activity_points', 5); // Points for starting playback
     }
-    onPlay(finalUrl, title);
-  }, [movie, user, onPlay]);
+    
+    const activeCW = continueWatching.find(item => {
+      if (item.contentId !== movie.mobifliks_id) return false;
+      if (movie.type === "series") {
+        return item.episodeId === mobifliksId;
+      }
+      return true;
+    });
+
+    const startAt = startTime || (activeCW ? Number(activeCW.progress) : 0);
+
+    onPlay(
+      finalUrl,
+      title,
+      startAt,
+      activeCW,
+      mobifliksId || movie.mobifliks_id,
+      detailsUrl || (movie as any).video_page_url || movie.details_url
+    );
+  }, [movie, user, onPlay, continueWatching]);
 
   const continueWatching = useContinueWatching();
 
