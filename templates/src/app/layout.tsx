@@ -17,7 +17,7 @@ export const metadata = {
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
-    url: 'https://www.s-u.in/',
+    url: 'https://s-u.in/',
     type: 'website',
     title: 'Moviebay — Watch Luganda Translated Movies & Series Online in HD',
     description: 'Stream or download the latest movies and series translated by VJ Junior, VJ Emmy, VJ Ice P, and more. Instant downloads & free streaming!',
@@ -33,7 +33,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     domain: 's-u.in',
-    url: 'https://www.s-u.in/',
+    url: 'https://s-u.in/',
     title: 'Moviebay — Watch Luganda Translated Movies & Series Online in HD',
     description: 'Stream or download the latest movies and series translated by VJ Junior, VJ Emmy, VJ Ice P, and more. Instant downloads & free streaming!',
     images: ['https://opengraph.b-cdn.net/production/images/25761c18-9506-4190-b1c1-5d5802661dcb.jpg?token=fEJiQ52XMTQopK-xQHzbXhciYWEm__5xikKyrqv3cXU&height=1280&width=1024&expires=33315649292'],

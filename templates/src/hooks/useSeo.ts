@@ -12,8 +12,8 @@ interface SeoProps {
 
 const BASE_TITLE = "Moviebay";
 const DEFAULT_DESC = "Watch and download the best Uganda translated movies. Stream blockbuster films with Luganda translation by VJ Junior, VJ Jingo, VJ Ice P, and more top VJs. Free streaming, no subscription.";
-const DEFAULT_OG_IMAGE = "https://www.s-u.in/icon-512.png";
-const SITE_URL = "https://www.s-u.in";
+const DEFAULT_OG_IMAGE = "https://s-u.in/icon-512.png";
+const SITE_URL = "https://s-u.in";
 
 export function useSeo({
   title,

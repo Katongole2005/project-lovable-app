@@ -215,8 +215,8 @@ export function HeroCarousel({
   };
 
   if (isLoading || !displayMovies.length) {
-    return <div className="overflow-hidden relative" aria-busy="true" aria-label="Loading latest movies">
-      <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem_+_env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(350px_+_6.5rem_+_env(safe-area-inset-top))]">
+    return <div className="hero-carousel-wrapper" aria-busy="true" aria-label="Loading latest movies">
+      <div className="absolute inset-0 md:hidden rounded-3xl p-4 pt-[calc(6.5rem_+_env(safe-area-inset-top))] overflow-hidden hero-mobile-gradient flex flex-col justify-between">
         <div className="flex justify-between items-center mb-3">
           <div className="h-6 w-32 bg-white/8 rounded-lg shimmer" />
           <div className="h-5 w-14 bg-white/8 rounded-lg shimmer" />
@@ -226,8 +226,8 @@ export function HeroCarousel({
         </div>
         <div className="mt-3 mx-auto h-5 w-40 rounded-lg bg-white/8 shimmer" />
       </div>
-      <div className="hidden md:block">
-        <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden hero-cinematic-container bg-[#0a0a0f]">
+      <div className="absolute inset-0 hidden md:block">
+        <div className="relative w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden bg-[#0a0a0f]">
           <div className="absolute inset-0 loading-gradient-complex shimmer opacity-80" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-black/50" />
           <div className="absolute left-10 bottom-12 space-y-5">
@@ -272,9 +272,9 @@ export function HeroCarousel({
   };
 
   return (
-    <div className="overflow-hidden relative isolate [transform-style:flat]">
+    <div className="hero-carousel-wrapper relative isolate [transform-style:flat]">
       {/* Mobile carousel */}
-      <div className="md:hidden rounded-3xl p-4 pt-[calc(6.5rem_+_env(safe-area-inset-top))] overflow-hidden relative hero-mobile-gradient min-h-[calc(460px_+_6.5rem_+_env(safe-area-inset-top))] flex flex-col justify-between">
+      <div className="absolute inset-0 md:hidden rounded-3xl p-4 pt-[calc(6.5rem_+_env(safe-area-inset-top))] overflow-hidden hero-mobile-gradient flex flex-col justify-between">
         {/* Dynamic Ambient Blur Background Layer */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none rounded-3xl">
           {currentMovie && (
@@ -430,8 +430,8 @@ export function HeroCarousel({
         </div>
       </div>
 
-      <div className="hidden md:block">
-        <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden hero-cinematic-container">
+      <div className="absolute inset-0 hidden md:block">
+        <div className="relative w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden">
           <div className="absolute inset-0 bg-[#0a0a0f]" />
           <div className="absolute inset-0 select-none pointer-events-none">
             {/* Outgoing previous slide backdrop */}
@@ -488,7 +488,7 @@ export function HeroCarousel({
 
 	          <div className="absolute inset-0 pointer-events-none hero-vignette" />
 
-          <div className="relative z-10 h-full flex flex-col justify-end hero-cinematic-container">
+          <div className="relative z-10 h-full flex flex-col justify-end">
 
             <div className="px-6 pb-4 lg:px-10 xl:px-14 2xl:px-16">
                 <>
@@ -501,11 +501,11 @@ export function HeroCarousel({
                         <img
                           src={currentMovie.logo_url}
                           alt={currentMovie.title}
-                          className="hero-stagger-logo max-h-[64px] w-auto max-w-[min(520px,40vw)] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.92)] md:max-h-[75px] lg:max-h-[88px] xl:max-h-[105px] 2xl:max-h-[120px]"
+                          className="hero-stagger-logo max-h-[56px] w-auto max-w-[min(480px,40vw)] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.92)] md:max-h-[64px] lg:max-h-[80px] xl:max-h-[90px] 2xl:max-h-[100px]"
                           loading="eager"
                         />
                       ) : (
-                        <h2 className="hero-stagger-logo font-display text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-6xl 2xl:text-7xl">
+                        <h2 className="hero-stagger-logo font-display text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-5xl 2xl:text-6xl">
                           <span className="hero-premium-title">{currentMovie.title}</span>
                         </h2>
                       )}
@@ -517,7 +517,7 @@ export function HeroCarousel({
                       {heroMetaChips.map((chip) => (
                         <span
                           key={chip}
-	                          className="hero-meta-chip rounded-md px-3 py-1 text-xs font-semibold text-white/80"
+	                          className="hero-meta-chip rounded-md px-3 py-1 text-[11px] lg:text-xs font-semibold text-white/80"
 	                        >
                           {chip}
                         </span>
@@ -526,7 +526,7 @@ export function HeroCarousel({
 
                     {currentMovie.description && (
                       <p 
-                        className="hero-stagger-desc text-[13px] lg:text-sm xl:text-base text-white/[0.82] max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl line-clamp-2 mb-4 lg:mb-5 leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
+                        className="hero-stagger-desc text-xs md:text-[13px] lg:text-sm text-white/[0.82] max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl line-clamp-2 lg:line-clamp-3 mb-4 lg:mb-5 leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
                       >
                         {currentMovie.description}
                       </p>
@@ -536,15 +536,15 @@ export function HeroCarousel({
                       <button
                         onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
                         data-testid="button-hero-play"
-                        className="btn-premium-red hero-cta-glow group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 lg:px-7 lg:py-3 rounded-full text-white font-semibold text-xs md:text-sm lg:text-base"
+                        className="btn-premium-red hero-cta-glow group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full text-white font-semibold text-xs md:text-sm"
                       >
-                        <Play className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
+                        <Play className="w-3.5 h-3.5 md:w-4 md:h-4 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
                         Watch Now
                       </button>
                       <button
                         onClick={onViewAll}
                         data-testid="button-hero-more"
-                        className="btn-glass px-4 py-2 md:px-5 md:py-2.5 lg:px-7 lg:py-3 rounded-full text-white font-medium text-xs md:text-sm lg:text-base"
+                        className="btn-glass px-4 py-2 md:px-5 md:py-2.5 rounded-full text-white font-semibold text-xs md:text-sm"
                       >
                         More
                       </button>

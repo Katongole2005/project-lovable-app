@@ -272,6 +272,11 @@ function ClientHome() {
 
 
   // Data states
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [categoryMovies, setCategoryMovies] = useState<Movie[]>([]);
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
@@ -922,11 +927,13 @@ function ClientHome() {
       }
     }
 
-    setSelectedMovie(resolvedMovie);
-    setSelectedMovieDetailsLoading(
-      resolvedMovie.type === "series" && (!("episodes" in resolvedMovie) || !(resolvedMovie as Series).episodes?.length)
-    );
-    setIsModalOpen(true);
+    startTransition(() => {
+      setSelectedMovie(resolvedMovie);
+      setSelectedMovieDetailsLoading(
+        resolvedMovie.type === "series" && (!("episodes" in resolvedMovie) || !(resolvedMovie as Series).episodes?.length)
+      );
+      setIsModalOpen(true);
+    });
 
     const typeSlug = movie.type === "series" ? "series" : "movie";
     const urlSlug = toSlug(movie.title, movie.id, movie.year);
@@ -1063,15 +1070,17 @@ function ClientHome() {
       [];
 
     primeMediaAvailability(url);
-    setVideoUrl(playbackUrl);
-    setVideoTitle(title);
-    setVideoStartTime(startAt);
-    setActivePlaybackItem(playbackItem ?? fallbackItem);
-    setActivePlayerMovie(playbackMovie);
-    setActivePlayerSubtitles(playbackSubtitles);
-    setActivePlayerSkipSegments(playbackSkipSegments);
-    setIsVideoOpen(true);
-    setIsModalOpen(false);
+    startTransition(() => {
+      setVideoUrl(playbackUrl);
+      setVideoTitle(title);
+      setVideoStartTime(startAt);
+      setActivePlaybackItem(playbackItem ?? fallbackItem);
+      setActivePlayerMovie(playbackMovie);
+      setActivePlayerSubtitles(playbackSubtitles);
+      setActivePlayerSkipSegments(playbackSkipSegments);
+      setIsVideoOpen(true);
+      setIsModalOpen(false);
+    });
   }, []);
 
   const nextEpisodePlayback = useMemo(() => {
@@ -1258,11 +1267,11 @@ function ClientHome() {
   activePlaybackItemRef.current = activePlaybackItem;
   const lastContinueWatchingWriteRef = useRef(0);
 
-  const handleVideoTimeUpdate = useCallback((currentTime: number, duration: number) => {
+  const handleVideoTimeUpdate = useCallback((currentTime: number, duration: number, force = false) => {
     const item = activePlaybackItemRef.current;
     if (duration > 0 && item) {
       const now = Date.now();
-      if (now - lastContinueWatchingWriteRef.current < 5000) return;
+      if (!force && now - lastContinueWatchingWriteRef.current < 5000) return;
       lastContinueWatchingWriteRef.current = now;
       updateContinueWatching({
         ...item,
@@ -1686,7 +1695,7 @@ function ClientHome() {
                 />
               </div>
 
-              {siteSettings.continue_watching_enabled && continueWatching.length > 0 && (
+              {isMounted && siteSettings.continue_watching_enabled && continueWatching.length > 0 && (
                 <SectionReveal delay={200}>
                   <div className="mt-8">
                     <div className="section-divider mb-2" />
@@ -1784,7 +1793,7 @@ function ClientHome() {
                       </SectionReveal>
                     )}
 
-                    {continueWatching.length > 0 && recentMovies.length > 0 && (
+                    {isMounted && continueWatching.length > 0 && recentMovies.length > 0 && (
                       <SectionReveal delay={200}>
                         <div className="section-divider mb-2" />
                         <RecommendationRow

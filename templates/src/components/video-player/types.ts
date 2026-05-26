@@ -7,7 +7,7 @@ export interface CinematicVideoPlayerProps {
   videoUrl: string;
   title: string;
   movie?: Movie | Series | null;
-  onTimeUpdate?: (currentTime: number, duration: number) => void;
+  onTimeUpdate?: (currentTime: number, duration: number, force?: boolean) => void;
   startTime?: number;
   subtitles?: SubtitleTrack[];
   skipSegments?: SkipSegment[];

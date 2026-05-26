@@ -227,7 +227,7 @@
 
 .video-player-media-frame--paused .video-player-video,
 .video-player-media-frame--paused .video-player-embed {
-  transform: scale(1.16);
+  transform: scale(1.08);
   filter: grayscale(100%) contrast(1.08) brightness(0.92);
 }
 
@@ -293,4 +293,27 @@
 .screwdriver-anim {
   animation: screwdriver-jiggle 0.8s ease-in-out infinite;
   transform-origin: bottom center;
+}
+
+/* Hero Carousel Outer Wrapper to prevent Cumulative Layout Shift (CLS) */
+.hero-carousel-wrapper {
+  min-height: calc(460px + 6.5rem + env(safe-area-inset-top));
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .hero-carousel-wrapper {
+    height: 100vh;
+    height: 100svh;
+    min-height: 620px;
+  }
+}
+
+@supports (height: 100dvh) {
+  @media (min-width: 768px) {
+    .hero-carousel-wrapper {
+      height: 100dvh;
+    }
+  }
 }

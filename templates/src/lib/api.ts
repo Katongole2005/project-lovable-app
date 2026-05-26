@@ -265,16 +265,18 @@ export async function fetchMediaSize(url: string, title?: string, mobifliksId?: 
 
   // Fallback to Python backend with re-resolution support
   try {
-    const backendUrl = new URL(`${DEFAULT_API_BASE}/media-info`);
-    backendUrl.searchParams.set("url", url);
-    if (title) backendUrl.searchParams.set("title", title);
-    if (mobifliksId) backendUrl.searchParams.set("mobifliks_id", mobifliksId);
+    const backendUrl = buildApiEndpoint("/media-info");
+    if (backendUrl) {
+      backendUrl.searchParams.set("url", url);
+      if (title) backendUrl.searchParams.set("title", title);
+      if (mobifliksId) backendUrl.searchParams.set("mobifliks_id", mobifliksId);
 
-    const response = await fetch(backendUrl.toString());
-    if (response.ok) {
-      const data = await response.json();
-      if (data.size) {
-        return formatBytes(parseInt(data.size));
+      const response = await fetch(backendUrl.toString());
+      if (response.ok) {
+        const data = await response.json();
+        if (data.size) {
+          return formatBytes(parseInt(data.size));
+        }
       }
     }
   } catch (e) {

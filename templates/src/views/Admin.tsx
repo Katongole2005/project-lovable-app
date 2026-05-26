@@ -231,7 +231,7 @@ export default function Admin() {
           limit: Math.max(1, campaignLimit),
           dryRun,
           ctaLabel: "Watch on MovieBay",
-          ctaUrl: "https://www.s-u.in",
+          ctaUrl: "https://s-u.in",
           previewText: emailMessage.trim().slice(0, 120),
         }),
       });

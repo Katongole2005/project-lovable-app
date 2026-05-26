@@ -19,7 +19,7 @@ type EngineOptions = {
   videoUrl: string;
   title: string;
   movie?: Movie | Series | null;
-  onTimeUpdate?: (currentTime: number, duration: number) => void;
+  onTimeUpdate?: (currentTime: number, duration: number, force?: boolean) => void;
   startTime?: number;
   subtitles?: SubtitleTrack[];
   skipSegments?: SkipSegment[];
@@ -336,13 +336,20 @@ export function useVideoPlayerEngine({
   }, []);
 
   const handleClose = useCallback(() => {
+    // Force save progress before closing
+    if (videoRef.current) {
+      onTimeUpdate?.(videoRef.current.currentTime, videoRef.current.duration || 0, true);
+    } else {
+      onTimeUpdate?.(currentTime, duration, true);
+    }
+
     window.screen?.orientation?.unlock?.();
     setIsLandscape(false);
     if (isFullscreen) document.exitFullscreen().catch(() => undefined);
     wakeLockRef.current?.release?.().catch(() => undefined);
     wakeLockRef.current = null;
     onClose();
-  }, [isFullscreen, onClose]);
+  }, [isFullscreen, onClose, onTimeUpdate, currentTime, duration]);
 
   const handleRetryPlayback = useCallback(() => {
     pauseRequestedRef.current = false;
@@ -449,6 +456,51 @@ export function useVideoPlayerEngine({
       wakeLockRef.current = null;
     }
   }, [isOpen]);
+
+  const currentTimeRef = useRef(currentTime);
+  const durationRef = useRef(duration);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
+
+  useEffect(() => {
+    durationRef.current = duration;
+  }, [duration]);
+
+  useEffect(() => {
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [onTimeUpdate]);
+
+  useEffect(() => {
+    if (!isOpen || !isPlaying) return;
+    
+    const handleSaveProgress = () => {
+      const currentOnTimeUpdate = onTimeUpdateRef.current;
+      if (videoRef.current) {
+        currentOnTimeUpdate?.(videoRef.current.currentTime, videoRef.current.duration || 0, true);
+      } else {
+        currentOnTimeUpdate?.(currentTimeRef.current, durationRef.current, true);
+      }
+    };
+
+    const handleBeforeUnload = () => handleSaveProgress();
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        handleSaveProgress();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isOpen, isPlaying]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
