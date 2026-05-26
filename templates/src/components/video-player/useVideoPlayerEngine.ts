@@ -365,26 +365,21 @@ export function useVideoPlayerEngine({
 
   const handlePointerTap = useCallback(
     (side: "left" | "right" | "center") => {
+      if (side === "center") {
+        togglePlay();
+        return;
+      }
+
       const now = Date.now();
       const last = lastTapRef.current;
 
       if (now - last.time < 320 && last.side === side) {
         lastTapRef.current = { time: 0, side: null };
-        if (side === "center") {
-          togglePlay();
-        } else {
-          skip(side === "left" ? -10 : 10);
-        }
+        skip(side === "left" ? -10 : 10);
         return;
       }
 
       lastTapRef.current = { time: now, side };
-
-      if (side === "center") {
-        setShowControls(true);
-        resetControlsTimeout();
-        return;
-      }
 
       setShowControls(true);
       resetControlsTimeout();

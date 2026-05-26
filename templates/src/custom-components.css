@@ -227,7 +227,7 @@
 
 .video-player-media-frame--paused .video-player-video,
 .video-player-media-frame--paused .video-player-embed {
-  transform: scale(1.07);
+  transform: scale(1.16);
   filter: grayscale(100%) contrast(1.08) brightness(0.92);
 }
 

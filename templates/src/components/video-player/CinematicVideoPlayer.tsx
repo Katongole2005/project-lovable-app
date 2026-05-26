@@ -122,10 +122,7 @@ export function CinematicVideoPlayer({
           onClick={(e) => {
             if (!isPlaying) return;
             if ((e.target as HTMLElement).closest(".video-player-chrome, button, [role='slider']")) return;
-            if (!controlsVisible) {
-              setShowControls(true);
-              resetControlsTimeout();
-            }
+            togglePlay();
           }}
         >
           <AnimatePresence>
