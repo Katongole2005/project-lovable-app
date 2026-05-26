@@ -212,6 +212,8 @@ export function CinematicVideoPlayer({
                 visible={controlsVisible}
                 title={activeTitle}
                 logoUrl={activeMovie?.logo_url}
+                activeMovie={activeMovie}
+                layout={layout}
               />
             )}
 

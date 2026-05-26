@@ -120,22 +120,7 @@ export function PlayerControls({
           <ChevronDown className="h-6 w-6" />
         </button>
 
-        <div className="flex min-w-0 flex-1 items-center justify-center px-2 md:justify-start">
-          {activeMovie?.logo_url ? (
-            <img
-              src={activeMovie.logo_url}
-              alt={activeTitle}
-              className="h-8 w-auto max-w-[min(48vw,220px)] object-contain object-center drop-shadow-lg md:h-9"
-            />
-          ) : (
-            <div className="min-w-0 text-center md:text-left">
-              <p className="truncate text-sm font-bold text-white md:text-base">{activeTitle}</p>
-              <p className="truncate text-[11px] text-white/55">
-                {activeMovie?.type === "series" ? "Series" : "Movie"}
-              </p>
-            </div>
-          )}
-        </div>
+        <div className="flex-1 min-w-0" />
 
         <div className="flex shrink-0 items-center gap-2">
           {layout !== "desktop" && (
