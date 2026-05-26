@@ -501,11 +501,11 @@ export function HeroCarousel({
                         <img
                           src={currentMovie.logo_url}
                           alt={currentMovie.title}
-                          className="hero-stagger-logo max-h-[96px] w-auto max-w-[min(560px,42vw)] object-contain object-left drop-shadow-[0_12px_34px_rgba(0,0,0,0.92)] lg:max-h-[118px] xl:max-h-[132px] 2xl:max-h-[148px]"
+                          className="hero-stagger-logo max-h-[64px] w-auto max-w-[min(520px,40vw)] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.92)] md:max-h-[75px] lg:max-h-[88px] xl:max-h-[105px] 2xl:max-h-[120px]"
                           loading="eager"
                         />
                       ) : (
-                        <h2 className="hero-stagger-logo font-display text-4xl font-bold leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-6xl 2xl:text-7xl">
+                        <h2 className="hero-stagger-logo font-display text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-6xl 2xl:text-7xl">
                           <span className="hero-premium-title">{currentMovie.title}</span>
                         </h2>
                       )}
@@ -526,7 +526,7 @@ export function HeroCarousel({
 
                     {currentMovie.description && (
                       <p 
-                        className="hero-stagger-desc text-sm lg:text-base 2xl:text-lg text-white/[0.82] max-w-lg 2xl:max-w-2xl line-clamp-2 mb-5 lg:mb-6 leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
+                        className="hero-stagger-desc text-[13px] lg:text-sm xl:text-base text-white/[0.82] max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl line-clamp-2 mb-4 lg:mb-5 leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
                       >
                         {currentMovie.description}
                       </p>
@@ -536,15 +536,15 @@ export function HeroCarousel({
                       <button
                         onClick={() => onMovieClick ? onMovieClick(currentMovie) : onPlay(currentMovie)}
                         data-testid="button-hero-play"
-                        className="btn-premium-red hero-cta-glow group flex items-center gap-2.5 px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-semibold text-sm lg:text-base"
+                        className="btn-premium-red hero-cta-glow group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 lg:px-7 lg:py-3 rounded-full text-white font-semibold text-xs md:text-sm lg:text-base"
                       >
-                        <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
+                        <Play className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 fill-current text-white drop-shadow-md group-hover:scale-110 transition-transform" />
                         Watch Now
                       </button>
                       <button
                         onClick={onViewAll}
                         data-testid="button-hero-more"
-                        className="btn-glass px-6 py-3 lg:px-8 lg:py-3.5 rounded-full text-white font-medium text-sm lg:text-base"
+                        className="btn-glass px-4 py-2 md:px-5 md:py-2.5 lg:px-7 lg:py-3 rounded-full text-white font-medium text-xs md:text-sm lg:text-base"
                       >
                         More
                       </button>
@@ -579,7 +579,7 @@ export function HeroCarousel({
                 </>
             </div>
 
-             <div className="pb-6 lg:pb-8 xl:pb-10 2xl:pb-12 mt-4 lg:mt-5">
+             <div className="pb-3 md:pb-4 lg:pb-6 mt-3 lg:mt-4">
               <div ref={railRef} className="flex items-end gap-2.5 overflow-x-auto hide-scrollbar px-4 lg:px-8 xl:px-12 2xl:px-14 snap-x">
                 {displayMovies.map((movie, idx) => {
                   const isActiveCard = idx === activeIndex;
@@ -593,7 +593,7 @@ export function HeroCarousel({
                       onMouseLeave={handleMouseLeave}
                       aria-label={`Go to ${movie.title}`}
                       className={cn(
-                        "relative flex-shrink-0 w-[160px] xl:w-[185px] 2xl:w-[210px] aspect-video rounded-xl overflow-hidden border transition-all duration-300 snap-start hero-rail-card hero-rail-card-enter",
+                        "relative flex-shrink-0 w-[115px] sm:w-[130px] md:w-[145px] lg:w-[165px] xl:w-[185px] 2xl:w-[210px] aspect-video rounded-xl overflow-hidden border transition-all duration-300 snap-start hero-rail-card hero-rail-card-enter",
                         isActiveCard ? "active" : ""
                       )}
                       style={{
