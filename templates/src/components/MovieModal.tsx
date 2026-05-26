@@ -472,6 +472,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
   ].filter(Boolean) as string[];
   const modalGenreMeta = (movie.genres ?? []).slice(0, 3);
   const mobileDetailChips = [...modalPrimaryMeta.slice(0, 3), ...modalAccentMeta, ...modalGenreMeta.slice(0, 1)];
+  const continueWatching = useContinueWatching();
   const handlePlay = React.useCallback(async (url: string, title: string, startTime: number = 0, mobifliksId?: string | null, detailsUrl?: string | null) => {
     const finalUrl = await buildMediaUrl({
       url,
@@ -503,8 +504,6 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
       detailsUrl || (movie as any).video_page_url || movie.details_url
     );
   }, [movie, user, onPlay, continueWatching]);
-
-  const continueWatching = useContinueWatching();
 
   const resumeEpisode = React.useMemo(() => {
     if (!isSeries || !series.episodes?.length) return null;
