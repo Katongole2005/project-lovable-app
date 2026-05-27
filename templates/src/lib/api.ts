@@ -152,6 +152,35 @@ export function unwrapLegacyWorkerUrl(url: string): string {
   }
 }
 
+export function shouldUseDirectPlayback(url?: string): boolean {
+  if (!url) return false;
+  const normalized = unwrapLegacyWorkerUrl(url);
+  return (
+    /b-cdn\.net/i.test(normalized) ||
+    /bunnycdn\.com/i.test(normalized) ||
+    /storage\.googleapis\.com/i.test(normalized) ||
+    /\.(mp4|m4v|webm)(\?|$)/i.test(normalized)
+  );
+}
+
+export function preloadVideoBytes(url: string): void {
+  if (!url || typeof window === "undefined" || !window.fetch) return;
+  try {
+    const normalized = unwrapLegacyWorkerUrl(url);
+    if (shouldUseDirectPlayback(normalized)) {
+      // Quietly fetch the first 500KB to warm browser caching
+      void fetch(normalized, {
+        headers: {
+          Range: "bytes=0-500000"
+        },
+        mode: "cors"
+      }).catch(() => {});
+    }
+  } catch {
+    // Ignore errors
+  }
+}
+
 function shouldPreferDirectPlaybackOnThisDevice(url?: string): boolean {
   if (typeof window === "undefined" || !url) return false;
 
