@@ -215,7 +215,8 @@
 }
 
 /* Paused frame: subtle zoom + cinematic grayscale */
-.video-player-video,
+.video-player-video media-provider,
+.video-player-video video,
 .video-player-embed {
   transform: scale(1);
   filter: grayscale(0%) contrast(1);
@@ -225,7 +226,8 @@
   will-change: transform, filter;
 }
 
-.video-player-media-frame--paused .video-player-video,
+.video-player-media-frame--paused .video-player-video media-provider,
+.video-player-media-frame--paused .video-player-video video,
 .video-player-media-frame--paused .video-player-embed {
   transform: scale(1.08);
   filter: grayscale(100%) contrast(1.08) brightness(0.92);
@@ -249,13 +251,15 @@
   .video-player-controls,
   .video-player-mini-progress,
   .video-player-flash,
-  .video-player-video,
+  .video-player-video media-provider,
+  .video-player-video video,
   .video-player-embed {
     transition: none !important;
     animation: none !important;
   }
 
-  .video-player-media-frame--paused .video-player-video,
+  .video-player-media-frame--paused .video-player-video media-provider,
+  .video-player-media-frame--paused .video-player-video video,
   .video-player-media-frame--paused .video-player-embed {
     transform: none;
     filter: grayscale(100%) contrast(1.05);
