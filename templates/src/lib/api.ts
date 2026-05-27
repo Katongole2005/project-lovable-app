@@ -336,17 +336,14 @@ export async function buildMediaUrl({
       return normalizedUrl;
     }
 
-    // 2. In production, check if the stream has strict referrer checks (like munotech or munoserver)
-    // If not referrer-locked, direct playback is faster and avoids worker load.
-    const referrerLocked = /munotech|munoserver/i.test(normalizedUrl);
-    if (!referrerLocked) {
-      if (shouldUseDirectPlayback(normalizedUrl) || shouldPreferDirectPlaybackOnThisDevice(normalizedUrl)) {
-        preconnectOrigin(normalizedUrl);
-        return normalizedUrl;
-      }
+    // 2. In production, only direct play if it is NOT proxy-dependent.
+    // Proxyable streams (BunnyCDN, Dropbox, PHP files, pearlpix, zflix) MUST route through the Cloudflare Worker to avoid CORS and Referrer blocks!
+    if (!shouldProxyMediaUrl(normalizedUrl)) {
+      preconnectOrigin(normalizedUrl);
+      return normalizedUrl;
     }
 
-    // 3. For referrer-locked streams in production, proxy through the Cloudflare Worker to bypass Safari/iOS AVPlayer referrer bugs.
+    // 3. For proxy-dependent streams in production, proxy through the Cloudflare Worker to bypass CORS and Referrer blocks.
     if (shouldProxyMediaUrl(normalizedUrl)) {
       const workerPlaybackUrl = await buildWorkerPlaybackUrl(normalizedUrl, title);
       if (workerPlaybackUrl) {
