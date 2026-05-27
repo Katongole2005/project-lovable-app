@@ -31,9 +31,9 @@ const BAD_ARTWORK_PATTERNS = [
 
 // ─── Bounded-cache helpers ────────────────────────────────────────────────────
 const MAX_DETAIL_CACHE = 60;
-const MAX_GENRE_CACHE  = 8;
-const MAX_MEDIA_CACHE  = 100;
-const MAX_WARM_URLS    = 150;
+const MAX_GENRE_CACHE = 8;
+const MAX_MEDIA_CACHE = 100;
+const MAX_WARM_URLS = 150;
 
 function boundedSet<T>(set: Set<T>, max: number): void {
   if (set.size <= max) return;
@@ -137,58 +137,18 @@ export function warmMediaElement(url?: string | null): void {
     }
 
     warmedMediaUrls.add(url);
-    boundedSet(warmedMediaUrls, MAX_WARM_URLS);
-  } catch {
-    // Ignore warmup failures.
-  }
-}
-
-export function unwrapLegacyWorkerUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    return parsed.searchParams.get("url") || url;
-  } catch {
-    return url;
-  }
-}
-
-function shouldUseDirectPlayback(url?: string): boolean {
-  if (!url) return false;
-  const normalized = unwrapLegacyWorkerUrl(url);
-  return (
-    /b-cdn\.net/i.test(normalized) ||
-    /bunnycdn\.com/i.test(normalized) ||
-    /storage\.googleapis\.com/i.test(normalized) ||
-    /\.(mp4|m4v|webm)(\?|$)/i.test(normalized)
-  );
-}
-
-export function preloadVideoBytes(url: string): void {
-  if (!url || typeof window === "undefined" || !window.fetch) return;
-  try {
-    const normalized = unwrapLegacyWorkerUrl(url);
-    if (shouldUseDirectPlayback(normalized)) {
-      // Quietly fetch the first 500KB to warm browser caching
-      void fetch(normalized, {
-        headers: {
-          Range: "bytes=0-500000"
-        },
-        mode: "cors"
-      }).catch(() => {});
-    }
-  } catch {
-    // Ignore errors
+    u    // Ignore errors
   }
 }
 
 function shouldPreferDirectPlaybackOnThisDevice(url?: string): boolean {
   if (typeof window === "undefined" || !url) return false;
-  
+
   const ua = navigator.userAgent;
   const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMac = /Macintosh|MacIntel/i.test(ua);
-  
+
   return isSafari || isIOS || isMac;
 }
 
@@ -260,7 +220,7 @@ export function shouldProxyMediaUrl(url?: string): boolean {
 
 export async function fetchMediaSize(url: string, title?: string, mobifliksId?: string): Promise<string | null> {
   if (!url) return null;
-  
+
   // Try Cloudflare worker first (it's faster if the link is alive)
   if (CLOUDFLARE_WORKER_URL) {
     try {
@@ -336,14 +296,17 @@ export async function buildMediaUrl({
       return normalizedUrl;
     }
 
-    // 2. In production, only direct play if it is NOT proxy-dependent.
-    // Proxyable streams (BunnyCDN, Dropbox, PHP files, pearlpix, zflix) MUST route through the Cloudflare Worker to avoid CORS and Referrer blocks!
-    if (!shouldProxyMediaUrl(normalizedUrl)) {
-      preconnectOrigin(normalizedUrl);
-      return normalizedUrl;
+    // 2. In production, check if the stream has strict referrer checks (like munotech or munoserver)
+    // If not referrer-locked, direct playback is faster and avoids worker load.
+    const referrerLocked = /munotech|munoserver/i.test(normalizedUrl);
+    if (!referrerLocked) {
+      if (shouldUseDirectPlayback(normalizedUrl) || shouldPreferDirectPlaybackOnThisDevice(normalizedUrl)) {
+        preconnectOrigin(normalizedUrl);
+        return normalizedUrl;
+      }
     }
 
-    // 3. For proxy-dependent streams in production, proxy through the Cloudflare Worker to bypass CORS and Referrer blocks.
+    // 3. For referrer-locked streams in production, proxy through the Cloudflare Worker to bypass Safari/iOS AVPlayer referrer bugs.
     if (shouldProxyMediaUrl(normalizedUrl)) {
       const workerPlaybackUrl = await buildWorkerPlaybackUrl(normalizedUrl, title);
       if (workerPlaybackUrl) {
@@ -374,7 +337,7 @@ export async function buildMediaUrl({
       preconnectOrigin(normalizedUrl);
       return normalizedUrl;
     }
-    
+
     // Playback expires in 6 hours, Downloads expire in 24 hours
     const expirationHours = play ? 6 : 24;
     const token = await generateSecureToken(normalizedUrl, title, expirationHours);
@@ -384,7 +347,7 @@ export async function buildMediaUrl({
       endpoint.searchParams.set("url", normalizedUrl);
       endpoint.searchParams.set("name", title || "video");
     }
-    
+
     if (play) {
       endpoint.searchParams.set("play", "1");
     } else {
@@ -424,7 +387,7 @@ export function buildResolveMediaUrl(mediaUrl: string): string | null {
   try {
     const parsed = createUrl(mediaUrl);
     if (!parsed) return null;
-    
+
     const workerUrl = CLOUDFLARE_WORKER_URL ? createUrl(CLOUDFLARE_WORKER_URL) : null;
     if (workerUrl && parsed.hostname === workerUrl.hostname) {
       const targetUrl = parsed.searchParams.get("url");
@@ -978,7 +941,7 @@ export async function fetchHomeFeed(opts?: {
   seriesLimit?: number;
 }): Promise<HomeFeedPayload> {
   const params = new URLSearchParams();
-  if (opts?.heroLimit)   params.set('hero',   String(opts.heroLimit));
+  if (opts?.heroLimit) params.set('hero', String(opts.heroLimit));
   if (opts?.moviesLimit) params.set('movies', String(opts.moviesLimit));
   if (opts?.seriesLimit) params.set('series', String(opts.seriesLimit));
 
@@ -1001,10 +964,10 @@ export async function fetchHomeFeed(opts?: {
 
     // Normalize all arrays through the existing pipeline
     return {
-      hero:     finalizeBrowseResults(normalize(data.hero ?? []).filter((m) => isUsableArtworkUrl(m.backdrop_url)), opts?.heroLimit),
+      hero: finalizeBrowseResults(normalize(data.hero ?? []).filter((m) => isUsableArtworkUrl(m.backdrop_url)), opts?.heroLimit),
       trending: finalizeBrowseResults(normalize(data.trending ?? []), 30),
-      movies:   finalizeBrowseResults(normalize(data.movies ?? []), opts?.moviesLimit),
-      series:   finalizeBrowseResults(normalize(data.series ?? []), opts?.seriesLimit),
+      movies: finalizeBrowseResults(normalize(data.movies ?? []), opts?.moviesLimit),
+      series: finalizeBrowseResults(normalize(data.series ?? []), opts?.seriesLimit),
       meta: data.meta,
     };
   } catch (err) {
@@ -1261,7 +1224,7 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
   const request = (async () => {
     const parsedId = parseInt(id, 10);
     let query = supabase.from("movies").select("*");
-    
+
     if (!isNaN(parsedId) && String(parsedId) === id) {
       query = query.eq("id", parsedId);
     } else {
@@ -1297,7 +1260,7 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
   const request = (async () => {
     const parsedId = parseInt(id, 10);
     let query = supabase.from("movies").select("*").eq("type", "series");
-    
+
     if (!isNaN(parsedId) && String(parsedId) === id) {
       query = query.eq("id", parsedId);
     } else {
