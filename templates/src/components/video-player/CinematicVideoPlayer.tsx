@@ -173,6 +173,26 @@ export function CinematicVideoPlayer({
                     allowFullScreen
                     className="video-player-embed relative z-10 h-full w-full border-0 bg-black"
                   />
+                  
+                  {/* Brand logo (embed) */}
+                  {isPlaying && controlsVisible && !hasEnded && !playbackError && (
+                    <PlayerBrandLogo
+                      visible={controlsVisible}
+                      title={activeTitle}
+                      logoUrl={activeMovie?.logo_url}
+                      activeMovie={activeMovie}
+                      layout={layout}
+                    />
+                  )}
+
+                  {/* Gesture layer (embed) */}
+                  {isPlaying && !hasEnded && !playbackError && (
+                    <PlayerGestureLayer
+                      flashes={gestureFlashes}
+                      onTap={handlePointerTap}
+                    />
+                  )}
+
                   {/* Controls for Embeddable iframe (rendered outside MediaPlayer but in same frame) */}
                   {isPlaying && !hasEnded && !playbackError && (
                     <PlayerControls
@@ -253,6 +273,25 @@ export function CinematicVideoPlayer({
                       />
                     ))}
                   </MediaProvider>
+
+                  {/* Brand logo (native) */}
+                  {isPlaying && controlsVisible && !hasEnded && !playbackError && (
+                    <PlayerBrandLogo
+                      visible={controlsVisible}
+                      title={activeTitle}
+                      logoUrl={activeMovie?.logo_url}
+                      activeMovie={activeMovie}
+                      layout={layout}
+                    />
+                  )}
+
+                  {/* Gesture layer (native) */}
+                  {isPlaying && !hasEnded && !playbackError && (
+                    <PlayerGestureLayer
+                      flashes={gestureFlashes}
+                      onTap={handlePointerTap}
+                    />
+                  )}
                   
                   {/* Controls for Standard Video (rendered INSIDE MediaPlayer context) */}
                   {isPlaying && !hasEnded && !playbackError && (
@@ -296,25 +335,6 @@ export function CinematicVideoPlayer({
                 </MediaPlayer>
               )}
             </div>
-
-            {/* Gesture layer (above media, below controls) */}
-            {isPlaying && !hasEnded && !playbackError && (
-              <PlayerGestureLayer
-                flashes={gestureFlashes}
-                onTap={handlePointerTap}
-              />
-            )}
-
-            {/* Brand logo */}
-            {isPlaying && controlsVisible && !hasEnded && !playbackError && (
-              <PlayerBrandLogo
-                visible={controlsVisible}
-                title={activeTitle}
-                logoUrl={activeMovie?.logo_url}
-                activeMovie={activeMovie}
-                layout={layout}
-              />
-            )}
 
             {/* Buffering spinner */}
             <AnimatePresence>

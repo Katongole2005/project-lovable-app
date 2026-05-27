@@ -29,7 +29,6 @@ import {
   MuteButton,
   FullscreenButton,
   PIPButton,
-  TimeSlider,
 } from "@vidstack/react";
 
 type PlayerControlsProps = {
@@ -222,30 +221,16 @@ export function PlayerControls({
             >
               {/* Timeline Scrubber */}
               <div className="player-scrubber-root">
-                {isEmbeddableVideo ? (
-                  <PlayerScrubber
-                    currentTime={currentTime}
-                    duration={duration}
-                    bufferedTime={bufferedTime}
-                    showTimes={false}
-                    expanded={true}
-                    onSeekStart={onSeekStart}
-                    onSeek={onSeek}
-                    onSeekEnd={onSeekEnd}
-                  />
-                ) : (
-                  <TimeSlider.Root
-                    className="player-scrubber-track"
-                    onPointerDown={onSeekStart}
-                    onPointerUp={onSeekEnd}
-                  >
-                    <TimeSlider.Track className="player-scrubber-rail">
-                      <TimeSlider.TrackFill className="player-scrubber-played" />
-                      <TimeSlider.Progress className="player-scrubber-buffered" />
-                    </TimeSlider.Track>
-                    <TimeSlider.Thumb className="player-scrubber-thumb" />
-                  </TimeSlider.Root>
-                )}
+                <PlayerScrubber
+                  currentTime={currentTime}
+                  duration={duration}
+                  bufferedTime={bufferedTime}
+                  showTimes={false}
+                  expanded={true}
+                  onSeekStart={onSeekStart}
+                  onSeek={onSeek}
+                  onSeekEnd={onSeekEnd}
+                />
               </div>
 
               {/* Transport Row */}
