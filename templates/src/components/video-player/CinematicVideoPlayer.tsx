@@ -184,7 +184,7 @@ export function CinematicVideoPlayer({
                   style={{ width: "100%", height: "100%" }}
                   {...videoHandlers}
                 >
-                  <MediaProvider>
+                  <MediaProvider mediaProps={{ referrerPolicy: "no-referrer" }}>
                     {usableSubtitles.map((track) => (
                       <Track
                         key={track.id}
