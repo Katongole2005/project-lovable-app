@@ -187,6 +187,12 @@ media-provider video {
 }
 .video-player--mobile-portrait .video-player-video { object-fit: contain; }
 .video-player--fullscreen .video-player-video      { object-fit: contain; }
+.video-player-media-frame {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+}
 
 /* ── Media paused effect: soft zoom + desaturate (only the VIDEO stream) ── */
 .video-player-video media-provider,

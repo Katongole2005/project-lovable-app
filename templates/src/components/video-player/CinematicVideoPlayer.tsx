@@ -157,7 +157,7 @@ export function CinematicVideoPlayer({
             {/* Media frame */}
             <div
               className={cn(
-                "video-player-media-frame relative flex h-full w-full items-center justify-center overflow-hidden",
+                "video-player-media-frame relative block h-full w-full overflow-hidden",
                 isPlaying && isPaused && "video-player-media-frame--paused",
               )}
             >
