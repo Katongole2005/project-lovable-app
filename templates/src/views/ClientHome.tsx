@@ -1164,6 +1164,22 @@ function ClientHome() {
   useEffect(() => {
     const handlePopState = () => {
       if (isVideoOpen) {
+        // Proactively find and cleanly tear down the video element in the DOM before unmounting
+        const video = document.querySelector("video");
+        if (video) {
+          try {
+            console.log("[ClientHome PopState] Tearing down active media stream connection...");
+            video.pause();
+            video.src = "";
+            video.removeAttribute("src");
+            while (video.firstChild) {
+              video.removeChild(video.firstChild);
+            }
+            video.load();
+          } catch (e) {
+            console.warn("[ClientHome PopState] Video stream cleanup failed:", e);
+          }
+        }
         handleCloseVideo();
         return;
       }

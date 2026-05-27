@@ -348,6 +348,24 @@ export function useVideoPlayerEngine({
       onTimeUpdate?.(currentTime, duration, true);
     }
 
+    // Clean up the video element while still fully in the DOM!
+    const docVideo = containerRef.current?.querySelector("video");
+    const video = videoRef.current || docVideo;
+    if (video) {
+      try {
+        console.log("[Player Engine HandleClose] Tearing down active media stream connection...");
+        video.pause();
+        video.src = "";
+        video.removeAttribute("src");
+        while (video.firstChild) {
+          video.removeChild(video.firstChild);
+        }
+        video.load();
+      } catch (e) {
+        console.warn("[Player Engine HandleClose] Video stream cleanup failed:", e);
+      }
+    }
+
     window.screen?.orientation?.unlock?.();
     setIsLandscape(false);
     if (isFullscreen) document.exitFullscreen().catch(() => undefined);
