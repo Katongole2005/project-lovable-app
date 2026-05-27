@@ -1,8 +1,7 @@
 // Bump the cache whenever we change caching behavior
-const CACHE_NAME = "moviebay-v9";
+const CACHE_NAME = "moviebay-v10";
 const CORE_ASSETS = [
   "/",
-  "/index.html",
   "/manifest.webmanifest",
   "/favicon.ico",
   "/icon-192.png",
@@ -13,7 +12,6 @@ const CORE_ASSETS = [
 // API responses are dynamic; never cache them via the service worker.
 const API_PREFIX = "/api";
 
-// Patterns that should NEVER be cached to prevent React hook errors
 const NEVER_CACHE_PATTERNS = [
   "/node_modules/",
   "/.vite/",

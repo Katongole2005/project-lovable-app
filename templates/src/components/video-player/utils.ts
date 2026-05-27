@@ -120,7 +120,11 @@ export const extractPosterGradient = (imageUrl: string): Promise<PosterGradient 
     };
 
     image.onerror = () => resolve(null);
-    image.src = imageUrl;
+    if (imageUrl.includes("?")) {
+      image.src = `${imageUrl}&cors=1`;
+    } else {
+      image.src = `${imageUrl}?cors=1`;
+    }
   });
 };
 
