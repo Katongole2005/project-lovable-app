@@ -23,6 +23,10 @@ const nextConfig = {
         source: '/api/:path*',
         destination: `${backendUrl}/api/:path*`, // Proxy to Backend
       },
+      {
+        source: '/_supabase/:path*',
+        destination: 'https://qiwwokfqunzgnbmfvgxo.supabase.co/:path*', // Proxy to Supabase
+      },
     ];
   },
 };
