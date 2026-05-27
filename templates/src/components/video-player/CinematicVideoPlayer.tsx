@@ -285,7 +285,7 @@ export function CinematicVideoPlayer({
                   autoPlay
                   playsInline
                   preload="auto"
-                  referrerPolicy="no-referrer"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   onProviderSetup={(eventOrProvider) => {
                     if (!eventOrProvider) return;
                     let provider: any = eventOrProvider;
@@ -304,7 +304,7 @@ export function CinematicVideoPlayer({
                   style={{ width: "100%", height: "100%" }}
                   {...videoHandlers}
                 >
-                  <MediaProvider mediaProps={{ referrerPolicy: "no-referrer" }}>
+                  <MediaProvider mediaProps={{ referrerPolicy: "strict-origin-when-cross-origin" }}>
                     {usableSubtitles.map((track) => (
                       <Track
                         key={track.id}
