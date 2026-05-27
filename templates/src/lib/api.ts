@@ -311,12 +311,26 @@ export async function buildMediaUrl({
   play?: boolean;
 }): Promise<string> {
   const normalizedUrl = unwrapLegacyWorkerUrl(url);
+  const isDev = process.env.NODE_ENV === "development";
   if (play) {
-    if (shouldUseDirectPlayback(normalizedUrl) || shouldPreferDirectPlaybackOnThisDevice(normalizedUrl)) {
+    // 1. In local development, Cloudflare Worker blocks requests due to local referrer (403).
+    // Direct playback works because we set referrerPolicy="no-referrer" on the video element.
+    if (isDev) {
       preconnectOrigin(normalizedUrl);
       return normalizedUrl;
     }
 
+    // 2. In production, check if the stream has strict referrer checks (like munotech or munoserver)
+    // If not referrer-locked, direct playback is faster and avoids worker load.
+    const referrerLocked = /munotech|munoserver/i.test(normalizedUrl);
+    if (!referrerLocked) {
+      if (shouldUseDirectPlayback(normalizedUrl) || shouldPreferDirectPlaybackOnThisDevice(normalizedUrl)) {
+        preconnectOrigin(normalizedUrl);
+        return normalizedUrl;
+      }
+    }
+
+    // 3. For referrer-locked streams in production, proxy through the Cloudflare Worker to bypass Safari/iOS AVPlayer referrer bugs.
     if (shouldProxyMediaUrl(normalizedUrl)) {
       const workerPlaybackUrl = await buildWorkerPlaybackUrl(normalizedUrl, title);
       if (workerPlaybackUrl) {
