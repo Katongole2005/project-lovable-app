@@ -342,10 +342,13 @@ export async function buildMediaUrl({
     // 2. In production, check if the device is a Safari/iOS device AND the URL is not strictly referrer-locked.
     // If so, we can allow direct playback as a fallback for native AVPlayer.
     const isIOSorSafari = shouldPreferDirectPlaybackOnThisDevice(normalizedUrl);
-    const hasStrictReferrerLock = /munotech|munoserver/i.test(normalizedUrl);
+    const hasStrictReferrerLock = /munoserver/i.test(normalizedUrl);
 
     if (shouldProxyMediaUrl(normalizedUrl)) {
-      if (isIOSorSafari && !hasStrictReferrerLock && shouldUseDirectPlayback(normalizedUrl)) {
+      // If the URL supports high-performance direct streaming (e.g. CDNs like b-cdn.net, bunnycdn.com, storage.googleapis.com)
+      // AND does not have a strict referrer lock, we play DIRECTLY on ALL devices (Chrome, Safari, iOS, etc.)
+      // to bypass the Cloudflare worker proxy, eliminating lags/buffering and resolving Safari playback.
+      if (!hasStrictReferrerLock && shouldUseDirectPlayback(normalizedUrl)) {
         preconnectOrigin(normalizedUrl);
         return normalizedUrl;
       }
