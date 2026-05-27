@@ -905,6 +905,14 @@ export function useVideoPlayerEngine({
         } else {
           if (activeMovie.server2_url) candidates.push(activeMovie.server2_url);
           if (activeMovie.download_url) candidates.push(activeMovie.download_url);
+
+          // Fallback to alternate VJ/language versions if the current version is dead
+          if (activeMovie.vj_versions && Array.isArray(activeMovie.vj_versions)) {
+            for (const version of activeMovie.vj_versions) {
+              if (version.server2_url) candidates.push(version.server2_url);
+              if (version.download_url) candidates.push(version.download_url);
+            }
+          }
         }
       }
 
