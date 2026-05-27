@@ -12,6 +12,7 @@ import { EndedOverlay, ErrorOverlay } from "./PlayerOverlays";
 
 // Vidstack Core (no default layout CSS)
 import { MediaPlayer, MediaProvider, Track } from "@vidstack/react";
+import "@vidstack/react/player/styles/base.css";
 
 export function CinematicVideoPlayer({
   isOpen,
