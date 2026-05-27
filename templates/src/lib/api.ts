@@ -187,9 +187,8 @@ function shouldPreferDirectPlaybackOnThisDevice(url?: string): boolean {
   const ua = navigator.userAgent;
   const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isMac = /Macintosh|MacIntel/i.test(ua);
 
-  return isSafari || isIOS || isMac;
+  return isSafari || isIOS;
 }
 
 async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise<string | null> {
@@ -328,7 +327,11 @@ export async function buildMediaUrl({
   mobifliksId?: string | null;
   play?: boolean;
 }): Promise<string> {
-  const normalizedUrl = unwrapLegacyWorkerUrl(url);
+  let normalizedUrl = unwrapLegacyWorkerUrl(url);
+  if (normalizedUrl.startsWith("http://")) {
+    normalizedUrl = normalizedUrl.replace("http://", "https://");
+  }
+
   const isDev = process.env.NODE_ENV === "development";
   if (play) {
     if (isDev && !shouldProxyMediaUrl(normalizedUrl)) {
@@ -336,18 +339,18 @@ export async function buildMediaUrl({
       return normalizedUrl;
     }
 
-    // 2. In production, check if the stream has strict referrer checks (like munotech or munoserver)
-    // If not referrer-locked, direct playback is faster and avoids worker load.
-    const referrerLocked = /munotech|munoserver/i.test(normalizedUrl);
-    if (!referrerLocked) {
-      if (shouldUseDirectPlayback(normalizedUrl) || shouldPreferDirectPlaybackOnThisDevice(normalizedUrl)) {
+    // 2. In production, check if the device is a Safari/iOS device AND the URL is not strictly referrer-locked.
+    // If so, we can allow direct playback as a fallback for native AVPlayer.
+    const isIOSorSafari = shouldPreferDirectPlaybackOnThisDevice(normalizedUrl);
+    const hasStrictReferrerLock = /munotech|munoserver/i.test(normalizedUrl);
+
+    if (shouldProxyMediaUrl(normalizedUrl)) {
+      if (isIOSorSafari && !hasStrictReferrerLock && shouldUseDirectPlayback(normalizedUrl)) {
         preconnectOrigin(normalizedUrl);
         return normalizedUrl;
       }
-    }
 
-    // 3. For referrer-locked streams in production, proxy through the Cloudflare Worker to bypass Safari/iOS AVPlayer referrer bugs.
-    if (shouldProxyMediaUrl(normalizedUrl)) {
+      // Otherwise (on PC / Android / Chrome / Firefox), we MUST proxy to bypass CORS & Referrer locks!
       const workerPlaybackUrl = await buildWorkerPlaybackUrl(normalizedUrl, title);
       if (workerPlaybackUrl) {
         preconnectOrigin(CLOUDFLARE_WORKER_URL);
