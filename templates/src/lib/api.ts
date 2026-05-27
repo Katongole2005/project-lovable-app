@@ -312,7 +312,7 @@ export async function buildMediaUrl({
 }): Promise<string> {
   const normalizedUrl = unwrapLegacyWorkerUrl(url);
   if (play) {
-    if (shouldPreferDirectPlaybackOnThisDevice(normalizedUrl)) {
+    if (shouldUseDirectPlayback(normalizedUrl) || shouldPreferDirectPlaybackOnThisDevice(normalizedUrl)) {
       preconnectOrigin(normalizedUrl);
       return normalizedUrl;
     }
