@@ -462,6 +462,36 @@ export function useVideoPlayerEngine({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      // Explicitly tear down the video element to release the browser's media connection pool!
+      if (videoRef.current) {
+        try {
+          const video = videoRef.current;
+          video.pause();
+          video.src = "";
+          video.removeAttribute("src");
+          while (video.firstChild) {
+            video.removeChild(video.firstChild);
+          }
+          video.load();
+        } catch (e) {
+          console.warn("[Player Cleanup] Video stream cleanup failed:", e);
+        }
+      }
+
+      // Abort active iframe embed connections
+      if (iframeRef.current) {
+        try {
+          iframeRef.current.src = "about:blank";
+        } catch (e) {
+          /* */
+        }
+      }
+    };
+  }, []);
+
+
   const currentTimeRef = useRef(currentTime);
   const durationRef = useRef(duration);
   const onTimeUpdateRef = useRef(onTimeUpdate);
