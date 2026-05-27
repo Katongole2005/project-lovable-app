@@ -162,16 +162,57 @@ export function CinematicVideoPlayer({
               )}
             >
               {isEmbeddableVideo ? (
-                <iframe
-                  ref={iframeRef}
-                  key={iframeSrc}
-                  src={iframeSrc}
-                  title={activeTitle}
-                  onLoad={() => {}}
-                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                  allowFullScreen
-                  className="video-player-embed relative z-10 h-full w-full border-0 bg-black"
-                />
+                <>
+                  <iframe
+                    ref={iframeRef}
+                    key={iframeSrc}
+                    src={iframeSrc}
+                    title={activeTitle}
+                    onLoad={() => {}}
+                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                    allowFullScreen
+                    className="video-player-embed relative z-10 h-full w-full border-0 bg-black"
+                  />
+                  {/* Controls for Embeddable iframe (rendered outside MediaPlayer but in same frame) */}
+                  {isPlaying && !hasEnded && !playbackError && (
+                    <PlayerControls
+                      layout={layout}
+                      visible={controlsVisible}
+                      activeTitle={activeTitle}
+                      activeMovie={activeMovie}
+                      isPaused={isPaused}
+                      isBuffering={isBuffering}
+                      isFullscreen={isFullscreen}
+                      isLandscape={isLandscape}
+                      isPipAvailable={isPipAvailable}
+                      isPipActive={isPipActive}
+                      isEmbeddableVideo={true}
+                      currentTime={currentTime}
+                      duration={duration}
+                      bufferedTime={bufferedTime}
+                      volume={volume}
+                      isMuted={isMuted}
+                      playbackRate={playbackRate}
+                      activeSkipSegment={activeSkipSegment}
+                      usableSubtitles={usableSubtitles}
+                      activeSubtitleId={activeSubtitleId}
+                      onClose={handleClose}
+                      onTogglePlay={togglePlay}
+                      onSkip={skip}
+                      onSeek={handleSeek}
+                      onSeekStart={() => setIsSeeking(true)}
+                      onSeekEnd={() => setIsSeeking(false)}
+                      onToggleFullscreen={toggleFullscreen}
+                      onToggleOrientation={toggleMobileOrientation}
+                      onTogglePip={togglePip}
+                      onChangeRate={changePlaybackRate}
+                      onVolumeChange={(v) => { setVolume(v); setIsMuted(v === 0); }}
+                      onToggleMute={() => { setIsMuted((m) => !m); }}
+                      onSubtitleChange={setActiveSubtitleId}
+                      onSkipSegment={skipActiveSegment}
+                    />
+                  )}
+                </>
               ) : (
                 <MediaPlayer
                   key={activeVideoUrl}
@@ -212,7 +253,46 @@ export function CinematicVideoPlayer({
                       />
                     ))}
                   </MediaProvider>
-                  {/* No DefaultVideoLayout — fully custom controls below */}
+                  
+                  {/* Controls for Standard Video (rendered INSIDE MediaPlayer context) */}
+                  {isPlaying && !hasEnded && !playbackError && (
+                    <PlayerControls
+                      layout={layout}
+                      visible={controlsVisible}
+                      activeTitle={activeTitle}
+                      activeMovie={activeMovie}
+                      isPaused={isPaused}
+                      isBuffering={isBuffering}
+                      isFullscreen={isFullscreen}
+                      isLandscape={isLandscape}
+                      isPipAvailable={isPipAvailable}
+                      isPipActive={isPipActive}
+                      isEmbeddableVideo={false}
+                      currentTime={currentTime}
+                      duration={duration}
+                      bufferedTime={bufferedTime}
+                      volume={volume}
+                      isMuted={isMuted}
+                      playbackRate={playbackRate}
+                      activeSkipSegment={activeSkipSegment}
+                      usableSubtitles={usableSubtitles}
+                      activeSubtitleId={activeSubtitleId}
+                      onClose={handleClose}
+                      onTogglePlay={togglePlay}
+                      onSkip={skip}
+                      onSeek={handleSeek}
+                      onSeekStart={() => setIsSeeking(true)}
+                      onSeekEnd={() => setIsSeeking(false)}
+                      onToggleFullscreen={toggleFullscreen}
+                      onToggleOrientation={toggleMobileOrientation}
+                      onTogglePip={togglePip}
+                      onChangeRate={changePlaybackRate}
+                      onVolumeChange={(v) => { setVolume(v); setIsMuted(v === 0); }}
+                      onToggleMute={() => { setIsMuted((m) => !m); }}
+                      onSubtitleChange={setActiveSubtitleId}
+                      onSkipSegment={skipActiveSegment}
+                    />
+                  )}
                 </MediaPlayer>
               )}
             </div>
@@ -261,46 +341,6 @@ export function CinematicVideoPlayer({
               />
             )}
           </div>
-
-          {/* ── Controls (rendered outside media frame so they're above everything) ── */}
-          {isPlaying && !hasEnded && !playbackError && (
-            <PlayerControls
-              layout={layout}
-              visible={controlsVisible}
-              activeTitle={activeTitle}
-              activeMovie={activeMovie}
-              isPaused={isPaused}
-              isBuffering={isBuffering}
-              isFullscreen={isFullscreen}
-              isLandscape={isLandscape}
-              isPipAvailable={isPipAvailable}
-              isPipActive={isPipActive}
-              isEmbeddableVideo={isEmbeddableVideo}
-              currentTime={currentTime}
-              duration={duration}
-              bufferedTime={bufferedTime}
-              volume={volume}
-              isMuted={isMuted}
-              playbackRate={playbackRate}
-              activeSkipSegment={activeSkipSegment}
-              usableSubtitles={usableSubtitles}
-              activeSubtitleId={activeSubtitleId}
-              onClose={handleClose}
-              onTogglePlay={togglePlay}
-              onSkip={skip}
-              onSeek={handleSeek}
-              onSeekStart={() => setIsSeeking(true)}
-              onSeekEnd={() => setIsSeeking(false)}
-              onToggleFullscreen={toggleFullscreen}
-              onToggleOrientation={toggleMobileOrientation}
-              onTogglePip={togglePip}
-              onChangeRate={changePlaybackRate}
-              onVolumeChange={(v) => { setVolume(v); setIsMuted(v === 0); }}
-              onToggleMute={() => { setIsMuted((m) => !m); }}
-              onSubtitleChange={setActiveSubtitleId}
-              onSkipSegment={skipActiveSegment}
-            />
-          )}
 
           {/* ── Ended overlay ── */}
           <AnimatePresence>

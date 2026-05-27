@@ -1,21 +1,20 @@
 "use client";
 import { useState, useRef } from "react";
 import {
-  ChevronDown,
   Maximize,
   Minimize,
   Monitor,
   Pause,
   Play,
   RotateCw,
-  SkipBack,
-  SkipForward,
+  RotateCcw,
   Subtitles,
   Volume1,
   Volume2,
   VolumeX,
   Settings,
   Check,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +22,15 @@ import type { Movie, Series, SkipSegment, SubtitleTrack } from "@/types/movie";
 import { PLAYBACK_RATES, formatTime } from "./utils";
 import { PlayerScrubber } from "./PlayerScrubber";
 import type { PlayerLayout } from "./types";
+
+// Vidstack Core components
+import {
+  PlayButton,
+  MuteButton,
+  FullscreenButton,
+  PIPButton,
+  TimeSlider,
+} from "@vidstack/react";
 
 type PlayerControlsProps = {
   layout: PlayerLayout;
@@ -61,8 +69,6 @@ type PlayerControlsProps = {
   onSkipSegment: () => void;
 };
 
-type SettingsTab = "speed" | "subtitles" | null;
-
 export function PlayerControls({
   layout,
   visible,
@@ -99,107 +105,66 @@ export function PlayerControls({
   onSubtitleChange,
   onSkipSegment,
 }: PlayerControlsProps) {
-  const [settingsOpen, setSettingsOpen] = useState<SettingsTab>(null);
-  const [volumeOpen, setVolumeOpen] = useState(false);
-  const volumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const isDesktop = layout === "desktop";
-  const isMobile = layout !== "desktop";
-
-  const handleVolumeEnter = () => {
-    if (volumeTimerRef.current) clearTimeout(volumeTimerRef.current);
-    setVolumeOpen(true);
-  };
-
-  const handleVolumeLeave = () => {
-    volumeTimerRef.current = setTimeout(() => setVolumeOpen(false), 400);
-  };
+  const [settingsOpen, setSettingsOpen] = useState<"speed" | "subtitles" | null>(null);
 
   const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
+  // Parse episode and season info if it is a series or matches title pattern
+  const episodeMatch = activeTitle.match(/\bS(\d+)\s*:\s*E(\d+)\b/i);
+  const seriesInfo = episodeMatch
+    ? `Season ${episodeMatch[1]} • Episode ${episodeMatch[2]}`
+    : activeMovie?.type === "series"
+    ? "Series"
+    : null;
+
   return (
     <>
-      {/* ── Top bar ── */}
+      {/* ── Top Bar ── */}
       <AnimatePresence>
         {visible && (
           <motion.div
             key="top-bar"
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="player-top-bar pointer-events-auto absolute inset-x-0 top-0 z-[60] flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-14"
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.28, ease: [0.25, 1, 0.5, 1] }}
+            className="pointer-events-auto absolute inset-x-0 top-0 z-[60] flex items-center justify-between px-6 pt-[max(1.25rem,env(safe-area-inset-top))] pb-16 bg-gradient-to-b from-black/80 via-black/45 to-transparent"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            {/* Close */}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close player"
-              className="player-icon-btn"
-            >
-              <ChevronDown className="h-5 w-5" />
-            </button>
-
-            {/* Title (mobile) */}
-            {isMobile && (
-              <p className="player-title-label flex-1 text-center">
-                {activeTitle.replace(/\s*-\s*S\d+\s*:\s*E\d+\b/i, "")}
-              </p>
-            )}
-
-            {/* Right controls (top) */}
-            <div className="flex shrink-0 items-center gap-2">
-              {layout !== "desktop" && (
-                <button
-                  type="button"
-                  onClick={onToggleOrientation}
-                  aria-label="Rotate"
-                  className="player-icon-btn md:hidden"
-                >
-                  <RotateCw className={cn("h-4 w-4", isLandscape && "rotate-90")} />
-                </button>
-              )}
-              {isDesktop && (
-                <button
-                  type="button"
-                  onClick={onToggleFullscreen}
-                  aria-label="Fullscreen"
-                  className="player-icon-btn"
-                >
-                  {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                </button>
-              )}
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Back to movie details"
+                className="player-flat-btn"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+              
+              <div className="flex flex-col">
+                <h1 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
+                  {activeTitle.replace(/\s*-\s*S\d+\s*:\s*E\d+\b/i, "")}
+                </h1>
+                {/* Series info */}
+                {seriesInfo && (
+                  <span className="text-[11px] sm:text-xs text-zinc-400 font-semibold mt-1">
+                    {seriesInfo}
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* Translation Badge (top right) */}
+            {activeMovie?.vj_name && (
+              <span className="rounded-full bg-red-600/20 border border-red-500/30 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-red-400 px-3 py-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                VJ {activeMovie.vj_name.replace(/^VJ\s+/i, "")}
+              </span>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Center pause overlay ── */}
-      <AnimatePresence>
-        {visible && !isBuffering && isPaused && (
-          <motion.div
-            key="center-play"
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.85 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="pointer-events-none absolute inset-0 z-[55] flex items-center justify-center"
-            style={{ bottom: "var(--player-chrome-height, 120px)" }}
-          >
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onTogglePlay(); }}
-              aria-label="Play"
-              className="player-center-play pointer-events-auto"
-            >
-              <Play className="player-center-play-icon ml-1" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Skip segment badge ── */}
+      {/* ── Skip Segment Badge ── */}
       <AnimatePresence>
         {visible && activeSkipSegment && (
           <motion.div
@@ -211,113 +176,53 @@ export function PlayerControls({
             className="pointer-events-none absolute z-[60]"
             style={{
               bottom: "calc(var(--player-chrome-height, 120px) + 1.5rem)",
-              right: "1.25rem",
+              right: "2rem",
             }}
           >
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onSkipSegment(); }}
-              className="player-skip-badge pointer-events-auto"
+              className="player-skip-badge pointer-events-auto flex items-center gap-1 bg-black/85 hover:bg-[#e50914] text-white border border-white/20 hover:border-transparent rounded-full px-5 py-2 text-xs font-black uppercase tracking-widest cursor-pointer shadow-lg transition-all"
             >
               Skip {activeSkipSegment.label}
-              <SkipForward className="ml-1.5 h-3.5 w-3.5" />
+              <RotateCw className="h-3.5 w-3.5" />
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Bottom chrome ── */}
+      {/* ── Bottom Controls Strip ── */}
       <div
         className="player-chrome pointer-events-none absolute inset-x-0 bottom-0 z-[60]"
         style={{ "--player-chrome-height": visible ? "120px" : "44px" } as React.CSSProperties}
       >
-        {/* Settings panel (floats above chrome) */}
-        <AnimatePresence>
-          {settingsOpen && (
-            <motion.div
-              key="settings-panel"
-              initial={{ opacity: 0, y: 12, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.97 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="player-settings-panel pointer-events-auto absolute bottom-full mb-2 right-4"
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <div className="player-settings-header">
-                <button
-                  className={cn("player-settings-tab", settingsOpen === "speed" && "active")}
-                  onClick={() => setSettingsOpen("speed")}
-                >
-                  Speed
-                </button>
-                {usableSubtitles.length > 0 && !isEmbeddableVideo && (
-                  <button
-                    className={cn("player-settings-tab", settingsOpen === "subtitles" && "active")}
-                    onClick={() => setSettingsOpen("subtitles")}
-                  >
-                    Subtitles
-                  </button>
-                )}
-              </div>
-
-              {settingsOpen === "speed" && (
-                <div className="player-settings-options">
-                  {PLAYBACK_RATES.map((rate) => (
-                    <button
-                      key={rate}
-                      onClick={() => { onChangeRate(rate); setSettingsOpen(null); }}
-                      className={cn("player-settings-option", playbackRate === rate && "active")}
-                    >
-                      {playbackRate === rate && <Check className="h-3 w-3 mr-2 text-red-400" />}
-                      {rate}×
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {settingsOpen === "subtitles" && (
-                <div className="player-settings-options">
-                  <button
-                    onClick={() => { onSubtitleChange(null); setSettingsOpen(null); }}
-                    className={cn("player-settings-option", !activeSubtitleId && "active")}
-                  >
-                    {!activeSubtitleId && <Check className="h-3 w-3 mr-2 text-red-400" />}
-                    Off
-                  </button>
-                  {usableSubtitles.map((track) => (
-                    <button
-                      key={track.id}
-                      onClick={() => { onSubtitleChange(track.id); setSettingsOpen(null); }}
-                      className={cn("player-settings-option", activeSubtitleId === track.id && "active")}
-                    >
-                      {activeSubtitleId === track.id && <Check className="h-3 w-3 mr-2 text-red-400" />}
-                      {track.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Gradient fade */}
-        <div className="player-chrome-gradient" />
-
-        {/* Floating dock */}
         <AnimatePresence>
           {visible && (
             <motion.div
-              key="dock"
-              initial={{ opacity: 0, y: 10 }}
+              key="controls-strip"
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="player-dock pointer-events-auto mx-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.28, ease: [0.25, 1, 0.5, 1] }}
+              className="player-chrome-gradient"
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {visible && (
+            <motion.div
+              key="bottom-controls"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.28, ease: [0.25, 1, 0.5, 1] }}
+              className="player-controls-container"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <div className={cn("player-dock-inner", isDesktop && "player-dock-inner--desktop")}>
-                {/* Scrubber */}
-                <div className="player-dock-scrubber">
+              {/* Timeline Scrubber */}
+              <div className="player-scrubber-root">
+                {isEmbeddableVideo ? (
                   <PlayerScrubber
                     currentTime={currentTime}
                     duration={duration}
@@ -328,104 +233,154 @@ export function PlayerControls({
                     onSeek={onSeek}
                     onSeekEnd={onSeekEnd}
                   />
+                ) : (
+                  <TimeSlider.Root
+                    className="player-scrubber-track"
+                    onPointerDown={onSeekStart}
+                    onPointerUp={onSeekEnd}
+                  >
+                    <TimeSlider.Track className="player-scrubber-rail">
+                      <TimeSlider.TrackFill className="player-scrubber-played" />
+                      <TimeSlider.Progress className="player-scrubber-buffered" />
+                    </TimeSlider.Track>
+                    <TimeSlider.Thumb className="player-scrubber-thumb" />
+                  </TimeSlider.Root>
+                )}
+              </div>
+
+              {/* Transport Row */}
+              <div className="player-transport-row">
+                {/* Left group */}
+                <div className="player-transport-left">
+                  {isEmbeddableVideo ? (
+                    <button
+                      type="button"
+                      onClick={onTogglePlay}
+                      className="player-flat-btn player-flat-btn--large"
+                      aria-label={isPaused ? "Play" : "Pause"}
+                    >
+                      {isPaused ? <Play className="fill-current ml-0.5" /> : <Pause className="fill-current" />}
+                    </button>
+                  ) : (
+                    <PlayButton className="player-flat-btn player-flat-btn--large">
+                      {isPaused ? <Play className="fill-current ml-0.5" /> : <Pause className="fill-current" />}
+                    </PlayButton>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => onSkip(-10)}
+                    className="player-flat-btn"
+                    aria-label="Seek back 10 seconds"
+                  >
+                    <RotateCcw />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onSkip(10)}
+                    className="player-flat-btn"
+                    aria-label="Seek forward 10 seconds"
+                  >
+                    <RotateCw />
+                  </button>
+
+                  {/* Volume Slider Container */}
+                  <div className="player-volume-container">
+                    {isEmbeddableVideo ? (
+                      <button
+                        type="button"
+                        onClick={onToggleMute}
+                        className="player-flat-btn"
+                        aria-label={isMuted ? "Unmute" : "Mute"}
+                      >
+                        <VolumeIcon />
+                      </button>
+                    ) : (
+                      <MuteButton className="player-flat-btn">
+                        <VolumeIcon />
+                      </MuteButton>
+                    )}
+
+                    <div className="player-volume-slider-wrapper">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={isMuted ? 0 : Math.round(volume * 100)}
+                        onChange={(e) => onVolumeChange(Number(e.target.value) / 100)}
+                        className="player-volume-input"
+                        aria-label="Volume slider"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Time Stamps */}
+                  <span className="player-time-display">
+                    <span>{formatTime(currentTime)}</span>
+                    <span className="mx-1 text-white/30">/</span>
+                    <span className="text-white/50">{formatTime(duration)}</span>
+                  </span>
                 </div>
 
-                {/* Transport row */}
-                <div className="player-transport">
-                  {/* Left: play, skip, time */}
-                  <div className="player-transport-left">
-                    <DockButton
-                      label={isPaused ? "Play" : "Pause"}
-                      onClick={onTogglePlay}
-                      large
+                {/* Right group */}
+                <div className="player-transport-right">
+                  {/* Speech Bubble Subtitles icon */}
+                  {usableSubtitles.length > 0 && !isEmbeddableVideo && (
+                    <button
+                      type="button"
+                      onClick={() => setSettingsOpen(settingsOpen === "subtitles" ? null : "subtitles")}
+                      className={cn("player-flat-btn", settingsOpen === "subtitles" && "text-[#e50914] filter drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]")}
+                      aria-label="Subtitles"
                     >
-                      {isPaused ? (
-                        <Play className="h-5 w-5 fill-current ml-0.5" />
-                      ) : (
-                        <Pause className="h-5 w-5 fill-current" />
-                      )}
-                    </DockButton>
+                      <Subtitles />
+                    </button>
+                  )}
 
-                    <DockButton label="Rewind 10s" onClick={() => onSkip(-10)}>
-                      <SkipBack className="h-4 w-4" />
-                    </DockButton>
+                  {/* Settings gear */}
+                  <button
+                    type="button"
+                    onClick={() => setSettingsOpen(settingsOpen === "speed" ? null : "speed")}
+                    className={cn("player-flat-btn", settingsOpen === "speed" && "text-[#e50914] filter drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]")}
+                    aria-label="Playback settings"
+                  >
+                    <Settings />
+                  </button>
 
-                    <DockButton label="Forward 10s" onClick={() => onSkip(10)}>
-                      <SkipForward className="h-4 w-4" />
-                    </DockButton>
-
-                    {/* Volume (desktop) */}
-                    {isDesktop && (
-                      <div
-                        className="player-volume-wrap relative flex items-center"
-                        onMouseEnter={handleVolumeEnter}
-                        onMouseLeave={handleVolumeLeave}
+                  {/* Picture in Picture */}
+                  {isPipAvailable && (
+                    isEmbeddableVideo ? (
+                      <button
+                        type="button"
+                        onClick={onTogglePip}
+                        className="player-flat-btn"
+                        aria-label="Toggle picture-in-picture"
                       >
-                        <DockButton label="Volume" onClick={onToggleMute}>
-                          <VolumeIcon className="h-4 w-4" />
-                        </DockButton>
-                        <AnimatePresence>
-                          {volumeOpen && (
-                            <motion.div
-                              key="vol-slider"
-                              initial={{ opacity: 0, width: 0 }}
-                              animate={{ opacity: 1, width: 72 }}
-                              exit={{ opacity: 0, width: 0 }}
-                              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                              className="player-volume-slider-wrap overflow-hidden"
-                            >
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={1}
-                                value={isMuted ? 0 : Math.round(volume * 100)}
-                                onChange={(e) => onVolumeChange(Number(e.target.value) / 100)}
-                                className="player-volume-input"
-                                aria-label="Volume"
-                              />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    )}
+                        <Monitor className={cn(isPipActive && "text-[#e50914]")} />
+                      </button>
+                    ) : (
+                      <PIPButton className="player-flat-btn">
+                        <Monitor className={cn(isPipActive && "text-[#e50914]")} />
+                      </PIPButton>
+                    )
+                  )}
 
-                    {/* Time */}
-                    <span className="player-time-display">
-                      <span className="text-white/90">{formatTime(currentTime)}</span>
-                      <span className="text-white/40 mx-0.5">/</span>
-                      <span className="text-white/55">{formatTime(duration)}</span>
-                    </span>
-                  </div>
-
-                  {/* Right: settings, pip, fullscreen */}
-                  <div className="player-transport-right">
-                    {isPipAvailable && (
-                      <DockButton label="Picture in picture" onClick={onTogglePip}>
-                        <Monitor className={cn("h-4 w-4", isPipActive && "text-red-400")} />
-                      </DockButton>
-                    )}
-
-                    <DockButton
-                      label="Settings"
-                      onClick={() =>
-                        setSettingsOpen((prev) => (prev ? null : "speed"))
-                      }
-                      active={!!settingsOpen}
+                  {/* Fullscreen */}
+                  {isEmbeddableVideo ? (
+                    <button
+                      type="button"
+                      onClick={onToggleFullscreen}
+                      className="player-flat-btn"
+                      aria-label="Toggle fullscreen"
                     >
-                      <Settings className="h-4 w-4" />
-                    </DockButton>
-
-                    {!isDesktop && (
-                      <DockButton label="Fullscreen" onClick={onToggleFullscreen}>
-                        {isFullscreen ? (
-                          <Minimize className="h-4 w-4" />
-                        ) : (
-                          <Maximize className="h-4 w-4" />
-                        )}
-                      </DockButton>
-                    )}
-                  </div>
+                      {isFullscreen ? <Minimize /> : <Maximize />}
+                    </button>
+                  ) : (
+                    <FullscreenButton className="player-flat-btn">
+                      {isFullscreen ? <Minimize /> : <Maximize />}
+                    </FullscreenButton>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -443,40 +398,81 @@ export function PlayerControls({
             />
           </div>
         )}
+
+        {/* Settings panel overlay (floats above chrome controls) */}
+        <AnimatePresence>
+          {settingsOpen && visible && (
+            <motion.div
+              key="settings-overlay"
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.95 }}
+              transition={{ duration: 0.22, ease: [0.25, 1, 0.5, 1] }}
+              className="player-settings-panel pointer-events-auto absolute bottom-[calc(var(--player-chrome-height,_120px)_-_1.25rem)] right-6 md:right-16 mb-2"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <div className="player-settings-header">
+                <button
+                  type="button"
+                  className={cn("player-settings-tab", settingsOpen === "speed" && "active")}
+                  onClick={() => setSettingsOpen("speed")}
+                >
+                  Speed
+                </button>
+                {usableSubtitles.length > 0 && !isEmbeddableVideo && (
+                  <button
+                    type="button"
+                    className={cn("player-settings-tab", settingsOpen === "subtitles" && "active")}
+                    onClick={() => setSettingsOpen("subtitles")}
+                  >
+                    Subtitles
+                  </button>
+                )}
+              </div>
+
+              {settingsOpen === "speed" && (
+                <div className="player-settings-options">
+                  {PLAYBACK_RATES.map((rate) => (
+                    <button
+                      key={rate}
+                      type="button"
+                      onClick={() => { onChangeRate(rate); setSettingsOpen(null); }}
+                      className={cn("player-settings-option", playbackRate === rate && "active")}
+                    >
+                      {playbackRate === rate && <Check className="h-3.5 w-3.5 mr-2 text-red-500" />}
+                      <span>{rate}×</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {settingsOpen === "subtitles" && (
+                <div className="player-settings-options">
+                  <button
+                    type="button"
+                    onClick={() => { onSubtitleChange(null); setSettingsOpen(null); }}
+                    className={cn("player-settings-option", !activeSubtitleId && "active")}
+                  >
+                    {!activeSubtitleId && <Check className="h-3.5 w-3.5 mr-2 text-red-500" />}
+                    <span>Off</span>
+                  </button>
+                  {usableSubtitles.map((track) => (
+                    <button
+                      key={track.id}
+                      type="button"
+                      onClick={() => { onSubtitleChange(track.id); setSettingsOpen(null); }}
+                      className={cn("player-settings-option", activeSubtitleId === track.id && "active")}
+                    >
+                      {activeSubtitleId === track.id && <Check className="h-3.5 w-3.5 mr-2 text-red-500" />}
+                      <span>{track.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </>
-  );
-}
-
-/* ── Dock Button ── */
-function DockButton({
-  children,
-  label,
-  onClick,
-  large = false,
-  active = false,
-}: {
-  children: React.ReactNode;
-  label: string;
-  onClick?: () => void;
-  large?: boolean;
-  active?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick?.();
-      }}
-      className={cn(
-        "player-dock-btn",
-        large && "player-dock-btn--large",
-        active && "player-dock-btn--active",
-      )}
-    >
-      {children}
-    </button>
   );
 }
