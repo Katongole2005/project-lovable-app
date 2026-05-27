@@ -50,10 +50,8 @@ export function PlayerScrubber({
 
   const playedRatio = canSeek ? currentTime / safeDuration : 0;
   const bufferedRatio = canSeek ? Math.min(1, bufferedTime / safeDuration) : 0;
-  const activeRatio =
-    isScrubbing || hoverRatio === null ? playedRatio : hoverRatio;
+  const activeRatio = isScrubbing || hoverRatio === null ? playedRatio : hoverRatio;
   const previewTime = hoverRatio !== null && !isScrubbing ? hoverRatio * safeDuration : null;
-  const thumbOffset = expanded ? 7 : 5;
 
   const commitScrub = (clientX: number) => {
     if (!canSeek) return;
@@ -98,83 +96,95 @@ export function PlayerScrubber({
     if (!isScrubbing) setHoverRatio(null);
   };
 
+  const isHovering = hoverRatio !== null || isScrubbing;
+
   return (
-    <div className={cn("video-player-scrubber w-full", expanded ? "py-1" : "py-0.5")}>
-      <div className={cn("flex w-full items-center gap-3", !showTimes && "gap-0")}>
-        {showTimes && (
-          <span className="min-w-[52px] shrink-0 text-right text-xs font-semibold tabular-nums text-white/90">
-            {formatTime(currentTime)}
-          </span>
+    <div className={cn("player-scrubber-root w-full select-none", expanded ? "py-1" : "py-0.5")}>
+      <div
+        ref={trackRef}
+        role="slider"
+        aria-label="Seek"
+        aria-valuemin={0}
+        aria-valuemax={safeDuration}
+        aria-valuenow={currentTime}
+        aria-disabled={!canSeek}
+        className={cn(
+          "player-scrubber-track relative w-full cursor-pointer touch-none",
+          expanded ? "h-8" : "h-5",
+          !canSeek && "cursor-not-allowed opacity-60",
         )}
-
-        <div
-          ref={trackRef}
-          role="slider"
-          aria-label="Seek"
-          aria-valuemin={0}
-          aria-valuemax={safeDuration}
-          aria-valuenow={currentTime}
-          aria-disabled={!canSeek}
-          className={cn(
-            "relative flex-1 cursor-pointer touch-none select-none",
-            expanded ? "h-7" : "h-5",
-            !canSeek && "cursor-not-allowed opacity-60",
-          )}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onPointerLeave={handlePointerLeave}
-        >
-          <AnimatePresence>
-            {previewTime !== null && expanded && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                className="pointer-events-none absolute bottom-full z-50 mb-2 -translate-x-1/2 rounded bg-black/90 px-2 py-0.5 text-[11px] font-bold text-white"
-                style={{ left: `${(hoverRatio ?? 0) * 100}%` }}
-              >
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+      >
+        {/* Time preview tooltip */}
+        <AnimatePresence>
+          {previewTime !== null && expanded && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.92 }}
+              transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-none absolute bottom-full z-50 mb-3 -translate-x-1/2"
+              style={{ left: `${(hoverRatio ?? 0) * 100}%` }}
+            >
+              <div className="player-scrubber-tooltip">
                 {formatTime(previewTime)}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div
-            className={cn(
-              "absolute left-0 right-0 top-1/2 -translate-y-1/2 overflow-hidden rounded-full bg-white/25",
-              expanded ? "h-1" : "h-[3px]",
-              (isScrubbing || hoverRatio !== null) && "h-1.5",
-            )}
-          >
-            <div
-              className="absolute inset-y-0 left-0 bg-white/35"
-              style={{ width: `${bufferedRatio * 100}%` }}
-            />
-            <div
-              className="video-player-scrubber-played absolute inset-y-0 left-0 rounded-full"
-              style={{ width: `${activeRatio * 100}%` }}
-            />
-          </div>
-
-          {canSeek && (
-            <div
-              className={cn(
-                "absolute top-1/2 -translate-y-1/2 rounded-full bg-white shadow-md transition-transform",
-                expanded ? "h-3.5 w-3.5" : "h-2.5 w-2.5",
-                (isScrubbing || hoverRatio !== null) && "scale-110",
-              )}
-              style={{ left: `calc(${activeRatio * 100}% - ${thumbOffset}px)` }}
-            />
+              </div>
+            </motion.div>
           )}
+        </AnimatePresence>
+
+        {/* Rail */}
+        <div
+          className={cn(
+            "player-scrubber-rail absolute left-0 right-0 top-1/2 -translate-y-1/2 overflow-hidden rounded-full",
+            isHovering ? "h-1.5" : "h-1",
+          )}
+          style={{ transition: "height 0.15s ease" }}
+        >
+          {/* Track background */}
+          <div className="absolute inset-0 bg-white/15 rounded-full" />
+
+          {/* Buffered */}
+          <div
+            className="player-scrubber-buffered absolute inset-y-0 left-0 rounded-full"
+            style={{ width: `${bufferedRatio * 100}%` }}
+          />
+
+          {/* Played */}
+          <div
+            className="player-scrubber-played absolute inset-y-0 left-0 rounded-full"
+            style={{ width: `${activeRatio * 100}%` }}
+          />
         </div>
 
-        {showTimes && (
-          <span className="min-w-[52px] shrink-0 text-xs font-semibold tabular-nums text-white/70">
-            {formatTime(safeDuration)}
-          </span>
+        {/* Thumb */}
+        {canSeek && (
+          <motion.div
+            className="player-scrubber-thumb pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg"
+            style={{ left: `${activeRatio * 100}%` }}
+            animate={{
+              scale: isHovering ? 1.3 : 1,
+              width: isHovering ? 14 : 12,
+              height: isHovering ? 14 : 12,
+            }}
+            transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          />
         )}
       </div>
+
+      {/* Time labels */}
+      {showTimes && (
+        <div className="mt-1 flex items-center justify-between">
+          <span className="player-time-label">{formatTime(currentTime)}</span>
+          <span className="player-time-label opacity-60">
+            -{formatTime(Math.max(0, safeDuration - currentTime))}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
