@@ -184,6 +184,7 @@ export function CinematicVideoPlayer({
                   autoPlay
                   playsInline
                   preload="auto"
+                  referrerPolicy="no-referrer"
                   poster={posterUrl ?? undefined}
                   controlsList="nodownload"
                   onContextMenu={(e) => e.preventDefault()}
