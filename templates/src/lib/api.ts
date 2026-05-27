@@ -163,6 +163,24 @@ function shouldUseDirectPlayback(url?: string): boolean {
   );
 }
 
+export function preloadVideoBytes(url: string): void {
+  if (!url || typeof window === "undefined" || !window.fetch) return;
+  try {
+    const normalized = unwrapLegacyWorkerUrl(url);
+    if (shouldUseDirectPlayback(normalized)) {
+      // Quietly fetch the first 500KB to warm browser caching
+      void fetch(normalized, {
+        headers: {
+          Range: "bytes=0-500000"
+        },
+        mode: "cors"
+      }).catch(() => {});
+    }
+  } catch {
+    // Ignore errors
+  }
+}
+
 function shouldPreferDirectPlaybackOnThisDevice(url?: string): boolean {
   if (typeof window === "undefined" || !url) return false;
   
@@ -522,6 +540,7 @@ export function primeMediaAvailability(mediaUrl?: string | null): void {
   if (!mediaUrl) return;
   preconnectOrigin(mediaUrl);
   warmMediaElement(mediaUrl);
+  preloadVideoBytes(mediaUrl);
   if (mediaAvailabilityCache.has(mediaUrl) || mediaAvailabilityRequests.has(mediaUrl)) {
     return;
   }

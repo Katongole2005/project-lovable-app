@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Movie, Series, Episode, CastMember } from "@/types/movie";
-import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, resolveMediaAvailability, warmMediaElement, fetchMediaSize } from "@/lib/api";
+import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, resolveMediaAvailability, warmMediaElement, fetchMediaSize, primeMediaAvailability } from "@/lib/api";
 
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/StarRating";
@@ -378,12 +378,36 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
       if (movie.type !== "series") {
         if (movie.download_url) fetchMediaSize(movie.download_url, movie.title, movie.mobifliks_id).then(setMovieS1Size);
         if (movie.server2_url) fetchMediaSize(movie.server2_url, movie.title, movie.mobifliks_id).then(setMovieS2Size);
+
+        // Pre-warm the playback stream when the modal opens
+        const targetUrl = movie.server2_url || movie.download_url;
+        if (targetUrl) {
+          void buildMediaUrl({
+            url: targetUrl,
+            title: movie.title,
+            detailsUrl: (movie as any).video_page_url || movie.details_url,
+            mobifliksId: movie.mobifliks_id,
+            play: true,
+          }).then(primeMediaAvailability).catch(() => {});
+        }
       } else {
         const series = movie as Series;
         if (series.episodes && series.episodes.length > 0) {
           const ep1 = series.episodes[0];
           if (ep1.download_url) fetchMediaSize(ep1.download_url, movie.title, ep1.mobifliks_id).then(setMovieS1Size);
           if (ep1.server2_url) fetchMediaSize(ep1.server2_url, movie.title, ep1.mobifliks_id).then(setMovieS2Size);
+
+          // Pre-warm the playback stream of the first episode when the modal opens
+          const targetUrl = ep1.server2_url || ep1.download_url;
+          if (targetUrl) {
+            void buildMediaUrl({
+              url: targetUrl,
+              title: movie.title,
+              detailsUrl: ep1.video_page_url || movie.video_page_url || movie.details_url,
+              mobifliksId: ep1.mobifliks_id,
+              play: true,
+            }).then(primeMediaAvailability).catch(() => {});
+          }
         }
       }
     }
