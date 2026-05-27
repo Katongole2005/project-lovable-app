@@ -138,6 +138,11 @@ export function CinematicVideoPlayer({
     return false;
   }, [activeVideoUrl, videoUrl, activeMovie]);
 
+  const mediaSource = useMemo(() => ({
+    src: activeVideoUrl,
+    type: isMkvUrl ? "video/webm" : "video/mp4"
+  }), [activeVideoUrl, isMkvUrl]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-hidden rounded-none border-none bg-black p-0 [&_.close-orb]:hidden">
@@ -274,7 +279,7 @@ export function CinematicVideoPlayer({
                 </>
               ) : (
                 <MediaPlayer
-                  src={{ src: activeVideoUrl, type: isMkvUrl ? "video/webm" : "video/mp4" }}
+                  src={mediaSource}
                   title={activeTitle}
                   poster={posterUrl ?? undefined}
                   autoPlay
