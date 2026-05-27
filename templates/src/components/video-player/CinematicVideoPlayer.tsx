@@ -9,7 +9,7 @@ import { PlayerSplash } from "./PlayerSplash";
 import { PlayerControls } from "./PlayerControls";
 import { PlayerGestureLayer } from "./PlayerGestureLayer";
 import { PlayerBrandLogo } from "./PlayerBrandLogo";
-import { EndedOverlay, ErrorOverlay, PlayerMkvOverlay } from "./PlayerOverlays";
+import { EndedOverlay, ErrorOverlay } from "./PlayerOverlays";
 
 // Vidstack Core (no default layout CSS)
 import { MediaPlayer, MediaProvider, Track } from "@vidstack/react";
@@ -101,14 +101,6 @@ export function CinematicVideoPlayer({
     setIsSeeking,
   } = engine;
 
-  const [forceWebPlayback, setForceWebPlayback] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setForceWebPlayback(false);
-    }
-  }, [isOpen]);
-
   const isMkvUrl = useMemo(() => {
     const activeUrl = activeVideoUrl || videoUrl || "";
     const lowerActive = activeUrl.toLowerCase();
@@ -145,26 +137,6 @@ export function CinematicVideoPlayer({
     
     return false;
   }, [activeVideoUrl, videoUrl, activeMovie]);
-
-
-  const downloadUrl = useMemo(() => {
-    let dlUrl = activeVideoUrl || videoUrl || "";
-    if (dlUrl.includes("play=1")) {
-      return dlUrl.replace("play=1", "download=1");
-    }
-    return dlUrl + (dlUrl.includes("?") ? "&download=1" : "?download=1");
-  }, [activeVideoUrl, videoUrl]);
-
-  const triggerDownload = useCallback(() => {
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = "";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }, [downloadUrl]);
-
-  const showMkvOverlay = isMkvUrl && (!forceWebPlayback || !!playbackError);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -419,22 +391,10 @@ export function CinematicVideoPlayer({
             </AnimatePresence>
 
             {/* Error overlay */}
-            {playbackError && !isBuffering && !showMkvOverlay && (
+            {playbackError && !isBuffering && (
               <ErrorOverlay
                 message={playbackError}
                 onRetry={handleRetryPlayback}
-                onClose={handleClose}
-              />
-            )}
-
-            {/* MKV Container Compatibility Overlay */}
-            {showMkvOverlay && isPlaying && (
-              <PlayerMkvOverlay
-                activeTitle={activeTitle}
-                posterUrl={posterUrl}
-                videoUrl={activeVideoUrl || videoUrl}
-                onDownload={triggerDownload}
-                onTryAnyway={() => setForceWebPlayback(true)}
                 onClose={handleClose}
               />
             )}
