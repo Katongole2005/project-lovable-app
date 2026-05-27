@@ -270,7 +270,6 @@ export function CinematicVideoPlayer({
                 </>
               ) : (
                 <MediaPlayer
-                  key={activeVideoUrl}
                   src={activeVideoUrl}
                   title={activeTitle}
                   poster={posterUrl ?? undefined}
