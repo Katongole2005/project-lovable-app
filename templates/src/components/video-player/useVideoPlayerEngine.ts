@@ -233,7 +233,8 @@ export function useVideoPlayerEngine({
       }
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
+        playPromise.catch((e) => {
+          if (e.name === "AbortError") return;
           setIsPaused(true);
           setIsBuffering(false);
         });
@@ -255,10 +256,14 @@ export function useVideoPlayerEngine({
         pauseRequestedRef.current = false;
         setIsPaused(false);
         setIsBuffering(videoRef.current.readyState < HTMLMediaElement.HAVE_FUTURE_DATA);
-        void videoRef.current.play().catch(() => {
-          setIsPaused(true);
-          setIsBuffering(false);
-        });
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            if (e.name === "AbortError") return;
+            setIsPaused(true);
+            setIsBuffering(false);
+          });
+        }
       } else {
         pauseRequestedRef.current = true;
         setIsBuffering(false);
@@ -542,7 +547,13 @@ export function useVideoPlayerEngine({
     handleSeek(0);
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
-      void videoRef.current.play().catch(() => setIsPaused(true));
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((e) => {
+          if (e.name === "AbortError") return;
+          setIsPaused(true);
+        });
+      }
     } else {
       beginPlayback();
     }
@@ -926,6 +937,7 @@ export function useVideoPlayerEngine({
               const playPromise = videoRef.current.play();
               if (playPromise !== undefined) {
                 playPromise.catch((e) => {
+                  if (e.name === "AbortError") return;
                   console.error("[Self-Healing Player] Autoplay failed on fallback:", e);
                 });
               }
