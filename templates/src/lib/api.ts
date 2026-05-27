@@ -331,9 +331,7 @@ export async function buildMediaUrl({
   const normalizedUrl = unwrapLegacyWorkerUrl(url);
   const isDev = process.env.NODE_ENV === "development";
   if (play) {
-    // 1. In local development, Cloudflare Worker blocks requests due to local referrer (403).
-    // Direct playback works because we set referrerPolicy="no-referrer" on the video element.
-    if (isDev) {
+    if (isDev && !shouldProxyMediaUrl(normalizedUrl)) {
       preconnectOrigin(normalizedUrl);
       return normalizedUrl;
     }
