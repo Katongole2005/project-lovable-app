@@ -464,23 +464,28 @@ export function useVideoPlayerEngine({
 
   useEffect(() => {
     return () => {
-      // Explicitly tear down the video element to release the browser's media connection pool!
-      if (videoRef.current) {
+      // Find the video element either from the ref or via querying the DOM container
+      const docVideo = containerRef.current?.querySelector("video");
+      const video = videoRef.current || docVideo;
+
+      if (video) {
         try {
-          const video = videoRef.current;
+          console.log("[Player Engine Cleanup] Tearing down active media stream connection...");
           video.pause();
           video.src = "";
           video.removeAttribute("src");
+          
+          // Clear any children <source> elements to abort downloading entirely
           while (video.firstChild) {
             video.removeChild(video.firstChild);
           }
           video.load();
         } catch (e) {
-          console.warn("[Player Cleanup] Video stream cleanup failed:", e);
+          console.warn("[Player Engine Cleanup] Video element stream cleanup failed:", e);
         }
       }
 
-      // Abort active iframe embed connections
+      // Abort any active iframe embed connections
       if (iframeRef.current) {
         try {
           iframeRef.current.src = "about:blank";
@@ -489,7 +494,7 @@ export function useVideoPlayerEngine({
         }
       }
     };
-  }, []);
+  }, [activeVideoUrl]);
 
 
   const currentTimeRef = useRef(currentTime);

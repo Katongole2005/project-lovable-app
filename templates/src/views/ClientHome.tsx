@@ -987,6 +987,8 @@ function ClientHome() {
     setActivePlayerMovie(null);
     setActivePlayerSubtitles([]);
     setActivePlayerSkipSegments([]);
+    setVideoUrl("");
+    setVideoTitle("");
     
     if (location.pathname.startsWith("/movie/") || location.pathname.startsWith("/series/")) {
       const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
@@ -1162,12 +1164,7 @@ function ClientHome() {
   useEffect(() => {
     const handlePopState = () => {
       if (isVideoOpen) {
-        setIsVideoOpen(false);
-        setActivePlaybackItem(null);
-        if (window.location.pathname.startsWith("/movie/") || window.location.pathname.startsWith("/series/")) {
-          const targetPath = viewMode === "home" ? "/" : `/${viewMode}`;
-          navigateTo(targetPath, { replace: true, shallow: true });
-        }
+        handleCloseVideo();
         return;
       }
       if (isModalOpen) {
@@ -1200,7 +1197,7 @@ function ClientHome() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [isModalOpen, isVideoOpen, viewMode]);
+  }, [isModalOpen, isVideoOpen, viewMode, handleCloseVideo]);
 
   const handleHeroPlay = useCallback(async (movie: Movie) => {
     if (!user) {
