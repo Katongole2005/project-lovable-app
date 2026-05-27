@@ -494,7 +494,7 @@ export function useVideoPlayerEngine({
         }
       }
     };
-  }, [activeVideoUrl]);
+  }, []);
 
 
   const currentTimeRef = useRef(currentTime);
