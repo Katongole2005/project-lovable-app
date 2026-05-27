@@ -11,6 +11,7 @@ const nextConfig = {
     ],
   },
   turbopack: {},
+  transpilePackages: ['@vidstack/react', 'vidstack'],
   typescript: {
     ignoreBuildErrors: true, // focus on UI functionality first during migration
   },

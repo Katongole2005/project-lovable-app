@@ -1,14 +1,21 @@
 "use client";
 import { AnimatePresence } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { CinematicVideoPlayerProps } from "./types";
 import { useVideoPlayerEngine } from "./useVideoPlayerEngine";
 import { PlayerSplash } from "./PlayerSplash";
-import { PlayerControls } from "./PlayerControls";
-import { PlayerGestureLayer } from "./PlayerGestureLayer";
-import { BufferingOverlay, EndedOverlay, ErrorOverlay } from "./PlayerOverlays";
+import { EndedOverlay, ErrorOverlay } from "./PlayerOverlays";
 import { PlayerBrandLogo } from "./PlayerBrandLogo";
+
+// Vidstack Core Elements
+import { MediaPlayer, MediaProvider, Track } from "@vidstack/react";
+import { defaultLayoutIcons, DefaultVideoLayout } from "@vidstack/react/player/layouts/default";
+
+// Vidstack CSS Stylesheets
+import "@vidstack/react/player/styles/default/theme.css";
+import "@vidstack/react/player/styles/default/layouts/video.css";
 
 export function CinematicVideoPlayer({
   isOpen,
@@ -49,7 +56,6 @@ export function CinematicVideoPlayer({
     usableSubtitles,
     activeSkipSegment,
     iframeSrc,
-    gestureFlashes,
     containerRef,
     iframeRef,
     videoRef,
@@ -62,41 +68,19 @@ export function CinematicVideoPlayer({
     setShowSplashDetails,
     currentTime,
     duration,
-    volume,
-    isMuted,
-    setIsMuted,
-    setVolume,
-    playbackRate,
-    isBuffering,
-    isSeeking,
-    setIsSeeking,
     playbackError,
-    bufferedTime,
-    isPipAvailable,
-    isPipActive,
     activeSubtitleId,
-    setActiveSubtitleId,
     beginPlayback,
-    togglePlay,
-    toggleFullscreen,
-    toggleMobileOrientation,
-    togglePip,
-    changePlaybackRate,
     handleClose,
     handleRetryPlayback,
-    handleSeek,
-    skip,
     skipActiveSegment,
-    handlePointerTap,
     resetControlsTimeout,
-    sendCommand,
     isEmbeddableVideo,
     videoHandlers,
     activeVideoUrl,
     posterGradient,
     handleReplay,
-    setIsBuffering,
-    setShowControls,
+    isBuffering,
   } = engine;
 
   const chromeHeight = controlsVisible ? "112px" : "48px";
@@ -118,11 +102,6 @@ export function CinematicVideoPlayer({
           style={{ "--player-chrome-height": chromeHeight } as React.CSSProperties}
           onPointerMove={() => {
             if (isPlaying) resetControlsTimeout();
-          }}
-          onClick={(e) => {
-            if (!isPlaying) return;
-            if ((e.target as HTMLElement).closest(".video-player-chrome, button, [role='slider']")) return;
-            togglePlay();
           }}
         >
           <AnimatePresence>
@@ -171,40 +150,70 @@ export function CinematicVideoPlayer({
                   key={iframeSrc}
                   src={iframeSrc}
                   title={activeTitle}
-                  onLoad={() => setIsBuffering(false)}
+                  onLoad={() => {}}
                   allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                   allowFullScreen
                   className="video-player-embed relative z-10 h-full w-full border-0 bg-black"
                 />
               ) : (
-                <video
-                  ref={videoRef}
+                <MediaPlayer
                   key={activeVideoUrl}
                   src={activeVideoUrl}
+                  title={activeTitle}
+                  poster={posterUrl ?? undefined}
                   autoPlay
                   playsInline
                   preload="auto"
                   referrerPolicy="no-referrer"
-                  poster={posterUrl ?? undefined}
-                  controlsList="nodownload"
-                  onContextMenu={(e) => e.preventDefault()}
+                  onProviderSetup={(eventOrProvider) => {
+                    if (!eventOrProvider) return;
+                    let provider: any = eventOrProvider;
+                    if (eventOrProvider && typeof (eventOrProvider as any).detail !== "undefined") {
+                      provider = (eventOrProvider as any).detail;
+                    } else if (eventOrProvider && typeof (eventOrProvider as any).nativeEvent?.detail !== "undefined") {
+                      provider = (eventOrProvider as any).nativeEvent.detail;
+                    }
+
+                    if (provider && typeof provider === "object") {
+                      if (provider.type === "video" || provider.type === "hls") {
+                        (videoRef as any).current = provider.video;
+                      }
+                    }
+                  }}
                   className="video-player-video relative z-10 h-full w-full bg-black object-contain"
+                  style={{ width: "100%", height: "100%" }}
                   {...videoHandlers}
                 >
-                  {usableSubtitles.map((track) => (
-                    <track
-                      key={track.id}
-                      kind="subtitles"
-                      src={track.url}
-                      srcLang={track.language}
-                      label={track.label}
-                      default={activeSubtitleId === track.id}
-                    />
-                  ))}
-                </video>
+                  <MediaProvider>
+                    {usableSubtitles.map((track) => (
+                      <Track
+                        key={track.id}
+                        kind="subtitles"
+                        src={track.url}
+                        srcLang={track.language}
+                        label={track.label}
+                        default={activeSubtitleId === track.id}
+                      />
+                    ))}
+                  </MediaProvider>
+                  <DefaultVideoLayout icons={defaultLayoutIcons} />
+                </MediaPlayer>
               )}
             </div>
 
+            {/* Custom Close Button overlay */}
+            {isPlaying && controlsVisible && (
+              <button
+                type="button"
+                onClick={handleClose}
+                aria-label="Close player"
+                className="absolute top-4 left-4 z-[200] flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition hover:bg-black/80 hover:scale-105 active:scale-95 shadow-md"
+              >
+                <ChevronDown className="h-6 w-6" />
+              </button>
+            )}
+
+            {/* Brand Logo overlay */}
             {isPlaying && controlsVisible && !hasEnded && !playbackError && (
               <PlayerBrandLogo
                 visible={controlsVisible}
@@ -215,70 +224,27 @@ export function CinematicVideoPlayer({
               />
             )}
 
-            {/* Gestures only when chrome is hidden — never block buttons/scrubber */}
-            {isPlaying && !hasEnded && !playbackError && !controlsVisible && (
-              <PlayerGestureLayer flashes={gestureFlashes} onTap={handlePointerTap} />
+            {/* Custom Skip Segment Overlay */}
+            {isPlaying && activeSkipSegment && !playbackError && !hasEnded && (
+              <div className="pointer-events-none absolute bottom-24 right-4 z-[200]">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    skipActiveSegment();
+                  }}
+                  className="pointer-events-auto rounded-full border-2 border-white/95 bg-black/80 px-6 py-3 text-sm font-bold text-white shadow-2xl hover:bg-black hover:scale-105 active:scale-95 transition-all"
+                >
+                  Skip {activeSkipSegment.label}
+                </button>
+              </div>
             )}
-
-            {isBuffering && <BufferingOverlay activeTitle={activeTitle} activeMovie={activeMovie} />}
 
             {playbackError && !isBuffering && (
               <ErrorOverlay
                 message={playbackError}
                 onRetry={handleRetryPlayback}
                 onClose={handleClose}
-              />
-            )}
-
-            {isPlaying && !playbackError && !hasEnded && (
-              <PlayerControls
-                layout={layout}
-                visible={controlsVisible}
-                activeTitle={activeTitle}
-                activeMovie={activeMovie}
-                isPaused={isPaused}
-                isBuffering={isBuffering}
-                isFullscreen={isFullscreen}
-                isLandscape={isLandscape}
-                isPipAvailable={isPipAvailable}
-                isPipActive={isPipActive}
-                isEmbeddableVideo={isEmbeddableVideo}
-                currentTime={currentTime}
-                duration={duration}
-                bufferedTime={bufferedTime}
-                volume={volume}
-                isMuted={isMuted}
-                playbackRate={playbackRate}
-                activeSkipSegment={activeSkipSegment}
-                usableSubtitles={usableSubtitles}
-                activeSubtitleId={activeSubtitleId}
-                onClose={handleClose}
-                onTogglePlay={togglePlay}
-                onSkip={skip}
-                onSeek={handleSeek}
-                onSeekStart={() => setIsSeeking(true)}
-                onSeekEnd={() => setIsSeeking(false)}
-                onToggleFullscreen={toggleFullscreen}
-                onToggleOrientation={toggleMobileOrientation}
-                onTogglePip={togglePip}
-                onChangeRate={changePlaybackRate}
-                onVolumeChange={(vol) => {
-                  setVolume(vol);
-                  setIsMuted(vol === 0);
-                  if (isEmbeddableVideo) sendCommand("volume", vol);
-                  else if (videoRef.current) {
-                    videoRef.current.volume = vol;
-                    videoRef.current.muted = vol === 0;
-                  }
-                }}
-                onToggleMute={() => {
-                  const next = !isMuted;
-                  setIsMuted(next);
-                  if (isEmbeddableVideo) sendCommand("muted", next);
-                  else if (videoRef.current) videoRef.current.muted = next;
-                }}
-                onSubtitleChange={setActiveSubtitleId}
-                onSkipSegment={skipActiveSegment}
               />
             )}
           </div>
