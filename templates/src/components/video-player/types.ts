@@ -6,6 +6,7 @@ export interface CinematicVideoPlayerProps {
   onClose: () => void;
   videoUrl: string;
   title: string;
+  isMkv?: boolean;
   movie?: Movie | Series | null;
   onTimeUpdate?: (currentTime: number, duration: number, force?: boolean) => void;
   startTime?: number;

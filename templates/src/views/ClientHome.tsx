@@ -316,6 +316,7 @@ function ClientHome() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
+  const [isVideoMkv, setIsVideoMkv] = useState(false);
   const [videoTitle, setVideoTitle] = useState("");
   const [videoStartTime, setVideoStartTime] = useState(0);
   const [activePlayerMovie, setActivePlayerMovie] = useState<Movie | Series | null>(null);
@@ -1071,6 +1072,8 @@ function ClientHome() {
 
     primeMediaAvailability(url);
     startTransition(() => {
+      const isMkv = (url || "").toLowerCase().includes(".mkv") || (url || "").toLowerCase().includes(".avi");
+      setIsVideoMkv(isMkv);
       setVideoUrl(playbackUrl);
       setVideoTitle(title);
       setVideoStartTime(startAt);
@@ -2420,6 +2423,7 @@ function ClientHome() {
               onClose={handleCloseVideo}
               videoUrl={videoUrl}
               title={videoTitle}
+              isMkv={isVideoMkv}
               movie={activePlayerMovie}
               onTimeUpdate={handleVideoTimeUpdate}
               startTime={videoStartTime}

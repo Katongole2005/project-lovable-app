@@ -20,6 +20,7 @@ export function CinematicVideoPlayer({
   onClose,
   videoUrl,
   title,
+  isMkv,
   movie,
   onTimeUpdate,
   startTime = 0,
@@ -102,41 +103,11 @@ export function CinematicVideoPlayer({
   } = engine;
 
   const isMkvUrl = useMemo(() => {
+    if (isMkv !== undefined) return isMkv;
     const activeUrl = activeVideoUrl || videoUrl || "";
     const lowerActive = activeUrl.toLowerCase();
-    
-    if (lowerActive.includes(".mkv") || lowerActive.includes(".avi")) {
-      return true;
-    }
-    
-    if (activeMovie) {
-      const lowerS2 = (activeMovie.server2_url || "").toLowerCase();
-      const lowerDl = (activeMovie.download_url || "").toLowerCase();
-      if (lowerS2.includes(".mkv") || lowerDl.includes(".mkv") || lowerS2.includes(".avi") || lowerDl.includes(".avi")) {
-        return true;
-      }
-      
-      if ("episodes" in activeMovie && Array.isArray(activeMovie.episodes)) {
-        const hasMkvEp = activeMovie.episodes.some(ep => {
-          const epDl = (ep.download_url || "").toLowerCase();
-          const epS2 = (ep.server2_url || "").toLowerCase();
-          return epDl.includes(".mkv") || epS2.includes(".mkv") || epDl.includes(".avi") || epS2.includes(".avi");
-        });
-        if (hasMkvEp) return true;
-      }
-
-      if (activeMovie.vj_versions && Array.isArray(activeMovie.vj_versions)) {
-        const hasMkvVj = activeMovie.vj_versions.some(vj => {
-          const vjDl = (vj.download_url || "").toLowerCase();
-          const vjS2 = (vj.server2_url || "").toLowerCase();
-          return vjDl.includes(".mkv") || vjS2.includes(".mkv") || vjDl.includes(".avi") || vjS2.includes(".avi");
-        });
-        if (hasMkvVj) return true;
-      }
-    }
-    
-    return false;
-  }, [activeVideoUrl, videoUrl, activeMovie]);
+    return lowerActive.includes(".mkv") || lowerActive.includes(".avi");
+  }, [isMkv, activeVideoUrl, videoUrl]);
 
   const mediaSource = useMemo(() => ({
     src: activeVideoUrl,
