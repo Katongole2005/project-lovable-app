@@ -137,7 +137,18 @@ export function warmMediaElement(url?: string | null): void {
     }
 
     warmedMediaUrls.add(url);
-    u    // Ignore errors
+  } catch {
+    // Ignore errors
+  }
+}
+
+export function unwrapLegacyWorkerUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!/cdn\.s-u\.in$/i.test(parsed.hostname)) return url;
+    return parsed.searchParams.get("url") || url;
+  } catch {
+    return url;
   }
 }
 

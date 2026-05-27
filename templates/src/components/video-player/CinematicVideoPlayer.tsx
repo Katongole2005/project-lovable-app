@@ -1,5 +1,5 @@
 "use client";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -97,7 +97,7 @@ export function CinematicVideoPlayer({
             "video-player relative flex h-full w-full flex-col overflow-hidden bg-black",
             `video-player--${layout}`,
             isFullscreen && "video-player--fullscreen",
-            !controlsVisible && isPlaying && !isPaused && "video-player--idle",
+            !controlsVisible && isPlaying && "video-player--idle",
           )}
           style={{ "--player-chrome-height": chromeHeight } as React.CSSProperties}
           onPointerMove={() => {
@@ -202,16 +202,23 @@ export function CinematicVideoPlayer({
             </div>
 
             {/* Custom Close Button overlay */}
-            {isPlaying && controlsVisible && (
-              <button
-                type="button"
-                onClick={handleClose}
-                aria-label="Close player"
-                className="absolute top-4 left-4 z-[200] flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition hover:bg-black/80 hover:scale-105 active:scale-95 shadow-md"
-              >
-                <ChevronDown className="h-6 w-6" />
-              </button>
-            )}
+            <AnimatePresence>
+              {isPlaying && controlsVisible && (
+                <motion.button
+                  key="close-button"
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  type="button"
+                  onClick={handleClose}
+                  aria-label="Close player"
+                  className="absolute top-4 left-4 z-[200] flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md shadow-md hover:bg-black/80 hover:scale-105 active:scale-95"
+                >
+                  <ChevronDown className="h-6 w-6" />
+                </motion.button>
+              )}
+            </AnimatePresence>
 
             {/* Brand Logo overlay */}
             {isPlaying && controlsVisible && !hasEnded && !playbackError && (

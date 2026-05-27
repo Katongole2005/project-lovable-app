@@ -102,7 +102,7 @@ export function useVideoPlayerEngine({
   const controlsHideDelayMs = isTouchDevice ? 4000 : 2800;
 
   const layout = detectPlayerLayout(isTouchDevice, isLandscape, viewportWidth);
-  const controlsVisible = showControls || isPaused || hasEnded || !isPlaying || isSeeking || !!playbackError;
+  const controlsVisible = showControls || hasEnded || !isPlaying || isSeeking || !!playbackError;
 
   const usableSubtitles = useMemo(
     () => subtitles.filter((track) => track.url?.trim()),
@@ -176,9 +176,9 @@ export function useVideoPlayerEngine({
   const resetControlsTimeout = useCallback(() => {
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     setShowControls(true);
-    if (!isPlaying || isPaused || isSeeking || hasEnded) return;
+    if (!isPlaying || isSeeking || hasEnded) return;
     controlsTimeoutRef.current = setTimeout(() => setShowControls(false), controlsHideDelayMs);
-  }, [controlsHideDelayMs, hasEnded, isPaused, isPlaying, isSeeking]);
+  }, [controlsHideDelayMs, hasEnded, isPlaying, isSeeking]);
 
   const pushGestureFlash = useCallback((side: GestureFlash["side"], label: string) => {
     const id = ++gestureFlashIdRef.current;
