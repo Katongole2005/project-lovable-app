@@ -1723,7 +1723,7 @@ function MobileMovieLayout({
                               seriesImage={movie.image_url}
                               seriesDetailsUrl={(movie as any).video_page_url || movie.details_url}
                               seasonNumber={selectedSeason}
-                              onPlay={onPlay}
+                              onPlay={handlePlay}
                               index={idx}
                               isResumeTarget={
                                 resumeEpisode
@@ -2101,7 +2101,7 @@ function DesktopEpisodeSection({
             seriesTitle={movie.title}
             seriesImage={movie.image_url}
             seriesDetailsUrl={(movie as any).video_page_url || movie.details_url}
-            onPlay={onPlay}
+            onPlay={handlePlay}
           />
         ))}
       </div>
