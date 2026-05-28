@@ -108,6 +108,23 @@ export function useVideoPlayerEngine({
   const isEmbeddableVideo = isEmbeddableUrl(activeVideoUrl);
   const sessionKey = `${videoUrl}|${startTime}|${movie?.mobifliks_id ?? ""}`;
   const controlsHideDelayMs = isTouchDevice ? 4000 : 2800;
+  const isRawReferrerLockedUrl = useCallback((url?: string | null) => {
+    if (!url) return false;
+    try {
+      const parsed = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+      if (/cdn\.s-u\.in$/i.test(parsed.hostname)) return false;
+      return (
+        /b-cdn\.net/i.test(url) ||
+        /munotek/i.test(url) ||
+        /munotech/i.test(url) ||
+        /munoserver/i.test(url) ||
+        /mobifliks\.(info|com)/i.test(url) ||
+        /download(mp4|serie|video|mp3)\.php/i.test(url)
+      );
+    } catch {
+      return false;
+    }
+  }, []);
 
   const layout = detectPlayerLayout(isTouchDevice, isLandscape, viewportWidth);
   const controlsVisible = showControls || hasEnded || !isPlaying || isSeeking || !!playbackError;
@@ -598,6 +615,27 @@ export function useVideoPlayerEngine({
     if (!isOpen || !activeVideoUrl || !isPlaying) return;
     setIsBuffering(true);
   }, [activeVideoUrl, isOpen, isPlaying]);
+
+  useEffect(() => {
+    if (!isOpen || !activeVideoUrl || !isRawReferrerLockedUrl(activeVideoUrl)) return;
+
+    let cancelled = false;
+    buildMediaUrl({
+      url: activeVideoUrl,
+      title: activeTitle,
+      mobifliksId: activeMovie?.mobifliks_id,
+      detailsUrl: activeMovie?.video_page_url || activeMovie?.details_url,
+      play: true,
+    }).then((proxiedUrl) => {
+      if (!cancelled && proxiedUrl && proxiedUrl !== activeVideoUrl) {
+        setActiveVideoUrl(proxiedUrl);
+      }
+    }).catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMovie, activeTitle, activeVideoUrl, isOpen, isRawReferrerLockedUrl]);
 
   useEffect(() => {
     if (!isOpen || !activeVideoUrl || isEmbeddableVideo || isPlaying) return;

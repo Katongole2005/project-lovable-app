@@ -1,5 +1,5 @@
 // Bump the cache whenever we change caching behavior
-const CACHE_NAME = "moviebay-v10";
+const CACHE_NAME = "moviebay-v11";
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
