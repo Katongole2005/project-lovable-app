@@ -1216,12 +1216,6 @@ function ClientHome() {
   }, [isModalOpen, isVideoOpen, viewMode, handleCloseVideo]);
 
   const handleHeroPlay = useCallback(async (movie: Movie) => {
-    if (!user) {
-      localStorage.setItem("intendedAction", JSON.stringify({ type: "movie", data: movie, action: "play" }));
-      setGatedAction("watch");
-      setIsAuthGatedModalOpen(true);
-      return;
-    }
     const targetUrl = movie.server2_url || movie.download_url;
     if (targetUrl) {
       const mediaUrl = await buildMediaUrl({
@@ -1245,7 +1239,7 @@ function ClientHome() {
     } else {
       handleMovieClick(movie);
     }
-  }, [handlePlayVideo, handleMovieClick, user]);
+  }, [handlePlayVideo, handleMovieClick]);
 
   // Handle auto-resumption of intended actions after login
   useEffect(() => {

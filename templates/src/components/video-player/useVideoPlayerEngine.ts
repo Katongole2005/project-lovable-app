@@ -87,6 +87,14 @@ export function useVideoPlayerEngine({
   const lastTapRef = useRef({ time: 0, side: null as "left" | "right" | "center" | null });
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
+  const getVideoElement = useCallback(() => {
+    const video = videoRef.current || containerRef.current?.querySelector("video");
+    if (video && videoRef.current !== video) {
+      videoRef.current = video;
+    }
+    return video;
+  }, []);
+
   const activeTitle = sessionTitle || title;
   const activeMovie = sessionMovie ?? movie ?? null;
   const posterUrl = activeMovie?.image_url ? getImageUrl(activeMovie.image_url) : null;
@@ -199,13 +207,16 @@ export function useVideoPlayerEngine({
       setResumeTime(clamped);
       if (isEmbeddableVideo) {
         sendCommand("seek", clamped);
-      } else if (videoRef.current) {
-        pauseRequestedRef.current = videoRef.current.paused;
-        videoRef.current.currentTime = clamped;
+      } else {
+        const video = getVideoElement();
+        if (video) {
+          pauseRequestedRef.current = video.paused;
+          video.currentTime = clamped;
+        }
       }
       resetControlsTimeout();
     },
-    [duration, isEmbeddableVideo, resetControlsTimeout, sendCommand],
+    [duration, getVideoElement, isEmbeddableVideo, resetControlsTimeout, sendCommand],
   );
 
   const skip = useCallback(
@@ -225,13 +236,14 @@ export function useVideoPlayerEngine({
     setShowControls(true);
     void enterMobileLandscape();
 
-    if (videoRef.current) {
-      if (videoRef.current.readyState >= 3) {
+    const video = getVideoElement();
+    if (video) {
+      if (video.readyState >= 3) {
         setIsBuffering(false);
       } else {
         setIsBuffering(true);
       }
-      const playPromise = videoRef.current.play();
+      const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch((e) => {
           if (e.name === "AbortError") return;
@@ -243,7 +255,7 @@ export function useVideoPlayerEngine({
       setIsBuffering(true);
     }
     resetControlsTimeout();
-  }, [enterMobileLandscape, resetControlsTimeout]);
+  }, [enterMobileLandscape, getVideoElement, resetControlsTimeout]);
 
   const togglePlay = useCallback(() => {
     if (!isPlaying) {
@@ -251,12 +263,13 @@ export function useVideoPlayerEngine({
       return;
     }
 
-    if (!isEmbeddableVideo && videoRef.current) {
-      if (videoRef.current.paused) {
+    const video = getVideoElement();
+    if (!isEmbeddableVideo && video) {
+      if (video.paused) {
         pauseRequestedRef.current = false;
         setIsPaused(false);
-        setIsBuffering(videoRef.current.readyState < HTMLMediaElement.HAVE_FUTURE_DATA);
-        const playPromise = videoRef.current.play();
+        setIsBuffering(video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA);
+        const playPromise = video.play();
         if (playPromise !== undefined) {
           playPromise.catch((e) => {
             if (e.name === "AbortError") return;
@@ -267,7 +280,7 @@ export function useVideoPlayerEngine({
       } else {
         pauseRequestedRef.current = true;
         setIsBuffering(false);
-        videoRef.current.pause();
+        video.pause();
       }
     } else if (isPaused) {
       setIsPaused(false);
@@ -280,7 +293,7 @@ export function useVideoPlayerEngine({
     }
     setShowControls(true);
     resetControlsTimeout();
-  }, [beginPlayback, isEmbeddableVideo, isPaused, isPlaying, resetControlsTimeout, sendCommand]);
+  }, [beginPlayback, getVideoElement, isEmbeddableVideo, isPaused, isPlaying, resetControlsTimeout, sendCommand]);
 
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;

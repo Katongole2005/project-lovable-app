@@ -594,10 +594,6 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
   }, [movie, selectedServer, onAuthRequired, user]);
 
   const handlePrimaryAction = React.useCallback((serverId?: 1 | 2) => {
-    if (!user) {
-      if (onAuthRequired) onAuthRequired("watch");
-      return;
-    }
     const srv = serverId ?? selectedServer;
     if (isSeries) {
       if (series.episodes && series.episodes.length > 0) {
@@ -640,7 +636,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
     if (targetUrl) {
       handlePlay(targetUrl, movie.title, 0, movie.mobifliks_id, (movie as any).video_page_url || movie.details_url);
     }
-  }, [isSeries, series.episodes, resumeEpisode, movie, selectedServer, handlePlay, onAuthRequired, user]);
+  }, [isSeries, series.episodes, resumeEpisode, movie, selectedServer, handlePlay]);
 
   const desktopBorderColor = getSubtleArtworkBorder(artworkTint);
 
@@ -925,10 +921,6 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                           size="lg"
                           className="btn-premium-red gap-2 rounded-full px-8 h-12 text-base font-semibold border-0"
                           onClick={() => {
-                            if (!user) {
-                              if (onAuthRequired) onAuthRequired("watch");
-                              return;
-                            }
                             const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
                             if (versions.length > 1) {
                               setActionStep("watch_vj");
