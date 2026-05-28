@@ -155,11 +155,24 @@ export function unwrapLegacyWorkerUrl(url: string): string {
 export function shouldUseDirectPlayback(url?: string): boolean {
   if (!url) return false;
   const normalized = unwrapLegacyWorkerUrl(url);
+  if (isReferrerLockedMediaUrl(normalized)) return false;
   return (
-    /b-cdn\.net/i.test(normalized) ||
     /bunnycdn\.com/i.test(normalized) ||
     /storage\.googleapis\.com/i.test(normalized) ||
     /\.(mp4|m4v|webm)(\?|$)/i.test(normalized)
+  );
+}
+
+function isReferrerLockedMediaUrl(url?: string): boolean {
+  if (!url) return false;
+  const normalized = unwrapLegacyWorkerUrl(url);
+  return (
+    /b-cdn\.net/i.test(normalized) ||
+    /munotek/i.test(normalized) ||
+    /munotech/i.test(normalized) ||
+    /munoserver/i.test(normalized) ||
+    /mobifliks\.(info|com)/i.test(normalized) ||
+    /download(mp4|serie|video|mp3)\.php/i.test(normalized)
   );
 }
 
@@ -167,7 +180,7 @@ export function preloadVideoBytes(url: string): void {
   if (!url || typeof window === "undefined" || !window.fetch) return;
   try {
     const normalized = unwrapLegacyWorkerUrl(url);
-    if (shouldUseDirectPlayback(normalized)) {
+    if (shouldUseDirectPlayback(normalized) && !isReferrerLockedMediaUrl(normalized)) {
       // Quietly fetch the first 500KB to warm browser caching
       void fetch(normalized, {
         headers: {
@@ -341,7 +354,7 @@ export async function buildMediaUrl({
     // 2. In production, check if the device is a Safari/iOS device AND the URL is not strictly referrer-locked.
     // If so, we can allow direct playback as a fallback for native AVPlayer.
     const isIOSorSafari = shouldPreferDirectPlaybackOnThisDevice(normalizedUrl);
-    const hasStrictReferrerLock = /munotech|munoserver/i.test(normalizedUrl);
+    const hasStrictReferrerLock = isReferrerLockedMediaUrl(normalizedUrl);
 
     if (shouldProxyMediaUrl(normalizedUrl)) {
       if (isIOSorSafari && !hasStrictReferrerLock && shouldUseDirectPlayback(normalizedUrl)) {
