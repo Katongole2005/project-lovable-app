@@ -3,14 +3,14 @@
  * Uses Web Crypto API (AES-GCM) to generate self-destructing, encrypted URLs.
  */
 
-const SECRET_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "4f8e9d2a1b5c7e0f8a9b2c3d4e5f6a7b";
+const SECRET_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY?.trim() || "";
 
 /**
  * Encrypts a payload into a URL-safe Base64 token.
  * Payload includes the original URL, title, and a configurable expiration timestamp.
  */
 export async function generateSecureToken(url: string, title: string, expirationHours: number = 24): Promise<string | null> {
-  if (!SECRET_KEY) return null; // Fallback to raw if no key is configured
+  if (!SECRET_KEY) return null; // Fallback to the worker's legacy url/name mode if no shared key is configured.
 
   try {
     const payload = JSON.stringify({
