@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getImageUrl, buildMediaUrl, unwrapLegacyWorkerUrl } from "@/lib/api";
+import { getImageUrl, buildMediaUrl, forceProxyPlaybackUrl, isReferrerLockedMediaUrl, unwrapLegacyWorkerUrl } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { incrementUserStat } from "@/lib/stats";
 import type { Movie, Series, SkipSegment, SubtitleTrack } from "@/types/movie";
@@ -58,7 +58,7 @@ export function useVideoPlayerEngine({
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1280,
   );
-  const [activeVideoUrl, setActiveVideoUrl] = useState(videoUrl);
+  const [activeVideoUrl, setActiveVideoUrl] = useState(() => forceProxyPlaybackUrl(videoUrl, title));
   const [resumeTime, setResumeTime] = useState(startTime);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [bufferedTime, setBufferedTime] = useState(0);
@@ -110,20 +110,14 @@ export function useVideoPlayerEngine({
   const controlsHideDelayMs = isTouchDevice ? 4000 : 2800;
   const isRawReferrerLockedUrl = useCallback((url?: string | null) => {
     if (!url) return false;
-    try {
-      const parsed = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost");
-      if (/cdn\.s-u\.in$/i.test(parsed.hostname)) return false;
-      return (
-        /b-cdn\.net/i.test(url) ||
-        /munotek/i.test(url) ||
-        /munotech/i.test(url) ||
-        /munoserver/i.test(url) ||
-        /mobifliks\.(info|com)/i.test(url) ||
-        /download(mp4|serie|video|mp3)\.php/i.test(url)
-      );
-    } catch {
-      return false;
-    }
+    const parsed = (() => {
+      try {
+        return new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+      } catch {
+        return null;
+      }
+    })();
+    return !/cdn\.s-u\.in$/i.test(parsed?.hostname || "") && isReferrerLockedMediaUrl(url);
   }, []);
 
   const layout = detectPlayerLayout(isTouchDevice, isLandscape, viewportWidth);
@@ -410,13 +404,13 @@ export function useVideoPlayerEngine({
     setHasEnded(false);
     setIsPaused(false);
     setIsBuffering(true);
-    setActiveVideoUrl(videoUrl);
+    setActiveVideoUrl(forceProxyPlaybackUrl(videoUrl, activeTitle));
     const resumeAt = currentTime || startTime;
     setResumeTime(resumeAt);
     setCurrentTime(resumeAt);
     videoRef.current?.load();
     beginPlayback();
-  }, [beginPlayback, currentTime, startTime, videoUrl]);
+  }, [activeTitle, beginPlayback, currentTime, startTime, videoUrl]);
 
   const skipActiveSegment = useCallback(() => {
     if (!activeSkipSegment) return;
@@ -487,7 +481,7 @@ export function useVideoPlayerEngine({
     setHasEnded(false);
     setShowControls(true);
     setCurrentTime(startTime);
-    setActiveVideoUrl(videoUrl);
+    setActiveVideoUrl(forceProxyPlaybackUrl(videoUrl, title));
     setResumeTime(startTime);
     setPlaybackError(null);
     setDuration(0);
@@ -497,7 +491,7 @@ export function useVideoPlayerEngine({
     setGestureFlashes([]);
     const defaultSubtitle = usableSubtitles.find((t) => t.language === "en") ?? usableSubtitles[0];
     setActiveSubtitleId(defaultSubtitle?.id ?? null);
-  }, [isOpen, sessionKey, startTime, usableSubtitles, videoUrl]);
+  }, [isOpen, sessionKey, startTime, title, usableSubtitles, videoUrl]);
 
   useEffect(() => {
     if (!isOpen) {

@@ -163,7 +163,7 @@ export function shouldUseDirectPlayback(url?: string): boolean {
   );
 }
 
-function isReferrerLockedMediaUrl(url?: string): boolean {
+export function isReferrerLockedMediaUrl(url?: string): boolean {
   if (!url) return false;
   const normalized = unwrapLegacyWorkerUrl(url);
   return (
@@ -174,6 +174,32 @@ function isReferrerLockedMediaUrl(url?: string): boolean {
     /mobifliks\.(info|com)/i.test(normalized) ||
     /download(mp4|serie|video|mp3)\.php/i.test(normalized)
   );
+}
+
+export function buildImmediateWorkerPlaybackUrl(targetUrl: string, title: string): string | null {
+  if (!CLOUDFLARE_WORKER_URL || !targetUrl) return null;
+  const endpoint = createUrl(CLOUDFLARE_WORKER_URL);
+  if (!endpoint) return null;
+
+  endpoint.searchParams.set("url", unwrapLegacyWorkerUrl(targetUrl));
+  endpoint.searchParams.set("name", title || "video");
+  endpoint.searchParams.set("play", "1");
+  return endpoint.toString();
+}
+
+export function forceProxyPlaybackUrl(url: string, title: string): string {
+  if (!url || !isReferrerLockedMediaUrl(url)) return url;
+
+  try {
+    const parsed = createUrl(url);
+    if (parsed && /cdn\.s-u\.in$/i.test(parsed.hostname)) {
+      return url;
+    }
+  } catch {
+    // Fall through and try to proxy.
+  }
+
+  return buildImmediateWorkerPlaybackUrl(url, title) || url;
 }
 
 export function preloadVideoBytes(url: string): void {
