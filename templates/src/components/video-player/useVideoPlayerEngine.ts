@@ -374,7 +374,8 @@ export function useVideoPlayerEngine({
 
     // Clean up the video element while still fully in the DOM!
     const docVideo = containerRef.current?.querySelector("video");
-    const video = videoRef.current || docVideo;
+    const globalVideo = typeof window !== "undefined" ? (window as any).__activeVideoElement : null;
+    const video = videoRef.current || docVideo || globalVideo;
     if (video) {
       try {
         console.log("[Player Engine HandleClose] Tearing down active media stream connection...");
@@ -385,6 +386,9 @@ export function useVideoPlayerEngine({
           video.removeChild(video.firstChild);
         }
         video.load();
+        if (typeof window !== "undefined") {
+          (window as any).__activeVideoElement = null;
+        }
       } catch (e) {
         console.warn("[Player Engine HandleClose] Video stream cleanup failed:", e);
       }
@@ -506,9 +510,10 @@ export function useVideoPlayerEngine({
 
   useEffect(() => {
     return () => {
-      // Find the video element either from the ref or via querying the DOM container
+      // Find the video element either from the ref, DOM container, or global window registry
       const docVideo = containerRef.current?.querySelector("video");
-      const video = videoRef.current || docVideo;
+      const globalVideo = typeof window !== "undefined" ? (window as any).__activeVideoElement : null;
+      const video = videoRef.current || docVideo || globalVideo;
 
       if (video) {
         try {
@@ -522,6 +527,9 @@ export function useVideoPlayerEngine({
             video.removeChild(video.firstChild);
           }
           video.load();
+          if (typeof window !== "undefined") {
+            (window as any).__activeVideoElement = null;
+          }
         } catch (e) {
           console.warn("[Player Engine Cleanup] Video element stream cleanup failed:", e);
         }
@@ -1145,5 +1153,6 @@ export function useVideoPlayerEngine({
     handleReplay,
     setIsBuffering,
     setShowControls,
+    sessionKey,
   };
 }

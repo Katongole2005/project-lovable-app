@@ -1164,8 +1164,9 @@ function ClientHome() {
   useEffect(() => {
     const handlePopState = () => {
       if (isVideoOpen) {
-        // Proactively find and cleanly tear down the video element in the DOM before unmounting
-        const video = document.querySelector("video");
+        // Proactively find and cleanly tear down the video element in the DOM or global registry before unmounting
+        const globalVideo = typeof window !== "undefined" ? (window as any).__activeVideoElement : null;
+        const video = document.querySelector("video") || globalVideo;
         if (video) {
           try {
             console.log("[ClientHome PopState] Tearing down active media stream connection...");
@@ -1176,6 +1177,9 @@ function ClientHome() {
               video.removeChild(video.firstChild);
             }
             video.load();
+            if (typeof window !== "undefined") {
+              (window as any).__activeVideoElement = null;
+            }
           } catch (e) {
             console.warn("[ClientHome PopState] Video stream cleanup failed:", e);
           }

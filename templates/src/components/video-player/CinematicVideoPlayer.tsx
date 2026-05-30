@@ -100,6 +100,7 @@ export function CinematicVideoPlayer({
     setActiveSubtitleId,
     isSeeking,
     setIsSeeking,
+    sessionKey,
   } = engine;
 
   const isMkvUrl = useMemo(() => {
@@ -250,6 +251,7 @@ export function CinematicVideoPlayer({
                 </>
               ) : (
                 <MediaPlayer
+                  key={sessionKey}
                   src={mediaSource}
                   title={activeTitle}
                   poster={posterUrl ?? undefined}
@@ -267,7 +269,13 @@ export function CinematicVideoPlayer({
                     }
                     if (provider && typeof provider === "object") {
                       if (provider.type === "video" || provider.type === "hls") {
-                        (videoRef as any).current = provider.video;
+                        const videoEl = provider.video;
+                        if (videoEl) {
+                          (videoRef as any).current = videoEl;
+                          if (typeof window !== "undefined") {
+                            (window as any).__activeVideoElement = videoEl;
+                          }
+                        }
                       }
                     }
                   }}
