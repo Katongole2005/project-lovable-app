@@ -59,6 +59,7 @@ export function CinematicVideoPlayer({
     containerRef,
     iframeRef,
     videoRef,
+    playerRef,
     isPlaying,
     isPaused,
     isFullscreen,
@@ -251,6 +252,7 @@ export function CinematicVideoPlayer({
                 </>
               ) : (
                 <MediaPlayer
+                  ref={playerRef}
                   key={sessionKey}
                   src={mediaSource}
                   title={activeTitle}

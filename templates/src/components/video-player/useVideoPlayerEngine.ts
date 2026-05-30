@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MediaPlayerInstance } from "@vidstack/react";
 import { getImageUrl, buildMediaUrl, forceProxyPlaybackUrl, isReferrerLockedMediaUrl, unwrapLegacyWorkerUrl } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { incrementUserStat } from "@/lib/stats";
@@ -72,6 +73,7 @@ export function useVideoPlayerEngine({
   const [activeSubtitleId, setActiveSubtitleId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<MediaPlayerInstance>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -223,10 +225,16 @@ export function useVideoPlayerEngine({
       if (isEmbeddableVideo) {
         sendCommand("seek", clamped);
       } else {
-        const video = getVideoElement();
-        if (video) {
-          pauseRequestedRef.current = video.paused;
-          video.currentTime = clamped;
+        const player = playerRef.current;
+        if (player) {
+          pauseRequestedRef.current = player.paused;
+          player.currentTime = clamped;
+        } else {
+          const video = getVideoElement();
+          if (video) {
+            pauseRequestedRef.current = video.paused;
+            video.currentTime = clamped;
+          }
         }
       }
       resetControlsTimeout();
@@ -251,23 +259,42 @@ export function useVideoPlayerEngine({
     setShowControls(true);
     void enterMobileLandscape();
 
-    const video = getVideoElement();
-    if (video) {
-      if (video.readyState >= 3) {
+    const player = playerRef.current;
+    if (player) {
+      const readyState = player.readyState ?? player.state?.readyState ?? 0;
+      if (readyState >= 3) {
         setIsBuffering(false);
       } else {
         setIsBuffering(true);
       }
-      const playPromise = video.play();
+      const playPromise = player.play();
       if (playPromise !== undefined) {
         playPromise.catch((e) => {
           if (e.name === "AbortError") return;
+          console.warn("[Player Engine] Vidstack programmatic play blocked:", e);
           setIsPaused(true);
           setIsBuffering(false);
         });
       }
     } else {
-      setIsBuffering(true);
+      const video = getVideoElement();
+      if (video) {
+        if (video.readyState >= 3) {
+          setIsBuffering(false);
+        } else {
+          setIsBuffering(true);
+        }
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            if (e.name === "AbortError") return;
+            setIsPaused(true);
+            setIsBuffering(false);
+          });
+        }
+      } else {
+        setIsBuffering(true);
+      }
     }
     resetControlsTimeout();
   }, [enterMobileLandscape, getVideoElement, resetControlsTimeout]);
@@ -278,24 +305,46 @@ export function useVideoPlayerEngine({
       return;
     }
 
+    const player = playerRef.current;
     const video = getVideoElement();
-    if (!isEmbeddableVideo && video) {
-      if (video.paused) {
-        pauseRequestedRef.current = false;
-        setIsPaused(false);
-        setIsBuffering(video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA);
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((e) => {
-            if (e.name === "AbortError") return;
-            setIsPaused(true);
-            setIsBuffering(false);
-          });
+    if (!isEmbeddableVideo && (player || video)) {
+      if (player) {
+        if (player.paused) {
+          pauseRequestedRef.current = false;
+          setIsPaused(false);
+          const readyState = player.readyState ?? player.state?.readyState ?? 0;
+          setIsBuffering(readyState < 3);
+          const playPromise = player.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => {
+              if (e.name === "AbortError") return;
+              setIsPaused(true);
+              setIsBuffering(false);
+            });
+          }
+        } else {
+          pauseRequestedRef.current = true;
+          setIsBuffering(false);
+          player.pause();
         }
-      } else {
-        pauseRequestedRef.current = true;
-        setIsBuffering(false);
-        video.pause();
+      } else if (video) {
+        if (video.paused) {
+          pauseRequestedRef.current = false;
+          setIsPaused(false);
+          setIsBuffering(video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA);
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => {
+              if (e.name === "AbortError") return;
+              setIsPaused(true);
+              setIsBuffering(false);
+            });
+          }
+        } else {
+          pauseRequestedRef.current = true;
+          setIsBuffering(false);
+          video.pause();
+        }
       }
     } else if (isPaused) {
       setIsPaused(false);
@@ -365,7 +414,11 @@ export function useVideoPlayerEngine({
 
   const changePlaybackRate = useCallback((rate: number) => {
     setPlaybackRate(rate);
-    if (videoRef.current) videoRef.current.playbackRate = rate;
+    if (playerRef.current) {
+      playerRef.current.playbackRate = rate;
+    } else if (videoRef.current) {
+      videoRef.current.playbackRate = rate;
+    }
   }, []);
 
   // Capture active video element reference whenever videoRef.current is updated
@@ -377,29 +430,34 @@ export function useVideoPlayerEngine({
 
   const handleClose = useCallback(() => {
     // Force save progress before closing
+    const player = playerRef.current;
     const video = activeVideoElRef.current || videoRef.current;
-    if (video) {
+    if (player) {
+      onTimeUpdate?.(player.currentTime, player.duration || 0, true);
+    } else if (video) {
       onTimeUpdate?.(video.currentTime, video.duration || 0, true);
     } else {
       onTimeUpdate?.(currentTime, duration, true);
     }
 
-    // Clean up the video element while still fully in the DOM!
+    // Pause the video immediately to stop playback audio
+    if (player) {
+      try {
+        console.log("[Player Engine HandleClose] Pausing active media player stream...");
+        player.pause();
+      } catch (e) {
+        console.warn("[Player Engine HandleClose] Player pause failed:", e);
+      }
+    }
     if (video) {
       try {
-        console.log("[Player Engine HandleClose] Tearing down active media stream connection...");
+        console.log("[Player Engine HandleClose] Pausing active media stream connection...");
         video.pause();
-        video.src = "";
-        video.removeAttribute("src");
-        while (video.firstChild) {
-          video.removeChild(video.firstChild);
-        }
-        video.load();
         if (typeof window !== "undefined" && (window as any).__activeVideoElement === video) {
           (window as any).__activeVideoElement = null;
         }
       } catch (e) {
-        console.warn("[Player Engine HandleClose] Video stream cleanup failed:", e);
+        console.warn("[Player Engine HandleClose] Video pause failed:", e);
       }
     }
 
@@ -421,6 +479,11 @@ export function useVideoPlayerEngine({
     const resumeAt = currentTime || startTime;
     setResumeTime(resumeAt);
     setCurrentTime(resumeAt);
+    if (playerRef.current && typeof (playerRef.current as any).load === "function") {
+      try {
+        (playerRef.current as any).load();
+      } catch (e) {}
+    }
     videoRef.current?.load();
     beginPlayback();
   }, [activeTitle, beginPlayback, currentTime, startTime, videoUrl]);
@@ -520,25 +583,26 @@ export function useVideoPlayerEngine({
   useEffect(() => {
     return () => {
       // Clean up the specific video element captured for this session
+      const player = playerRef.current;
       const video = activeVideoElRef.current || videoRef.current;
 
+      if (player) {
+        try {
+          console.log("[Player Engine Cleanup] Pausing active media player stream...");
+          player.pause();
+        } catch (e) {
+          console.warn("[Player Engine Cleanup] Player pause failed:", e);
+        }
+      }
       if (video) {
         try {
-          console.log("[Player Engine Cleanup] Tearing down active media stream connection...");
+          console.log("[Player Engine Cleanup] Pausing active media stream connection...");
           video.pause();
-          video.src = "";
-          video.removeAttribute("src");
-          
-          // Clear any children <source> elements to abort downloading entirely
-          while (video.firstChild) {
-            video.removeChild(video.firstChild);
-          }
-          video.load();
           if (typeof window !== "undefined" && (window as any).__activeVideoElement === video) {
             (window as any).__activeVideoElement = null;
           }
         } catch (e) {
-          console.warn("[Player Engine Cleanup] Video element stream cleanup failed:", e);
+          console.warn("[Player Engine Cleanup] Video pause failed:", e);
         }
       }
 
@@ -658,7 +722,17 @@ export function useVideoPlayerEngine({
     setIsPaused(false);
     setPlaybackError(null);
     handleSeek(0);
-    if (videoRef.current) {
+    const player = playerRef.current;
+    if (player) {
+      player.currentTime = 0;
+      const playPromise = player.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((e) => {
+          if (e.name === "AbortError") return;
+          setIsPaused(true);
+        });
+      }
+    } else if (videoRef.current) {
       videoRef.current.currentTime = 0;
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
@@ -780,8 +854,21 @@ export function useVideoPlayerEngine({
   useEffect(() => {
     if (!isOpen || !isPlaying || isPaused || hasEnded) return;
 
+    const player = playerRef.current;
     const video = videoRef.current || activeVideoElRef.current;
-    if (video && video.paused && !pauseRequestedRef.current) {
+    
+    if (player && player.paused && !pauseRequestedRef.current) {
+      console.log("[Player Engine] Attempting programmatic player play...");
+      const playPromise = player.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((e) => {
+          if (e.name === "AbortError") return;
+          console.warn("[Player Engine] Programmatic autoplay blocked by browser (player):", e);
+          setIsPaused(true);
+          setIsBuffering(false);
+        });
+      }
+    } else if (video && video.paused && !pauseRequestedRef.current) {
       console.log("[Player Engine] Attempting programmatic video play...");
       const playPromise = video.play();
       if (playPromise !== undefined) {
@@ -869,6 +956,7 @@ export function useVideoPlayerEngine({
           const nextMuted = !isMuted;
           setIsMuted(nextMuted);
           if (isEmbeddableVideo) sendCommand("muted", nextMuted);
+          else if (playerRef.current) playerRef.current.muted = nextMuted;
           else if (videoRef.current) videoRef.current.muted = nextMuted;
           break;
         }
@@ -893,6 +981,7 @@ export function useVideoPlayerEngine({
           const upVol = Math.min(1, volume + 0.05);
           setVolume(upVol);
           if (isEmbeddableVideo) sendCommand("volume", upVol);
+          else if (playerRef.current) playerRef.current.volume = upVol;
           else if (videoRef.current) videoRef.current.volume = upVol;
           break;
         }
@@ -901,6 +990,7 @@ export function useVideoPlayerEngine({
           const downVol = Math.max(0, volume - 0.05);
           setVolume(downVol);
           if (isEmbeddableVideo) sendCommand("volume", downVol);
+          else if (playerRef.current) playerRef.current.volume = downVol;
           else if (videoRef.current) videoRef.current.volume = downVol;
           break;
         }
@@ -1194,6 +1284,7 @@ export function useVideoPlayerEngine({
     containerRef,
     iframeRef,
     videoRef,
+    playerRef,
     isPlaying,
     isPaused,
     isFullscreen,
