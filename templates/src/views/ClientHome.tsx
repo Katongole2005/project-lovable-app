@@ -91,7 +91,7 @@ import {
   primeMediaAvailability,
   normalizeVjName
 } from "@/lib/api";
-import type { FilterOptions } from "@/lib/api";
+import type { FilterOptions, HomeFeedPayload } from "@/lib/api";
 import { preloadHeroMovies } from "@/lib/heroImages";
 import { addToRecent, addRecentSearch, updateContinueWatching, removeContinueWatching, getRecentSearches, removeRecentSearch, clearRecentSearches } from "@/lib/storage";
 import type { Movie, Series, ContinueWatching, SkipSegment, SubtitleTrack } from "@/types/movie";
@@ -385,7 +385,7 @@ function ClientHome() {
   // ── Consolidated home feed — 1 request instead of 4 ─────────────────────
   // fetchHomeFeed hits /api/home-feed which runs all 4 queries in Promise.all
   // server-side and returns a single JSON payload with 5-minute edge caching.
-  const { data: homeFeedData, isLoading: isHomeFeedLoading } = useQuery({
+  const { data: homeFeedData, isLoading: isHomeFeedLoading } = useQuery<HomeFeedPayload>({
     queryKey: ["home-feed", heroMovieLimit, browseBatchLimit],
     queryFn: () =>
       fetchHomeFeed({
@@ -539,7 +539,7 @@ function ClientHome() {
     imageUrl: selectedMovie?.image_url || selectedMovie?.backdrop_url || undefined,
     genres: selectedMovie?.genres,
     canonicalPath: selectedMovie && isModalOpen 
-      ? `/${selectedMovie.type === 'series' ? 'series' : 'movie'}/${toSlug(selectedMovie.title, selectedMovie.id, selectedMovie.year)}`
+      ? `/${selectedMovie.type === 'series' ? 'series' : 'movie'}/${toSlug(selectedMovie.title, selectedMovie.mobifliks_id, selectedMovie.year)}`
       : `/${viewMode === "home" ? "" : viewMode}`,
     jsonLd: selectedMovie && isModalOpen ? buildMovieJsonLd(selectedMovie) : homeJsonLd,
   });
@@ -937,7 +937,7 @@ function ClientHome() {
     });
 
     const typeSlug = movie.type === "series" ? "series" : "movie";
-    const urlSlug = toSlug(movie.title, movie.id, movie.year);
+    const urlSlug = toSlug(movie.title, movie.mobifliks_id, movie.year);
     // Delay URL change to allow modal animation to complete smoothly.
     // Changing URL instantly triggers mobile browser UI jumps (address bar shift) which glitches the animation.
     setTimeout(() => {
@@ -953,8 +953,8 @@ function ClientHome() {
     void (async () => {
       try {
         const details = movie.type === "series"
-          ? await fetchSeriesDetails(String(movie.id))
-          : await fetchMovieDetails(String(movie.id));
+          ? await fetchSeriesDetails(movie.mobifliks_id)
+          : await fetchMovieDetails(movie.mobifliks_id);
 
         if (details) {
           startTransition(() => {
