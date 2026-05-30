@@ -961,6 +961,20 @@ export function useVideoPlayerEngine({
       }
       setDuration(video.duration || 0);
       video.playbackRate = playbackRate;
+
+      // Programmatic play trigger on metadata load (in case browser blocked initial autoPlay)
+      if (isPlaying && video.paused && !pauseRequestedRef.current) {
+        console.log("[Player Engine] Programmatic play trigger onLoadedMetadata...");
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            if (e.name === "AbortError") return;
+            console.warn("[Player Engine] Programmatic autoplay blocked in onLoadedMetadata:", e);
+            setIsPaused(true);
+            setIsBuffering(false);
+          });
+        }
+      }
     },
     onTimeUpdate: () => {
       const video = videoRef.current;
@@ -982,7 +996,22 @@ export function useVideoPlayerEngine({
       if (!video?.buffered.length) return;
       setBufferedTime(video.buffered.end(video.buffered.length - 1));
     },
-    onCanPlay: () => setIsBuffering(false),
+    onCanPlay: () => {
+      setIsBuffering(false);
+      const video = videoRef.current;
+      if (video && isPlaying && video.paused && !pauseRequestedRef.current) {
+        console.log("[Player Engine] Programmatic play trigger onCanPlay...");
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            if (e.name === "AbortError") return;
+            console.warn("[Player Engine] Programmatic autoplay blocked in onCanPlay:", e);
+            setIsPaused(true);
+            setIsBuffering(false);
+          });
+        }
+      }
+    },
     onPlaying: () => {
       pauseRequestedRef.current = false;
       lastPlaybackProgressRef.current = Date.now();
