@@ -75,6 +75,7 @@ export function useVideoPlayerEngine({
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const activeVideoElRef = useRef<HTMLVideoElement | null>(null);
   const lastSessionKeyRef = useRef("");
   const pauseRequestedRef = useRef(false);
   const lastTimeUpdateRef = useRef(0);
@@ -89,8 +90,11 @@ export function useVideoPlayerEngine({
 
   const getVideoElement = useCallback(() => {
     const video = videoRef.current || containerRef.current?.querySelector("video");
-    if (video && videoRef.current !== video) {
-      videoRef.current = video;
+    if (video) {
+      if (videoRef.current !== video) {
+        videoRef.current = video;
+      }
+      activeVideoElRef.current = video;
     }
     return video;
   }, []);
@@ -364,18 +368,23 @@ export function useVideoPlayerEngine({
     if (videoRef.current) videoRef.current.playbackRate = rate;
   }, []);
 
+  // Capture active video element reference whenever videoRef.current is updated
+  useEffect(() => {
+    if (videoRef.current) {
+      activeVideoElRef.current = videoRef.current;
+    }
+  }, [videoRef.current]);
+
   const handleClose = useCallback(() => {
     // Force save progress before closing
-    if (videoRef.current) {
-      onTimeUpdate?.(videoRef.current.currentTime, videoRef.current.duration || 0, true);
+    const video = activeVideoElRef.current || videoRef.current;
+    if (video) {
+      onTimeUpdate?.(video.currentTime, video.duration || 0, true);
     } else {
       onTimeUpdate?.(currentTime, duration, true);
     }
 
     // Clean up the video element while still fully in the DOM!
-    const docVideo = containerRef.current?.querySelector("video");
-    const globalVideo = typeof window !== "undefined" ? (window as any).__activeVideoElement : null;
-    const video = videoRef.current || docVideo || globalVideo;
     if (video) {
       try {
         console.log("[Player Engine HandleClose] Tearing down active media stream connection...");
@@ -386,7 +395,7 @@ export function useVideoPlayerEngine({
           video.removeChild(video.firstChild);
         }
         video.load();
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && (window as any).__activeVideoElement === video) {
           (window as any).__activeVideoElement = null;
         }
       } catch (e) {
@@ -510,10 +519,8 @@ export function useVideoPlayerEngine({
 
   useEffect(() => {
     return () => {
-      // Find the video element either from the ref, DOM container, or global window registry
-      const docVideo = containerRef.current?.querySelector("video");
-      const globalVideo = typeof window !== "undefined" ? (window as any).__activeVideoElement : null;
-      const video = videoRef.current || docVideo || globalVideo;
+      // Clean up the specific video element captured for this session
+      const video = activeVideoElRef.current || videoRef.current;
 
       if (video) {
         try {
@@ -527,7 +534,7 @@ export function useVideoPlayerEngine({
             video.removeChild(video.firstChild);
           }
           video.load();
-          if (typeof window !== "undefined") {
+          if (typeof window !== "undefined" && (window as any).__activeVideoElement === video) {
             (window as any).__activeVideoElement = null;
           }
         } catch (e) {
@@ -727,11 +734,66 @@ export function useVideoPlayerEngine({
         wakeLockRef.current = lock;
       })
       .catch(() => undefined);
-    return () => {
-      wakeLockRef.current?.release?.().catch(() => undefined);
-      wakeLockRef.current = null;
-    };
   }, [hasEnded, isOpen, isPaused, isPlaying]);
+
+  // Real-time telemetry logger for native playback sessions
+  useEffect(() => {
+    if (!isOpen || !isPlaying || isPaused || hasEnded) return;
+
+    const logTelemetry = () => {
+      const video = videoRef.current || containerRef.current?.querySelector("video");
+      if (!video) return;
+
+      const bufferedAmount = video.buffered.length > 0
+        ? parseFloat(video.buffered.end(video.buffered.length - 1).toFixed(3))
+        : 0;
+
+      const state = {
+        title: activeTitle,
+        url: activeVideoUrl,
+        currentTime: parseFloat(video.currentTime.toFixed(3)),
+        duration: video.duration ? parseFloat(video.duration.toFixed(3)) : null,
+        readyState: video.readyState,
+        networkState: video.networkState,
+        paused: video.paused,
+        buffered: bufferedAmount,
+        error: video.error ? { code: video.error.code, message: video.error.message } : null,
+        isBufferingState: isBuffering,
+      };
+
+      console.log(`[MOVIE_BAY_LOG] Native Video State: ${JSON.stringify(state)}`);
+    };
+
+    // Log immediately on start/resume
+    logTelemetry();
+
+    // Log every 10 seconds
+    const telemetryInterval = setInterval(logTelemetry, 10000);
+
+    return () => {
+      clearInterval(telemetryInterval);
+    };
+  }, [isOpen, isPlaying, isPaused, hasEnded, activeTitle, activeVideoUrl, isBuffering]);
+
+  // Programmatic play triggers once the native video element is successfully setup
+  // This solves browsers blocking autoplay due to lost user interaction gesture from async token fetch.
+  useEffect(() => {
+    if (!isOpen || !isPlaying || isPaused || hasEnded) return;
+
+    const video = videoRef.current || activeVideoElRef.current;
+    if (video && video.paused && !pauseRequestedRef.current) {
+      console.log("[Player Engine] Attempting programmatic video play...");
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((e) => {
+          if (e.name === "AbortError") return;
+          console.warn("[Player Engine] Programmatic autoplay blocked by browser:", e);
+          setIsPaused(true);
+          setIsBuffering(false);
+        });
+      }
+    }
+  }, [isOpen, isPlaying, isPaused, hasEnded, videoRef.current, activeVideoElRef.current]);
 
   useEffect(() => {
     if (!isOpen || !user?.id || !isPlaying || isPaused || hasEnded) return;
