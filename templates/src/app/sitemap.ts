@@ -66,7 +66,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           const isRecent = Date.now() - validDate.getTime() < 1000 * 60 * 60 * 24 * 7;
 
           dynamicRoutes.push({
-            url: `${baseUrl}/${typeSlug}/${toSlug(item.title || 'video', item.id, item.year)}`,
+            url: `${baseUrl}/${typeSlug}/${toSlug(item.title || 'video', item.mobifliks_id || String(item.id), item.year)}`,
             lastModified: validDate,
             changeFrequency: isRecent ? 'daily' : 'monthly',
             priority: isRecent ? 0.8 : 0.6,
