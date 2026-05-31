@@ -2430,6 +2430,7 @@ function ClientHome() {
           {/* Cinematic Video Player */}
           {isVideoOpen && (
             <CinematicVideoPlayer
+              key={videoUrl}
               isOpen={isVideoOpen}
               onClose={handleCloseVideo}
               videoUrl={videoUrl}

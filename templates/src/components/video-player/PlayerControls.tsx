@@ -23,13 +23,7 @@ import { PLAYBACK_RATES, formatTime } from "./utils";
 import { PlayerScrubber } from "./PlayerScrubber";
 import type { PlayerLayout } from "./types";
 
-// Vidstack Core components
-import {
-  PlayButton,
-  MuteButton,
-  FullscreenButton,
-  PIPButton,
-} from "@vidstack/react";
+// Native standard button components are used
 
 type PlayerControlsProps = {
   layout: PlayerLayout;
@@ -237,20 +231,14 @@ export function PlayerControls({
               <div className="player-transport-row">
                 {/* Left group */}
                 <div className="player-transport-left">
-                  {isEmbeddableVideo ? (
-                    <button
-                      type="button"
-                      onClick={onTogglePlay}
-                      className="player-flat-btn player-flat-btn--large"
-                      aria-label={isPaused ? "Play" : "Pause"}
-                    >
-                      {isPaused ? <Play className="fill-current ml-0.5" /> : <Pause className="fill-current" />}
-                    </button>
-                  ) : (
-                    <PlayButton className="player-flat-btn player-flat-btn--large">
-                      {isPaused ? <Play className="fill-current ml-0.5" /> : <Pause className="fill-current" />}
-                    </PlayButton>
-                  )}
+                  <button
+                    type="button"
+                    onClick={onTogglePlay}
+                    className="player-flat-btn player-flat-btn--large"
+                    aria-label={isPaused ? "Play" : "Pause"}
+                  >
+                    {isPaused ? <Play className="fill-current ml-0.5" /> : <Pause className="fill-current" />}
+                  </button>
 
                   <button
                     type="button"
@@ -272,20 +260,14 @@ export function PlayerControls({
 
                   {/* Volume Slider Container */}
                   <div className="player-volume-container">
-                    {isEmbeddableVideo ? (
-                      <button
-                        type="button"
-                        onClick={onToggleMute}
-                        className="player-flat-btn"
-                        aria-label={isMuted ? "Unmute" : "Mute"}
-                      >
-                        <VolumeIcon />
-                      </button>
-                    ) : (
-                      <MuteButton className="player-flat-btn">
-                        <VolumeIcon />
-                      </MuteButton>
-                    )}
+                    <button
+                      type="button"
+                      onClick={onToggleMute}
+                      className="player-flat-btn"
+                      aria-label={isMuted ? "Unmute" : "Mute"}
+                    >
+                      <VolumeIcon />
+                    </button>
 
                     <div className="player-volume-slider-wrapper">
                       <input
@@ -312,7 +294,7 @@ export function PlayerControls({
                 {/* Right group */}
                 <div className="player-transport-right">
                   {/* Speech Bubble Subtitles icon */}
-                  {usableSubtitles.length > 0 && !isEmbeddableVideo && (
+                  {usableSubtitles.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setSettingsOpen(settingsOpen === "subtitles" ? null : "subtitles")}
@@ -335,37 +317,25 @@ export function PlayerControls({
 
                   {/* Picture in Picture */}
                   {isPipAvailable && (
-                    isEmbeddableVideo ? (
-                      <button
-                        type="button"
-                        onClick={onTogglePip}
-                        className="player-flat-btn"
-                        aria-label="Toggle picture-in-picture"
-                      >
-                        <Monitor className={cn(isPipActive && "text-[#e50914]")} />
-                      </button>
-                    ) : (
-                      <PIPButton className="player-flat-btn">
-                        <Monitor className={cn(isPipActive && "text-[#e50914]")} />
-                      </PIPButton>
-                    )
+                    <button
+                      type="button"
+                      onClick={onTogglePip}
+                      className="player-flat-btn"
+                      aria-label="Toggle picture-in-picture"
+                    >
+                      <Monitor className={cn(isPipActive && "text-[#e50914]")} />
+                    </button>
                   )}
 
                   {/* Fullscreen */}
-                  {isEmbeddableVideo ? (
-                    <button
-                      type="button"
-                      onClick={onToggleFullscreen}
-                      className="player-flat-btn"
-                      aria-label="Toggle fullscreen"
-                    >
-                      {isFullscreen ? <Minimize /> : <Maximize />}
-                    </button>
-                  ) : (
-                    <FullscreenButton className="player-flat-btn">
-                      {isFullscreen ? <Minimize /> : <Maximize />}
-                    </FullscreenButton>
-                  )}
+                  <button
+                    type="button"
+                    onClick={onToggleFullscreen}
+                    className="player-flat-btn"
+                    aria-label="Toggle fullscreen"
+                  >
+                    {isFullscreen ? <Minimize /> : <Maximize />}
+                  </button>
                 </div>
               </div>
             </motion.div>

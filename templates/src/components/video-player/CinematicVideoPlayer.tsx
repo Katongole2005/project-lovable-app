@@ -11,9 +11,7 @@ import { PlayerGestureLayer } from "./PlayerGestureLayer";
 import { PlayerBrandLogo } from "./PlayerBrandLogo";
 import { EndedOverlay, ErrorOverlay } from "./PlayerOverlays";
 
-// Vidstack Core (no default layout CSS)
-import { MediaPlayer, MediaProvider, Track } from "@vidstack/react";
-import "@vidstack/react/player/styles/base.css";
+// Native standard elements are used for media playback
 
 export function CinematicVideoPlayer({
   isOpen,
@@ -251,43 +249,24 @@ export function CinematicVideoPlayer({
                   )}
                 </>
               ) : (
-                <MediaPlayer
-                  ref={playerRef}
-                  key={sessionKey}
-                  src={mediaSource}
-                  title={activeTitle}
-                  poster={posterUrl ?? undefined}
-                  autoPlay
-                  playsInline
-                  preload="auto"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  onProviderSetup={(eventOrProvider) => {
-                    if (!eventOrProvider) return;
-                    let provider: any = eventOrProvider;
-                    if (eventOrProvider && typeof (eventOrProvider as any).detail !== "undefined") {
-                      provider = (eventOrProvider as any).detail;
-                    } else if (eventOrProvider && typeof (eventOrProvider as any).nativeEvent?.detail !== "undefined") {
-                      provider = (eventOrProvider as any).nativeEvent.detail;
-                    }
-                    if (provider && typeof provider === "object") {
-                      if (provider.type === "video" || provider.type === "hls") {
-                        const videoEl = provider.video;
-                        if (videoEl) {
-                          (videoRef as any).current = videoEl;
-                          if (typeof window !== "undefined") {
-                            (window as any).__activeVideoElement = videoEl;
-                          }
-                        }
-                      }
-                    }
-                  }}
-                  className="video-player-video relative z-10 h-full w-full bg-black object-contain"
-                  style={{ width: "100%", height: "100%" }}
-                  {...videoHandlers}
-                >
-                  <MediaProvider mediaProps={{ referrerPolicy: "strict-origin-when-cross-origin" }}>
+                <div className="relative z-10 h-full w-full bg-black">
+                  <video
+                    ref={videoRef}
+                    key={sessionKey}
+                    src={activeVideoUrl}
+                    poster={posterUrl ?? undefined}
+                    autoPlay
+                    playsInline
+                    preload="auto"
+                    crossOrigin="anonymous"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    controls={false}
+                    className="video-player-video relative z-10 h-full w-full bg-black object-contain"
+                    style={{ width: "100%", height: "100%" }}
+                    {...videoHandlers}
+                  >
                     {usableSubtitles.map((track) => (
-                      <Track
+                      <track
                         key={track.id}
                         kind="subtitles"
                         src={track.url}
@@ -296,7 +275,7 @@ export function CinematicVideoPlayer({
                         default={activeSubtitleId === track.id}
                       />
                     ))}
-                  </MediaProvider>
+                  </video>
 
                   {/* Brand logo (native) */}
                   {isPlaying && controlsVisible && !hasEnded && !playbackError && (
@@ -317,7 +296,7 @@ export function CinematicVideoPlayer({
                     />
                   )}
                   
-                  {/* Controls for Standard Video (rendered INSIDE MediaPlayer context) */}
+                  {/* Controls for Standard Video */}
                   {isPlaying && !hasEnded && !playbackError && (
                     <PlayerControls
                       layout={layout}
@@ -356,7 +335,7 @@ export function CinematicVideoPlayer({
                       onSkipSegment={skipActiveSegment}
                     />
                   )}
-                </MediaPlayer>
+                </div>
               )}
             </div>
 

@@ -78,6 +78,7 @@ export function useVideoPlayerEngine({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const activeVideoElRef = useRef<HTMLVideoElement | null>(null);
+  const activeVideoUrlRef = useRef("");
   const lastSessionKeyRef = useRef("");
   const pauseRequestedRef = useRef(false);
   const lastTimeUpdateRef = useRef(0);
@@ -267,14 +268,29 @@ export function useVideoPlayerEngine({
       } else {
         setIsBuffering(true);
       }
-      const playPromise = player.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((e) => {
-          if (e.name === "AbortError") return;
-          console.warn("[Player Engine] Vidstack programmatic play blocked:", e);
+
+      const isPlayerReady = player.state 
+        ? player.state.canPlay 
+        : (player.readyState !== undefined ? player.readyState >= 2 : true);
+
+      if (isPlayerReady) {
+        try {
+          const playPromise = player.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => {
+              if (e.name === "AbortError") return;
+              console.warn("[Player Engine] Vidstack programmatic play blocked:", e);
+              setIsPaused(true);
+              setIsBuffering(false);
+            });
+          }
+        } catch (e) {
+          console.warn("[Player Engine] Vidstack programmatic play failed synchronously:", e);
           setIsPaused(true);
           setIsBuffering(false);
-        });
+        }
+      } else {
+        console.log("[Player Engine] Player not ready yet in beginPlayback, deferring play request.");
       }
     } else {
       const video = getVideoElement();
@@ -284,13 +300,25 @@ export function useVideoPlayerEngine({
         } else {
           setIsBuffering(true);
         }
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((e) => {
-            if (e.name === "AbortError") return;
+
+        const isVideoReady = video.readyState !== undefined ? video.readyState >= 2 : true;
+        if (isVideoReady) {
+          try {
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+              playPromise.catch((e) => {
+                if (e.name === "AbortError") return;
+                setIsPaused(true);
+                setIsBuffering(false);
+              });
+            }
+          } catch (e) {
+            console.warn("[Player Engine] Native video play failed synchronously:", e);
             setIsPaused(true);
             setIsBuffering(false);
-          });
+          }
+        } else {
+          console.log("[Player Engine] Video not ready yet in beginPlayback, deferring play request.");
         }
       } else {
         setIsBuffering(true);
@@ -314,13 +342,19 @@ export function useVideoPlayerEngine({
           setIsPaused(false);
           const readyState = player.readyState ?? player.state?.readyState ?? 0;
           setIsBuffering(readyState < 3);
-          const playPromise = player.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((e) => {
-              if (e.name === "AbortError") return;
-              setIsPaused(true);
-              setIsBuffering(false);
-            });
+          try {
+            const playPromise = player.play();
+            if (playPromise !== undefined) {
+              playPromise.catch((e) => {
+                if (e.name === "AbortError") return;
+                setIsPaused(true);
+                setIsBuffering(false);
+              });
+            }
+          } catch (e) {
+            console.warn("[Player Engine] Vidstack togglePlay failed synchronously:", e);
+            setIsPaused(true);
+            setIsBuffering(false);
           }
         } else {
           pauseRequestedRef.current = true;
@@ -332,13 +366,19 @@ export function useVideoPlayerEngine({
           pauseRequestedRef.current = false;
           setIsPaused(false);
           setIsBuffering(video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA);
-          const playPromise = video.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((e) => {
-              if (e.name === "AbortError") return;
-              setIsPaused(true);
-              setIsBuffering(false);
-            });
+          try {
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+              playPromise.catch((e) => {
+                if (e.name === "AbortError") return;
+                setIsPaused(true);
+                setIsBuffering(false);
+              });
+            }
+          } catch (e) {
+            console.warn("[Player Engine] Native video togglePlay failed synchronously:", e);
+            setIsPaused(true);
+            setIsBuffering(false);
           }
         } else {
           pauseRequestedRef.current = true;
@@ -428,6 +468,10 @@ export function useVideoPlayerEngine({
     }
   }, [videoRef.current]);
 
+  useEffect(() => {
+    activeVideoUrlRef.current = activeVideoUrl;
+  }, [activeVideoUrl]);
+
   const handleClose = useCallback(() => {
     // Force save progress before closing
     const player = playerRef.current;
@@ -451,10 +495,34 @@ export function useVideoPlayerEngine({
     }
     if (video) {
       try {
-        console.log("[Player Engine HandleClose] Pausing active media stream connection...");
-        video.pause();
-        if (typeof window !== "undefined" && (window as any).__activeVideoElement === video) {
-          (window as any).__activeVideoElement = null;
+        const currentSrc = video.currentSrc || video.src || "";
+        const sessionUrl = activeVideoUrlRef.current;
+        
+        const isSameSource = (url1: string, url2: string) => {
+          if (!url1 || !url2) return false;
+          try {
+            const clean1 = url1.split("?")[0].split("#")[0];
+            const clean2 = url2.split("?")[0].split("#")[0];
+            return clean1 === clean2 || clean1.includes(clean2) || clean2.includes(clean1);
+          } catch {
+            return url1 === url2;
+          }
+        };
+
+        const isRecycledForNewSession = currentSrc && !isSameSource(currentSrc, sessionUrl);
+        console.log("[Player Engine HandleClose] Releasing active media decoder resources...", { currentSrc, sessionUrl, isRecycledForNewSession });
+
+        if (!isRecycledForNewSession) {
+          video.pause();
+          video.src = "";
+          video.removeAttribute("src");
+          video.load();
+          if (typeof window !== "undefined" && (window as any).__activeVideoElement === video) {
+            (window as any).__activeVideoElement = null;
+          }
+          console.log("[Player Engine HandleClose] Video element cleared successfully.");
+        } else {
+          console.log("[Player Engine HandleClose] Skipping video clear because the video element was already recycled for a new session.");
         }
       } catch (e) {
         console.warn("[Player Engine HandleClose] Video pause failed:", e);
@@ -596,10 +664,34 @@ export function useVideoPlayerEngine({
       }
       if (video) {
         try {
-          console.log("[Player Engine Cleanup] Pausing active media stream connection...");
-          video.pause();
-          if (typeof window !== "undefined" && (window as any).__activeVideoElement === video) {
-            (window as any).__activeVideoElement = null;
+          const currentSrc = video.currentSrc || video.src || "";
+          const sessionUrl = activeVideoUrlRef.current;
+          
+          const isSameSource = (url1: string, url2: string) => {
+            if (!url1 || !url2) return false;
+            try {
+              const clean1 = url1.split("?")[0].split("#")[0];
+              const clean2 = url2.split("?")[0].split("#")[0];
+              return clean1 === clean2 || clean1.includes(clean2) || clean2.includes(clean1);
+            } catch {
+              return url1 === url2;
+            }
+          };
+
+          const isRecycledForNewSession = currentSrc && !isSameSource(currentSrc, sessionUrl);
+          console.log("[Player Engine Cleanup] Releasing active media decoder resources...", { currentSrc, sessionUrl, isRecycledForNewSession });
+          
+          if (!isRecycledForNewSession) {
+            video.pause();
+            video.src = "";
+            video.removeAttribute("src");
+            video.load();
+            if (typeof window !== "undefined" && (window as any).__activeVideoElement === video) {
+              (window as any).__activeVideoElement = null;
+            }
+            console.log("[Player Engine Cleanup] Video element cleared successfully.");
+          } else {
+            console.log("[Player Engine Cleanup] Skipping video clear because the video element was already recycled for a new session.");
           }
         } catch (e) {
           console.warn("[Player Engine Cleanup] Video pause failed:", e);
@@ -725,21 +817,31 @@ export function useVideoPlayerEngine({
     const player = playerRef.current;
     if (player) {
       player.currentTime = 0;
-      const playPromise = player.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((e) => {
-          if (e.name === "AbortError") return;
-          setIsPaused(true);
-        });
+      try {
+        const playPromise = player.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            if (e.name === "AbortError") return;
+            setIsPaused(true);
+          });
+        }
+      } catch (e) {
+        console.warn("[Player Engine] Vidstack handleReplay failed synchronously:", e);
+        setIsPaused(true);
       }
     } else if (videoRef.current) {
       videoRef.current.currentTime = 0;
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((e) => {
-          if (e.name === "AbortError") return;
-          setIsPaused(true);
-        });
+      try {
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            if (e.name === "AbortError") return;
+            setIsPaused(true);
+          });
+        }
+      } catch (e) {
+        console.warn("[Player Engine] Native video handleReplay failed synchronously:", e);
+        setIsPaused(true);
       }
     } else {
       beginPlayback();
@@ -849,6 +951,61 @@ export function useVideoPlayerEngine({
     };
   }, [isOpen, isPlaying, isPaused, hasEnded, activeTitle, activeVideoUrl, isBuffering]);
 
+  // Self-Healing Network Stall Recovery Monitor
+  useEffect(() => {
+    if (!isOpen || !isPlaying || isPaused || hasEnded || isEmbeddableVideo) {
+      if (stallRecoveryTimeoutRef.current) {
+        window.clearInterval(stallRecoveryTimeoutRef.current);
+        stallRecoveryTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    lastPlaybackProgressRef.current = Date.now();
+
+    const checkStallProgress = () => {
+      const video = videoRef.current || containerRef.current?.querySelector("video");
+      if (!video) return;
+
+      const currentSecs = video.currentTime;
+      const isActuallyPlaying = !video.paused && video.readyState >= 2 && currentSecs > 0;
+      
+      if (isActuallyPlaying) {
+        // Reset progress timestamp if it is successfully playing
+        lastPlaybackProgressRef.current = Date.now();
+        return;
+      }
+
+      // If it is stuck in empty or no-source network state, or readyState is stuck at 0 (HAVE_NOTHING)
+      const isEmptyState = video.networkState === 0 && video.readyState === 0;
+      const isStallState = 
+        video.networkState === 0 || // NETWORK_EMPTY (CORS / 403 / network block)
+        video.networkState === 3 || // NETWORK_NO_SOURCE
+        video.readyState === 0;     // HAVE_NOTHING
+
+      const stallDurationMs = Date.now() - lastPlaybackProgressRef.current;
+      const triggerThresholdMs = isEmptyState ? 1500 : 5000;
+
+      if (isStallState && stallDurationMs >= triggerThresholdMs) {
+        console.warn(`[Self-Healing Monitor] Media playback stalled for ${stallDurationMs}ms (networkState: ${video.networkState}, readyState: ${video.readyState}, isEmptyState: ${isEmptyState}). Triggering self-healing recovery...`);
+        lastPlaybackProgressRef.current = Date.now(); // reset to avoid double-triggering immediately
+        
+        // Trigger self-healing candidate switch
+        void videoHandlers.onError();
+      }
+    };
+
+    const interval = window.setInterval(checkStallProgress, 1000);
+    stallRecoveryTimeoutRef.current = interval as any;
+
+    return () => {
+      if (stallRecoveryTimeoutRef.current) {
+        window.clearInterval(stallRecoveryTimeoutRef.current);
+        stallRecoveryTimeoutRef.current = null;
+      }
+    };
+  }, [isOpen, isPlaying, isPaused, hasEnded, isEmbeddableVideo, activeVideoUrl]);
+
   // Programmatic play triggers once the native video element is successfully setup
   // This solves browsers blocking autoplay due to lost user interaction gesture from async token fetch.
   useEffect(() => {
@@ -858,26 +1015,52 @@ export function useVideoPlayerEngine({
     const video = videoRef.current || activeVideoElRef.current;
     
     if (player && player.paused && !pauseRequestedRef.current) {
-      console.log("[Player Engine] Attempting programmatic player play...");
-      const playPromise = player.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((e) => {
-          if (e.name === "AbortError") return;
-          console.warn("[Player Engine] Programmatic autoplay blocked by browser (player):", e);
+      const isPlayerReady = player.state 
+        ? player.state.canPlay 
+        : (player.readyState !== undefined ? player.readyState >= 2 : true);
+
+      if (isPlayerReady) {
+        console.log("[Player Engine] Attempting programmatic player play...");
+        try {
+          const playPromise = player.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => {
+              if (e.name === "AbortError") return;
+              console.warn("[Player Engine] Programmatic autoplay blocked by browser (player):", e);
+              setIsPaused(true);
+              setIsBuffering(false);
+            });
+          }
+        } catch (e) {
+          console.warn("[Player Engine] Vidstack programmatic autoplay failed synchronously:", e);
           setIsPaused(true);
           setIsBuffering(false);
-        });
+        }
+      } else {
+        console.log("[Player Engine] Player not ready yet in useEffect, waiting for can-play event.");
       }
     } else if (video && video.paused && !pauseRequestedRef.current) {
-      console.log("[Player Engine] Attempting programmatic video play...");
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((e) => {
-          if (e.name === "AbortError") return;
-          console.warn("[Player Engine] Programmatic autoplay blocked by browser:", e);
+      const isVideoReady = video.readyState !== undefined ? video.readyState >= 2 : true;
+
+      if (isVideoReady) {
+        console.log("[Player Engine] Attempting programmatic video play...");
+        try {
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => {
+              if (e.name === "AbortError") return;
+              console.warn("[Player Engine] Programmatic autoplay blocked by browser:", e);
+              setIsPaused(true);
+              setIsBuffering(false);
+            });
+          }
+        } catch (e) {
+          console.warn("[Player Engine] Native video programmatic autoplay failed synchronously:", e);
           setIsPaused(true);
           setIsBuffering(false);
-        });
+        }
+      } else {
+        console.log("[Player Engine] Native video not ready yet in useEffect, waiting for canplay event.");
       }
     }
   }, [isOpen, isPlaying, isPaused, hasEnded, videoRef.current, activeVideoElRef.current]);
@@ -1053,16 +1236,51 @@ export function useVideoPlayerEngine({
       video.playbackRate = playbackRate;
 
       // Programmatic play trigger on metadata load (in case browser blocked initial autoPlay)
-      if (isPlaying && video.paused && !pauseRequestedRef.current) {
-        console.log("[Player Engine] Programmatic play trigger onLoadedMetadata...");
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((e) => {
-            if (e.name === "AbortError") return;
-            console.warn("[Player Engine] Programmatic autoplay blocked in onLoadedMetadata:", e);
-            setIsPaused(true);
-            setIsBuffering(false);
-          });
+      if (isPlaying && !pauseRequestedRef.current) {
+        const player = playerRef.current;
+        if (player && player.paused) {
+          const isPlayerReady = player.state 
+            ? player.state.canPlay 
+            : (player.readyState !== undefined ? player.readyState >= 2 : true);
+
+          if (isPlayerReady) {
+            console.log("[Player Engine] Programmatic play trigger onLoadedMetadata (player)...");
+            try {
+              const playPromise = player.play();
+              if (playPromise !== undefined) {
+                playPromise.catch((e: any) => {
+                  if (e.name === "AbortError") return;
+                  console.warn("[Player Engine] Programmatic autoplay blocked in onLoadedMetadata (player):", e);
+                  setIsPaused(true);
+                  setIsBuffering(false);
+                });
+              }
+            } catch (e) {
+              console.error("[Player Engine] Synchronous error in onLoadedMetadata (player):", e);
+            }
+          } else {
+            console.log("[Player Engine] Player not ready yet in onLoadedMetadata, skipping play trigger.");
+          }
+        } else if (video && video.paused) {
+          const isVideoReady = video.readyState !== undefined ? video.readyState >= 2 : true;
+          if (isVideoReady) {
+            console.log("[Player Engine] Programmatic play trigger onLoadedMetadata (video)...");
+            try {
+              const playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise.catch((e: any) => {
+                  if (e.name === "AbortError") return;
+                  console.warn("[Player Engine] Programmatic autoplay blocked in onLoadedMetadata (video):", e);
+                  setIsPaused(true);
+                  setIsBuffering(false);
+                });
+              }
+            } catch (e) {
+              console.error("[Player Engine] Synchronous error in onLoadedMetadata (video):", e);
+            }
+          } else {
+            console.log("[Player Engine] Native video not ready yet in onLoadedMetadata, skipping play trigger.");
+          }
         }
       }
     },
@@ -1089,16 +1307,51 @@ export function useVideoPlayerEngine({
     onCanPlay: () => {
       setIsBuffering(false);
       const video = videoRef.current;
-      if (video && isPlaying && video.paused && !pauseRequestedRef.current) {
-        console.log("[Player Engine] Programmatic play trigger onCanPlay...");
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((e) => {
-            if (e.name === "AbortError") return;
-            console.warn("[Player Engine] Programmatic autoplay blocked in onCanPlay:", e);
-            setIsPaused(true);
-            setIsBuffering(false);
-          });
+      if (isPlaying && !pauseRequestedRef.current) {
+        const player = playerRef.current;
+        if (player && player.paused) {
+          const isPlayerReady = player.state 
+            ? player.state.canPlay 
+            : (player.readyState !== undefined ? player.readyState >= 2 : true);
+
+          if (isPlayerReady) {
+            console.log("[Player Engine] Programmatic play trigger onCanPlay (player)...");
+            try {
+              const playPromise = player.play();
+              if (playPromise !== undefined) {
+                playPromise.catch((e: any) => {
+                  if (e.name === "AbortError") return;
+                  console.warn("[Player Engine] Programmatic autoplay blocked in onCanPlay (player):", e);
+                  setIsPaused(true);
+                  setIsBuffering(false);
+                });
+              }
+            } catch (e) {
+              console.error("[Player Engine] Synchronous error in onCanPlay (player):", e);
+            }
+          } else {
+            console.log("[Player Engine] Player not ready yet in onCanPlay, skipping play trigger.");
+          }
+        } else if (video && video.paused) {
+          const isVideoReady = video.readyState !== undefined ? video.readyState >= 2 : true;
+          if (isVideoReady) {
+            console.log("[Player Engine] Programmatic play trigger onCanPlay (video)...");
+            try {
+              const playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise.catch((e: any) => {
+                  if (e.name === "AbortError") return;
+                  console.warn("[Player Engine] Programmatic autoplay blocked in onCanPlay (video):", e);
+                  setIsPaused(true);
+                  setIsBuffering(false);
+                });
+              }
+            } catch (e) {
+              console.error("[Player Engine] Synchronous error in onCanPlay (video):", e);
+            }
+          } else {
+            console.log("[Player Engine] Native video not ready yet in onCanPlay, skipping play trigger.");
+          }
         }
       }
     },
@@ -1229,12 +1482,16 @@ export function useVideoPlayerEngine({
           setTimeout(() => {
             if (videoRef.current) {
               videoRef.current.load();
-              const playPromise = videoRef.current.play();
-              if (playPromise !== undefined) {
-                playPromise.catch((e) => {
-                  if (e.name === "AbortError") return;
-                  console.error("[Self-Healing Player] Autoplay failed on fallback:", e);
-                });
+              try {
+                const playPromise = videoRef.current.play();
+                if (playPromise !== undefined) {
+                  playPromise.catch((e) => {
+                    if (e.name === "AbortError") return;
+                    console.error("[Self-Healing Player] Autoplay failed on fallback:", e);
+                  });
+                }
+              } catch (e) {
+                console.error("[Self-Healing Player] Autoplay failed synchronously on fallback:", e);
               }
             }
           }, 50);
