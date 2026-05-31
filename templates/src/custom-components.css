@@ -463,7 +463,8 @@ video {
 
 .player-scrubber-played {
   position: absolute;
-  inset-y: 0;
+  top: 0;
+  bottom: 0;
   left: 0;
   background: #e50914;
   border-radius: 9999px;
@@ -472,7 +473,8 @@ video {
 
 .player-scrubber-buffered {
   position: absolute;
-  inset-y: 0;
+  top: 0;
+  bottom: 0;
   left: 0;
   background: rgba(255, 255, 255, 0.4);
   border-radius: 9999px;
