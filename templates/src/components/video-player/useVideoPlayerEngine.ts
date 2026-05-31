@@ -984,7 +984,7 @@ export function useVideoPlayerEngine({
         video.readyState === 0;     // HAVE_NOTHING
 
       const stallDurationMs = Date.now() - lastPlaybackProgressRef.current;
-      const triggerThresholdMs = isNotLoadedYet ? 1500 : 5000;
+      const triggerThresholdMs = isNotLoadedYet ? 3500 : 5000;
 
       if (isStallState && stallDurationMs >= triggerThresholdMs) {
         console.warn(`[Self-Healing Monitor] Media playback stalled for ${stallDurationMs}ms (networkState: ${video.networkState}, readyState: ${video.readyState}, isNotLoadedYet: ${isNotLoadedYet}). Triggering self-healing recovery...`);
@@ -1234,6 +1234,7 @@ export function useVideoPlayerEngine({
       }
       setDuration(video.duration || 0);
       video.playbackRate = playbackRate;
+      setPlaybackError(null);
 
       // Programmatic play trigger on metadata load (in case browser blocked initial autoPlay)
       if (isPlaying && !pauseRequestedRef.current) {
@@ -1313,6 +1314,7 @@ export function useVideoPlayerEngine({
     },
     onCanPlay: () => {
       setIsBuffering(false);
+      setPlaybackError(null);
       const video = videoRef.current;
       if (isPlaying && !pauseRequestedRef.current) {
         const player = playerRef.current;
