@@ -172,7 +172,9 @@ export function isReferrerLockedMediaUrl(url?: string): boolean {
     /munotech/i.test(normalized) ||
     /munoserver/i.test(normalized) ||
     /mobifliks\.(info|com)/i.test(normalized) ||
-    /download(mp4|serie|video|mp3)\.php/i.test(normalized)
+    /download(mp4|serie|video|mp3)\.php/i.test(normalized) ||
+    /namzentertainments\.xyz/i.test(normalized) ||
+    /pearlpix\.xyz/i.test(normalized)
   );
 }
 

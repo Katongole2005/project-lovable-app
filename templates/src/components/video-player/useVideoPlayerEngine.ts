@@ -977,17 +977,17 @@ export function useVideoPlayerEngine({
       }
 
       // If it is stuck in empty or no-source network state, or readyState is stuck at 0 (HAVE_NOTHING)
-      const isEmptyState = video.networkState === 0 && video.readyState === 0;
+      const isNotLoadedYet = video.readyState === 0 || video.networkState === 3 || video.networkState === 0;
       const isStallState = 
         video.networkState === 0 || // NETWORK_EMPTY (CORS / 403 / network block)
         video.networkState === 3 || // NETWORK_NO_SOURCE
         video.readyState === 0;     // HAVE_NOTHING
 
       const stallDurationMs = Date.now() - lastPlaybackProgressRef.current;
-      const triggerThresholdMs = isEmptyState ? 1500 : 5000;
+      const triggerThresholdMs = isNotLoadedYet ? 1500 : 5000;
 
       if (isStallState && stallDurationMs >= triggerThresholdMs) {
-        console.warn(`[Self-Healing Monitor] Media playback stalled for ${stallDurationMs}ms (networkState: ${video.networkState}, readyState: ${video.readyState}, isEmptyState: ${isEmptyState}). Triggering self-healing recovery...`);
+        console.warn(`[Self-Healing Monitor] Media playback stalled for ${stallDurationMs}ms (networkState: ${video.networkState}, readyState: ${video.readyState}, isNotLoadedYet: ${isNotLoadedYet}). Triggering self-healing recovery...`);
         lastPlaybackProgressRef.current = Date.now(); // reset to avoid double-triggering immediately
         
         // Trigger self-healing candidate switch
