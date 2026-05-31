@@ -1367,7 +1367,15 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
     }
 
     const { data, error } = await query.maybeSingle();
-    if (error) { console.error("fetchMovieDetails error:", error.message || error, error.details || "", error.hint || ""); return null; }
+    if (error) {
+      const isNotFound = error.code === "PGRST116" || 
+                         (error.message && error.message.includes("0 rows")) || 
+                         (error.details && error.details.includes("0 rows"));
+      if (!isNotFound) {
+        console.error("fetchMovieDetails error:", error.message || error, error.details || "", error.hint || "");
+      }
+      return null;
+    }
     const movie = normalize([data])[0];
     if (!movie) return null;
     const versions = await fetchMovieVariants(movie);
@@ -1403,7 +1411,15 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
     }
 
     const { data, error } = await query.maybeSingle();
-    if (error) { console.error("fetchSeriesDetails error:", error.message || error, error.details || "", error.hint || ""); return null; }
+    if (error) {
+      const isNotFound = error.code === "PGRST116" || 
+                         (error.message && error.message.includes("0 rows")) || 
+                         (error.details && error.details.includes("0 rows"));
+      if (!isNotFound) {
+        console.error("fetchSeriesDetails error:", error.message || error, error.details || "", error.hint || "");
+      }
+      return null;
+    }
     if (!data) return null;
     const series = normalize([data])[0];
     if (!series) return null;
