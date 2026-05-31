@@ -1288,6 +1288,13 @@ export function useVideoPlayerEngine({
       const video = videoRef.current;
       if (!video) return;
       lastPlaybackProgressRef.current = Date.now();
+      
+      // Auto-clear playbackError if the video is playing successfully (double-guard)
+      if (playbackError && !video.paused && video.currentTime > 0) {
+        console.log("[Self-Healing Player] Auto-clearing playbackError in onTimeUpdate since video is actively playing.");
+        setPlaybackError(null);
+      }
+
       if (video.buffered.length > 0) {
         setBufferedTime(video.buffered.end(video.buffered.length - 1));
       }
@@ -1395,6 +1402,19 @@ export function useVideoPlayerEngine({
       setShowControls(true);
     },
     onError: async () => {
+      // Guard against spurious or late error events from old aborted streams
+      const video = videoRef.current || containerRef.current?.querySelector("video");
+      if (video) {
+        if (video.readyState >= 2 && !video.paused) {
+          console.warn("[Self-Healing Player] Ignoring late error event since the movie is already playing cleanly.");
+          return;
+        }
+        if (video.error && video.error.code === 1) {
+          console.log("[Self-Healing Player] Ignoring MEDIA_ERR_ABORTED error code 1.");
+          return;
+        }
+      }
+
       pauseRequestedRef.current = false;
       setIsPaused(true);
       setIsBuffering(false);
