@@ -19,7 +19,7 @@ export function PlayerGestureLayer({ flashes, onTap }: PlayerGestureLayerProps) 
       <button
         type="button"
         aria-label="Seek backward"
-        className="h-full w-[30%] touch-manipulation"
+        className="h-full w-[30%] touch-manipulation outline-none"
         onPointerDown={(e) => {
           e.stopPropagation();
           onTap("left");
@@ -28,7 +28,7 @@ export function PlayerGestureLayer({ flashes, onTap }: PlayerGestureLayerProps) 
       <button
         type="button"
         aria-label="Play or pause"
-        className="h-full flex-1 touch-manipulation"
+        className="h-full flex-1 touch-manipulation outline-none"
         onPointerDown={(e) => {
           e.stopPropagation();
           onTap("center");
@@ -37,7 +37,7 @@ export function PlayerGestureLayer({ flashes, onTap }: PlayerGestureLayerProps) 
       <button
         type="button"
         aria-label="Seek forward"
-        className="h-full w-[30%] touch-manipulation"
+        className="h-full w-[30%] touch-manipulation outline-none"
         onPointerDown={(e) => {
           e.stopPropagation();
           onTap("right");
