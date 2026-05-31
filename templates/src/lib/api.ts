@@ -1311,7 +1311,7 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
       query = query.eq("mobifliks_id", id);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
     if (error) { console.error("fetchMovieDetails error:", error.message || error, error.details || "", error.hint || ""); return null; }
     const movie = normalize([data])[0];
     if (!movie) return null;
@@ -1347,8 +1347,9 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
       query = query.eq("mobifliks_id", id);
     }
 
-    const { data, error } = await query.single();
-    if (error || !data) { console.error("fetchSeriesDetails error:", error ? (error.message || error) : "No data", error ? (error.details || "") : "", error ? (error.hint || "") : ""); return null; }
+    const { data, error } = await query.maybeSingle();
+    if (error) { console.error("fetchSeriesDetails error:", error.message || error, error.details || "", error.hint || ""); return null; }
+    if (!data) return null;
     const series = normalize([data])[0];
     if (!series) return null;
     const baseName = getSeriesBaseName(series.title);

@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       query = query.eq('mobifliks_id', slugId);
     }
 
-    const { data } = await query.single();
+    const { data } = await query.maybeSingle();
     series = data;
   } catch (err) {
     console.error("SEO metadata fetch error:", err);

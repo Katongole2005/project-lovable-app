@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     query = query.eq('mobifliks_id', slugId);
   }
 
-  const { data: movie } = await query.single();
+  const { data: movie } = await query.maybeSingle();
   
   if (!movie) {
     return {

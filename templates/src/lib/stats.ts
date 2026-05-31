@@ -25,7 +25,7 @@ export async function incrementUserStat(userId: string | undefined, metric: User
         .from('profiles')
         .select(metric)
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       const currentVal = profile?.[metric] || 0;
       
