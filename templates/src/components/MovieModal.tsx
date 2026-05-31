@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import type { Movie, Series, Episode, CastMember } from "@/types/movie";
+import type { Movie, Series, Episode, CastMember, ContinueWatching } from "@/types/movie";
 import { getImageUrl, getOptimizedBackdropUrl, fetchByGenre, buildMediaUrl, resolveMediaAvailability, warmMediaElement, fetchMediaSize, primeMediaAvailability } from "@/lib/api";
 
 import { cn } from "@/lib/utils";

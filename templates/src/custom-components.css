@@ -201,30 +201,14 @@ video {
   height: 100% !important;
 }
 
-/* ── Media paused effect: soft zoom + desaturate (only the VIDEO stream) ── */
-.video-player-video media-provider,
-.video-player-video video,
-.video-player-embed {
-  transform: scale(1);
-  filter: grayscale(0%) contrast(1);
-  transition:
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    filter   0.55s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform, filter;
-}
-.video-player-media-frame--paused .video-player-video media-provider,
-.video-player-media-frame--paused .video-player-video video,
-.video-player-media-frame--paused .video-player-embed {
-  transform: scale(1.06);
-  filter: grayscale(80%) contrast(1.06) brightness(0.9);
-}
+/* ── Media paused effect: premium vignette overlay (high performance, no video filter lag) ── */
 .video-player-media-frame--paused::after {
   content: "";
   pointer-events: none;
   position: absolute;
   inset: 0;
   z-index: 15;
-  background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.38) 100%);
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.48) 100%);
 }
 
 /* ── Brand logo ── */
@@ -749,21 +733,7 @@ video {
   box-shadow: 0 0 30px rgba(229, 9, 20, 0.45);
 }
 
-/* ══════════════════════════════════════════════════════
-   REDUCED MOTION
-   ══════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  .video-player-video media-provider,
-  .video-player-video video,
-  .video-player-embed { transition: none !important; animation: none !important; }
-
-  .video-player-media-frame--paused .video-player-video media-provider,
-  .video-player-media-frame--paused .video-player-video video,
-  .video-player-media-frame--paused .video-player-embed {
-    transform: none;
-    filter: grayscale(80%) contrast(1.04);
-  }
-
   .player-buffering-ring { animation-duration: 1.4s; }
 }
 
