@@ -297,6 +297,8 @@ export function shouldProxyMediaUrl(url?: string): boolean {
   );
 }
 
+let isLocalBackendOffline = false;
+
 export async function fetchMediaSize(url: string, title?: string, mobifliksId?: string): Promise<string | null> {
   if (!url) return null;
 
@@ -322,22 +324,73 @@ export async function fetchMediaSize(url: string, title?: string, mobifliksId?: 
 
   // Fallback to Python backend with re-resolution support
   try {
-    const backendUrl = buildApiEndpoint("/media-info");
-    if (backendUrl) {
-      backendUrl.searchParams.set("url", url);
-      if (title) backendUrl.searchParams.set("title", title);
-      if (mobifliksId) backendUrl.searchParams.set("mobifliks_id", mobifliksId);
+    let targetEndpoint = "";
+    if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && isLocalBackendOffline) {
+      targetEndpoint = "https://api.s-u.in/api/media-info";
+    } else {
+      const backendUrl = buildApiEndpoint("/media-info");
+      targetEndpoint = backendUrl ? backendUrl.toString() : "";
+    }
 
-      const response = await fetch(backendUrl.toString());
+    if (targetEndpoint) {
+      const parsedUrl = new URL(targetEndpoint);
+      parsedUrl.searchParams.set("url", url);
+      if (title) parsedUrl.searchParams.set("title", title);
+      if (mobifliksId) parsedUrl.searchParams.set("mobifliks_id", mobifliksId);
+
+      const response = await fetch(parsedUrl.toString());
       if (response.ok) {
         const data = await response.json();
         if (data.size) {
           return formatBytes(parseInt(data.size));
         }
+      } else {
+        // If the local API failed (connection refused or 500 status), toggle offline and use production fallback
+        const isLocalHost = targetEndpoint.includes("localhost") || targetEndpoint.includes("127.0.0.1") || targetEndpoint.startsWith("/");
+        if (response.status >= 500 && isLocalHost) {
+          isLocalBackendOffline = true;
+          console.log("[API Fallback] Local backend returned offline status. Switching to production API fallback.");
+          
+          // Retry immediately using the production backend URL
+          const prodUrl = new URL("https://api.s-u.in/api/media-info");
+          prodUrl.searchParams.set("url", url);
+          if (title) prodUrl.searchParams.set("title", title);
+          if (mobifliksId) prodUrl.searchParams.set("mobifliks_id", mobifliksId);
+          
+          const prodResponse = await fetch(prodUrl.toString());
+          if (prodResponse.ok) {
+            const data = await prodResponse.json();
+            if (data.size) {
+              return formatBytes(parseInt(data.size));
+            }
+          }
+        }
       }
     }
   } catch (e) {
     console.warn("Backend size fetch failed:", e);
+    // If the connection refused or threw a network error
+    if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+      isLocalBackendOffline = true;
+      
+      // Retry immediately using the production backend URL
+      try {
+        const prodUrl = new URL("https://api.s-u.in/api/media-info");
+        prodUrl.searchParams.set("url", url);
+        if (title) prodUrl.searchParams.set("title", title);
+        if (mobifliksId) prodUrl.searchParams.set("mobifliks_id", mobifliksId);
+        
+        const prodResponse = await fetch(prodUrl.toString());
+        if (prodResponse.ok) {
+          const data = await prodResponse.json();
+          if (data.size) {
+            return formatBytes(parseInt(data.size));
+          }
+        }
+      } catch (prodErr) {
+        console.warn("Production fallback size fetch failed:", prodErr);
+      }
+    }
   }
 
   return null;
