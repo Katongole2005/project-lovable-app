@@ -1366,17 +1366,13 @@ export async function fetchMovieDetails(id: string): Promise<Movie | null> {
       query = query.eq("mobifliks_id", id);
     }
 
-    const { data, error } = await query.maybeSingle();
+    const { data, error } = await query;
     if (error) {
-      const isNotFound = error.code === "PGRST116" || 
-                         (error.message && error.message.includes("0 rows")) || 
-                         (error.details && error.details.includes("0 rows"));
-      if (!isNotFound) {
-        console.error("fetchMovieDetails error:", error.message || error, error.details || "", error.hint || "");
-      }
+      console.error("fetchMovieDetails error:", error.message || error, error.details || "", error.hint || "");
       return null;
     }
-    const movie = normalize([data])[0];
+    if (!data || data.length === 0) return null;
+    const movie = normalize(data)[0];
     if (!movie) return null;
     const versions = await fetchMovieVariants(movie);
     const mergedMovie = versions.find((version) => version.mobifliks_id === movie.mobifliks_id) ?? versions[0] ?? movie;
@@ -1410,18 +1406,13 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
       query = query.eq("mobifliks_id", id);
     }
 
-    const { data, error } = await query.maybeSingle();
+    const { data, error } = await query;
     if (error) {
-      const isNotFound = error.code === "PGRST116" || 
-                         (error.message && error.message.includes("0 rows")) || 
-                         (error.details && error.details.includes("0 rows"));
-      if (!isNotFound) {
-        console.error("fetchSeriesDetails error:", error.message || error, error.details || "", error.hint || "");
-      }
+      console.error("fetchSeriesDetails error:", error.message || error, error.details || "", error.hint || "");
       return null;
     }
-    if (!data) return null;
-    const series = normalize([data])[0];
+    if (!data || data.length === 0) return null;
+    const series = normalize(data)[0];
     if (!series) return null;
     const baseName = getSeriesBaseName(series.title);
     const { data: allRelated } = await supabase.from("movies").select("mobifliks_id, title").eq("type", "series").ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`).order("title", { ascending: true });
