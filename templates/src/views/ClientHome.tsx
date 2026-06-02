@@ -2412,11 +2412,21 @@ function ClientHome() {
                 src={currentLogo} 
               />
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground/60">
-              <Link className="hover:text-white transition-colors" href="/dmca" suppressHydrationWarning>DMCA</Link>
-              <Link className="hover:text-white transition-colors" href="/settings" suppressHydrationWarning>Settings</Link>
-              <Link className="hover:text-white transition-colors" href="/privacy" suppressHydrationWarning>Privacy</Link>
-              <Link className="hover:text-white transition-colors" href="/terms" suppressHydrationWarning>Terms</Link>
+            <div className="flex flex-col md:flex-row items-center gap-4 text-xs text-muted-foreground/60">
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                <Link className="hover:text-white transition-colors" href="/dmca" suppressHydrationWarning>DMCA</Link>
+                <Link className="hover:text-white transition-colors" href="/settings" suppressHydrationWarning>Settings</Link>
+                <Link className="hover:text-white transition-colors" href="/privacy" suppressHydrationWarning>Privacy</Link>
+                <Link className="hover:text-white transition-colors" href="/terms" suppressHydrationWarning>Terms</Link>
+              </div>
+              <div className="flex items-center gap-2 max-w-[280px] text-[10px] text-center md:text-left leading-normal border-t md:border-t-0 md:border-l border-white/10 pt-2 md:pt-0 md:pl-4">
+                <img 
+                  src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d53f5d514391aa69f7ba11912c4b887cdcc2497757d79a613cbf7f10f497c19d.svg" 
+                  alt="TMDB Logo" 
+                  className="h-3.5 w-auto shrink-0 opacity-40 hover:opacity-80 transition-opacity" 
+                />
+                <span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
+              </div>
             </div>
           </footer>
         )}
