@@ -5,7 +5,8 @@ import { MetadataRoute } from 'next'
  * ──────────────────────────────
  * Generates custom crawler instructions dynamically.
  * Helps prevent duplicate content indexing by mirroring environment domain targets,
- * while cleanly disallowing heavy asset folders to save valuable crawl budget.
+ * while cleanly disallowing heavy asset folders and service worker cache-bust URLs
+ * to save valuable crawl budget.
  */
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://s-u.in'
@@ -14,8 +15,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/', '/_next/', '/video-proxy-server/', '/admin/'],
+      disallow: ['/api/', '/_next/', '/video-proxy-server/', '/admin/', '/*?sw=*'],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
+    host: baseUrl,
   }
 }
