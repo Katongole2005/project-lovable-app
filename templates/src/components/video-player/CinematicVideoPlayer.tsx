@@ -231,6 +231,7 @@ export function CinematicVideoPlayer({
                       activeSkipSegment={activeSkipSegment}
                       usableSubtitles={usableSubtitles}
                       activeSubtitleId={activeSubtitleId}
+                      skipSegments={skipSegments}
                       onClose={handleClose}
                       onTogglePlay={togglePlay}
                       onSkip={skip}
@@ -319,6 +320,7 @@ export function CinematicVideoPlayer({
                       activeSkipSegment={activeSkipSegment}
                       usableSubtitles={usableSubtitles}
                       activeSubtitleId={activeSubtitleId}
+                      skipSegments={skipSegments}
                       onClose={handleClose}
                       onTogglePlay={togglePlay}
                       onSkip={skip}

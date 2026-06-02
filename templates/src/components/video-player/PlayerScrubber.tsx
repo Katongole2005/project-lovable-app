@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatTime } from "./utils";
 
+import { SkipSegment } from "@/types/movie";
+
 type PlayerScrubberProps = {
   currentTime: number;
   duration: number;
@@ -13,6 +15,7 @@ type PlayerScrubberProps = {
   onSeekStart: () => void;
   onSeek: (time: number) => void;
   onSeekEnd: () => void;
+  skipSegments?: SkipSegment[];
 };
 
 export function PlayerScrubber({
@@ -24,6 +27,7 @@ export function PlayerScrubber({
   onSeekStart,
   onSeek,
   onSeekEnd,
+  skipSegments = [],
 }: PlayerScrubberProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -50,7 +54,9 @@ export function PlayerScrubber({
 
   const playedRatio = canSeek ? currentTime / safeDuration : 0;
   const bufferedRatio = canSeek ? Math.min(1, bufferedTime / safeDuration) : 0;
-  const activeRatio = isScrubbing || hoverRatio === null ? playedRatio : hoverRatio;
+  
+  // During scrubbing, track the scrub cursor. During idle hover, track the playback playedRatio.
+  const activeRatio = isScrubbing ? (hoverRatio ?? playedRatio) : playedRatio;
   const previewTime = hoverRatio !== null && !isScrubbing ? hoverRatio * safeDuration : null;
 
   const commitScrub = (clientX: number) => {
@@ -70,11 +76,11 @@ export function PlayerScrubber({
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     e.stopPropagation();
     if (!canSeek) return;
+    const ratio = ratioFromClientX(e.clientX);
+    setHoverRatio(ratio);
     if (isScrubbing) {
       commitScrub(e.clientX);
-      return;
     }
-    setHoverRatio(ratioFromClientX(e.clientX));
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -148,15 +154,44 @@ export function PlayerScrubber({
           {/* Track background */}
           <div className="absolute inset-0 bg-white/15 rounded-full" />
 
-          {/* Buffered */}
+          {/* Buffered progress */}
           <div
             className="player-scrubber-buffered absolute inset-y-0 left-0 rounded-full"
             style={{ width: `${bufferedRatio * 100}%` }}
           />
 
-          {/* Played */}
+          {/* Hover preview progress */}
+          {hoverRatio !== null && !isScrubbing && (
+            <div
+              className="absolute inset-y-0 left-0 bg-white/20 rounded-full pointer-events-none"
+              style={{ width: `${hoverRatio * 100}%` }}
+            />
+          )}
+
+          {/* Skip Segments / Chapters */}
+          {skipSegments && skipSegments.map((segment, idx) => {
+            if (!safeDuration) return null;
+            const startPct = (segment.startTime / safeDuration) * 100;
+            const endPct = (segment.endTime / safeDuration) * 100;
+            const widthPct = endPct - startPct;
+            if (widthPct <= 0) return null;
+            
+            return (
+              <div 
+                key={idx}
+                className="absolute inset-y-0 bg-[#e50914]/25 border-x border-black/45 hover:bg-[#e50914]/40 transition-colors pointer-events-none"
+                style={{
+                  left: `${startPct}%`,
+                  width: `${widthPct}%`
+                }}
+                title={segment.label}
+              />
+            );
+          })}
+
+          {/* Played progress */}
           <div
-            className="player-scrubber-played absolute inset-y-0 left-0 rounded-full"
+            className="player-scrubber-played absolute inset-y-0 left-0 rounded-full animate-pulse-subtle"
             style={{ width: `${activeRatio * 100}%` }}
           />
         </div>
@@ -164,7 +199,7 @@ export function PlayerScrubber({
         {/* Thumb */}
         {canSeek && (
           <motion.div
-            className="player-scrubber-thumb pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg"
+            className="player-scrubber-thumb pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e50914] shadow-lg border border-white/20"
             style={{ left: `${activeRatio * 100}%` }}
             animate={{
               scale: isHovering ? 1.3 : 1,

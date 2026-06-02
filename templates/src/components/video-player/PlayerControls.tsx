@@ -46,6 +46,7 @@ type PlayerControlsProps = {
   activeSkipSegment: SkipSegment | null;
   usableSubtitles: SubtitleTrack[];
   activeSubtitleId: string | null;
+  skipSegments?: SkipSegment[];
   onClose: () => void;
   onTogglePlay: () => void;
   onSkip: (amount: number) => void;
@@ -83,6 +84,7 @@ export function PlayerControls({
   activeSkipSegment,
   usableSubtitles,
   activeSubtitleId,
+  skipSegments = [],
   onClose,
   onTogglePlay,
   onSkip,
@@ -224,6 +226,7 @@ export function PlayerControls({
                   onSeekStart={onSeekStart}
                   onSeek={onSeek}
                   onSeekEnd={onSeekEnd}
+                  skipSegments={skipSegments}
                 />
               </div>
 
