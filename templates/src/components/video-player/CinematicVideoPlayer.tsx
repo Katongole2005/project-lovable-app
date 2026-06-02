@@ -36,11 +36,7 @@ export function CinematicVideoPlayer({
     onTimeUpdate,
     startTime,
     subtitles,
-    skipSegments: skipSegments.length > 0 ? skipSegments : [
-      { label: "Recap", startTime: 60, endTime: 600 },
-      { label: "Intro", startTime: 1800, endTime: 3000 },
-      { label: "Outro", startTime: 5000, endTime: 5300 }
-    ],
+    skipSegments,
   });
 
   const {
