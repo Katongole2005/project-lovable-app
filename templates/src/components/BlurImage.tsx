@@ -35,6 +35,12 @@ export function BlurImage({ src, alt, className, loading = "lazy" }: BlurImagePr
         fill
         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 30vw, 20vw"
         priority={loading === "eager"}
+        ref={(img) => {
+          if (img && img.complete && !loaded) {
+            // Safely defer the state update to prevent rendering phase conflicts
+            setTimeout(() => setLoaded(true), 0);
+          }
+        }}
         className={cn(
           "object-cover transition-opacity duration-400 ease-out",
           loaded ? "opacity-100" : "opacity-0",
