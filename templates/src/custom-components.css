@@ -216,6 +216,21 @@ video {
   background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.48) 100%);
 }
 
+/* Pause transition styling on video, iframe and container components */
+.video-player-video,
+video,
+.video-player-embed {
+  transition: transform 0.48s cubic-bezier(0.25, 1, 0.5, 1), filter 0.48s ease-in-out !important;
+  will-change: transform, filter;
+}
+
+.video-player-media-frame--paused .video-player-video,
+.video-player-media-frame--paused video,
+.video-player-media-frame--paused .video-player-embed {
+  transform: scale(1.08) !important;
+  filter: grayscale(1) !important;
+}
+
 /* ── Brand logo ── */
 .video-player-brand-logo img {
   filter: drop-shadow(0 10px 28px rgba(0,0,0,0.75));

@@ -36,7 +36,11 @@ export function CinematicVideoPlayer({
     onTimeUpdate,
     startTime,
     subtitles,
-    skipSegments,
+    skipSegments: skipSegments.length > 0 ? skipSegments : [
+      { label: "Recap", startTime: 60, endTime: 600 },
+      { label: "Intro", startTime: 1800, endTime: 3000 },
+      { label: "Outro", startTime: 5000, endTime: 5300 }
+    ],
   });
 
   const {
@@ -188,17 +192,7 @@ export function CinematicVideoPlayer({
                     allowFullScreen
                     className="video-player-embed relative z-10 h-full w-full border-0 bg-black"
                   />
-                  
-                  {/* Brand logo (embed) */}
-                  {isPlaying && controlsVisible && !hasEnded && !playbackError && (
-                    <PlayerBrandLogo
-                      visible={controlsVisible}
-                      title={activeTitle}
-                      logoUrl={activeMovie?.logo_url}
-                      activeMovie={activeMovie}
-                      layout={layout}
-                    />
-                  )}
+
 
                   {/* Gesture layer (embed) */}
                   {isPlaying && !hasEnded && !playbackError && (
@@ -277,17 +271,6 @@ export function CinematicVideoPlayer({
                       />
                     ))}
                   </video>
-
-                  {/* Brand logo (native) */}
-                  {isPlaying && controlsVisible && !hasEnded && !playbackError && (
-                    <PlayerBrandLogo
-                      visible={controlsVisible}
-                      title={activeTitle}
-                      logoUrl={activeMovie?.logo_url}
-                      activeMovie={activeMovie}
-                      layout={layout}
-                    />
-                  )}
 
                   {/* Gesture layer (native) */}
                   {isPlaying && !hasEnded && !playbackError && (

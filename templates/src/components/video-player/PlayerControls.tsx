@@ -136,17 +136,36 @@ export function PlayerControls({
                 <ArrowLeft className="h-6 w-6" />
               </button>
               
-              <div className="flex flex-col">
-                <h1 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
-                  {activeTitle.replace(/\s*-\s*S\d+\s*:\s*E\d+\b/i, "")}
-                </h1>
-                {/* Series info */}
-                {seriesInfo && (
-                  <span className="text-[11px] sm:text-xs text-zinc-400 font-semibold mt-1">
-                    {seriesInfo}
-                  </span>
-                )}
-              </div>
+              {activeMovie?.logo_url ? (
+                <div className="flex flex-col items-start gap-1">
+                  <img
+                    src={activeMovie.logo_url}
+                    alt={activeTitle}
+                    className={cn(
+                      "w-auto object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] filter",
+                      layout === "desktop"
+                        ? "h-8 sm:h-9 md:h-10 max-w-[140px] sm:max-w-[180px] md:max-w-[220px]"
+                        : "h-6 sm:h-7 max-w-[100px] sm:max-w-[140px]"
+                    )}
+                  />
+                  {seriesInfo && (
+                    <span className="text-[10px] text-zinc-400 font-bold tracking-wide mt-0.5 leading-none">
+                      {seriesInfo}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <h1 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
+                    {activeTitle.replace(/\s*-\s*S\d+\s*:\s*E\d+\b/i, "")}
+                  </h1>
+                  {seriesInfo && (
+                    <span className="text-[11px] sm:text-xs text-zinc-400 font-semibold mt-1">
+                      {seriesInfo}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Translation Badge (top right) */}

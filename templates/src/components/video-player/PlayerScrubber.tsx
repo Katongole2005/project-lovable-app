@@ -179,13 +179,37 @@ export function PlayerScrubber({
             return (
               <div 
                 key={idx}
-                className="absolute inset-y-0 bg-[#e50914]/25 border-x border-black/45 hover:bg-[#e50914]/40 transition-colors pointer-events-none"
+                className="absolute inset-y-0 bg-[#e50914]/25 hover:bg-[#e50914]/40 transition-colors pointer-events-none"
                 style={{
                   left: `${startPct}%`,
                   width: `${widthPct}%`
                 }}
                 title={segment.label}
               />
+            );
+          })}
+
+          {/* Skip Segments Dividers (Gaps) */}
+          {skipSegments && skipSegments.map((segment, idx) => {
+            if (!safeDuration) return null;
+            const startPct = (segment.startTime / safeDuration) * 100;
+            const endPct = (segment.endTime / safeDuration) * 100;
+            
+            return (
+              <div key={`div-${idx}`} className="absolute inset-y-0 left-0 right-0 pointer-events-none z-30">
+                {startPct > 0 && startPct < 100 && (
+                  <div 
+                    className="absolute inset-y-0 w-[3px] bg-black/90" 
+                    style={{ left: `${startPct}%`, transform: 'translateX(-50%)' }}
+                  />
+                )}
+                {endPct > 0 && endPct < 100 && (
+                  <div 
+                    className="absolute inset-y-0 w-[3px] bg-black/90" 
+                    style={{ left: `${endPct}%`, transform: 'translateX(-50%)' }}
+                  />
+                )}
+              </div>
             );
           })}
 
@@ -198,15 +222,15 @@ export function PlayerScrubber({
 
         {/* Thumb */}
         {canSeek && (
-          <motion.div
-            className="player-scrubber-thumb pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e50914] shadow-lg border border-white/20"
-            style={{ left: `${activeRatio * 100}%` }}
-            animate={{
-              scale: isHovering ? 1.3 : 1,
-              width: isHovering ? 14 : 12,
-              height: isHovering ? 14 : 12,
+          <div
+            className="player-scrubber-thumb absolute top-1/2"
+            style={{ 
+              left: `${activeRatio * 100}%`,
+              transform: `translate(-50%, -50%) scale(${isHovering ? 1.35 : 1})`,
+              transition: "transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)",
+              background: "#e50914",
+              border: "1.5px solid #ffffff"
             }}
-            transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
           />
         )}
       </div>
