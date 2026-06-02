@@ -117,18 +117,31 @@ const Privacy = () => {
             content="Our Service does not address anyone under the age of 13 ('Children'). We do not knowingly collect personally identifiable information from anyone under the age of 13. If you are a parent or guardian and you are aware that your Children have provided us with Personal Data, please contact us."
           />
 
-          <div className="pt-12 border-t border-white/5">
-            <h3 className="text-xl font-bold text-white mb-4">8. Contact Information</h3>
-            <p className="text-white/60 mb-6">
-              For any privacy-related inquiries or to exercise your data rights, please contact our Data Protection Officer:
-            </p>
-            <a 
-              href="mailto:support@s-u.in" 
-              className="inline-flex items-center gap-3 px-6 py-3 rounded-lg bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-white/20 transition-all text-primary font-medium"
-            >
-              <Mail className="w-5 h-5" />
-              support@s-u.in
-            </a>
+          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h3 className="text-xl font-bold text-white mb-4">8. Contact Information</h3>
+              <p className="text-white/60 mb-6">
+                For any privacy-related inquiries or to exercise your data rights, please contact our Data Protection Officer:
+              </p>
+              <a 
+                href="mailto:support@s-u.in" 
+                className="inline-flex items-center gap-3 px-6 py-3 rounded-lg bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-white/20 transition-all text-primary font-medium"
+              >
+                <Mail className="w-5 h-5" />
+                support@s-u.in
+              </a>
+            </div>
+            
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5 max-w-xs shrink-0">
+              <img 
+                src="/tmdb-logo-long.svg" 
+                alt="TMDB Logo" 
+                className="h-3.5 w-auto shrink-0 opacity-40" 
+              />
+              <p className="text-[9px] text-white/40 leading-normal">
+                This service uses TMDB and the TMDB APIs to fetch movie/series titles and images but is not endorsed, certified, or approved by TMDB.
+              </p>
+            </div>
           </div>
         </div>
       </div>

@@ -240,6 +240,46 @@ const Settings = () => {
               </div>
             </div>
           </motion.section>
+
+          {/* About & Database Attribution */}
+          <motion.section
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md"
+          >
+            <div className="flex gap-4 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/5 flex items-center justify-center text-primary">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-1">About & Credits</h3>
+                <p className="text-white/40 text-sm">Application background information and database attributions.</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4 pl-14 text-xs leading-relaxed text-white/50">
+              <p>
+                Moviebay operates as a web indexing client that aggregates publicly accessible streaming directories. We do not store, host, or transmit copyrighted files. For copyright enforcement queries, please refer to our <a href="/dmca" className="text-primary hover:underline font-semibold">DMCA policy</a>.
+              </p>
+              
+              <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                <img 
+                  src="/tmdb-logo-long.svg" 
+                  alt="TMDB Logo" 
+                  className="h-4 w-auto shrink-0 opacity-40 hover:opacity-80 transition-opacity mt-0.5" 
+                />
+                <div>
+                  <p className="text-[10px] text-white/40">
+                    This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
+                  </p>
+                  <p className="text-[10px] text-white/30 mt-1">
+                    All movie/series titles, descriptions, cast listings, and artwork displayed on this site are sourced via TMDB API data and image CDN endpoints.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.section>
         </div>
       </div>
     </div>

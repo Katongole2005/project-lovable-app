@@ -86,14 +86,27 @@ const Dmca = () => {
             content="Upon receipt of a valid and complete DMCA compliance notification, we will review the claim and act promptly to remove or disable access to the index links pointing to the alleged infringing material on our platform. In accordance with the DMCA, we reserve the right to remove access without prior warning to the indexing submitters."
           />
 
-          <div className="pt-12 border-t border-white/5">
-            <h3 className="text-xl font-bold text-white mb-4">4. Legal Copyright Contact</h3>
-            <p className="text-white/60 mb-6 flex items-center gap-2">
-              <Mail className="w-4 h-4 text-primary" />
-              Please direct all copyright complaints and legal inquiries to:
-            </p>
-            <div className="text-red-400 font-bold p-4 rounded-xl bg-red-500/5 border border-red-500/10 inline-block">
-              legal@s-u.in
+          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h3 className="text-xl font-bold text-white mb-4">4. Legal Copyright Contact</h3>
+              <p className="text-white/60 mb-6 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                Please direct all copyright complaints and legal inquiries to:
+              </p>
+              <div className="text-red-400 font-bold p-4 rounded-xl bg-red-500/5 border border-red-500/10 inline-block">
+                legal@s-u.in
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5 max-w-xs shrink-0">
+              <img 
+                src="/tmdb-logo-long.svg" 
+                alt="TMDB Logo" 
+                className="h-3.5 w-auto shrink-0 opacity-40" 
+              />
+              <p className="text-[9px] text-white/40 leading-normal">
+                This service uses TMDB and the TMDB APIs to fetch movie/series titles and images but is not endorsed, certified, or approved by TMDB.
+              </p>
             </div>
           </div>
         </div>

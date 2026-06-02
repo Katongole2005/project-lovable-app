@@ -118,13 +118,26 @@ const Terms = () => {
             content="These Terms shall be governed and construed in accordance with the laws of the Republic of Uganda, without regard to its conflict of law provisions. Our failure to enforce any right or provision of these Terms will not be considered a waiver of those rights."
           />
 
-          <div className="pt-12 border-t border-white/5">
-            <h3 className="text-xl font-bold text-white mb-4">8. Support and Inquiries</h3>
-            <p className="text-white/60 mb-6">
-              For any legal questions or support regarding these terms, please contact:
-            </p>
-            <div className="text-primary font-medium p-4 rounded-lg bg-white/[0.03] border border-white/10 inline-block">
-              support@s-u.in
+          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h3 className="text-xl font-bold text-white mb-4">8. Support and Inquiries</h3>
+              <p className="text-white/60 mb-6">
+                For any legal questions or support regarding these terms, please contact:
+              </p>
+              <div className="text-primary font-medium p-4 rounded-lg bg-white/[0.03] border border-white/10 inline-block">
+                support@s-u.in
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5 max-w-xs shrink-0">
+              <img 
+                src="/tmdb-logo-long.svg" 
+                alt="TMDB Logo" 
+                className="h-3.5 w-auto shrink-0 opacity-40" 
+              />
+              <p className="text-[9px] text-white/40 leading-normal">
+                This service uses TMDB and the TMDB APIs to fetch movie/series titles and images but is not endorsed, certified, or approved by TMDB.
+              </p>
             </div>
           </div>
         </div>
