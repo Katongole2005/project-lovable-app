@@ -82,7 +82,7 @@ export function useVideoPlayerEngine({
   const playerRef = useRef<MediaPlayerInstance>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const activeVideoElRef = useRef<HTMLVideoElement | null>(null);
   const activeVideoUrlRef = useRef("");
   const lastSessionKeyRef = useRef("");
@@ -94,6 +94,7 @@ export function useVideoPlayerEngine({
   const stallRecoveryTimeoutRef = useRef<number | null>(null);
   const lastPlaybackProgressRef = useRef(Date.now());
   const gestureFlashIdRef = useRef(0);
+  const lastTapRef = useRef<{ time: number; side: "left" | "right" | "center" | null }>({ time: 0, side: null });
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const retryCountRef = useRef<Record<string, number>>({});
 
@@ -269,16 +270,16 @@ export function useVideoPlayerEngine({
 
     const player = playerRef.current;
     if (player) {
-      const readyState = player.readyState ?? player.state?.readyState ?? 0;
+      const readyState = (player as any).readyState ?? (player as any).state?.readyState ?? 0;
       if (readyState >= 3) {
         setIsBuffering(false);
       } else {
         setIsBuffering(true);
       }
 
-      const isPlayerReady = player.state 
-        ? player.state.canPlay 
-        : (player.readyState !== undefined ? player.readyState >= 2 : true);
+      const isPlayerReady = (player as any).state 
+        ? (player as any).state.canPlay 
+        : ((player as any).readyState !== undefined ? (player as any).readyState >= 2 : true);
 
       if (isPlayerReady) {
         try {
@@ -347,7 +348,7 @@ export function useVideoPlayerEngine({
         if (player.paused) {
           pauseRequestedRef.current = false;
           setIsPaused(false);
-          const readyState = player.readyState ?? player.state?.readyState ?? 0;
+          const readyState = (player as any).readyState ?? (player as any).state?.readyState ?? 0;
           setIsBuffering(readyState < 3);
           try {
             const playPromise = player.play();
@@ -1125,9 +1126,9 @@ export function useVideoPlayerEngine({
     const video = videoRef.current || activeVideoElRef.current;
     
     if (player && player.paused && !pauseRequestedRef.current) {
-      const isPlayerReady = player.state 
-        ? player.state.canPlay 
-        : (player.readyState !== undefined ? player.readyState >= 2 : true);
+      const isPlayerReady = (player as any).state 
+        ? (player as any).state.canPlay 
+        : ((player as any).readyState !== undefined ? (player as any).readyState >= 2 : true);
 
       if (isPlayerReady) {
         console.log("[Player Engine] Attempting programmatic player play...");
@@ -1350,9 +1351,9 @@ export function useVideoPlayerEngine({
       if (isPlaying && !pauseRequestedRef.current) {
         const player = playerRef.current;
         if (player && player.paused) {
-          const isPlayerReady = player.state 
-            ? player.state.canPlay 
-            : (player.readyState !== undefined ? player.readyState >= 2 : true);
+          const isPlayerReady = (player as any).state 
+            ? (player as any).state.canPlay 
+            : ((player as any).readyState !== undefined ? (player as any).readyState >= 2 : true);
 
           if (isPlayerReady) {
             console.log("[Player Engine] Programmatic play trigger onLoadedMetadata (player)...");
@@ -1429,9 +1430,9 @@ export function useVideoPlayerEngine({
       if (isPlaying && !pauseRequestedRef.current) {
         const player = playerRef.current;
         if (player && player.paused) {
-          const isPlayerReady = player.state 
-            ? player.state.canPlay 
-            : (player.readyState !== undefined ? player.readyState >= 2 : true);
+          const isPlayerReady = (player as any).state 
+            ? (player as any).state.canPlay 
+            : ((player as any).readyState !== undefined ? (player as any).readyState >= 2 : true);
 
           if (isPlayerReady) {
             console.log("[Player Engine] Programmatic play trigger onCanPlay (player)...");
@@ -1744,7 +1745,6 @@ export function useVideoPlayerEngine({
     setHoverTime,
     resetControlsTimeout,
     sendCommand,
-    isEmbeddableVideo,
     videoHandlers,
     activeVideoUrl,
     posterGradient,

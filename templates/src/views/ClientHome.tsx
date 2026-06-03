@@ -334,6 +334,7 @@ function ClientHome() {
   const searchHistoryRef = useRef(false);
   const lastBackPressRef = useRef(0);
   const exitToastTimerRef = useRef<number | null>(null);
+  const observerRef = useRef<HTMLDivElement>(null);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isAuthGatedModalOpen, setIsAuthGatedModalOpen] = useState(false);
   const [gatedAction, setGatedAction] = useState<"watch" | "download" | "general">("general");
@@ -1549,6 +1550,9 @@ function ClientHome() {
     if (isLoadingMore) return;
 
     setIsLoadingMore(true);
+    // Wait like 4 seconds when the loading spinner (gif/animation) is playing at the bottom before loading more movies
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+
     const dbFilters: FilterOptions = { vj: activeFilters.vj, year: activeFilters.year };
     try {
       let more: Movie[] = [];
@@ -1599,6 +1603,34 @@ function ClientHome() {
       setIsLoadingMore(false);
     }
   }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByLatestAdded, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
+
+  // Infinite Scroll Intersection Observer
+  useEffect(() => {
+    if (viewMode === "home" || viewMode === "search") return;
+    if (categoryMovies.length === 0 || isLoading || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          void handleLoadMore();
+        }
+      },
+      {
+        rootMargin: "400px", // Trigger when user is within 400px of the page bottom
+      }
+    );
+
+    const currentTarget = observerRef.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [categoryMovies.length, isLoading, isLoadingMore, viewMode, handleLoadMore]);
 
   const getCategoryTitle = () => {
     const titles: Record<string, string> = {
@@ -2300,17 +2332,20 @@ function ClientHome() {
                   appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                 />
 
+                {/* Infinite Scroll target observer node */}
                 {categoryMovies.length > 0 && (
-                  <div className="flex justify-center pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleLoadMore}
-                      disabled={isLoadingMore}
-                      className="browse-load-more gap-2"
-                    >
-                      {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Load More
-                    </Button>
+                  <div ref={observerRef} className="h-4 w-full" />
+                )}
+
+                {/* Elegant premium animated loading indicator */}
+                {isLoadingMore && (
+                  <div className="flex flex-col items-center justify-center py-8 gap-3 animate-fade-in">
+                    <img 
+                      src="/loading.gif" 
+                      alt="Loading..." 
+                      className="w-16 h-20 object-contain"
+                    />
+                    <p className="text-xs text-muted-foreground font-medium animate-pulse">Loading more movies...</p>
                   </div>
                 )}
               </div>
@@ -2340,17 +2375,20 @@ function ClientHome() {
                   appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                 />
 
+                {/* Infinite Scroll target observer node */}
                 {categoryMovies.length > 0 && (
-                  <div className="flex justify-center pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleLoadMore}
-                      disabled={isLoadingMore}
-                      className="browse-load-more gap-2"
-                    >
-                      {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Load More
-                    </Button>
+                  <div ref={observerRef} className="h-4 w-full" />
+                )}
+
+                {/* Elegant premium animated loading indicator */}
+                {isLoadingMore && (
+                  <div className="flex flex-col items-center justify-center py-8 gap-3 animate-fade-in">
+                    <img 
+                      src="/loading.gif" 
+                      alt="Loading..." 
+                      className="w-16 h-20 object-contain"
+                    />
+                    <p className="text-xs text-muted-foreground font-medium animate-pulse">Loading more series...</p>
                   </div>
                 )}
               </div>
@@ -2381,17 +2419,20 @@ function ClientHome() {
                   emptyMessage="No English originals found."
                 />
 
+                {/* Infinite Scroll target observer node */}
                 {categoryMovies.length > 0 && (
-                  <div className="flex justify-center pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleLoadMore}
-                      disabled={isLoadingMore}
-                      className="browse-load-more gap-2"
-                    >
-                      {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Load More
-                    </Button>
+                  <div ref={observerRef} className="h-4 w-full" />
+                )}
+
+                {/* Elegant premium animated loading indicator */}
+                {isLoadingMore && (
+                  <div className="flex flex-col items-center justify-center py-8 gap-3 animate-fade-in">
+                    <img 
+                      src="/loading.gif" 
+                      alt="Loading..." 
+                      className="w-16 h-20 object-contain"
+                    />
+                    <p className="text-xs text-muted-foreground font-medium animate-pulse">Loading more originals...</p>
                   </div>
                 )}
               </div>

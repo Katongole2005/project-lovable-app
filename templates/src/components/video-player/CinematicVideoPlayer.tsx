@@ -259,7 +259,6 @@ export function CinematicVideoPlayer({
                     playsInline
                     preload="auto"
                     crossOrigin="anonymous"
-                    referrerPolicy="strict-origin-when-cross-origin"
                     controls={false}
                     className={cn(
                       "video-player-video relative z-10 h-full w-full bg-black object-contain",
