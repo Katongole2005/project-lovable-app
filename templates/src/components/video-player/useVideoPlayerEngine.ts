@@ -94,8 +94,8 @@ export function useVideoPlayerEngine({
   const stallRecoveryTimeoutRef = useRef<number | null>(null);
   const lastPlaybackProgressRef = useRef(Date.now());
   const gestureFlashIdRef = useRef(0);
-  const lastTapRef = useRef({ time: 0, side: null as "left" | "right" | "center" | null });
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const retryCountRef = useRef<Record<string, number>>({});
 
   const getVideoElement = useCallback(() => {
     const video = videoRef.current || containerRef.current?.querySelector("video");
@@ -259,6 +259,7 @@ export function useVideoPlayerEngine({
   );
 
   const beginPlayback = useCallback(() => {
+    retryCountRef.current = {}; // Reset error retry counters for a fresh session
     pauseRequestedRef.current = false;
     setHasEnded(false);
     setIsPaused(false);
@@ -1531,6 +1532,33 @@ export function useVideoPlayerEngine({
       setIsBuffering(false);
 
       const currentActive = activeVideoUrl;
+
+      // Automatically retry the current URL up to 3 times before attempting fallbacks
+      const currentRetries = retryCountRef.current[currentActive] || 0;
+      if (currentRetries < 3) {
+        retryCountRef.current[currentActive] = currentRetries + 1;
+        console.warn(`[Self-Healing Player] Playback error encountered for URL. Auto-retrying (Attempt ${currentRetries + 1} of 3)...`);
+        setIsBuffering(true);
+        setIsPaused(false);
+        setTimeout(() => {
+          const videoElement = videoRef.current || containerRef.current?.querySelector("video");
+          if (videoElement) {
+            try {
+              videoElement.load();
+              const playPromise = videoElement.play();
+              if (playPromise !== undefined) {
+                playPromise.catch((e) => {
+                  if (e.name === "AbortError") return;
+                  console.error(`[Self-Healing Player] Auto-retry play promise rejected (Attempt ${currentRetries + 1}):`, e);
+                });
+              }
+            } catch (e) {
+              console.error(`[Self-Healing Player] Auto-retry failed synchronously (Attempt ${currentRetries + 1}):`, e);
+            }
+          }
+        }, 1200);
+        return;
+      }
       triedUrlsRef.current.add(currentActive);
       const rawActiveUrl = unwrapLegacyWorkerUrl(currentActive);
       if (rawActiveUrl) {
