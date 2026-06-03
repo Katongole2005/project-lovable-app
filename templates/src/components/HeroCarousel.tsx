@@ -505,7 +505,7 @@ export function HeroCarousel({
                           loading="eager"
                         />
                       ) : (
-                        <h2 className="hero-stagger-logo font-display text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-5xl xl:text-5xl 2xl:text-6xl">
+                        <h2 className="hero-stagger-logo font-display text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-4xl xl:text-4xl 2xl:text-5xl">
                           <span className="hero-premium-title">{currentMovie.title}</span>
                         </h2>
                       )}

@@ -867,7 +867,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                             className="h-16 lg:h-24 xl:h-28 w-auto max-w-[500px] object-contain object-left drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
                           />
                         ) : (
-                          <h1 className="font-display text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
+                          <h1 className="font-display text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight drop-shadow-lg">
                             {movie.title}
                           </h1>
                         )}
