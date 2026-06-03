@@ -71,6 +71,12 @@ export function useVideoPlayerEngine({
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [activeSubtitleId, setActiveSubtitleId] = useState<string | null>(null);
+  const [forcedLandscape, setForcedLandscape] = useState(false);
+  const [subtitleSize, setSubtitleSize] = useState<"small" | "medium" | "large">("medium");
+
+  const toggleForcedLandscape = useCallback(() => {
+    setForcedLandscape((prev) => !prev);
+  }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<MediaPlayerInstance>(null);
@@ -574,6 +580,12 @@ export function useVideoPlayerEngine({
       if (now - last.time < 320 && last.side === side) {
         lastTapRef.current = { time: 0, side: null };
         skip(side === "left" ? -10 : 10);
+        const id = ++gestureFlashIdRef.current;
+        const label = side === "left" ? "-10s" : "+10s";
+        setGestureFlashes((prev) => [...prev, { side, label, id }]);
+        setTimeout(() => {
+          setGestureFlashes((prev) => prev.filter((f) => f.id !== id));
+        }, 500);
         return;
       }
 
@@ -603,6 +615,103 @@ export function useVideoPlayerEngine({
           );
         })()
       : undefined;
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const savedVolume = localStorage.getItem("moviebay-player-volume");
+      if (savedVolume !== null) {
+        const vol = parseFloat(savedVolume);
+        if (!isNaN(vol)) {
+          setVolume(vol);
+        }
+      }
+      const savedMuted = localStorage.getItem("moviebay-player-muted");
+      if (savedMuted !== null) {
+        setIsMuted(savedMuted === "true");
+      }
+      const savedRate = localStorage.getItem("moviebay-player-rate");
+      if (savedRate !== null) {
+        const r = parseFloat(savedRate);
+        if (!isNaN(r)) {
+          setPlaybackRate(r);
+        }
+      }
+      const savedSubtitleSize = localStorage.getItem("moviebay-player-subtitle-size");
+      if (savedSubtitleSize === "small" || savedSubtitleSize === "medium" || savedSubtitleSize === "large") {
+        setSubtitleSize(savedSubtitleSize);
+      }
+    } catch (e) {
+      console.warn("Failed to load player settings from localStorage:", e);
+    }
+  }, []);
+
+  // Save settings on changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("moviebay-player-volume", volume.toString());
+      } catch (e) { /* */ }
+    }
+  }, [volume]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("moviebay-player-muted", isMuted.toString());
+      } catch (e) { /* */ }
+    }
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("moviebay-player-rate", playbackRate.toString());
+      } catch (e) { /* */ }
+    }
+  }, [playbackRate]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("moviebay-player-subtitle-size", subtitleSize);
+      } catch (e) { /* */ }
+    }
+  }, [subtitleSize]);
+
+  // Synchronize volume and mute states to the video element/player
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.volume = volume;
+      video.muted = isMuted;
+    }
+    const player = playerRef.current;
+    if (player) {
+      player.volume = volume;
+      player.muted = isMuted;
+    }
+    if (isEmbeddableVideo) {
+      sendCommand("volume", volume);
+      sendCommand("muted", isMuted);
+    }
+  }, [volume, isMuted, isEmbeddableVideo]);
+
+  // Synchronize playbackRate to the video element/player
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.playbackRate = playbackRate;
+    }
+    const player = playerRef.current;
+    if (player) {
+      player.playbackRate = playbackRate;
+    }
+    if (isEmbeddableVideo) {
+      sendCommand("speed", playbackRate);
+    }
+  }, [playbackRate, isEmbeddableVideo]);
 
   /* ── Effects (session, device, stats, keyboard, video events) ── */
 
@@ -1615,5 +1724,9 @@ export function useVideoPlayerEngine({
     setIsBuffering,
     setShowControls,
     sessionKey,
+    forcedLandscape,
+    toggleForcedLandscape,
+    subtitleSize,
+    setSubtitleSize,
   };
 }

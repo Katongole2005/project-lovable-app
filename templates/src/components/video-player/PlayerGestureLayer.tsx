@@ -12,10 +12,7 @@ type PlayerGestureLayerProps = {
  */
 export function PlayerGestureLayer({ flashes, onTap }: PlayerGestureLayerProps) {
   return (
-    <div
-      className="video-player-gestures absolute inset-x-0 top-0 z-[40] flex"
-      style={{ bottom: "var(--player-chrome-height, 112px)" }}
-    >
+    <div className="video-player-gestures absolute inset-x-0 top-0 z-[40] flex">
       <button
         type="button"
         aria-label="Seek backward"
@@ -54,9 +51,57 @@ export function PlayerGestureLayer({ flashes, onTap }: PlayerGestureLayerProps) 
             transition={{ duration: 0.22 }}
             className={`video-player-flash video-player-flash--${flash.side} pointer-events-none absolute flex items-center justify-center`}
           >
-            <span className="rounded-xl bg-black/65 px-4 py-2 text-base font-bold text-white">
-              {flash.label}
-            </span>
+            {/* Ambient ripple background */}
+            {(flash.side === "left" || flash.side === "right") && (
+              <div className="video-player-ripple-container absolute inset-0 z-0 rounded-full" />
+            )}
+
+            {/* Premium design layout with double arrows */}
+            <div className="relative z-10 flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-black/60 px-5 py-3.5 shadow-2xl backdrop-blur-md">
+              {flash.side === "left" && (
+                <>
+                  <svg
+                    className="video-player-ripple-arrow h-7 w-7"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
+                  </svg>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/95">
+                    {flash.label}
+                  </span>
+                </>
+              )}
+
+              {flash.side === "right" && (
+                <>
+                  <svg
+                    className="video-player-ripple-arrow h-7 w-7"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M13 17l5-5-5-5M6 17l5-5-5-5" />
+                  </svg>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/95">
+                    {flash.label}
+                  </span>
+                </>
+              )}
+
+              {flash.side === "center" && (
+                <span className="text-xs font-bold text-white">
+                  {flash.label}
+                </span>
+              )}
+            </div>
           </motion.div>
         ))}
       </AnimatePresence>

@@ -100,6 +100,10 @@ export function CinematicVideoPlayer({
     isSeeking,
     setIsSeeking,
     sessionKey,
+    forcedLandscape,
+    toggleForcedLandscape,
+    subtitleSize,
+    setSubtitleSize,
   } = engine;
 
   const isMkvUrl = useMemo(() => {
@@ -127,6 +131,7 @@ export function CinematicVideoPlayer({
             `video-player--${layout}`,
             isFullscreen && "video-player--fullscreen",
             !controlsVisible && isPlaying && "video-player--idle",
+            forcedLandscape && "video-player--force-landscape",
           )}
           onPointerMove={() => {
             if (isPlaying) resetControlsTimeout();
@@ -162,7 +167,10 @@ export function CinematicVideoPlayer({
             {/* Ambient glow (desktop) */}
             {posterGradient && layout === "desktop" && (
               <div
-                className="pointer-events-none absolute -inset-16 z-0 hidden opacity-30 blur-[100px] md:block player-ambient-glow"
+                className={cn(
+                  "pointer-events-none absolute -inset-16 z-0 hidden blur-[100px] md:block player-ambient-glow transition-opacity duration-1000",
+                  (controlsVisible || isPaused) ? "opacity-35 player-ambient-glow--active" : "opacity-0"
+                )}
               />
             )}
 
@@ -233,6 +241,10 @@ export function CinematicVideoPlayer({
                       onToggleMute={() => { setIsMuted((m) => !m); }}
                       onSubtitleChange={setActiveSubtitleId}
                       onSkipSegment={skipActiveSegment}
+                      forcedLandscape={forcedLandscape}
+                      onToggleForcedLandscape={toggleForcedLandscape}
+                      subtitleSize={subtitleSize}
+                      onSubtitleSizeChange={setSubtitleSize}
                     />
                   )}
                 </>
@@ -249,7 +261,12 @@ export function CinematicVideoPlayer({
                     crossOrigin="anonymous"
                     referrerPolicy="strict-origin-when-cross-origin"
                     controls={false}
-                    className="video-player-video relative z-10 h-full w-full bg-black object-contain"
+                    className={cn(
+                      "video-player-video relative z-10 h-full w-full bg-black object-contain",
+                      subtitleSize === "small" && "subtitles-small",
+                      subtitleSize === "medium" && "subtitles-medium",
+                      subtitleSize === "large" && "subtitles-large"
+                    )}
                     {...videoHandlers}
                   >
                     {usableSubtitles.map((track) => (
@@ -310,6 +327,10 @@ export function CinematicVideoPlayer({
                       onToggleMute={() => { setIsMuted((m) => !m); }}
                       onSubtitleChange={setActiveSubtitleId}
                       onSkipSegment={skipActiveSegment}
+                      forcedLandscape={forcedLandscape}
+                      onToggleForcedLandscape={toggleForcedLandscape}
+                      subtitleSize={subtitleSize}
+                      onSubtitleSizeChange={setSubtitleSize}
                     />
                   )}
                 </div>

@@ -61,6 +61,10 @@ type PlayerControlsProps = {
   onToggleMute: () => void;
   onSubtitleChange: (id: string | null) => void;
   onSkipSegment: () => void;
+  forcedLandscape: boolean;
+  onToggleForcedLandscape: () => void;
+  subtitleSize: "small" | "medium" | "large";
+  onSubtitleSizeChange: (size: "small" | "medium" | "large") => void;
 };
 
 export function PlayerControls({
@@ -99,8 +103,12 @@ export function PlayerControls({
   onToggleMute,
   onSubtitleChange,
   onSkipSegment,
+  forcedLandscape,
+  onToggleForcedLandscape,
+  subtitleSize,
+  onSubtitleSizeChange,
 }: PlayerControlsProps) {
-  const [settingsOpen, setSettingsOpen] = useState<"speed" | "subtitles" | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState<"speed" | "subtitles" | "size" | null>(null);
   const miniProgressRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -200,7 +208,7 @@ export function PlayerControls({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onSkipSegment(); }}
-              className="player-skip-badge pointer-events-auto flex items-center gap-1 bg-black/85 hover:bg-[#e50914] text-white border border-white/20 hover:border-transparent rounded-full px-5 py-2 text-xs font-black uppercase tracking-widest cursor-pointer shadow-lg transition-all"
+              className="player-skip-badge pointer-events-auto flex items-center gap-1 bg-black/85 hover:player-accent-bg text-white border border-white/20 hover:border-transparent rounded-full px-5 py-2 text-xs font-black uppercase tracking-widest cursor-pointer shadow-lg transition-all"
             >
               Skip {activeSkipSegment.label}
               <RotateCw className="h-3.5 w-3.5" />
@@ -326,7 +334,7 @@ export function PlayerControls({
                     <button
                       type="button"
                       onClick={() => setSettingsOpen(settingsOpen === "subtitles" ? null : "subtitles")}
-                      className={cn("player-flat-btn", settingsOpen === "subtitles" && "text-[#e50914] filter drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]")}
+                      className={cn("player-flat-btn", settingsOpen === "subtitles" && "player-accent-highlight filter drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]")}
                       aria-label="Subtitles"
                     >
                       <Subtitles />
@@ -337,7 +345,7 @@ export function PlayerControls({
                   <button
                     type="button"
                     onClick={() => setSettingsOpen(settingsOpen === "speed" ? null : "speed")}
-                    className={cn("player-flat-btn", settingsOpen === "speed" && "text-[#e50914] filter drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]")}
+                    className={cn("player-flat-btn", (settingsOpen === "speed" || settingsOpen === "size") && "player-accent-highlight filter drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]")}
                     aria-label="Playback settings"
                   >
                     <Settings />
@@ -351,7 +359,22 @@ export function PlayerControls({
                       className="player-flat-btn"
                       aria-label="Toggle picture-in-picture"
                     >
-                      <Monitor className={cn(isPipActive && "text-[#e50914]")} />
+                      <Monitor className={cn(isPipActive && "player-accent-highlight")} />
+                    </button>
+                  )}
+
+                  {/* Rotate Screen override for mobile/pointer coarse layouts */}
+                  {layout !== "desktop" && (
+                    <button
+                      type="button"
+                      onClick={onToggleForcedLandscape}
+                      className={cn(
+                        "player-flat-btn",
+                        forcedLandscape && "player-accent-highlight filter drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]"
+                      )}
+                      aria-label="Rotate Screen"
+                    >
+                      <RotateCw className={cn(forcedLandscape && "animate-spin-slow")} />
                     </button>
                   )}
 
@@ -401,13 +424,22 @@ export function PlayerControls({
                   Speed
                 </button>
                 {usableSubtitles.length > 0 && !isEmbeddableVideo && (
-                  <button
-                    type="button"
-                    className={cn("player-settings-tab", settingsOpen === "subtitles" && "active")}
-                    onClick={() => setSettingsOpen("subtitles")}
-                  >
-                    Subtitles
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className={cn("player-settings-tab", settingsOpen === "subtitles" && "active")}
+                      onClick={() => setSettingsOpen("subtitles")}
+                    >
+                      Tracks
+                    </button>
+                    <button
+                      type="button"
+                      className={cn("player-settings-tab", settingsOpen === "size" && "active")}
+                      onClick={() => setSettingsOpen("size")}
+                    >
+                      Size
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -420,7 +452,7 @@ export function PlayerControls({
                       onClick={() => { onChangeRate(rate); setSettingsOpen(null); }}
                       className={cn("player-settings-option", playbackRate === rate && "active")}
                     >
-                      {playbackRate === rate && <Check className="h-3.5 w-3.5 mr-2 text-red-500" />}
+                      {playbackRate === rate && <Check className="h-3.5 w-3.5 mr-2 player-accent-highlight" />}
                       <span>{rate}×</span>
                     </button>
                   ))}
@@ -434,7 +466,7 @@ export function PlayerControls({
                     onClick={() => { onSubtitleChange(null); setSettingsOpen(null); }}
                     className={cn("player-settings-option", !activeSubtitleId && "active")}
                   >
-                    {!activeSubtitleId && <Check className="h-3.5 w-3.5 mr-2 text-red-500" />}
+                    {!activeSubtitleId && <Check className="h-3.5 w-3.5 mr-2 player-accent-highlight" />}
                     <span>Off</span>
                   </button>
                   {usableSubtitles.map((track) => (
@@ -444,8 +476,24 @@ export function PlayerControls({
                       onClick={() => { onSubtitleChange(track.id); setSettingsOpen(null); }}
                       className={cn("player-settings-option", activeSubtitleId === track.id && "active")}
                     >
-                      {activeSubtitleId === track.id && <Check className="h-3.5 w-3.5 mr-2 text-red-500" />}
+                      {activeSubtitleId === track.id && <Check className="h-3.5 w-3.5 mr-2 player-accent-highlight" />}
                       <span>{track.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {settingsOpen === "size" && (
+                <div className="player-settings-options">
+                  {(["small", "medium", "large"] as const).map((sz) => (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => { onSubtitleSizeChange(sz); setSettingsOpen(null); }}
+                      className={cn("player-settings-option", subtitleSize === sz && "active")}
+                    >
+                      {subtitleSize === sz && <Check className="h-3.5 w-3.5 mr-2 player-accent-highlight" />}
+                      <span className="capitalize">{sz}</span>
                     </button>
                   ))}
                 </div>
