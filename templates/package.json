@@ -7,7 +7,9 @@
     "dev": "next dev -p 5001",
     "build": "next build",
     "start": "next start -p 5001",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "indexnow": "node scripts/ping-indexnow.mjs"
   },
   "browserslist": {
     "production": [
