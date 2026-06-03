@@ -11,7 +11,6 @@ const CORE_ASSETS = [
 
 // API responses are dynamic; never cache them via the service worker.
 const API_PREFIX = "/api";
-
 const NEVER_CACHE_PATTERNS = [
   "/node_modules/",
   "/.vite/",
@@ -20,7 +19,8 @@ const NEVER_CACHE_PATTERNS = [
   "@react-refresh",
   "hot-update",
   ".ts",
-  ".tsx"
+  ".tsx",
+  "/_next/"
 ];
 
 // Check if running in development mode
