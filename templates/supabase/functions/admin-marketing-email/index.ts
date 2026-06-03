@@ -80,7 +80,7 @@ function buildMarketingHtml(message: string, previewText: string, ctaLabel: stri
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
-    .map((paragraph) => `<p>${applyNameToken(escapeHtml(paragraph)).replace(/\n/g, "<br>")}</p>`)
+    .map((paragraph) => `<p style="margin: 0 0 20px 0; color: #cbd5e1; font-size: 15.5px; line-height: 1.8; font-weight: 400;">${applyNameToken(escapeHtml(paragraph)).replace(/\n/g, "<br>")}</p>`)
     .join("");
   const safeCtaUrl = escapeHtml(ctaUrl);
   const safeCtaLabel = escapeHtml(ctaLabel);
@@ -92,84 +92,86 @@ function buildMarketingHtml(message: string, previewText: string, ctaLabel: stri
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MovieBay</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
-    body { margin: 0; padding: 0; background: #050506; color: #f8fafc; font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+    body { margin: 0; padding: 0; background: #050506; color: #f8fafc; font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
     table { border-collapse: collapse; }
     img { border: 0; display: block; max-width: 100%; }
-    a { color: inherit; }
+    a { color: inherit; text-decoration: none; }
     .preview { display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent; mso-hide: all; }
-    .shell { width: 100%; background: #050506; padding: 40px 12px; }
-    .card { width: 100%; max-width: 600px; margin: 0 auto; overflow: hidden; border: 1px solid #202024; border-top: 4px solid #e50914; border-radius: 16px; background: #0c0c0e; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); }
-    .hero { padding: 40px 40px 30px; background: linear-gradient(180deg, #18090a 0%, #0c0c0e 100%); }
-    .logo { width: 154px; height: auto; margin-bottom: 24px; }
-    .badge { display: inline-block; padding: 4px 10px; background: rgba(229, 9, 20, 0.12); border-radius: 6px; border: 1px solid rgba(229, 9, 20, 0.25); margin-bottom: 16px; }
-    .kicker { margin: 0; color: #ff4d57; font-size: 11px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; }
-    .name { margin: 0; color: #ffffff; font-size: 32px; line-height: 1.15; font-weight: 900; letter-spacing: -0.02em; }
-    .sub { margin: 12px 0 0; color: #a1a1aa; font-size: 15px; line-height: 1.6; }
-    .content { padding: 10px 40px 20px; background: #0c0c0e; }
-    .content p { color: #d4d4d8; font-size: 15px; line-height: 1.7; margin: 0 0 20px; }
-    .panel { margin: 24px 0 24px; border: 1px solid #202024; border-left: 4px solid #e50914; border-radius: 0 12px 12px 0; background: #121214; }
-    .panel td { padding: 16px 20px; color: #a1a1aa; font-size: 13.5px; line-height: 1.6; }
-    .btn-wrap { padding: 10px 40px 40px; background: #0c0c0e; }
-    .btn { display: inline-block; padding: 14px 28px; border-radius: 8px; background: linear-gradient(135deg, #e50914 0%, #b2060f 100%); color: #ffffff !important; font-size: 15px; font-weight: 700; text-decoration: none; letter-spacing: 0.3px; box-shadow: 0 8px 24px rgba(229, 9, 20, 0.25); text-align: center; }
-    .footer { padding: 30px 40px; border-top: 1px solid #1c1c1f; background: #08080a; text-align: center; }
-    .footer p { margin: 0; color: #71717a; font-size: 12px; line-height: 1.7; }
-    .footer strong { color: #e4e4e7; }
-    .footer a { color: #a1a1aa; text-decoration: none; font-weight: 600; transition: color 0.2s; }
-    .footer a:hover { color: #ffffff; }
+    .shell { width: 100%; background: #050507; padding: 48px 16px; }
+    .card { width: 100%; max-width: 600px; margin: 0 auto; overflow: hidden; border: 1px solid #1f1f23; border-top: 4px solid #ff414d; border-radius: 20px; background: #0c0c0f; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65); }
+    .hero { padding: 48px 48px 32px; background: linear-gradient(180deg, rgba(229, 9, 20, 0.09) 0%, rgba(12, 12, 15, 0) 100%); }
+    .logo { width: 162px; height: auto; margin-bottom: 28px; filter: drop-shadow(0 0 16px rgba(229, 9, 20, 0.4)); }
+    .badge { display: inline-block; padding: 5px 12px; background: rgba(255, 65, 77, 0.08); border-radius: 8px; border: 1px solid rgba(255, 65, 77, 0.28); margin-bottom: 18px; }
+    .kicker { margin: 0; color: #ff4d5a; font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1; }
+    .name { margin: 0; color: #ffffff; font-size: 34px; line-height: 1.15; font-weight: 900; letter-spacing: -0.03em; }
+    .sub { margin: 14px 0 0; color: #94a3b8; font-size: 16px; line-height: 1.65; font-weight: 400; }
+    .content { padding: 12px 48px 24px; background: #0c0c0f; }
+    .panel { margin: 32px 0; border: 1px solid #1f1f23; border-left: 4px solid #ff414d; border-radius: 0 12px 12px 0; background: #121216; }
+    .panel td { padding: 18px 24px; color: #94a3b8; font-size: 14px; line-height: 1.65; }
+    .btn-wrap { padding: 12px 48px 48px; background: #0c0c0f; }
+    .btn { display: inline-block; padding: 16px 36px; border-radius: 10px; background: #e50914; background: linear-gradient(135deg, #ff414d 0%, #c80412 100%); color: #ffffff !important; font-size: 16px; font-weight: 800; text-decoration: none; letter-spacing: 0.5px; box-shadow: 0 10px 30px rgba(229, 9, 20, 0.35); text-align: center; border: 1px solid #ff414d; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .footer { padding: 36px 48px; border-top: 1px solid #1f1f23; background: #070709; text-align: center; }
+    .footer p { margin: 0; color: #64748b; font-size: 12px; line-height: 1.8; }
+    .footer strong { color: #f1f5f9; }
+    .footer a { color: #94a3b8; text-decoration: none; font-weight: 600; border-bottom: 1px dashed #475569; padding-bottom: 1px; transition: color 0.2s; }
+    .footer a:hover { color: #ffffff; border-bottom-color: #ffffff; }
     @media only screen and (max-width: 520px) {
-      .shell { padding: 16px 8px; }
-      .card { border-radius: 12px; }
-      .hero, .content, .btn-wrap, .footer { padding-left: 20px !important; padding-right: 20px !important; }
-      .name { font-size: 26px !important; }
-      .logo { width: 130px !important; }
-      .btn { display: block !important; box-sizing: border-box; }
+      .shell { padding: 20px 10px; }
+      .card { border-radius: 16px; }
+      .hero { padding: 32px 24px 20px !important; }
+      .content { padding: 8px 24px 16px !important; }
+      .btn-wrap { padding: 8px 24px 32px !important; }
+      .footer { padding: 28px 24px !important; }
+      .name { font-size: 28px !important; }
+      .logo { width: 136px !important; margin-bottom: 20px !important; }
+      .btn { display: block !important; box-sizing: border-box; padding: 14px 24px !important; }
     }
   </style>
 </head>
 <body>
   <div class="preview">${applyNameToken(escapeHtml(previewText))}</div>
-  <table role="presentation" width="100%" class="shell">
+  <table role="presentation" width="100%" class="shell" style="background-color: #050507; width: 100%;">
     <tr>
       <td align="center">
-        <table role="presentation" class="card">
+        <table role="presentation" class="card" style="background-color: #0c0c0f; max-width: 600px; width: 100%; border: 1px solid #1f1f23; border-top: 4px solid #ff414d;">
           <tr>
-            <td class="hero">
+            <td class="hero" style="background: linear-gradient(180deg, rgba(229, 9, 20, 0.09) 0%, rgba(12, 12, 15, 0) 100%);">
               <a href="${safeCtaUrl}" style="display:inline-block;text-decoration:none;">
-                <img class="logo" src="${EMAIL_LOGO_URL}" width="154" alt="MovieBay">
+                <img class="logo" src="${EMAIL_LOGO_URL}" width="162" alt="MovieBay" style="filter: drop-shadow(0 0 16px rgba(229, 9, 20, 0.4));">
               </a>
               <div>
-                <div class="badge">
-                  <p class="kicker">MovieBay update</p>
+                <div class="badge" style="background-color: rgba(255, 65, 77, 0.08); border: 1px solid rgba(255, 65, 77, 0.28);">
+                  <p class="kicker" style="color: #ff4d5a;">MovieBay Update</p>
                 </div>
               </div>
-              <h1 class="name">Made for {{params.name}}</h1>
-              <p class="sub">Fresh movies, smooth watching, and the latest MovieBay picks are waiting for you.</p>
+              <h1 class="name" style="color: #ffffff;">Made for {{params.name}}</h1>
+              <p class="sub" style="color: #94a3b8;">Fresh movies, smooth watching, and the latest MovieBay picks are waiting for you.</p>
             </td>
           </tr>
           <tr>
-            <td class="content">
+            <td class="content" style="background-color: #0c0c0f;">
               ${paragraphs}
-              <table role="presentation" width="100%" class="panel">
+              <table role="presentation" width="100%" class="panel" style="background-color: #121216; border: 1px solid #1f1f23; border-left: 4px solid #ff414d;">
                 <tr>
                   <td>
-                    <strong style="color:#ffffff; font-size: 14px;">Your MovieBay account</strong><br>
-                    <span style="display:inline-block; margin-top: 4px;">This email was personalized for {{params.name}} using the name saved on your MovieBay profile.</span>
+                    <strong style="color:#ffffff; font-size: 14.5px; font-weight: 700;">Your MovieBay Account</strong><br>
+                    <span style="display:inline-block; margin-top: 6px; color: #94a3b8;">This email was personalized for {{params.name}} using the name saved on your MovieBay profile.</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
           <tr>
-            <td class="btn-wrap">
-              <a class="btn" href="${safeCtaUrl}">${safeCtaLabel}</a>
+            <td class="btn-wrap" style="background-color: #0c0c0f;">
+              <a class="btn" href="${safeCtaUrl}" style="background-color: #e50914; color: #ffffff !important; box-shadow: 0 10px 30px rgba(229, 9, 20, 0.35); border: 1px solid #ff414d;">${safeCtaLabel}</a>
             </td>
           </tr>
           <tr>
-            <td class="footer">
-              <p><strong>MovieBay</strong> · Luganda translated movies and entertainment.</p>
-              <p style="margin-top:6px;">You are receiving this because you created a MovieBay account. Visit <a href="https://www.s-u.in" target="_blank">s-u.in</a> to continue watching.</p>
-              <p style="margin-top:14px;color:#52525b;">© 2026 MovieBay. All rights reserved.</p>
+            <td class="footer" style="background-color: #070709; border-top: 1px solid #1f1f23;">
+              <p style="color: #64748b;"><strong>MovieBay</strong> · Luganda translated movies and entertainment.</p>
+              <p style="margin-top:8px; color: #64748b;">You are receiving this because you created a MovieBay account. Visit <a href="https://www.s-u.in" target="_blank" style="color: #94a3b8; font-weight: 600;">s-u.in</a> to continue watching.</p>
+              <p style="margin-top:16px; color: #475569; font-size: 11px;">© 2026 MovieBay. All rights reserved.</p>
             </td>
           </tr>
         </table>
@@ -185,7 +187,14 @@ function toBase64(value: string): string {
 }
 
 function encodeHeader(value: string): string {
-  return /^[\x00-\x7F]*$/.test(value) ? value.replace(/[\r\n]+/g, " ") : `=?UTF-8?B?${toBase64(value)}?=`;
+  let isAscii = true;
+  for (let i = 0; i < value.length; i++) {
+    if (value.charCodeAt(i) > 127) {
+      isAscii = false;
+      break;
+    }
+  }
+  return isAscii ? value.replace(/[\r\n]+/g, " ") : `=?UTF-8?B?${toBase64(value)}?=`;
 }
 
 function escapeAddressName(value: string): string {
@@ -576,7 +585,7 @@ async function sendMarketingEmails(params: {
   return { sent, failed, providerMessageIds };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

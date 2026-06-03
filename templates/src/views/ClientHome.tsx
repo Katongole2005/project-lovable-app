@@ -2149,6 +2149,8 @@ function ClientHome() {
                             setSearchResults([]);
                             navigateTo("/search", { replace: true, shallow: true });
                           }}
+                          aria-label="Back to Search"
+                          title="Back to Search"
                           className="shrink-0 p-2.5 rounded-full hover:bg-white/10 text-white transition-all duration-200 active:scale-95 border border-white/5 bg-white/5 backdrop-blur-md"
                         >
                           <ChevronLeft className="w-5 h-5" />

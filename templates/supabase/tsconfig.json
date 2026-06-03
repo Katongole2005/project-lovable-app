@@ -2,7 +2,10 @@
   "compilerOptions": {
     "skipLibCheck": true,
     "allowJs": true,
-    "noEmit": true
+    "noEmit": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "exclude": ["**/*"]
+  "include": ["dummy.ts"],
+  "exclude": ["functions"]
 }

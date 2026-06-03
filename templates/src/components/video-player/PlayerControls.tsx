@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Maximize,
   Minimize,
@@ -101,6 +101,14 @@ export function PlayerControls({
   onSkipSegment,
 }: PlayerControlsProps) {
   const [settingsOpen, setSettingsOpen] = useState<"speed" | "subtitles" | null>(null);
+  const miniProgressRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (miniProgressRef.current) {
+      const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
+      miniProgressRef.current.style.width = `${pct}%`;
+    }
+  }, [currentTime, duration, visible]);
 
   const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
@@ -187,11 +195,7 @@ export function PlayerControls({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 16 }}
             transition={{ duration: 0.22 }}
-            className="pointer-events-none absolute z-[60]"
-            style={{
-              bottom: "calc(var(--player-chrome-height, 120px) + 1.5rem)",
-              right: "2rem",
-            }}
+            className="pointer-events-none absolute z-[60] player-skip-container"
           >
             <button
               type="button"
@@ -207,8 +211,10 @@ export function PlayerControls({
 
       {/* ── Bottom Controls Strip ── */}
       <div
-        className="player-chrome pointer-events-none absolute inset-x-0 bottom-0 z-[60]"
-        style={{ "--player-chrome-height": visible ? "120px" : "44px" } as React.CSSProperties}
+        className={cn(
+          "player-chrome pointer-events-none absolute inset-x-0 bottom-0 z-[60]",
+          visible ? "player-chrome--visible" : "player-chrome--hidden"
+        )}
       >
         <AnimatePresence>
           {visible && (
@@ -368,10 +374,8 @@ export function PlayerControls({
         {!visible && (
           <div className="player-mini-progress">
             <div
+              ref={miniProgressRef}
               className="player-mini-progress-fill"
-              style={{
-                width: duration > 0 ? `${(currentTime / duration) * 100}%` : "0%",
-              }}
             />
           </div>
         )}

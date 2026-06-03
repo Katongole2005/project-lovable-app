@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatTime } from "./utils";
@@ -33,6 +33,14 @@ export function PlayerScrubber({
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [hoverRatio, setHoverRatio] = useState<number | null>(null);
 
+  // Refs for elements that require dynamic inline styles
+  const bufferedRef = useRef<HTMLDivElement>(null);
+  const hoverPreviewRef = useRef<HTMLDivElement>(null);
+  const playedRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLDivElement>(null);
+  const skipRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const dividerRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
   const canSeek = safeDuration > 0;
 
@@ -58,6 +66,69 @@ export function PlayerScrubber({
   // During scrubbing, track the scrub cursor. During idle hover, track the playback playedRatio.
   const activeRatio = isScrubbing ? (hoverRatio ?? playedRatio) : playedRatio;
   const previewTime = hoverRatio !== null && !isScrubbing ? hoverRatio * safeDuration : null;
+
+  // Sync dynamic styles to avoid inline styles in JSX
+  useEffect(() => {
+    if (bufferedRef.current) {
+      bufferedRef.current.style.width = `${bufferedRatio * 100}%`;
+    }
+  }, [bufferedRatio]);
+
+  useEffect(() => {
+    if (hoverPreviewRef.current) {
+      if (hoverRatio !== null && !isScrubbing) {
+        hoverPreviewRef.current.style.width = `${hoverRatio * 100}%`;
+      } else {
+        hoverPreviewRef.current.style.width = "0%";
+      }
+    }
+  }, [hoverRatio, isScrubbing]);
+
+  useEffect(() => {
+    if (playedRef.current) {
+      playedRef.current.style.width = `${activeRatio * 100}%`;
+    }
+    if (thumbRef.current) {
+      thumbRef.current.style.left = `${activeRatio * 100}%`;
+      thumbRef.current.style.transform = `translate(-50%, -50%) scale(${hoverRatio !== null || isScrubbing ? 1.35 : 1})`;
+    }
+  }, [activeRatio, hoverRatio, isScrubbing]);
+
+  useEffect(() => {
+    if (!safeDuration) return;
+    
+    // Apply skip segments styling
+    skipSegments.forEach((segment, idx) => {
+      const el = skipRefs.current[idx];
+      if (el) {
+        const startPct = (segment.startTime / safeDuration) * 100;
+        const endPct = (segment.endTime / safeDuration) * 100;
+        const widthPct = Math.max(0, endPct - startPct);
+        el.style.left = `${startPct}%`;
+        el.style.width = `${widthPct}%`;
+      }
+    });
+
+    // Apply dividers styling
+    let dividerCounter = 0;
+    skipSegments.forEach((segment) => {
+      const startPct = (segment.startTime / safeDuration) * 100;
+      const endPct = (segment.endTime / safeDuration) * 100;
+
+      if (startPct > 0 && startPct < 100) {
+        const el = dividerRefs.current[dividerCounter++];
+        if (el) {
+          el.style.left = `${startPct}%`;
+        }
+      }
+      if (endPct > 0 && endPct < 100) {
+        const el = dividerRefs.current[dividerCounter++];
+        if (el) {
+          el.style.left = `${endPct}%`;
+        }
+      }
+    });
+  }, [skipSegments, safeDuration]);
 
   const commitScrub = (clientX: number) => {
     if (!canSeek) return;
@@ -108,12 +179,6 @@ export function PlayerScrubber({
     <div className={cn("player-scrubber-root w-full select-none", expanded ? "py-1" : "py-0.5")}>
       <div
         ref={trackRef}
-        role="slider"
-        aria-label="Seek"
-        aria-valuemin={0}
-        aria-valuemax={safeDuration}
-        aria-valuenow={currentTime}
-        aria-disabled={!canSeek}
         className={cn(
           "player-scrubber-track relative w-full cursor-pointer touch-none",
           expanded ? "h-8" : "h-5",
@@ -125,6 +190,18 @@ export function PlayerScrubber({
         onPointerCancel={handlePointerUp}
         onPointerLeave={handlePointerLeave}
       >
+        {/* Screen-reader accessible range input */}
+        <input
+          type="range"
+          min="0"
+          max={safeDuration}
+          value={currentTime}
+          disabled={!canSeek}
+          onChange={(e) => onSeek(Number(e.target.value))}
+          className="sr-only"
+          aria-label="Seek video slider"
+        />
+
         {/* Time preview tooltip */}
         <AnimatePresence>
           {previewTime !== null && expanded && (
@@ -149,22 +226,21 @@ export function PlayerScrubber({
             "player-scrubber-rail absolute left-0 right-0 top-1/2 -translate-y-1/2 overflow-hidden rounded-full",
             isHovering ? "h-1.5" : "h-1",
           )}
-          style={{ transition: "height 0.15s ease" }}
         >
           {/* Track background */}
           <div className="absolute inset-0 bg-white/15 rounded-full" />
 
           {/* Buffered progress */}
           <div
+            ref={bufferedRef}
             className="player-scrubber-buffered absolute inset-y-0 left-0 rounded-full"
-            style={{ width: `${bufferedRatio * 100}%` }}
           />
 
           {/* Hover preview progress */}
           {hoverRatio !== null && !isScrubbing && (
             <div
+              ref={hoverPreviewRef}
               className="absolute inset-y-0 left-0 bg-white/20 rounded-full pointer-events-none"
-              style={{ width: `${hoverRatio * 100}%` }}
             />
           )}
 
@@ -179,58 +255,57 @@ export function PlayerScrubber({
             return (
               <div 
                 key={idx}
+                ref={el => { skipRefs.current[idx] = el; }}
                 className="absolute inset-y-0 bg-[#e50914]/25 hover:bg-[#e50914]/40 transition-colors pointer-events-none"
-                style={{
-                  left: `${startPct}%`,
-                  width: `${widthPct}%`
-                }}
                 title={segment.label}
               />
             );
           })}
 
           {/* Skip Segments Dividers (Gaps) */}
-          {skipSegments && skipSegments.map((segment, idx) => {
-            if (!safeDuration) return null;
-            const startPct = (segment.startTime / safeDuration) * 100;
-            const endPct = (segment.endTime / safeDuration) * 100;
-            
-            return (
-              <div key={`div-${idx}`} className="absolute inset-y-0 left-0 right-0 pointer-events-none z-30">
-                {startPct > 0 && startPct < 100 && (
-                  <div 
-                    className="absolute inset-y-0 w-[3px] bg-black/90" 
-                    style={{ left: `${startPct}%`, transform: 'translateX(-50%)' }}
-                  />
-                )}
-                {endPct > 0 && endPct < 100 && (
-                  <div 
-                    className="absolute inset-y-0 w-[3px] bg-black/90" 
-                    style={{ left: `${endPct}%`, transform: 'translateX(-50%)' }}
-                  />
-                )}
-              </div>
-            );
-          })}
+          {(() => {
+            let dividerCounter = 0;
+            return skipSegments.map((segment, idx) => {
+              if (!safeDuration) return null;
+              const startPct = (segment.startTime / safeDuration) * 100;
+              const endPct = (segment.endTime / safeDuration) * 100;
+              const showStart = startPct > 0 && startPct < 100;
+              const showEnd = endPct > 0 && endPct < 100;
+              
+              const startRefIdx = showStart ? dividerCounter++ : -1;
+              const endRefIdx = showEnd ? dividerCounter++ : -1;
+              
+              return (
+                <div key={`div-${idx}`} className="absolute inset-y-0 left-0 right-0 pointer-events-none z-30">
+                  {showStart && (
+                    <div 
+                      ref={el => { if (el) dividerRefs.current[startRefIdx] = el; }}
+                      className="absolute inset-y-0 w-[3px] bg-black/90 -translate-x-1/2" 
+                    />
+                  )}
+                  {showEnd && (
+                    <div 
+                      ref={el => { if (el) dividerRefs.current[endRefIdx] = el; }}
+                      className="absolute inset-y-0 w-[3px] bg-black/90 -translate-x-1/2" 
+                    />
+                  )}
+                </div>
+              );
+            });
+          })()}
 
           {/* Played progress */}
           <div
+            ref={playedRef}
             className="player-scrubber-played absolute inset-y-0 left-0 rounded-full animate-pulse-subtle"
-            style={{ width: `${activeRatio * 100}%` }}
           />
         </div>
 
         {/* Thumb */}
         {canSeek && (
           <div
-            className="player-scrubber-thumb absolute top-1/2"
-            style={{ 
-              left: `${activeRatio * 100}%`,
-              transform: `translate(-50%, -50%) scale(${isHovering ? 1.35 : 1})`,
-              transition: "transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)",
-              background: "#e50914",
-              border: "1.5px solid #ffffff"
-            }}
+            ref={thumbRef}
+            className="player-scrubber-thumb absolute top-1/2 border-[1.5px] border-white bg-[#e50914]"
           />
         )}
       </div>

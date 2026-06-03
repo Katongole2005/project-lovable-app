@@ -134,6 +134,8 @@ const Settings = () => {
               <button
                 type="button"
                 onClick={() => handleAutoplayToggle(!autoplayNext)}
+                aria-label="Toggle Auto-Play Next Episode"
+                title="Toggle Auto-Play"
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoplayNext ? 'bg-primary' : 'bg-white/10'}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoplayNext ? 'translate-x-6' : 'translate-x-1'}`} />

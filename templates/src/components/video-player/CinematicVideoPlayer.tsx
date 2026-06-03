@@ -162,10 +162,7 @@ export function CinematicVideoPlayer({
             {/* Ambient glow (desktop) */}
             {posterGradient && layout === "desktop" && (
               <div
-                className="pointer-events-none absolute -inset-16 z-0 hidden opacity-30 blur-[100px] md:block"
-                style={{
-                  background: `radial-gradient(circle at center, var(--poster-gradient-middle) 0%, transparent 70%)`,
-                }}
+                className="pointer-events-none absolute -inset-16 z-0 hidden opacity-30 blur-[100px] md:block player-ambient-glow"
               />
             )}
 
@@ -253,7 +250,6 @@ export function CinematicVideoPlayer({
                     referrerPolicy="strict-origin-when-cross-origin"
                     controls={false}
                     className="video-player-video relative z-10 h-full w-full bg-black object-contain"
-                    style={{ width: "100%", height: "100%" }}
                     {...videoHandlers}
                   >
                     {usableSubtitles.map((track) => (
