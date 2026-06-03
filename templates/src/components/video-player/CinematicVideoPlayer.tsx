@@ -104,6 +104,7 @@ export function CinematicVideoPlayer({
     toggleForcedLandscape,
     subtitleSize,
     setSubtitleSize,
+    isDomainLocked,
   } = engine;
 
   const isMkvUrl = useMemo(() => {
@@ -358,6 +359,7 @@ export function CinematicVideoPlayer({
                 message={playbackError}
                 onRetry={handleRetryPlayback}
                 onClose={handleClose}
+                hideRetry={isDomainLocked}
               />
             )}
           </div>

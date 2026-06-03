@@ -26,23 +26,26 @@ type ErrorOverlayProps = {
   message: string;
   onRetry: () => void;
   onClose: () => void;
+  hideRetry?: boolean;
 };
 
-export function ErrorOverlay({ message, onRetry, onClose }: ErrorOverlayProps) {
+export function ErrorOverlay({ message, onRetry, onClose, hideRetry }: ErrorOverlayProps) {
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/75 px-6">
       <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-zinc-950/85 p-6 text-center shadow-2xl backdrop-blur-xl">
         <p className="text-lg font-bold text-white">Playback interrupted</p>
         <p className="mt-2 text-xs leading-relaxed text-white/60">{message}</p>
         <div className="mt-5 flex justify-center gap-3">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-black"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Retry
-          </button>
+          {!hideRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-black"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Retry
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}

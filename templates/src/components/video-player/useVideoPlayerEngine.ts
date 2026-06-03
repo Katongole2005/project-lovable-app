@@ -62,6 +62,7 @@ export function useVideoPlayerEngine({
   const [activeVideoUrl, setActiveVideoUrl] = useState(() => forceProxyPlaybackUrl(videoUrl, title));
   const [resumeTime, setResumeTime] = useState(startTime);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [isDomainLocked, setIsDomainLocked] = useState(false);
   const [bufferedTime, setBufferedTime] = useState(0);
   const [isPipAvailable, setIsPipAvailable] = useState(false);
   const [isPipActive, setIsPipActive] = useState(false);
@@ -260,6 +261,10 @@ export function useVideoPlayerEngine({
   );
 
   const beginPlayback = useCallback(() => {
+    if (isDomainLocked) {
+      setPlaybackError("Playback restricted: This video player is only authorized to play on s-u.in.");
+      return;
+    }
     retryCountRef.current = {}; // Reset error retry counters for a fresh session
     pauseRequestedRef.current = false;
     setHasEnded(false);
@@ -333,7 +338,29 @@ export function useVideoPlayerEngine({
       }
     }
     resetControlsTimeout();
-  }, [enterMobileLandscape, getVideoElement, resetControlsTimeout]);
+  }, [enterMobileLandscape, getVideoElement, isDomainLocked, resetControlsTimeout]);
+
+  const pausePlayback = useCallback(() => {
+    const player = playerRef.current;
+    const video = getVideoElement();
+    if (!isEmbeddableVideo && (player || video)) {
+      if (player && !player.paused) {
+        pauseRequestedRef.current = true;
+        setIsPaused(true);
+        setIsBuffering(false);
+        player.pause();
+      } else if (video && !video.paused) {
+        pauseRequestedRef.current = true;
+        setIsPaused(true);
+        setIsBuffering(false);
+        video.pause();
+      }
+    } else {
+      setIsPaused(true);
+      setIsBuffering(false);
+      sendCommand("pause");
+    }
+  }, [getVideoElement, isEmbeddableVideo, sendCommand]);
 
   const togglePlay = useCallback(() => {
     if (!isPlaying) {
@@ -546,6 +573,10 @@ export function useVideoPlayerEngine({
   }, [isFullscreen, onClose, onTimeUpdate, currentTime, duration]);
 
   const handleRetryPlayback = useCallback(() => {
+    if (isDomainLocked) {
+      setPlaybackError("Playback restricted: This video player is only authorized to play on s-u.in.");
+      return;
+    }
     pauseRequestedRef.current = false;
     setPlaybackError(null);
     setHasEnded(false);
@@ -562,7 +593,7 @@ export function useVideoPlayerEngine({
     }
     videoRef.current?.load();
     beginPlayback();
-  }, [activeTitle, beginPlayback, currentTime, startTime, videoUrl]);
+  }, [activeTitle, beginPlayback, currentTime, isDomainLocked, startTime, videoUrl]);
 
   const skipActiveSegment = useCallback(() => {
     if (!activeSkipSegment) return;
@@ -618,10 +649,19 @@ export function useVideoPlayerEngine({
         })()
       : undefined;
 
-  // Load settings from localStorage on mount
+  // Load settings from localStorage on mount & domain validation check
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
+      // Domain validation check
+      const hostname = window.location.hostname;
+      const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.");
+      const isAllowedProd = hostname === "s-u.in" || hostname === "www.s-u.in";
+      if (!isLocal && !isAllowedProd) {
+        setIsDomainLocked(true);
+        setPlaybackError("Playback restricted: This video player is only authorized to play on s-u.in.");
+      }
+
       const savedVolume = localStorage.getItem("moviebay-player-volume");
       if (savedVolume !== null) {
         const vol = parseFloat(savedVolume);
@@ -854,6 +894,7 @@ export function useVideoPlayerEngine({
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         handleSaveProgress();
+        pausePlayback();
       }
     };
 
@@ -864,7 +905,31 @@ export function useVideoPlayerEngine({
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [isOpen, isPlaying]);
+  }, [isOpen, isPlaying, pausePlayback]);
+
+  // Intersection Observer to auto-pause when player is scrolled out of view
+  useEffect(() => {
+    if (!isOpen || !isPlaying || typeof window === "undefined" || !containerRef.current) return;
+    
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.1) {
+          console.log("[Player Engine] Container scrolled out of view, auto-pausing...");
+          pausePlayback();
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(handleIntersection, {
+      threshold: [0, 0.1, 0.5, 0.9, 1.0]
+    });
+    
+    observer.observe(containerRef.current);
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [isOpen, isPlaying, pausePlayback]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1756,5 +1821,6 @@ export function useVideoPlayerEngine({
     toggleForcedLandscape,
     subtitleSize,
     setSubtitleSize,
+    isDomainLocked,
   };
 }
