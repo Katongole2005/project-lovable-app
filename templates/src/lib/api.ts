@@ -244,10 +244,12 @@ async function buildWorkerPlaybackUrl(targetUrl: string, title: string): Promise
 
   // Playback links expire in 6 hours (plenty of time to watch a movie)
   const token = await generateSecureToken(targetUrl, title, 6);
-  endpoint.searchParams.set("url", targetUrl);
-  endpoint.searchParams.set("name", title || "video");
   if (token) {
     endpoint.searchParams.set("token", token);
+  } else {
+    // Fallback if encryption fails (e.g. no encryption key configured)
+    endpoint.searchParams.set("url", targetUrl);
+    endpoint.searchParams.set("name", title || "video");
   }
   endpoint.searchParams.set("play", "1");
   return endpoint.toString();
@@ -474,13 +476,15 @@ export async function buildMediaUrl({
       return normalizedUrl;
     }
 
-    // Playback expires in 6 hours, Downloads expire in 24 hours
-    const expirationHours = play ? 6 : 24;
+    // Both playback and downloads expire in 6 hours for maximum security
+    const expirationHours = 6;
     const token = await generateSecureToken(normalizedUrl, title, expirationHours);
-    endpoint.searchParams.set("url", normalizedUrl);
-    endpoint.searchParams.set("name", title || "video");
     if (token) {
       endpoint.searchParams.set("token", token);
+    } else {
+      // Fallback if encryption fails (e.g. no encryption key configured)
+      endpoint.searchParams.set("url", normalizedUrl);
+      endpoint.searchParams.set("name", title || "video");
     }
 
     if (play) {
