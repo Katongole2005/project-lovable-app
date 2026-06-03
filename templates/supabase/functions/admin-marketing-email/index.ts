@@ -92,35 +92,38 @@ function buildMarketingHtml(message: string, previewText: string, ctaLabel: stri
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MovieBay</title>
   <style>
-    body { margin: 0; padding: 0; background: #050506; color: #f8fafc; font-family: Arial, Helvetica, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
+    body { margin: 0; padding: 0; background: #050506; color: #f8fafc; font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     table { border-collapse: collapse; }
     img { border: 0; display: block; max-width: 100%; }
     a { color: inherit; }
     .preview { display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent; mso-hide: all; }
-    .shell { width: 100%; background: #050506; padding: 34px 12px; }
-    .card { width: 100%; max-width: 640px; margin: 0 auto; overflow: hidden; border: 1px solid #252529; border-radius: 26px; background: #111113; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45); }
-    .hero { padding: 34px 34px 24px; background: linear-gradient(135deg, #19191d 0%, #101012 48%, #260508 100%); }
-    .logo { width: 148px; height: auto; }
-    .kicker { margin: 30px 0 9px; color: #ff4d57; font-size: 12px; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; }
-    .name { margin: 0; color: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 32px; line-height: 1.15; font-weight: 900; letter-spacing: -0.03em; }
-    .sub { margin: 12px 0 0; color: #c9c9d1; font-size: 15px; line-height: 1.65; }
-    .content { padding: 32px 34px 12px; background: #111113; }
-    .content p { color: #e4e4e7; font-size: 16px; line-height: 1.72; margin: 0 0 18px; }
-    .panel { margin: 4px 0 26px; border: 1px solid #2d2d34; border-radius: 18px; background: #17171a; }
-    .panel td { padding: 18px 20px; color: #b8b8c2; font-size: 13px; line-height: 1.6; }
-    .btn-wrap { padding: 2px 34px 36px; background: #111113; }
-    .btn { display: inline-block; padding: 15px 24px; border-radius: 999px; background: #e50914; color: #ffffff !important; font-size: 15px; font-weight: 900; text-decoration: none; box-shadow: 0 16px 32px rgba(229, 9, 20, 0.28); }
-    .footer { padding: 25px 34px 31px; border-top: 1px solid #242428; background: #0d0d0f; }
-    .footer p { margin: 0; color: #878791; font-size: 12px; line-height: 1.65; }
-    .footer strong { color: #f4f4f5; }
-    .footer a { color: #c9c9d1; text-decoration: none; font-weight: 700; }
+    .shell { width: 100%; background: #050506; padding: 40px 12px; }
+    .card { width: 100%; max-width: 600px; margin: 0 auto; overflow: hidden; border: 1px solid #202024; border-top: 4px solid #e50914; border-radius: 16px; background: #0c0c0e; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); }
+    .hero { padding: 40px 40px 30px; background: linear-gradient(180deg, #18090a 0%, #0c0c0e 100%); }
+    .logo { width: 154px; height: auto; margin-bottom: 24px; }
+    .badge { display: inline-block; padding: 4px 10px; background: rgba(229, 9, 20, 0.12); border-radius: 6px; border: 1px solid rgba(229, 9, 20, 0.25); margin-bottom: 16px; }
+    .kicker { margin: 0; color: #ff4d57; font-size: 11px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; }
+    .name { margin: 0; color: #ffffff; font-size: 32px; line-height: 1.15; font-weight: 900; letter-spacing: -0.02em; }
+    .sub { margin: 12px 0 0; color: #a1a1aa; font-size: 15px; line-height: 1.6; }
+    .content { padding: 10px 40px 20px; background: #0c0c0e; }
+    .content p { color: #d4d4d8; font-size: 15px; line-height: 1.7; margin: 0 0 20px; }
+    .panel { margin: 24px 0 24px; border: 1px solid #202024; border-left: 4px solid #e50914; border-radius: 0 12px 12px 0; background: #121214; }
+    .panel td { padding: 16px 20px; color: #a1a1aa; font-size: 13.5px; line-height: 1.6; }
+    .btn-wrap { padding: 10px 40px 40px; background: #0c0c0e; }
+    .btn { display: inline-block; padding: 14px 28px; border-radius: 8px; background: linear-gradient(135deg, #e50914 0%, #b2060f 100%); color: #ffffff !important; font-size: 15px; font-weight: 700; text-decoration: none; letter-spacing: 0.3px; box-shadow: 0 8px 24px rgba(229, 9, 20, 0.25); text-align: center; }
+    .footer { padding: 30px 40px; border-top: 1px solid #1c1c1f; background: #08080a; text-align: center; }
+    .footer p { margin: 0; color: #71717a; font-size: 12px; line-height: 1.7; }
+    .footer strong { color: #e4e4e7; }
+    .footer a { color: #a1a1aa; text-decoration: none; font-weight: 600; transition: color 0.2s; }
+    .footer a:hover { color: #ffffff; }
     @media only screen and (max-width: 520px) {
       .shell { padding: 16px 8px; }
-      .card { border-radius: 18px; }
-      .hero, .content, .btn-wrap, .footer { padding-left: 22px !important; padding-right: 22px !important; }
+      .card { border-radius: 12px; }
+      .hero, .content, .btn-wrap, .footer { padding-left: 20px !important; padding-right: 20px !important; }
       .name { font-size: 26px !important; }
       .logo { width: 130px !important; }
-      .btn { display: block !important; text-align: center !important; }
+      .btn { display: block !important; box-sizing: border-box; }
     }
   </style>
 </head>
@@ -129,13 +132,17 @@ function buildMarketingHtml(message: string, previewText: string, ctaLabel: stri
   <table role="presentation" width="100%" class="shell">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" class="card">
+        <table role="presentation" class="card">
           <tr>
             <td class="hero">
               <a href="${safeCtaUrl}" style="display:inline-block;text-decoration:none;">
-                <img class="logo" src="${EMAIL_LOGO_URL}" width="148" alt="MovieBay">
+                <img class="logo" src="${EMAIL_LOGO_URL}" width="154" alt="MovieBay">
               </a>
-              <p class="kicker">MovieBay update</p>
+              <div>
+                <div class="badge">
+                  <p class="kicker">MovieBay update</p>
+                </div>
+              </div>
               <h1 class="name">Made for {{params.name}}</h1>
               <p class="sub">Fresh movies, smooth watching, and the latest MovieBay picks are waiting for you.</p>
             </td>
@@ -146,8 +153,8 @@ function buildMarketingHtml(message: string, previewText: string, ctaLabel: stri
               <table role="presentation" width="100%" class="panel">
                 <tr>
                   <td>
-                    <strong style="color:#ffffff;">Your MovieBay account</strong><br>
-                    This email was personalized for {{params.name}} using the name saved on your MovieBay profile.
+                    <strong style="color:#ffffff; font-size: 14px;">Your MovieBay account</strong><br>
+                    <span style="display:inline-block; margin-top: 4px;">This email was personalized for {{params.name}} using the name saved on your MovieBay profile.</span>
                   </td>
                 </tr>
               </table>
@@ -161,8 +168,8 @@ function buildMarketingHtml(message: string, previewText: string, ctaLabel: stri
           <tr>
             <td class="footer">
               <p><strong>MovieBay</strong> · Luganda translated movies and entertainment.</p>
-              <p style="margin-top:8px;">You are receiving this because you created a MovieBay account. Visit <a href="https://www.s-u.in">s-u.in</a> to continue watching.</p>
-              <p style="margin-top:14px;color:#5f5f68;">© 2026 MovieBay. All rights reserved.</p>
+              <p style="margin-top:6px;">You are receiving this because you created a MovieBay account. Visit <a href="https://www.s-u.in" target="_blank">s-u.in</a> to continue watching.</p>
+              <p style="margin-top:14px;color:#52525b;">© 2026 MovieBay. All rights reserved.</p>
             </td>
           </tr>
         </table>

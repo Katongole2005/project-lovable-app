@@ -124,14 +124,16 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
         className={cn(
           "pointer-events-none fixed inset-x-0 z-50 flex justify-center px-2 md:px-3",
           "bottom-[calc(env(safe-area-inset-bottom,0px)_+_16px)] md:bottom-auto",
-          hasAnnouncement ? "md:top-[calc(env(safe-area-inset-top,0px)_+_3.5rem)]" : "md:top-[calc(env(safe-area-inset-top,0px)_+_1.25rem)]"
+          hasAnnouncement 
+            ? "md:top-[calc(env(safe-area-inset-top,0px)_+_3.5rem)] xl:top-[calc(env(safe-area-inset-top,0px)_+_3.75rem)] 2xl:top-[calc(env(safe-area-inset-top,0px)_+_4.25rem)]" 
+            : "md:top-[calc(env(safe-area-inset-top,0px)_+_1.25rem)] xl:top-[calc(env(safe-area-inset-top,0px)_+_1.5rem)] 2xl:top-[calc(env(safe-area-inset-top,0px)_+_1.75rem)]"
         )}
       >
-        <div className="pointer-events-auto relative z-10 flex items-center gap-2 rounded-full px-[14px] py-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
+        <div className="pointer-events-auto relative z-10 flex items-center gap-2 xl:gap-2.5 2xl:gap-3 rounded-full px-[14px] py-[10px] xl:px-4 xl:py-3 2xl:px-5 2xl:py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
           {/* Dedicated background and blur layer for Chrome compatibility */}
           <div className="absolute inset-0 -z-10 rounded-full border border-white/10 bg-white/[0.08] backdrop-blur-[24px] backdrop-saturate-[1.8] pointer-events-none transform-gpu [backface-visibility:hidden] [-webkit-backdrop-filter:blur(24px)_saturate(1.8)]" />
           
-          <nav className="flex items-center gap-2 relative z-10">
+          <nav className="flex items-center gap-2 xl:gap-2.5 2xl:gap-3 relative z-10">
             {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
@@ -140,38 +142,38 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
                 key={item.id}
                 onClick={() => handleTabNavigation(item.id)}
                 className={cn(
-                  "inline-flex min-h-[40px] md:min-h-[44px] items-center gap-1.5 md:gap-2 rounded-full px-3 md:px-4 text-[13px] md:text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
+                  "inline-flex min-h-[40px] md:min-h-[44px] xl:min-h-[48px] 2xl:min-h-[52px] items-center gap-1.5 md:gap-2 rounded-full px-3 md:px-4 xl:px-5 2xl:px-6 text-[13px] md:text-sm xl:text-[14.5px] 2xl:text-[15.5px] font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
                   isActive
                     ? "bg-white/95 text-[#111] shadow-[0_8px_20px_rgba(0,0,0,0.26)]"
-                    : "text-white/85 hover:-translate-y-[1px] hover:bg-white/12 hover:text-white hover:shadow-[0_6px_14px_rgba(0,0,0,0.2)]"
+                    : "text-white/85 hover:-translate-y-[1px] xl:hover:-translate-y-[1.5px] 2xl:hover:-translate-y-[2px] hover:scale-[1.01] hover:bg-white/12 hover:text-white hover:shadow-[0_6px_14px_rgba(0,0,0,0.2)]"
                 )}
               >
-                <span className="text-base"><Icon className="h-[18px] w-[18px] md:h-5 md:w-5" /></span>
+                <span className="text-base"><Icon className="h-[18px] w-[18px] md:h-5 md:w-5 xl:h-[22px] xl:w-[22px] 2xl:h-[24px] 2xl:w-[24px]" /></span>
                 <span className={cn(isActive ? "block" : "hidden md:block")}>{item.label}</span>
               </button>
             );
           })}
           
           <div className="mx-1 h-6 w-px bg-white/10 shrink-0 hidden md:block" />
-
+ 
           <button
             onClick={() => handleTabNavigation("search")}
             className={cn(
-              "md:ml-1 inline-flex min-h-[40px] md:min-h-[44px] min-w-[40px] md:min-w-[44px] items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
+              "md:ml-1 inline-flex min-h-[40px] md:min-h-[44px] xl:min-h-[48px] 2xl:min-h-[52px] min-w-[40px] md:min-w-[44px] xl:min-w-[48px] 2xl:min-w-[52px] items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-[1px] xl:hover:-translate-y-[1.5px] 2xl:hover:-translate-y-[2px] hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
               currentTab === "search"
                 ? "bg-white/95 text-[#111] shadow-[0_8px_20px_rgba(0,0,0,0.26)]"
                 : "text-white/85 hover:bg-white/12 hover:text-white hover:shadow-[0_6px_14px_rgba(0,0,0,0.2)]"
             )}
             aria-label="Search"
           >
-            <Search className="h-[18px] w-[18px] md:h-5 md:w-5" />
+            <Search className="h-[18px] w-[18px] md:h-5 md:w-5 xl:h-[22px] xl:w-[22px] 2xl:h-[24px] 2xl:w-[24px]" />
           </button>
           
           <button
             onClick={() => handleTabNavigation("profile")}
             onMouseEnter={preloadProfilePage}
             className={cn(
-              "ml-0.5 md:ml-1 inline-flex min-h-[40px] md:min-h-[44px] min-w-[40px] md:min-w-[44px] items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
+              "ml-0.5 md:ml-1 inline-flex min-h-[40px] md:min-h-[44px] xl:min-h-[48px] 2xl:min-h-[52px] min-w-[40px] md:min-w-[44px] xl:min-w-[48px] 2xl:min-w-[52px] items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-[1px] xl:hover:-translate-y-[1.5px] 2xl:hover:-translate-y-[2px] hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 shrink-0",
               currentTab === "profile"
                 ? "bg-white/95 text-[#111] shadow-[0_8px_20px_rgba(0,0,0,0.26)]"
                 : "text-white/85 hover:bg-white/12 hover:text-white hover:shadow-[0_6px_14px_rgba(0,0,0,0.2)]"
@@ -179,9 +181,9 @@ function HeaderComponent({ activeTab, onTabChange }: HeaderProps) {
             aria-label="Profile"
           >
             {user?.user_metadata?.avatar_url ? (
-              <img src={user.user_metadata.avatar_url} alt="" className="h-5 w-5 md:h-6 md:w-6 rounded-full object-cover" />
+              <img src={user.user_metadata.avatar_url} alt="" className="h-5 w-5 md:h-6 md:w-6 xl:h-[26px] xl:w-[26px] 2xl:h-[28px] 2xl:w-[28px] rounded-full object-cover" />
             ) : (
-              <User className="h-[18px] w-[18px] md:h-5 md:w-5" />
+              <User className="h-[18px] w-[18px] md:h-5 md:w-5 xl:h-[22px] xl:w-[22px] 2xl:h-[24px] 2xl:w-[24px]" />
             )}
           </button>
           </nav>
