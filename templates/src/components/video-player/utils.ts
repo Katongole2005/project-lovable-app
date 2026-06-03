@@ -45,6 +45,19 @@ export const extractPosterGradient = (imageUrl: string): Promise<PosterGradient 
       return;
     }
 
+    const parsedUrl = (() => {
+      try {
+        return new URL(imageUrl, (typeof window !== "undefined" ? window.location : { origin: "", pathname: "", search: "", href: "" }).origin);
+      } catch {
+        return null;
+      }
+    })();
+
+    if (parsedUrl?.hostname === "image.tmdb.org") {
+      resolve(null);
+      return;
+    }
+
     const image = new Image();
     image.crossOrigin = "anonymous";
     image.referrerPolicy = "no-referrer";
