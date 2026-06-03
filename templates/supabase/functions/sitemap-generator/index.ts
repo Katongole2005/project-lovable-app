@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apiKey, content-type',
 }
 
-const BASE_URL = 'https://www.s-u.in'
+const BASE_URL = 'https://s-u.in'
 const PAGE_SIZE = 1000
 
 function slugify(value: string): string {

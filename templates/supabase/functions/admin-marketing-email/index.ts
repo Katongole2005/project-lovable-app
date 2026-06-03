@@ -171,7 +171,7 @@ function buildMarketingHtml(message: string, previewText: string, ctaLabel: stri
           <tr>
             <td class="footer" style="background-color: #070709; border-top: 1px solid #1f1f23;">
               <p style="color: #64748b;"><strong>MovieBay</strong> · Luganda translated movies and entertainment.</p>
-              <p style="margin-top:8px; color: #64748b;">You are receiving this because you created a MovieBay account. Visit <a href="https://www.s-u.in" target="_blank" style="color: #94a3b8; font-weight: 600;">s-u.in</a> to continue watching.</p>
+              <p style="margin-top:8px; color: #64748b;">You are receiving this because you created a MovieBay account. Visit <a href="https://s-u.in" target="_blank" style="color: #94a3b8; font-weight: 600;">s-u.in</a> to continue watching.</p>
               <p style="margin-top:16px; color: #475569; font-size: 11px;">© 2026 MovieBay. All rights reserved.</p>
             </td>
           </tr>
@@ -609,7 +609,7 @@ Deno.serve(async (req: Request) => {
       limit = DEFAULT_SEND_LIMIT,
       dryRun = false,
       ctaLabel = "Open MovieBay",
-      ctaUrl = "https://www.s-u.in",
+      ctaUrl = "https://s-u.in",
       previewText = "New movies are waiting for you on MovieBay.",
     } = await req.json();
 

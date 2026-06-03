@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apiKey, content-type",
 }
 
-const BASE_URL = "https://www.s-u.in"
+const BASE_URL = "https://s-u.in"
 const DEFAULT_IMAGE = `${BASE_URL}/icon-512.png`
 
 function cleanVjName(value?: string | null): string {

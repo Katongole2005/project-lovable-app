@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 // Configuration
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.s-u.in";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://s-u.in";
 const INDEXNOW_API = `${BASE_URL}/api/indexnow`;
 const ADMIN_SECRET = process.env.INDEXNOW_ADMIN_SECRET || "moviebay-seo-indexnow-secret-2026";
 const MAX_URLS = 1000; // Limit per batch

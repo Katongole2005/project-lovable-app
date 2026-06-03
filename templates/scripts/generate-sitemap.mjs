@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const BASE_URL = "https://www.s-u.in";
+const BASE_URL = "https://s-u.in";
 const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL ||
   process.env.SUPABASE_URL ||
