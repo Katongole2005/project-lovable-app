@@ -348,7 +348,11 @@ export function CinematicVideoPlayer({
                   transition={{ duration: 0.25 }}
                   className="pointer-events-none absolute inset-0 z-[70] flex items-center justify-center"
                 >
-                  <div className="player-buffering-ring" />
+                  <img 
+                    src="/loading.gif" 
+                    alt="Loading..." 
+                    className="w-16 h-20 object-contain"
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
