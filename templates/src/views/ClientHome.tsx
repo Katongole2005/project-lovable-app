@@ -334,7 +334,6 @@ function ClientHome() {
   const searchHistoryRef = useRef(false);
   const lastBackPressRef = useRef(0);
   const exitToastTimerRef = useRef<number | null>(null);
-  const observerRef = useRef<HTMLDivElement>(null);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isAuthGatedModalOpen, setIsAuthGatedModalOpen] = useState(false);
   const [gatedAction, setGatedAction] = useState<"watch" | "download" | "general">("general");
@@ -1638,31 +1637,23 @@ function ClientHome() {
     }
   }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByLatestAdded, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
 
-  // Infinite Scroll Intersection Observer
+  // Precise Scroll Bottom Trigger Listener
   useEffect(() => {
     if (viewMode === "home" || viewMode === "search") return;
     if (categoryMovies.length === 0 || isLoading || isLoadingMore) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          void handleLoadMore();
-        }
-      },
-      {
-        rootMargin: "0px", // Trigger when user reaches the very bottom of the footer
+    const handleScroll = () => {
+      if (isLoadingMore) return;
+      const threshold = 25; // 25px from absolute bottom of the document
+      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - threshold;
+      if (isAtBottom) {
+        void handleLoadMore();
       }
-    );
+    };
 
-    const currentTarget = observerRef.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
+      window.removeEventListener("scroll", handleScroll);
     };
   }, [categoryMovies.length, isLoading, isLoadingMore, viewMode, handleLoadMore]);
 
@@ -2499,9 +2490,6 @@ function ClientHome() {
                 </div>
               </div>
             </footer>
-            {(viewMode === "movies" || viewMode === "series" || viewMode === "originals") && categoryMovies.length > 0 && (
-              <div ref={observerRef} className="h-1 w-full" />
-            )}
 
             {/* Offscreen preloading container to force native browser loading & decoding of posters */}
             {preloadedMovies.length > 0 && (
