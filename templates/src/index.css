@@ -2214,12 +2214,10 @@ body::before {
   0% {
     opacity: 0;
     transform: translateY(12px);
-    filter: blur(4px);
   }
   100% {
     opacity: 1;
     transform: translateY(0);
-    filter: none;
   }
 }
 
@@ -2259,12 +2257,10 @@ html.perf-low .browse-load-more::before {
   from {
     opacity: 0;
     transform: translate3d(0, 24px, 0) scale(0.96);
-    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0);
   }
 }
 

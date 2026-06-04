@@ -51,6 +51,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Preconnect to image CDN — opens TCP+TLS before image URLs are discovered.
+            Saves 300-600ms on first hero backdrop/poster fetch, directly improving LCP. */}
+        <link rel="preconnect" href="https://image.tmdb.org" />
+        <link rel="dns-prefetch" href="https://image.tmdb.org" />
+      </head>
       <body suppressHydrationWarning>
         {/* Google Analytics — loaded after page becomes interactive to avoid blocking LCP/TBT */}
         <Script

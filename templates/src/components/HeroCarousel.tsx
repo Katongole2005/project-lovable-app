@@ -498,9 +498,10 @@ export function HeroCarousel({
 
 	          <div className="absolute inset-0 pointer-events-none hero-vignette" />
 
-          <div className="relative z-10 h-full flex flex-col justify-end">
+          <div className="relative z-10 h-full flex flex-col justify-end" style={{ contain: "layout" }}>
 
-            <div className="px-6 pb-4 lg:px-10 xl:px-14 2xl:px-16">
+            {/* Reserve space for hero info before movie data arrives — prevents 0.485 CLS */}
+            <div className="px-6 pb-4 lg:px-10 xl:px-14 2xl:px-16" style={{ minHeight: "220px" }}>
                 <>
                   <div 
                     key={`info-${activeIndex}`}
