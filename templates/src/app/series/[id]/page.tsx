@@ -16,7 +16,7 @@ export async function generateMetadata({
   const slugId = fromSlug(id);
   const parsedId = parseInt(slugId, 10);
   
-  let series = null;
+  let series: any = null;
   try {
     let query = supabase
       .from('movies')

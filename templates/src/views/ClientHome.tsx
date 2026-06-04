@@ -386,7 +386,7 @@ function ClientHome() {
   // ── Consolidated home feed — 1 request instead of 4 ─────────────────────
   // fetchHomeFeed hits /api/home-feed which runs all 4 queries in Promise.all
   // server-side and returns a single JSON payload with 5-minute edge caching.
-  const { data: homeFeedData, isLoading: isHomeFeedLoading } = useQuery<HomeFeedPayload>({
+  const { data: homeFeedData, isLoading: isHomeFeedLoading } = useQuery({
     queryKey: ["home-feed", heroMovieLimit, browseBatchLimit],
     queryFn: () =>
       fetchHomeFeed({
@@ -400,13 +400,14 @@ function ClientHome() {
 
   // Spread the consolidated feed into the existing named variables
   // so zero other code needs to change downstream.
-  const heroData        = homeFeedData?.hero;
-  const isHeroLoading   = isHomeFeedLoading && !homeFeedData?.hero;
-  const trendingData    = homeFeedData?.trending;
-  const moviesQueryData = homeFeedData?.movies;
-  const isMoviesLoading = isHomeFeedLoading && !homeFeedData?.movies;
-  const seriesQueryData = homeFeedData?.series;
-  const isSeriesLoading = isHomeFeedLoading && !homeFeedData?.series;
+  const feed = homeFeedData as HomeFeedPayload | undefined;
+  const heroData        = feed?.hero;
+  const isHeroLoading   = isHomeFeedLoading && !feed?.hero;
+  const trendingData    = feed?.trending;
+  const moviesQueryData = feed?.movies;
+  const isMoviesLoading = isHomeFeedLoading && !feed?.movies;
+  const seriesQueryData = feed?.series;
+  const isSeriesLoading = isHomeFeedLoading && !feed?.series;
 
   // Originals remain a separate query (only loaded when on /originals tab)
   const { data: originalsQueryData, isLoading: isOriginalsLoading } = useQuery({
