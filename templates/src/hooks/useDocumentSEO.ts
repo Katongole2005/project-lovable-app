@@ -80,7 +80,15 @@ export const useDocumentSEO = ({
 
     updateMeta("name", "description", metaDescription);
     updateMeta("name", "keywords", metaKeywords);
-    updateMeta("name", "robots", "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1");
+
+    let robotsValue = "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1";
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has("sw")) {
+        robotsValue = "noindex, nofollow";
+      }
+    }
+    updateMeta("name", "robots", robotsValue);
 
     updateMeta("property", "og:title", fullTitle);
     updateMeta("property", "og:description", metaDescription);

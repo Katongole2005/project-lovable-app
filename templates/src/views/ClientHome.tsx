@@ -1782,7 +1782,8 @@ function ClientHome() {
             {/* Home View */}
             {viewMode === "home" && (
               <PageTransition viewKey="home" className="space-y-0">
-              {shouldShowHero && (
+                <h1 className="sr-only">Moviebay — Watch Luganda Translated Movies & Series Online in HD</h1>
+                {shouldShowHero && (
                 <Suspense fallback={null}>
                   <HeroCarousel
                     movies={heroCarouselMovies}
@@ -2188,7 +2189,7 @@ function ClientHome() {
                           <ChevronLeft className="w-5 h-5" />
                         </button>
                         <div>
-                          <h2 className="text-xl font-semibold text-white">Search Results</h2>
+                          <h1 className="text-xl font-semibold text-white">Search Results</h1>
                           <p className="text-sm text-muted-foreground">
                             {filteredAndSortedResults.length} results for "{searchQuery}"
                           </p>
@@ -2322,7 +2323,7 @@ function ClientHome() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
-                  <h2 className="browse-page-title text-xl font-semibold">All Movies</h2>
+                  <h1 className="browse-page-title text-xl font-semibold">All Movies</h1>
                 </div>
 
                 <MovieGrid
@@ -2365,7 +2366,7 @@ function ClientHome() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
-                  <h2 className="browse-page-title text-xl font-semibold">All Series</h2>
+                  <h1 className="browse-page-title text-xl font-semibold">All Series</h1>
                 </div>
 
                 <MovieGrid
@@ -2408,7 +2409,7 @@ function ClientHome() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
-                  <h2 className="browse-page-title text-xl font-semibold">Originals (English)</h2>
+                  <h1 className="browse-page-title text-xl font-semibold">Originals (English)</h1>
                 </div>
 
                 <MovieGrid

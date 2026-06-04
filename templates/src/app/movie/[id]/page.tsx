@@ -3,8 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { fromSlug } from '@/lib/slug';
 
 // Generate dynamic metadata for SEO by fetching the actual movie
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const isNoIndex = resolvedSearchParams && (resolvedSearchParams.sw !== undefined || 'sw' in resolvedSearchParams);
+  
   const slugId = fromSlug(id);
   const parsedId = parseInt(slugId, 10);
   
@@ -23,6 +32,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!movie) {
     return {
       title: 'Watch Online - Moviebay',
+      ...(isNoIndex && {
+        robots: {
+          index: false,
+          follow: false,
+        },
+      }),
     };
   }
 
@@ -44,7 +59,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title: seoTitle,
       description: seoDesc,
       images: movie.image_url ? [{ url: movie.image_url }] : [],
-    }
+    },
+    ...(isNoIndex && {
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }),
   };
 }
 
