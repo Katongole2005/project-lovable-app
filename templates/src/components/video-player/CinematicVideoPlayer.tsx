@@ -351,7 +351,7 @@ export function CinematicVideoPlayer({
                   <img 
                     src="/loading.gif" 
                     alt="Loading..." 
-                    className="w-16 h-20 object-contain"
+                    className="w-12 h-16 sm:w-16 sm:h-20 md:w-20 md:h-24 lg:w-24 lg:h-28 object-contain"
                   />
                 </motion.div>
               )}
