@@ -8,6 +8,8 @@ type HeroMediaImageProps = {
   alt: string;
   className?: string;
   priority?: boolean;
+  width?: number | string;
+  height?: number | string;
 };
 
 export function HeroMediaImage({
@@ -16,6 +18,8 @@ export function HeroMediaImage({
   alt,
   className,
   priority = false,
+  width,
+  height,
 }: HeroMediaImageProps) {
   const [resolvedSrc, setResolvedSrc] = React.useState(primarySrc ?? fallbackSrc ?? "");
   const [usedFallback, setUsedFallback] = React.useState(false);
@@ -35,6 +39,8 @@ export function HeroMediaImage({
       decoding="async"
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
+      width={width}
+      height={height}
       onError={() => {
         if (!usedFallback && fallbackSrc && resolvedSrc !== fallbackSrc) {
           setUsedFallback(true);

@@ -41,7 +41,13 @@ export function DeferredSection({
     <div
       ref={ref}
       className={className}
-      style={{ minHeight: !isNear ? "220px" : undefined }}
+      style={{
+        minHeight: !isNear ? "220px" : undefined,
+        // Allow browser to skip rendering off-screen sections entirely.
+        // This is one of the biggest single wins for TBT and LCP on content-heavy pages.
+        contentVisibility: "auto",
+        containIntrinsicSize: "0 220px",
+      }}
     >
       {isNear ? (
         children

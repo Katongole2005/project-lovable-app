@@ -289,6 +289,8 @@ export function HeroCarousel({
                   alt=""
                   className="h-full w-full scale-125 object-cover opacity-35 blur-2xl"
                   priority
+                  width={1280}
+                  height={720}
                 />
               ) : (
                 <div
@@ -354,6 +356,8 @@ export function HeroCarousel({
                         isSelected && deviceProfile.allowAmbientEffects && "animate-ken-burns animate-10s",
                       )}
                       priority={Math.abs(adjustedOffset) <= 1}
+                      width={320}
+                      height={480}
                     />
                     <div className={cn("absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300", isSelected ? "opacity-0" : "opacity-60")} />
                   </div>
@@ -372,6 +376,8 @@ export function HeroCarousel({
                     alt={currentMovie.title}
                     className="hero-stagger-logo h-10 w-auto max-w-full object-contain drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
                     loading="eager"
+                    width={200}
+                    height={40}
                   />
                 ) : (
                   <h3 className="hero-stagger-logo text-lg font-display font-bold text-white tracking-tight drop-shadow-md line-clamp-1">{currentMovie.title}</h3>
@@ -442,6 +448,8 @@ export function HeroCarousel({
                   fallbackSrc={getHeroPosterUrl(previousMovie)}
                   alt=""
                   className="h-full w-full object-cover"
+                  width={1920}
+                  height={1080}
                 />
               </div>
             )}
@@ -463,6 +471,8 @@ export function HeroCarousel({
                     showHeavyHeroEffects && deviceProfile.allowComplexAnimations && "hero-backdrop-drift",
                   )}
                   priority
+                  width={1920}
+                  height={1080}
                 />
               </div>
             )}
@@ -503,6 +513,8 @@ export function HeroCarousel({
                           alt={currentMovie.title}
                           className="hero-stagger-logo max-h-[56px] w-auto max-w-[min(480px,40vw)] object-contain object-left drop-shadow-[0_8px_24px_rgba(0,0,0,0.92)] md:max-h-[64px] lg:max-h-[80px] xl:max-h-[90px] 2xl:max-h-[100px]"
                           loading="eager"
+                          width={480}
+                          height={100}
                         />
                       ) : (
                         <h2 className="hero-stagger-logo font-display text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] lg:text-4xl xl:text-4xl 2xl:text-5xl">
@@ -607,6 +619,8 @@ export function HeroCarousel({
                         alt={movie.title}
                         className="h-full w-full object-cover"
                         priority={Math.abs(idx - activeIndex) <= 2}
+                        width={480}
+                        height={270}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                       {movie.logo_url ? (
@@ -614,6 +628,8 @@ export function HeroCarousel({
                           src={movie.logo_url}
                           alt={movie.title}
                           className="absolute bottom-2 right-2 h-5 xl:h-6 w-auto max-w-[70px] object-contain drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] z-10"
+                          width={70}
+                          height={24}
                         />
                       ) : (
                         <span className="absolute bottom-1.5 left-2 text-[9px] xl:text-[10px] font-bold text-white/85 line-clamp-1 max-w-[90%] z-10">

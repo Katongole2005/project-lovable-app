@@ -195,6 +195,8 @@ const LandscapeMovieCardBase = forwardRef<HTMLDivElement, LandscapeMovieCardProp
                   src={movie.logo_url}
                   alt={movie.title}
                   className="max-h-[28px] md:max-h-[34px] w-auto max-w-[85%] object-contain object-left drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)] group-hover:scale-102 transition-transform duration-300 origin-left"
+                  width={200}
+                  height={34}
                 />
               ) : (
                 <h3 className="font-display font-extrabold text-sm md:text-base leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] line-clamp-1 tracking-tight group-hover:scale-[1.01] transition-transform duration-300 origin-left">

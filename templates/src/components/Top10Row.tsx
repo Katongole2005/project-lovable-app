@@ -111,6 +111,8 @@ function Top10Card({
             src={movie.logo_url}
             alt={movie.title}
             className="h-full w-auto max-w-full object-contain"
+            width={130}
+            height={16}
           />
         ) : (
           <p className="text-xs font-medium text-foreground line-clamp-1" data-testid={`text-top10-title-${rank}`}>
