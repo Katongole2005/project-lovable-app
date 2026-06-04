@@ -58,12 +58,12 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
       </head>
       <body suppressHydrationWarning>
-        {/* Google Analytics — loaded after page becomes interactive to avoid blocking LCP/TBT */}
+        {/* Google Analytics — loaded during idle time to avoid blocking LCP/TBT */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-Y386N5D886"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}

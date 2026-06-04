@@ -115,6 +115,8 @@ const Dmca = () => {
                 src="/tmdb-logo-long.svg" 
                 alt="TMDB Logo" 
                 className="h-3.5 w-auto shrink-0 opacity-40" 
+                width={150}
+                height={14}
               />
               <p className="text-[9px] text-white/40 leading-normal">
                 This service uses TMDB and the TMDB APIs to fetch movie/series titles and images but is not endorsed, certified, or approved by TMDB.

@@ -338,6 +338,8 @@ const Auth = () => {
                   alt="MovieBay"
                   className="mb-8 h-12 w-auto"
                   data-testid="img-logo-desktop"
+                  width={240}
+                  height={48}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -409,7 +411,7 @@ const Auth = () => {
                     transition={{ duration: 0.5, delay: 0.3 }}
                     className="mb-8 flex justify-center lg:hidden"
                   >
-                    <img src={logoDark.src} alt="MovieBay" className="h-10 w-auto" data-testid="img-logo-mobile" />
+                    <img src={logoDark.src} alt="MovieBay" className="h-10 w-auto" data-testid="img-logo-mobile" width={200} height={40} />
                   </motion.div>
 
                   <AnimatePresence mode="wait">

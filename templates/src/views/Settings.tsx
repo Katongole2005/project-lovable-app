@@ -270,6 +270,8 @@ const Settings = () => {
                   src="/tmdb-logo-long.svg" 
                   alt="TMDB Logo" 
                   className="h-4 w-auto shrink-0 opacity-40 hover:opacity-80 transition-opacity mt-0.5" 
+                  width={170}
+                  height={16}
                 />
                 <div>
                   <p className="text-[10px] text-white/40">
