@@ -187,6 +187,13 @@ serve(async (req: Request) => {
       <h1>Watch ${escapeHtml(title)}${vj ? ` Translated by ${escapeHtml(vj)}` : " Luganda Translated"}</h1>
       <img src="${imageUrl}" alt="${escapeAttr(fullTitle)}" width="360">
       <p>${escapeHtml(description)}</p>
+      
+      <section>
+        <h2>Watch Online & Download Full ${isSeriesType ? "Series" : "Movie"}</h2>
+        <p>Looking to watch ${escapeHtml(title)} translated in Luganda? You can stream the full ${isSeriesType ? "series" : "movie"} online on Moviebay or get fast direct downloads in high quality. Enjoy premium video playback on any device, completely free.</p>
+        <p>Explore a collection of Luganda translated movies and series by ${vj ? escapeHtml(vj) : "popular Video Jokers (VJs)"}. Access direct links to stream online or download to watch offline later.</p>
+      </section>
+
       <ul>
         ${year ? `<li><strong>Year:</strong> ${year}</li>` : ""}
         ${vj ? `<li><strong>Translated by:</strong> ${escapeHtml(vj)}</li>` : ""}
