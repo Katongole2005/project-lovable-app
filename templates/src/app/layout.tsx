@@ -1,5 +1,6 @@
 import { Providers } from './providers';
 import { LayoutRouter } from './LayoutRouter';
+import Script from 'next/script';
 import '../index.css';
 
 export const metadata = {
@@ -51,6 +52,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
+        {/* Google Analytics — loaded after page becomes interactive to avoid blocking LCP/TBT */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-Y386N5D886"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-Y386N5D886');
+          `}
+        </Script>
         <Providers>
           <LayoutRouter>{children}</LayoutRouter>
         </Providers>
