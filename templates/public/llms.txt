@@ -1,0 +1,17 @@
+# s-u.in - MovieBay Cinematic Platform
+
+Free cinematic platform offering high-quality streaming and download links for movies and TV series, featuring curated VJ Ugandan translation versions and seamless media integration.
+
+## Key Sections
+
+- [Home](https://s-u.in/): The dashboard showing trending movies, popular VJ translations, and newly added cinematic releases.
+- [Movies](https://s-u.in/movies): Browse the full database of movies, sortable by release year, genres, VJ translation, or popularity.
+- [Series](https://s-u.in/series): Browse full TV series and episodes, sortable by release year and VJ translation.
+- [Originals](https://s-u.in/originals): Browse English original releases and cinematic movies.
+- [Settings](https://s-u.in/settings): Personalize playback quality, language preferences, and player settings.
+
+## Legal and Info
+
+- [DMCA Policy](https://s-u.in/dmca): DMCA copyright notices, take-down policies, and contact channels.
+- [Privacy Policy](https://s-u.in/privacy): Privacy guidelines, data usage, and user storage information.
+- [Terms of Service](https://s-u.in/terms): Usage agreement, content licensing disclaimer, and platform guidelines.
