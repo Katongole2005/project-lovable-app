@@ -76,6 +76,12 @@ export async function generateMetadata({
       description: seoDesc,
       images: series.image_url ? [{ url: series.image_url }] : [],
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: seoTitle,
+      description: seoDesc,
+      images: series.image_url ? [series.image_url] : [],
+    },
     ...(isNoIndex && {
       robots: {
         index: false,
