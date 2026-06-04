@@ -1600,12 +1600,15 @@ function ClientHome() {
       // This allows the browser to natively optimize, fetch, and decode their Next.js images.
       setPreloadedMovies(newMovies);
 
-      // Preload movie poster images in the background
+      // Preload movie poster images in the background. Keep explicit references in an array
+      // to prevent the browser's Garbage Collector from deleting them mid-flight on mobile/low-memory devices.
+      const activeImages: HTMLImageElement[] = [];
       const imageUrls = more.map((m) => getImageUrl(m.image_url)).filter(Boolean);
       const preloadPromise = typeof Image !== "undefined"
         ? Promise.all(
             imageUrls.map((url) => new Promise<void>((resolve) => {
               const img = new Image();
+              activeImages.push(img);
               img.onload = () => resolve();
               img.onerror = () => resolve();
               img.src = url;
@@ -1613,8 +1616,14 @@ function ClientHome() {
           )
         : Promise.resolve();
 
-      // Wait for both the 5-second timer and the image preloading to complete
-      await Promise.all([minDelayPromise, preloadPromise]);
+      // Add a 15-second safety timeout so that loading is never stuck infinitely in case of 
+      // network drops, server issues, or adblockers blocking poster requests.
+      const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 15000));
+      const preloadWithTimeout = Promise.race([preloadPromise, timeoutPromise]);
+
+      // Wait for both the 5-second timer and the image preloading (with safety timeout) to complete
+      await Promise.all([minDelayPromise, preloadWithTimeout]);
+      activeImages.length = 0; // Release references for garbage collection
 
       startTransition(() => {
         setCategoryMovies(prev => activeFilters.category === "new-week"
