@@ -1472,8 +1472,8 @@ export async function fetchStats(): Promise<{ popular_searches: string[] }> {
   return { popular_searches: (data ?? []).map((r: { query: string }) => r.query) };
 }
 
-export async function fetchOriginals(limit: number = 50, page: number = 1): Promise<Movie[]> {
-  const offset = (page - 1) * limit;
+export async function fetchOriginals(limit: number = 50, page: number = 1, offsetOverride?: number): Promise<Movie[]> {
+  const offset = offsetOverride !== undefined ? offsetOverride : (page - 1) * limit;
   const { data, error } = await supabase.from("movies").select(BROWSE_MOVIE_SELECT).eq("type", "movie").is("vj_name", null).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
   if (error) { console.error("fetchOriginals error:", error.message || error, error.details || "", error.hint || ""); return []; }
   return normalize(data ?? []);

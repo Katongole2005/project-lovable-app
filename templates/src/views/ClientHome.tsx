@@ -1406,10 +1406,10 @@ function ClientHome() {
             let data: Movie[] = [];
             const dbFilters: FilterOptions = { vj: null };
             if (CURATED_CATEGORIES.has(categoryOverride)) {
-              data = await fetchCuratedMovies(categoryOverride, 100, dbFilters);
+              data = await fetchCuratedMovies(categoryOverride, 120, dbFilters);
             } else {
               const genre = CATEGORY_TO_GENRE[categoryOverride] || categoryOverride;
-              data = await fetchByGenre(genre, tab === "series" ? "series" : "movie", 100, dbFilters);
+              data = await fetchByGenre(genre, tab === "series" ? "series" : "movie", 120, dbFilters);
             }
             startTransition(() => {
               setCategoryMovies(categoryOverride === "new-week" ? sortByLatestAdded(data) : sortByYearDesc(data));
@@ -1479,28 +1479,28 @@ function ClientHome() {
         if (filters.contentType === "movies") {
           if (filters.category && filters.category !== "trending") {
             if (filters.category === "new-week") {
-              data = await fetchNewThisWeek("movie", 100, 0, dbFilters);
+              data = await fetchNewThisWeek("movie", 120, 0, dbFilters);
             } else if (CURATED_CATEGORIES.has(filters.category)) {
-              data = await fetchCuratedMovies(filters.category, 100, dbFilters);
+              data = await fetchCuratedMovies(filters.category, 120, dbFilters);
             } else {
               const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
-              data = await fetchByGenre(genre, "movie", 100, dbFilters);
+              data = await fetchByGenre(genre, "movie", 120, dbFilters);
             }
           } else {
-            data = await fetchMoviesSorted("movie", 100, 1, dbFilters);
+            data = await fetchMoviesSorted("movie", 120, 1, dbFilters);
           }
         } else {
           if (filters.category && filters.category !== "trending") {
             if (filters.category === "new-week") {
-              data = await fetchNewThisWeek("series", 100, 0, dbFilters);
+              data = await fetchNewThisWeek("series", 120, 0, dbFilters);
             } else if (CURATED_CATEGORIES.has(filters.category)) {
-              data = await fetchCuratedMovies(filters.category, 100, dbFilters);
+              data = await fetchCuratedMovies(filters.category, 120, dbFilters);
             } else {
               const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
-              data = await fetchByGenre(genre, "series", 100, dbFilters);
+              data = await fetchByGenre(genre, "series", 120, dbFilters);
             }
           } else {
-            data = await fetchSeries(100, 1, undefined, dbFilters);
+            data = await fetchSeries(120, 1, undefined, dbFilters);
           }
         }
 
@@ -1519,16 +1519,16 @@ function ClientHome() {
         let data: Movie[] = [];
 
         if (filters.category === "new-week") {
-          data = await fetchNewThisWeek("movie", 100, 0, dbFilters);
+          data = await fetchNewThisWeek("movie", 120, 0, dbFilters);
         } else if (filters.category && CURATED_CATEGORIES.has(filters.category)) {
-          data = await fetchCuratedMovies(filters.category, 100, dbFilters);
+          data = await fetchCuratedMovies(filters.category, 120, dbFilters);
         } else if (filters.category && filters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[filters.category] || filters.category;
-          data = await fetchByGenre(genre, "movie", 100, dbFilters);
+          data = await fetchByGenre(genre, "movie", 120, dbFilters);
         } else if (filters.category === "trending") {
           data = await fetchTrending(dbFilters);
         } else {
-          data = await fetchMoviesSorted("movie", 100, 1, dbFilters);
+          data = await fetchMoviesSorted("movie", 120, 1, dbFilters);
         }
 
         startTransition(() => {
@@ -1554,55 +1554,72 @@ function ClientHome() {
     // Start a 4-second timer promise
     const minDelayPromise = new Promise((resolve) => setTimeout(resolve, 4000));
 
+    const getGridColumnCount = (): number => {
+      if (typeof window === "undefined") return 2;
+      const width = window.innerWidth;
+      if (width >= 1536) return 8; // 2xl
+      if (width >= 1280) return 6; // xl
+      if (width >= 1024) return 5; // lg
+      if (width >= 768) return 4;  // md
+      if (width >= 640) return 3;  // sm
+      return 2;                    // mobile
+    };
+    const cols = getGridColumnCount();
+    const fetchLimit = browseBatchLimit + cols;
+    const seriesLimit = seriesFetchBatchLimit + cols;
+
     const dbFilters: FilterOptions = { vj: activeFilters.vj, year: activeFilters.year };
     try {
       let more: Movie[] = [];
       if (viewMode === "movies") {
         if (activeFilters.category === "new-week") {
-          more = await fetchNewThisWeek("movie", browseBatchLimit, nextLoadOffset, dbFilters);
+          more = await fetchNewThisWeek("movie", fetchLimit, nextLoadOffset, dbFilters);
         } else if (activeFilters.category && CURATED_CATEGORIES.has(activeFilters.category)) {
-          more = await fetchCuratedMovies(activeFilters.category, browseBatchLimit, dbFilters, 1, nextLoadOffset);
+          more = await fetchCuratedMovies(activeFilters.category, fetchLimit, dbFilters, 1, nextLoadOffset);
         } else if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
-          more = await fetchByGenre(genre, "movie", browseBatchLimit, dbFilters, 1, nextLoadOffset);
+          more = await fetchByGenre(genre, "movie", fetchLimit, dbFilters, 1, nextLoadOffset);
         } else {
-          more = await fetchMoviesSorted("movie", browseBatchLimit, 1, dbFilters, nextLoadOffset);
+          more = await fetchMoviesSorted("movie", fetchLimit, 1, dbFilters, nextLoadOffset);
         }
-        setNextLoadOffset((prev) => prev + browseBatchLimit);
       } else if (viewMode === "series") {
         if (activeFilters.category === "new-week") {
-          more = await fetchNewThisWeek("series", browseBatchLimit, nextLoadOffset, dbFilters);
-          setNextLoadOffset((prev) => prev + browseBatchLimit);
+          more = await fetchNewThisWeek("series", seriesLimit, nextLoadOffset, dbFilters);
         } else if (activeFilters.category && CURATED_CATEGORIES.has(activeFilters.category)) {
-          more = await fetchCuratedMovies(activeFilters.category, browseBatchLimit, dbFilters, 1, nextLoadOffset);
-          setNextLoadOffset((prev) => prev + seriesFetchBatchLimit);
+          more = await fetchCuratedMovies(activeFilters.category, seriesLimit, dbFilters, 1, nextLoadOffset);
         } else if (activeFilters.category && activeFilters.category !== "trending") {
           const genre = CATEGORY_TO_GENRE[activeFilters.category] || activeFilters.category;
-          more = await fetchByGenre(genre, "series", browseBatchLimit, dbFilters, 1, nextLoadOffset);
-          setNextLoadOffset((prev) => prev + seriesFetchBatchLimit);
+          more = await fetchByGenre(genre, "series", seriesLimit, dbFilters, 1, nextLoadOffset);
         } else {
-          more = await fetchSeries(browseBatchLimit, 1, undefined, dbFilters, nextLoadOffset);
-          setNextLoadOffset((prev) => prev + seriesFetchBatchLimit);
+          more = await fetchSeries(seriesLimit, 1, undefined, dbFilters, nextLoadOffset);
         }
       } else if (viewMode === "originals") {
-        const nextOriginalsPage = originalsPage + 1;
-        const originals = await fetchOriginals(browseBatchLimit, nextOriginalsPage);
+        const originals = await fetchOriginals(fetchLimit, 1, nextLoadOffset);
         more = sortByYearDesc(originals);
-        setOriginalsPage(nextOriginalsPage);
-        setNextLoadOffset((prev) => prev + browseBatchLimit);
       }
 
       const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
       const newMovies = more.filter(m => !existingIds.has(m.mobifliks_id));
 
+      // Calculate the number of items to append to make the total a multiple of cols
+      const totalPossible = categoryMovies.length + newMovies.length;
+      const targetTotal = Math.floor(totalPossible / cols) * cols;
+      let appendCount = targetTotal - categoryMovies.length;
+
+      if (appendCount <= 0 && newMovies.length > 0) {
+        appendCount = newMovies.length;
+      }
+
+      const trimmedNewMovies = newMovies.slice(0, appendCount);
+
       // Put the new movies in the preloadedMovies state to render them offscreen immediately.
       // This allows the browser to natively optimize, fetch, and decode their Next.js images.
-      setPreloadedMovies(newMovies);
+      setPreloadedMovies(trimmedNewMovies);
 
       // Preload movie poster images in the background. Keep explicit references in an array
       // to prevent the browser's Garbage Collector from deleting them mid-flight on mobile/low-memory devices.
       const activeImages: HTMLImageElement[] = [];
-      const imageUrls = more.map((m) => getImageUrl(m.image_url)).filter(Boolean);
+      const imageUrls = trimmedNewMovies.map((m) => getImageUrl(m.image_url)).filter(Boolean);
       const preloadPromise = typeof Image !== "undefined"
         ? Promise.all(
             imageUrls.map((url) => new Promise<void>((resolve) => {
@@ -1620,22 +1637,25 @@ function ClientHome() {
       const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 15000));
       const preloadWithTimeout = Promise.race([preloadPromise, timeoutPromise]);
 
-      // Wait for both the 5-second timer and the image preloading (with safety timeout) to complete
+      // Wait for both the 4-second timer and the image preloading (with safety timeout) to complete
       await Promise.all([minDelayPromise, preloadWithTimeout]);
       activeImages.length = 0; // Release references for garbage collection
 
       startTransition(() => {
         setCategoryMovies(prev => activeFilters.category === "new-week"
-          ? sortByLatestAdded([...prev, ...newMovies])
-          : sortByYearDesc([...prev, ...newMovies])
+          ? sortByLatestAdded([...prev, ...trimmedNewMovies])
+          : sortByYearDesc([...prev, ...trimmedNewMovies])
         );
         setPreloadedMovies([]); // Clear offscreen preloaded movies
       });
+
+      // Update offset by the number of unique items actually appended
+      setNextLoadOffset((prev) => prev + trimmedNewMovies.length);
     } finally {
       setIsLoadingMore(false);
       setPreloadedMovies([]); // Ensure cleanup on error
     }
-  }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByLatestAdded, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
+  }, [categoryMovies, viewMode, isLoadingMore, sortByLatestAdded, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
 
 
 
