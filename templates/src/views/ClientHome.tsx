@@ -1809,7 +1809,7 @@ function ClientHome() {
             {/* Home View */}
             {viewMode === "home" && (
               <PageTransition viewKey="home" className="space-y-0">
-                <h1 className="sr-only">Moviebay — Watch Luganda Translated Movies & Series Online in HD</h1>
+                <h1 className="sr-only">Watch Luganda Translated Movies & Series Online on Moviebay</h1>
                 {shouldShowHero && (
                 <Suspense fallback={null}>
                   <HeroCarousel

@@ -184,7 +184,7 @@ serve(async (req: Request) => {
 <body>
   <main>
     <article>
-      <h1>${escapeHtml(fullTitle)}</h1>
+      <h1>Watch ${escapeHtml(title)}${vj ? ` Translated by ${escapeHtml(vj)}` : " Luganda Translated"}</h1>
       <img src="${imageUrl}" alt="${escapeAttr(fullTitle)}" width="360">
       <p>${escapeHtml(description)}</p>
       <ul>
