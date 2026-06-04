@@ -139,6 +139,16 @@ serve(async (req: Request) => {
       }))
     }
 
+    const videoLd = {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      name: `Watch ${title} in Luganda ${vj ? `(Translated by ${vj})` : ""}`,
+      description,
+      thumbnailUrl: imageUrl,
+      uploadDate: releaseDate || "2026-01-01",
+      embedUrl: canonicalUrl,
+    }
+
     const castHtml = cast.length
       ? `<h2>Cast</h2><ul>${cast.slice(0, 10).map((person: { name: string; character?: string }) =>
           `<li>${escapeHtml(person.name)}${person.character ? ` as ${escapeHtml(person.character)}` : ""}</li>`
@@ -180,6 +190,7 @@ serve(async (req: Request) => {
   <meta name="twitter:image" content="${imageUrl}">
   <meta name="twitter:image:alt" content="${escapeAttr(fullTitle)}">
   <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+  <script type="application/ld+json">${JSON.stringify(videoLd)}</script>
 </head>
 <body>
   <main>
