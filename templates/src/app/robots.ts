@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
-      allow: '/',
+      allow: ['/', '/_next/static/', '/_next/image'],
       disallow: ['/api/', '/_next/data/', '/video-proxy-server/', '/admin/', '/*?sw=*'],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
