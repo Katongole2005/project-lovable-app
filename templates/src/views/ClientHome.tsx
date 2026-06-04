@@ -355,6 +355,7 @@ function ClientHome() {
   });
   const [nextLoadOffset, setNextLoadOffset] = useState(0);
   const [allVJs, setAllVJs] = useState<{ id: string; label: string }[]>([]);
+  const [preloadedMovies, setPreloadedMovies] = useState<Movie[]>([]);
 
   useEffect(() => {
     scheduleLowPriorityTask(() => {
@@ -1592,6 +1593,13 @@ function ClientHome() {
         setNextLoadOffset((prev) => prev + browseBatchLimit);
       }
 
+      const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
+      const newMovies = more.filter(m => !existingIds.has(m.mobifliks_id));
+
+      // Put the new movies in the preloadedMovies state to render them offscreen immediately.
+      // This allows the browser to natively optimize, fetch, and decode their Next.js images.
+      setPreloadedMovies(newMovies);
+
       // Preload movie poster images in the background
       const imageUrls = more.map((m) => getImageUrl(m.image_url)).filter(Boolean);
       const preloadPromise = typeof Image !== "undefined"
@@ -1608,16 +1616,16 @@ function ClientHome() {
       // Wait for both the 5-second timer and the image preloading to complete
       await Promise.all([minDelayPromise, preloadPromise]);
 
-      const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
-      const newMovies = more.filter(m => !existingIds.has(m.mobifliks_id));
       startTransition(() => {
         setCategoryMovies(prev => activeFilters.category === "new-week"
           ? sortByLatestAdded([...prev, ...newMovies])
           : sortByYearDesc([...prev, ...newMovies])
         );
+        setPreloadedMovies([]); // Clear offscreen preloaded movies
       });
     } finally {
       setIsLoadingMore(false);
+      setPreloadedMovies([]); // Ensure cleanup on error
     }
   }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByLatestAdded, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
 
@@ -2484,6 +2492,17 @@ function ClientHome() {
             </footer>
             {(viewMode === "movies" || viewMode === "series" || viewMode === "originals") && categoryMovies.length > 0 && (
               <div ref={observerRef} className="h-1 w-full" />
+            )}
+
+            {/* Offscreen preloading container to force native browser loading & decoding of posters */}
+            {preloadedMovies.length > 0 && (
+              <div className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden" aria-hidden="true">
+                <MovieGrid
+                  movies={preloadedMovies}
+                  onMovieClick={() => {}}
+                  isLoading={false}
+                />
+              </div>
             )}
           </>
         )}
