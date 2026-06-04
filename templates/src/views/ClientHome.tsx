@@ -1551,8 +1551,8 @@ function ClientHome() {
     if (isLoadingMore) return;
 
     setIsLoadingMore(true);
-    // Start a 5-second timer promise
-    const minDelayPromise = new Promise((resolve) => setTimeout(resolve, 5000));
+    // Start a 4-second timer promise
+    const minDelayPromise = new Promise((resolve) => setTimeout(resolve, 4000));
 
     const dbFilters: FilterOptions = { vj: activeFilters.vj, year: activeFilters.year };
     try {
@@ -1637,25 +1637,7 @@ function ClientHome() {
     }
   }, [categoryMovies, viewMode, isLoadingMore, originalsPage, sortByLatestAdded, sortByYearDesc, activeFilters, nextLoadOffset, browseBatchLimit, seriesFetchBatchLimit]);
 
-  // Precise Scroll Bottom Trigger Listener
-  useEffect(() => {
-    if (viewMode === "home" || viewMode === "search") return;
-    if (categoryMovies.length === 0 || isLoading || isLoadingMore) return;
 
-    const handleScroll = () => {
-      if (isLoadingMore) return;
-      const threshold = 25; // 25px from absolute bottom of the document
-      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - threshold;
-      if (isAtBottom) {
-        void handleLoadMore();
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [categoryMovies.length, isLoading, isLoadingMore, viewMode, handleLoadMore]);
 
   const getCategoryTitle = () => {
     const titles: Record<string, string> = {
@@ -2358,7 +2340,16 @@ function ClientHome() {
                   appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                 />
 
-                {/* Removed internal observer ref div (now handled after the footer) */}
+                {!isLoadingMore && categoryMovies.length > 0 && (
+                  <div className="flex justify-center py-6 animate-fade-in">
+                    <Button
+                      onClick={handleLoadMore}
+                      className="px-8 py-2.5 text-sm font-semibold rounded-full bg-primary/95 text-primary-foreground hover:bg-primary shadow-[0_4px_12px_rgba(229,9,20,0.35)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Load More
+                    </Button>
+                  </div>
+                )}
 
                 {/* Elegant premium animated loading indicator */}
                 {isLoadingMore && (
@@ -2398,7 +2389,16 @@ function ClientHome() {
                   appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                 />
 
-                {/* Removed internal observer ref div (now handled after the footer) */}
+                {!isLoadingMore && categoryMovies.length > 0 && (
+                  <div className="flex justify-center py-6 animate-fade-in">
+                    <Button
+                      onClick={handleLoadMore}
+                      className="px-8 py-2.5 text-sm font-semibold rounded-full bg-primary/95 text-primary-foreground hover:bg-primary shadow-[0_4px_12px_rgba(229,9,20,0.35)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Load More
+                    </Button>
+                  </div>
+                )}
 
                 {/* Elegant premium animated loading indicator */}
                 {isLoadingMore && (
@@ -2439,7 +2439,16 @@ function ClientHome() {
                   emptyMessage="No English originals found."
                 />
 
-                {/* Removed internal observer ref div (now handled after the footer) */}
+                {!isLoadingMore && categoryMovies.length > 0 && (
+                  <div className="flex justify-center py-6 animate-fade-in">
+                    <Button
+                      onClick={handleLoadMore}
+                      className="px-8 py-2.5 text-sm font-semibold rounded-full bg-primary/95 text-primary-foreground hover:bg-primary shadow-[0_4px_12px_rgba(229,9,20,0.35)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Load More
+                    </Button>
+                  </div>
+                )}
 
                 {/* Elegant premium animated loading indicator */}
                 {isLoadingMore && (
