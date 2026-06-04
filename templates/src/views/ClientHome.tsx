@@ -2337,7 +2337,7 @@ function ClientHome() {
                   movies={categoryMovies}
                   onMovieClick={handleMovieClick}
                   isLoading={isLoading && categoryMovies.length === 0}
-                  appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
+                  appendSkeletonCount={0}
                 />
 
                 {!isLoadingMore && categoryMovies.length > 0 && (
@@ -2386,7 +2386,7 @@ function ClientHome() {
                   movies={categoryMovies}
                   onMovieClick={handleMovieClick}
                   isLoading={isLoading && categoryMovies.length === 0}
-                  appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
+                  appendSkeletonCount={0}
                 />
 
                 {!isLoadingMore && categoryMovies.length > 0 && (
@@ -2435,7 +2435,7 @@ function ClientHome() {
                   movies={categoryMovies}
                   onMovieClick={handleMovieClick}
                   isLoading={isLoading && categoryMovies.length === 0}
-                  appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
+                  appendSkeletonCount={0}
                   emptyMessage="No English originals found."
                 />
 
