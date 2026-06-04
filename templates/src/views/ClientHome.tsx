@@ -52,15 +52,16 @@ const MovieModal = lazyWithRetry(loadMovieModal);
 const CinematicVideoPlayer = lazyWithRetry(loadCinematicVideoPlayer);
 const FilterModal = lazyWithRetry(() => import("@/components/FilterModal").then(module => ({ default: module.FilterModal })));
 
-import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
-import { RecommendationRow } from "@/components/RecommendationRow";
-import { Top10Row } from "@/components/Top10Row";
+const ContinueWatchingRow = lazyWithRetry(() => import("@/components/ContinueWatchingRow").then(module => ({ default: module.ContinueWatchingRow })));
+const RecommendationRow = lazyWithRetry(() => import("@/components/RecommendationRow").then(module => ({ default: module.RecommendationRow })));
+const Top10Row = lazyWithRetry(() => import("@/components/Top10Row").then(module => ({ default: module.Top10Row })));
+const StayedAlertModal = lazyWithRetry(() => import("@/components/StayedAlertModal").then(module => ({ default: module.StayedAlertModal })));
+const AuthGatedModal = lazyWithRetry(() => import("@/components/AuthGatedModal").then(module => ({ default: module.AuthGatedModal })));
+
 import { SearchBar } from "@/components/SearchBar";
 import { MovieCard, MovieCardSkeleton } from "@/components/MovieCard";
 import { BlurImage } from "@/components/BlurImage";
 import { DynamicBackground } from "@/components/DynamicBackground";
-import { StayedAlertModal } from "@/components/StayedAlertModal";
-import { AuthGatedModal } from "@/components/AuthGatedModal";
 import { useDeviceProfile } from "@/hooks/useDeviceProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useSiteSettingsContext } from "@/hooks/useSiteSettings";
@@ -1877,21 +1878,25 @@ function ClientHome() {
                     {siteSettings.top10_enabled && (
                       <SectionReveal delay={100}>
                         <div className="section-divider mb-2" />
-                        <Top10Row
-                          movies={recentMovies}
-                          onMovieClick={handleMovieClick}
-                        />
+                        <Suspense fallback={<div className="h-48 rounded-xl bg-white/5 animate-pulse" />}>
+                          <Top10Row
+                            movies={recentMovies}
+                            onMovieClick={handleMovieClick}
+                          />
+                        </Suspense>
                       </SectionReveal>
                     )}
 
                     {isMounted && continueWatching.length > 0 && recentMovies.length > 0 && (
                       <SectionReveal delay={200}>
                         <div className="section-divider mb-2" />
-                        <RecommendationRow
-                          continueWatching={continueWatching}
-                          allMovies={[...recentMovies, ...recentSeries]}
-                          onMovieClick={handleMovieClick}
-                        />
+                        <Suspense fallback={<div className="h-48 rounded-xl bg-white/5 animate-pulse" />}>
+                          <RecommendationRow
+                            continueWatching={continueWatching}
+                            allMovies={[...recentMovies, ...recentSeries]}
+                            onMovieClick={handleMovieClick}
+                          />
+                        </Suspense>
                       </SectionReveal>
                     )}
 

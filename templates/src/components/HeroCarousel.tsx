@@ -215,7 +215,7 @@ export function HeroCarousel({
   };
 
   if (isLoading || !displayMovies.length) {
-    return <div className="hero-carousel-wrapper" aria-busy="true" aria-label="Loading latest movies">
+    return <div className="hero-carousel-wrapper relative isolate [transform-style:flat]" aria-busy="true" aria-label="Loading latest movies">
       <div className="absolute inset-0 md:hidden rounded-3xl p-4 pt-[calc(6.5rem_+_env(safe-area-inset-top))] overflow-hidden hero-mobile-gradient flex flex-col justify-between">
         <div className="flex justify-between items-center mb-3">
           <div className="h-6 w-32 bg-white/8 rounded-lg shimmer" />
@@ -437,8 +437,7 @@ export function HeroCarousel({
       </div>
 
       <div className="absolute inset-0 hidden md:block">
-        <div className="relative w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden">
-          <div className="absolute inset-0 bg-[#0a0a0f]" />
+        <div className="relative w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden bg-[#0a0a0f]">
           <div className="absolute inset-0 select-none pointer-events-none">
             {/* Outgoing previous slide backdrop */}
             {previousMovie && isCrossFading && (
