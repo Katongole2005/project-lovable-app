@@ -1551,8 +1551,8 @@ function ClientHome() {
     if (isLoadingMore) return;
 
     setIsLoadingMore(true);
-    // Wait like 4 seconds when the loading spinner (gif/animation) is playing at the bottom before loading more movies
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    // Start a 5-second timer promise
+    const minDelayPromise = new Promise((resolve) => setTimeout(resolve, 5000));
 
     const dbFilters: FilterOptions = { vj: activeFilters.vj, year: activeFilters.year };
     try {
@@ -1592,6 +1592,22 @@ function ClientHome() {
         setNextLoadOffset((prev) => prev + browseBatchLimit);
       }
 
+      // Preload movie poster images in the background
+      const imageUrls = more.map((m) => getImageUrl(m.image_url)).filter(Boolean);
+      const preloadPromise = typeof Image !== "undefined"
+        ? Promise.all(
+            imageUrls.map((url) => new Promise<void>((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+              img.src = url;
+            }))
+          )
+        : Promise.resolve();
+
+      // Wait for both the 5-second timer and the image preloading to complete
+      await Promise.all([minDelayPromise, preloadPromise]);
+
       const existingIds = new Set(categoryMovies.map(m => m.mobifliks_id));
       const newMovies = more.filter(m => !existingIds.has(m.mobifliks_id));
       startTransition(() => {
@@ -1617,7 +1633,7 @@ function ClientHome() {
         }
       },
       {
-        rootMargin: "400px", // Trigger when user is within 400px of the page bottom
+        rootMargin: "0px", // Trigger when user reaches the very bottom of the footer
       }
     );
 
@@ -2334,10 +2350,7 @@ function ClientHome() {
                   appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                 />
 
-                {/* Infinite Scroll target observer node */}
-                {categoryMovies.length > 0 && (
-                  <div ref={observerRef} className="h-4 w-full" />
-                )}
+                {/* Removed internal observer ref div (now handled after the footer) */}
 
                 {/* Elegant premium animated loading indicator */}
                 {isLoadingMore && (
@@ -2377,10 +2390,7 @@ function ClientHome() {
                   appendSkeletonCount={isLoadingMore ? Math.min(browseBatchLimit, 16) : 0}
                 />
 
-                {/* Infinite Scroll target observer node */}
-                {categoryMovies.length > 0 && (
-                  <div ref={observerRef} className="h-4 w-full" />
-                )}
+                {/* Removed internal observer ref div (now handled after the footer) */}
 
                 {/* Elegant premium animated loading indicator */}
                 {isLoadingMore && (
@@ -2421,10 +2431,7 @@ function ClientHome() {
                   emptyMessage="No English originals found."
                 />
 
-                {/* Infinite Scroll target observer node */}
-                {categoryMovies.length > 0 && (
-                  <div ref={observerRef} className="h-4 w-full" />
-                )}
+                {/* Removed internal observer ref div (now handled after the footer) */}
 
                 {/* Elegant premium animated loading indicator */}
                 {isLoadingMore && (
@@ -2449,31 +2456,36 @@ function ClientHome() {
           </div>
         )}
         {viewMode !== "search" && (
-          <footer className="container relative z-10 mx-auto pb-6 px-4 pt-8 mt-4 flex flex-col md:flex-row items-center justify-between gap-4 opacity-80 hover:opacity-100 transition-opacity">
-            <div className="h-[24px]">
-              <img 
-                alt="MovieBay Logo" 
-                className="h-full w-auto object-contain opacity-50 grayscale" 
-                src={currentLogo} 
-              />
-            </div>
-            <div className="flex flex-col md:flex-row items-center gap-4 text-xs text-muted-foreground/60">
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-                <Link className="hover:text-white transition-colors" href="/dmca" suppressHydrationWarning>DMCA</Link>
-                <Link className="hover:text-white transition-colors" href="/settings" suppressHydrationWarning>Settings</Link>
-                <Link className="hover:text-white transition-colors" href="/privacy" suppressHydrationWarning>Privacy</Link>
-                <Link className="hover:text-white transition-colors" href="/terms" suppressHydrationWarning>Terms</Link>
-              </div>
-              <div className="flex items-center gap-2.5 max-w-[320px] text-[10px] text-center md:text-left leading-normal border-t md:border-t-0 md:border-l border-white/10 pt-2 md:pt-0 md:pl-4">
+          <>
+            <footer className="container relative z-10 mx-auto pb-6 px-4 pt-8 mt-4 flex flex-col md:flex-row items-center justify-between gap-4 opacity-80 hover:opacity-100 transition-opacity">
+              <div className="h-[24px]">
                 <img 
-                  src="/tmdb-logo-long.svg" 
-                  alt="TMDB Logo" 
-                  className="h-2.5 w-auto shrink-0 opacity-40 hover:opacity-80 transition-opacity" 
+                  alt="MovieBay Logo" 
+                  className="h-full w-auto object-contain opacity-50 grayscale" 
+                  src={currentLogo} 
                 />
-                <span>This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.</span>
               </div>
-            </div>
-          </footer>
+              <div className="flex flex-col md:flex-row items-center gap-4 text-xs text-muted-foreground/60">
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                  <Link className="hover:text-white transition-colors" href="/dmca" suppressHydrationWarning>DMCA</Link>
+                  <Link className="hover:text-white transition-colors" href="/settings" suppressHydrationWarning>Settings</Link>
+                  <Link className="hover:text-white transition-colors" href="/privacy" suppressHydrationWarning>Privacy</Link>
+                  <Link className="hover:text-white transition-colors" href="/terms" suppressHydrationWarning>Terms</Link>
+                </div>
+                <div className="flex items-center gap-2.5 max-w-[320px] text-[10px] text-center md:text-left leading-normal border-t md:border-t-0 md:border-l border-white/10 pt-2 md:pt-0 md:pl-4">
+                  <img 
+                    src="/tmdb-logo-long.svg" 
+                    alt="TMDB Logo" 
+                    className="h-2.5 w-auto shrink-0 opacity-40 hover:opacity-80 transition-opacity" 
+                  />
+                  <span>This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.</span>
+                </div>
+              </div>
+            </footer>
+            {(viewMode === "movies" || viewMode === "series" || viewMode === "originals") && categoryMovies.length > 0 && (
+              <div ref={observerRef} className="h-1 w-full" />
+            )}
+          </>
         )}
 
         {/* Lazy Loaded Heavy Modals */}
