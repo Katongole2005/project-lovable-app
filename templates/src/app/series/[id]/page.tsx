@@ -40,8 +40,11 @@ export async function generateMetadata({
     const formattedTitle = cleanId.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     const displayTitle = formattedTitle.length > 50 ? `${formattedTitle.slice(0, 47)}...` : formattedTitle;
     return {
-      title: `Watch ${displayTitle} Online HD - Moviebay`,
+      title: `${displayTitle} | Moviebay`,
       description: `Stream or download ${displayTitle} in high definition on Moviebay. Access translated content, Video Joker commentary, and rapid downloads.`,
+      alternates: {
+        canonical: `https://s-u.in/series/${id}`,
+      },
       ...(isNoIndex && {
         robots: {
           index: false,
@@ -52,10 +55,9 @@ export async function generateMetadata({
   }
 
   const cleanVj = series.vj_name ? series.vj_name.replace(/^VJ\s+/i, '').trim() : '';
-  const cleanTitle = series.title.length > 45 ? `${series.title.slice(0, 42)}...` : series.title;
   const seoTitle = cleanVj
-    ? `${cleanTitle} Luganda Translated by VJ ${cleanVj} - Watch Online | Moviebay`
-    : `Watch ${cleanTitle} Online - Moviebay`;
+    ? `${series.title} - VJ ${cleanVj} | Moviebay`
+    : `${series.title} | Moviebay`;
 
   const cleanDesc = series.description ? series.description.replace(/\s+/g, ' ').trim() : '';
   const fallbackDesc = cleanVj
@@ -66,6 +68,9 @@ export async function generateMetadata({
   return {
     title: seoTitle,
     description: seoDesc,
+    alternates: {
+      canonical: `https://s-u.in/series/${id}`,
+    },
     openGraph: {
       title: seoTitle,
       description: seoDesc,

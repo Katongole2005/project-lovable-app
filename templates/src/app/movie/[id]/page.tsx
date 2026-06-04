@@ -30,8 +30,14 @@ export async function generateMetadata({
   const { data: movie } = await query.maybeSingle();
   
   if (!movie) {
+    const cleanId = id.replace(/^(series|movie)_/, '').replace(/-/g, ' ');
+    const formattedTitle = cleanId.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const displayTitle = formattedTitle.length > 50 ? `${formattedTitle.slice(0, 47)}...` : formattedTitle;
     return {
-      title: 'Watch Online - Moviebay',
+      title: `${displayTitle} | Moviebay`,
+      alternates: {
+        canonical: `https://s-u.in/movie/${id}`,
+      },
       ...(isNoIndex && {
         robots: {
           index: false,
@@ -43,8 +49,8 @@ export async function generateMetadata({
 
   const cleanVj = movie.vj_name ? movie.vj_name.replace(/^VJ\s+/i, '').trim() : '';
   const seoTitle = cleanVj
-    ? `${movie.title} Luganda Translated by VJ ${cleanVj} - Watch Online | Moviebay`
-    : `Watch ${movie.title} Online in HD - Moviebay`;
+    ? `${movie.title} - VJ ${cleanVj} | Moviebay`
+    : `${movie.title} | Moviebay`;
 
   const cleanDesc = movie.description ? movie.description.replace(/\s+/g, ' ').trim() : '';
   const fallbackDesc = cleanVj
@@ -55,6 +61,9 @@ export async function generateMetadata({
   return {
     title: seoTitle,
     description: seoDesc,
+    alternates: {
+      canonical: `https://s-u.in/movie/${id}`,
+    },
     openGraph: {
       title: seoTitle,
       description: seoDesc,

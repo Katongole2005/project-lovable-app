@@ -19,7 +19,7 @@ const cleanVjName = (value?: string) => (value || "").replace(/^VJ\s+/i, "").tri
 
 const buildSeoTitle = (title: string, vjName?: string) => {
   const cleanVj = cleanVjName(vjName);
-  return `${title}${cleanVj ? ` - VJ ${cleanVj}` : ""} | Luganda Translated Movies`;
+  return `${title}${cleanVj ? ` - VJ ${cleanVj}` : ""} | Moviebay`;
 };
 
 const buildSeoDescription = (title: string, description?: string, vjName?: string) => {
@@ -42,7 +42,7 @@ export const useDocumentSEO = ({
   useEffect(() => {
     if (!title && !jsonLd) return;
 
-    const fullTitle = title ? buildSeoTitle(title, vjName) : "Moviebay | Luganda Translated Movies";
+    const fullTitle = title ? buildSeoTitle(title, vjName) : "Moviebay | Watch Luganda Translated Movies & Series";
     const metaDescription = title
       ? buildSeoDescription(title, description, vjName)
       : "Watch and download Uganda translated movies in Luganda on Moviebay.";
