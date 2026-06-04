@@ -118,9 +118,21 @@ const Terms = () => {
             content="These Terms shall be governed and construed in accordance with the laws of the Republic of Uganda, without regard to its conflict of law provisions. Our failure to enforce any right or provision of these Terms will not be considered a waiver of those rights."
           />
 
+          <Section 
+            icon={<AlertTriangle className="w-5 h-5" />}
+            title="8. Disclaimer and Fair Use"
+            content="The content indexed by Moviebay consists of links to files hosted on external servers. We do not host any videos or digital files ourselves. The inclusion of links does not imply endorsement or authorization. Under copyright laws, indexing and linking to public content may fall under fair use or safe harbor rules, but any infringement complaints must be submitted to the actual file host. Users are responsible for ensuring that their access to external links complies with local laws."
+          />
+
+          <Section 
+            icon={<Scale className="w-5 h-5" />}
+            title="9. Modifications to Terms"
+            content="We reserve the right, at our sole discretion, to modify or replace these Terms of Service at any time. If a revision is material, we will try to provide at least 15 days notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion. By continuing to access or use our Service after those revisions become effective, you agree to be bound by the revised terms."
+          />
+
           <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <h3 className="text-xl font-bold text-white mb-4">8. Support and Inquiries</h3>
+              <h3 className="text-xl font-bold text-white mb-4">10. Support and Inquiries</h3>
               <p className="text-white/60 mb-6">
                 For any legal questions or support regarding these terms, please contact:
               </p>

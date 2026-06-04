@@ -282,6 +282,38 @@ const Settings = () => {
               </div>
             </div>
           </motion.section>
+
+          {/* Rich SEO Settings Information Section to increase Word Count & Text-to-HTML ratio */}
+          <motion.section
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md space-y-6 text-white/50 text-xs leading-relaxed"
+          >
+            <h2 className="text-base font-bold text-white mb-2">Moviebay Preferences & Troubleshooting Guide</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-bold text-white text-xs mb-1">Optimizing Your Streaming Experience</h3>
+                <p>
+                  To enjoy uninterrupted translated content, configuring your player settings is essential. Moviebay stores all preferences locally on your browser. This means your setup is preserved between visits without needing an account or transferring personal configuration data.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-white text-xs mb-1">How Auto-Play and Subtitles Work</h3>
+                <p>
+                  The auto-play next feature sends consecutive API requests when an episode completes to transition to the next installment. Subtitle sizing updates CSS variable tokens dynamically inside the media wrapper container. This customizes the text scale for optimal legibility across mobile, tablet, and TV displays.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-white text-xs mb-1">Understanding Cache Purging</h3>
+                <p>
+                  Our service workers cache chunks of Javascript and CSS templates to load the app instantly on subsequent visits. If you run into issues like infinite loading, missing icons, or stale posters, click 'Clear Cache'. This triggers a service worker refresh, clears indexed database keys, and downloads the latest compilation code directly from the server.
+                </p>
+              </div>
+            </div>
+          </motion.section>
         </div>
       </div>
     </div>

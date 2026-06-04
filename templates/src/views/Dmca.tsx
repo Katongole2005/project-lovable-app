@@ -86,9 +86,21 @@ const Dmca = () => {
             content="Upon receipt of a valid and complete DMCA compliance notification, we will review the claim and act promptly to remove or disable access to the index links pointing to the alleged infringing material on our platform. In accordance with the DMCA, we reserve the right to remove access without prior warning to the indexing submitters."
           />
 
+          <Section 
+            icon={<ClipboardCopy className="w-5 h-5" />}
+            title="4. Counter-Notification Procedure"
+            content="If you believe that a link or index was removed by mistake or misidentification, you may submit a counter-notification to our designated agent. The counter-notice must be a written communication that includes: identification of the material that has been removed, a statement under penalty of perjury that you have a good faith belief that the material was removed as a result of mistake or misidentification, your name, address, telephone number, and a statement that you consent to jurisdiction of the federal district court. Upon receiving a valid counter-notice, we may restore the index link unless the copyright owner files a court action."
+          />
+
+          <Section 
+            icon={<ShieldAlert className="w-5 h-5" />}
+            title="5. Repeat Infringer Policy"
+            content="Moviebay respects the intellectual property rights of others. In accordance with the DMCA and other applicable laws, we have adopted a policy of terminating, in appropriate circumstances and at our sole discretion, users, contributors, or index submitters who are deemed to be repeat infringers. We may also, at our sole discretion, limit access to the service or terminate the accounts of any users who infringe any intellectual property rights of others, whether or not there is any repeat infringement."
+          />
+
           <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <h3 className="text-xl font-bold text-white mb-4">4. Legal Copyright Contact</h3>
+              <h3 className="text-xl font-bold text-white mb-4">6. Legal Copyright Contact</h3>
               <p className="text-white/60 mb-6 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
                 Please direct all copyright complaints and legal inquiries to:

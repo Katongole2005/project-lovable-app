@@ -117,9 +117,21 @@ const Privacy = () => {
             content="Our Service does not address anyone under the age of 13 ('Children'). We do not knowingly collect personally identifiable information from anyone under the age of 13. If you are a parent or guardian and you are aware that your Children have provided us with Personal Data, please contact us."
           />
 
+          <Section 
+            icon={<Globe className="w-5 h-5" />}
+            title="8. International Data Transfer"
+            content="Your information, including Personal Data, may be transferred to and maintained on computers located outside of your state, province, country, or other governmental jurisdiction where the data protection laws may differ from those of your jurisdiction. If you are located outside Uganda and choose to provide information to us, please note that we transfer the data, including Personal Data, to our infrastructure providers (such as Supabase) and process it there."
+          />
+
+          <Section 
+            icon={<Shield className="w-5 h-5" />}
+            title="9. Changes to This Privacy Policy"
+            content="We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the 'Last Updated' date at the top of this Privacy Policy. You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page."
+          />
+
           <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <h3 className="text-xl font-bold text-white mb-4">8. Contact Information</h3>
+              <h3 className="text-xl font-bold text-white mb-4">10. Contact Information</h3>
               <p className="text-white/60 mb-6">
                 For any privacy-related inquiries or to exercise your data rights, please contact our Data Protection Officer:
               </p>

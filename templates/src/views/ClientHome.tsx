@@ -2093,6 +2093,39 @@ function ClientHome() {
                   </div>
                 </Suspense>
               )}
+
+              {/* Rich SEO Content Section to improve Text-to-HTML ratio and Word Count */}
+              <section className="mt-16 border-t border-white/5 pt-12 pb-8 max-w-4xl mx-auto space-y-8 text-white/50 leading-relaxed text-sm">
+                <div className="space-y-4">
+                  <h2 className="text-2xl font-bold text-white tracking-tight">Moviebay — Watch Luganda Translated Movies & Series</h2>
+                  <p>
+                    Welcome to Moviebay, Uganda's premium platform for streaming and downloading Luganda translated movies and TV series online. We compile and index the finest audio-translated cinematic releases, bringing high-quality local entertainment directly to your screens. Whether you are searching for action-packed blockbusters, intense dramas, scary horror films, or gripping TV series, Moviebay offers an extensive library curated for local audiences.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-white">What is a VJ (Video Jockey) Translation?</h3>
+                    <p>
+                      In Uganda's unique cinematic culture, a Video Jockey (VJ) is a professional translator and commentator who overlays local Luganda translation onto international films. This artistic practice blends voice acting, narrative explanation, and cultural adaptation, making foreign films accessible and incredibly engaging to local audiences who speak Luganda.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-white">Top VJs on Moviebay</h3>
+                    <p>
+                      Moviebay proudly hosts and indexes translations from the country's most legendary Video Jockeys. You can browse translated releases by VJ Junior (known as the king of action), VJ Emmy, VJ Ice P, VJ Jingo, VJ Kevo, and many other talented commentators. Each VJ brings a unique style and personality, elevating the movies they translate.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-white/5">
+                  <h3 className="text-lg font-semibold text-white">Free Streaming and Ultra-Fast Downloads</h3>
+                  <p>
+                    Our platform is engineered for seamless entertainment. We provide multiple streaming options in SD, HD, and Full HD resolutions to suit all connection speeds. Additionally, Moviebay indexes secure, direct download links, allowing you to download translated files onto your mobile device or computer to watch offline. Enjoy free access to the best Ugandan translations without monthly subscription fees.
+                  </p>
+                </div>
+              </section>
               </PageTransition>
             )}
 
