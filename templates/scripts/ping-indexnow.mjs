@@ -5,7 +5,7 @@ import path from "node:path";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://s-u.in";
 const INDEXNOW_API = `${BASE_URL}/api/indexnow`;
 const ADMIN_SECRET = process.env.INDEXNOW_ADMIN_SECRET || "moviebay-seo-indexnow-secret-2026";
-const MAX_URLS = 1000; // Limit per batch
+const MAX_URLS = 5000; // Limit per batch (safe size under IndexNow's 10,000 limit)
 
 async function main() {
   console.log("🚀 Starting IndexNow URL Submission...");
@@ -37,41 +37,51 @@ async function main() {
 
   console.log(`✓ Found ${urls.length} URLs in sitemap.`);
 
-  // 3. Filter/select URLs (prioritize movie/series detail pages, limit to batch size)
+  // 3. Filter/select URLs (prioritize movie/series detail pages)
   const prioritizedUrls = urls.filter(u => u.includes("/movie/") || u.includes("/series/"));
   const finalUrls = prioritizedUrls.length > 0 ? prioritizedUrls : urls;
-  const batch = finalUrls.slice(0, MAX_URLS);
 
-  console.log(`📦 Preparing to submit ${batch.length} URLs to IndexNow...`);
+  console.log(`📦 Preparing to submit ${finalUrls.length} URLs to IndexNow in batches of ${MAX_URLS}...`);
   console.log(`🔗 Target Gateway Endpoint: ${INDEXNOW_API}`);
 
-  // 4. Send POST request to /api/indexnow
-  try {
-    const response = await fetch(INDEXNOW_API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        secret: ADMIN_SECRET,
-        urls: batch,
-      }),
-    });
+  // 4. Send POST requests to /api/indexnow in batches
+  for (let i = 0; i < finalUrls.length; i += MAX_URLS) {
+    const batch = finalUrls.slice(i, i + MAX_URLS);
+    const batchNum = Math.floor(i / MAX_URLS) + 1;
+    const totalBatches = Math.ceil(finalUrls.length / MAX_URLS);
+    console.log(`📤 Sending batch ${batchNum}/${totalBatches} (${batch.length} URLs)...`);
 
-    const data = await response.json();
+    try {
+      const response = await fetch(INDEXNOW_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          secret: ADMIN_SECRET,
+          urls: batch,
+        }),
+      });
 
-    if (response.ok && data.success) {
-      console.log("✅ Success!");
-      console.log(`Message: ${data.message}`);
-      console.log(`Status: ${data.status}`);
-      console.log(`Submitted URLs count: ${data.submittedUrls?.length}`);
-    } else {
-      console.error("❌ IndexNow submission failed:");
-      console.error(`Status Code: ${response.status}`);
-      console.error(JSON.stringify(data, null, 2));
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log(`   ✅ Batch ${batchNum} submitted successfully!`);
+        console.log(`   Message: ${data.message}`);
+        console.log(`   Status: ${data.status}`);
+      } else {
+        console.error(`   ❌ Batch ${batchNum} submission failed:`);
+        console.error(`   Status Code: ${response.status}`);
+        console.error(JSON.stringify(data, null, 2));
+      }
+    } catch (err) {
+      console.error(`   ❌ Network or server error during batch ${batchNum} submission:`, err);
     }
-  } catch (err) {
-    console.error("❌ Network or server error during submission:", err);
+
+    // Wait 1 second between batches to avoid overloading the API gateway
+    if (i + MAX_URLS < finalUrls.length) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   }
 }
 
