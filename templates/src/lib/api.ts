@@ -1005,10 +1005,13 @@ function groupSeriesList(movies: Movie[]): Movie[] {
       continue;
     }
     const baseName = getSeriesBaseName(m.title);
-    if (!seriesGroups.has(baseName)) {
-      seriesGroups.set(baseName, { items: [], firstIndex: i });
+    const vjName = normalizeVjName(m.vj_name);
+    const groupKey = vjName ? `${baseName}__vj__${vjName}` : baseName;
+
+    if (!seriesGroups.has(groupKey)) {
+      seriesGroups.set(groupKey, { items: [], firstIndex: i });
     }
-    seriesGroups.get(baseName)!.items.push(m);
+    seriesGroups.get(groupKey)!.items.push(m);
   }
 
   for (const [, group] of seriesGroups) {
@@ -1454,8 +1457,9 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
     const series = normalize(data)[0];
     if (!series) return null;
     const baseName = getSeriesBaseName(series.title);
-    const { data: allRelated } = await supabase.from("movies").select("mobifliks_id, title").eq("type", "series").ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`).order("title", { ascending: true });
-    const seasonEntries = (allRelated ?? []).filter((r) => getSeriesBaseName(r.title) === baseName).sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
+    const { data: allRelated } = await supabase.from("movies").select("mobifliks_id, title, vj_name").eq("type", "series").ilike("title", `${baseName.replace(/[%_\\]/g, (c: string) => `\\${c}`)}%`).order("title", { ascending: true });
+    const seriesVj = normalizeVjName(series.vj_name);
+    const seasonEntries = (allRelated ?? []).filter((r) => getSeriesBaseName(r.title) === baseName && normalizeVjName(r.vj_name) === seriesVj).sort((a, b) => extractSeasonNumber(a.title) - extractSeasonNumber(b.title));
     const seasonIds = (seasonEntries.length > 1 ? seasonEntries.map((s) => s.mobifliks_id) : [id]).filter((x): x is string => Boolean(x));
     const assignedSeasons = new Set<number>();
     const seasonNumbers: number[] = [];
