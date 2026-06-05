@@ -945,18 +945,53 @@ function extractSeasonNumber(title: string): number {
   return match ? parseInt(match[1]) : 1;
 }
 
-function splitEpisodesByGap(episodes: any[]): any[][] {
-  if (episodes.length <= 1) return [episodes];
-  const chunks: any[][] = [[episodes[0]]];
-  for (let i = 1; i < episodes.length; i++) {
-    const gap = (episodes[i].episode_number ?? 0) - (episodes[i - 1].episode_number ?? 0);
-    if (gap > 20) {
-      chunks.push([episodes[i]]);
-    } else {
-      chunks[chunks.length - 1].push(episodes[i]);
+function inferSeasonNumber(ep: any, baseSeason: number): number {
+  const raw = ep.raw_data;
+  if (raw) {
+    const s = raw.season ?? raw.season_number;
+    if (typeof s === "number") return s;
+    if (typeof s === "string" && s.trim()) {
+      const parsed = parseInt(s, 10);
+      if (!isNaN(parsed)) return parsed;
     }
   }
-  return chunks;
+
+  const fields = [ep.mobifliks_id, ep.title, ep.full_title, ep.description];
+  for (const val of fields) {
+    if (!val) continue;
+    const match = val.match(/\bS(?:eason)?\s*(\d+)\s*E(?:pisode)?\s*\d+\b/i);
+    if (match) return parseInt(match[1], 10);
+    const match2 = val.match(/\bseason\s*(\d+)\b/i);
+    if (match2) return parseInt(match2[1], 10);
+  }
+
+  return baseSeason;
+}
+
+function deduplicateEpisodes(episodes: any[]): any[] {
+  const seenUrls = new Map<string, any>();
+  const results: any[] = [];
+  for (const ep of episodes) {
+    const url = ep.download_url || ep.watch_url;
+    if (!url) {
+      results.push(ep);
+      continue;
+    }
+    const existing = seenUrls.get(url);
+    if (!existing) {
+      seenUrls.set(url, ep);
+      results.push(ep);
+    } else {
+      const existingNum = existing.episode_number ?? 9999;
+      const currentNum = ep.episode_number ?? 9999;
+      if (currentNum < existingNum) {
+        const idx = results.indexOf(existing);
+        if (idx !== -1) results[idx] = ep;
+        seenUrls.set(url, ep);
+      }
+    }
+  }
+  return results;
 }
 
 function groupSeriesList(movies: Movie[]): Movie[] {
@@ -1430,22 +1465,41 @@ export async function fetchSeriesDetails(id: string): Promise<Series | null> {
       assignedSeasons.add(sNum);
       seasonNumbers.push(sNum);
     }
-    const allEpisodes: Episode[] = [];
-    let maxSeasonUsed = 0;
+    const rawEpisodes: any[] = [];
     for (let i = 0; i < seasonIds.length; i++) {
       const baseSeason = seasonEntries.length > 1 ? seasonNumbers[i] : 1;
-      const { data: eps } = await supabase.from("movies").select("*").eq("series_id", seasonIds[i]).eq("type", "episode").order("episode_number", { ascending: true });
+      const { data: eps } = await supabase
+        .from("movies")
+        .select("*")
+        .eq("series_id", seasonIds[i])
+        .eq("type", "episode");
+
       if (eps?.length) {
-        const chunks = splitEpisodesByGap(eps);
-        for (let c = 0; c < chunks.length; c++) {
-          const seasonNum = c === 0 ? baseSeason : maxSeasonUsed + 1 + c;
-          chunks[c].forEach((ep: any, idx: number) => {
-            allEpisodes.push({ ...ep, season_number: seasonNum, episode_number: idx + 1 } as Episode);
+        const deduped = deduplicateEpisodes(eps);
+        deduped.forEach((ep: any) => {
+          const seasonNum = inferSeasonNumber(ep, baseSeason);
+          let epNum = ep.episode_number;
+          if (typeof epNum === "number" && epNum > 100) {
+            const mod = epNum % 100;
+            if (mod > 0) epNum = mod;
+          }
+          if (typeof epNum !== "number" || isNaN(epNum) || epNum <= 0) {
+            epNum = 1;
+          }
+          rawEpisodes.push({
+            ...ep,
+            season_number: seasonNum,
+            episode_number: epNum,
           });
-        }
-        maxSeasonUsed = Math.max(maxSeasonUsed, baseSeason + chunks.length - 1);
+        });
       }
     }
+
+    const allEpisodes = rawEpisodes.sort((a, b) => {
+      const sDiff = (a.season_number ?? 1) - (b.season_number ?? 1);
+      if (sDiff !== 0) return sDiff;
+      return (a.episode_number ?? 1) - (b.episode_number ?? 1);
+    }) as Episode[];
     const details = { ...series, title: baseName, episodes: allEpisodes, total_episodes: allEpisodes.length, relatedSeasonIds: seasonIds.length > 1 ? seasonIds : undefined } as Series;
     seriesDetailsCache.set(id, details);
     boundedMap(seriesDetailsCache, MAX_DETAIL_CACHE);
