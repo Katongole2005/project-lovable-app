@@ -1160,7 +1160,14 @@ export function useVideoPlayerEngine({
         video.readyState === 0;     // HAVE_NOTHING
 
       const stallDurationMs = Date.now() - lastPlaybackProgressRef.current;
-      const triggerThresholdMs = isNotLoadedYet ? 3500 : 5000;
+      
+      const isSmartTv = typeof navigator !== "undefined" && 
+        /smarttv|tizen|webos|viera|appletv|androidtv|bravia|googletv|opera\s+tv|loewe|netcast|comcast|roku|hbbtv/i.test(navigator.userAgent);
+      
+      // Use extremely generous timeouts on Smart TVs and weak devices to prevent infinite decoder/loader reload loops
+      const triggerThresholdMs = isSmartTv 
+        ? (isNotLoadedYet ? 30000 : 25000) 
+        : (isNotLoadedYet ? 15000 : 12000);
 
       if (isStallState && stallDurationMs >= triggerThresholdMs) {
         console.warn(`[Self-Healing Monitor] Media playback stalled for ${stallDurationMs}ms (networkState: ${video.networkState}, readyState: ${video.readyState}, isNotLoadedYet: ${isNotLoadedYet}). Triggering self-healing recovery...`);
@@ -1475,8 +1482,15 @@ export function useVideoPlayerEngine({
       if (video.buffered.length > 0) {
         setBufferedTime(video.buffered.end(video.buffered.length - 1));
       }
+      
       const now = Date.now();
-      if (now - lastTimeUpdateRef.current >= 100) {
+      const isSmartTv = typeof navigator !== "undefined" && 
+        /smarttv|tizen|webos|viera|appletv|androidtv|bravia|googletv|opera\s+tv|loewe|netcast|comcast|roku|hbbtv/i.test(navigator.userAgent);
+      
+      // Throttle state updates (1000ms on Smart TVs, 250ms on standard devices) to reduce TV rendering load
+      const throttleInterval = isSmartTv ? 1000 : 250;
+      
+      if (now - lastTimeUpdateRef.current >= throttleInterval) {
         lastTimeUpdateRef.current = now;
         if (!isSeeking) setCurrentTime(video.currentTime);
         setDuration(video.duration || 0);

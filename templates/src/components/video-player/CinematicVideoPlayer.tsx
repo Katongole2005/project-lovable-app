@@ -258,7 +258,7 @@ export function CinematicVideoPlayer({
                     poster={posterUrl ?? undefined}
                     autoPlay
                     playsInline
-                    preload="auto"
+                    preload="metadata"
                     crossOrigin="anonymous"
                     controls={false}
                     className={cn(
