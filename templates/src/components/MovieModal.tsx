@@ -921,21 +921,23 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                       </motion.div>
 
                       <motion.div variants={fadeInUp} className="flex items-center gap-3 pt-2">
-                        <Button
-                          size="lg"
-                          className="btn-premium-red gap-2 rounded-full px-8 h-12 text-base font-semibold border-0"
-                          onClick={() => {
-                            const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
-                            if (versions.length > 1) {
-                              setActionStep("watch_vj");
-                            } else {
-                              setActionStep("watch_server");
-                            }
-                          }}
-                        >
-                          <Play className="w-5 h-5 fill-current" />
-                          Watch
-                        </Button>
+                        {!isSeries && (
+                          <Button
+                            size="lg"
+                            className="btn-premium-red gap-2 rounded-full px-8 h-12 text-base font-semibold border-0"
+                            onClick={() => {
+                              const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                              if (versions.length > 1) {
+                                setActionStep("watch_vj");
+                              } else {
+                                setActionStep("watch_server");
+                              }
+                            }}
+                          >
+                            <Play className="w-5 h-5 fill-current" />
+                            Watch
+                          </Button>
+                        )}
 
                         <button
                           onClick={handleToggleWatchlist}
@@ -981,7 +983,7 @@ function InnerMovieModal({ movie, isOpen, onClose, onPlay, detailsLoading = fals
                         >
                           <Share2 className="w-4 h-4" />
                         </button>
-                        {FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!(movie.download_url || movie.server2_url)) && (
+                        {!isSeries && FEATURE_FLAGS.DOWNLOAD_ENABLED && (isSeries ? allEpisodes.length > 0 : !!(movie.download_url || movie.server2_url)) && (
                           <button
                             onClick={() => {
                               if (!user) {
@@ -1434,39 +1436,41 @@ function MobileMovieLayout({
       <div className="absolute left-0 right-0 top-[96.875vw] z-20 px-6 pt-5 pb-6 bg-[#101116]">
         {actionStep === "none" && (
           <>
-            <div className="grid grid-cols-2 gap-7">
-              <Button
-                size="lg"
-                className="h-[49px] rounded-[11px] border-0 bg-[#d9ff21] text-[#050607] shadow-none hover:bg-[#d9ff21]/95 active:scale-[0.98] flex items-center justify-center gap-2.5"
-                onClick={() => {
-                  const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
-                  if (versions.length > 1) {
-                    setActionStep("watch_vj");
-                  } else {
-                    setActionStep("watch_server");
-                  }
-                }}
-              >
-                <span className="text-[15.5px] font-black tracking-normal">Watch</span>
-                <Play className="h-[18px] w-[18px] fill-current" />
-              </Button>
+            {!isSeries && (
+              <div className="grid grid-cols-2 gap-7">
+                <Button
+                  size="lg"
+                  className="h-[49px] rounded-[11px] border-0 bg-[#d9ff21] text-[#050607] shadow-none hover:bg-[#d9ff21]/95 active:scale-[0.98] flex items-center justify-center gap-2.5"
+                  onClick={() => {
+                    const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                    if (versions.length > 1) {
+                      setActionStep("watch_vj");
+                    } else {
+                      setActionStep("watch_server");
+                    }
+                  }}
+                >
+                  <span className="text-[15.5px] font-black tracking-normal">Watch</span>
+                  <Play className="h-[18px] w-[18px] fill-current" />
+                </Button>
 
-              <Button
-                size="lg"
-                className="h-[49px] rounded-[11px] border border-[#282c37] bg-transparent text-white shadow-none hover:bg-white/[0.03] active:scale-[0.98] flex items-center justify-center gap-2.5"
-                onClick={() => {
-                  const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
-                  if (versions.length > 1) {
-                    setActionStep("download_vj");
-                  } else {
-                    setActionStep("download_server");
-                  }
-                }}
-              >
-                <span className="text-[15px] font-black tracking-normal">Download</span>
-                <Download className="h-[17px] w-[17px] stroke-[3]" />
-              </Button>
-            </div>
+                <Button
+                  size="lg"
+                  className="h-[49px] rounded-[11px] border border-[#282c37] bg-transparent text-white shadow-none hover:bg-white/[0.03] active:scale-[0.98] flex items-center justify-center gap-2.5"
+                  onClick={() => {
+                    const versions = (movie.vj_versions ?? []).filter(v => !!v.vj_name);
+                    if (versions.length > 1) {
+                      setActionStep("download_vj");
+                    } else {
+                      setActionStep("download_server");
+                    }
+                  }}
+                >
+                  <span className="text-[15px] font-black tracking-normal">Download</span>
+                  <Download className="h-[17px] w-[17px] stroke-[3]" />
+                </Button>
+              </div>
+            )}
 
             <div className="mt-8 grid grid-cols-4 items-start gap-4">
               <button

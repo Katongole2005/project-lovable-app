@@ -14,6 +14,7 @@ export interface CinematicVideoPlayerProps {
   skipSegments?: SkipSegment[];
   onPlayNext?: () => void;
   hasNextEpisode?: boolean;
+  onPlayEpisode?: (episode: any) => void;
 }
 
 export type PlayerLayout = "mobile-portrait" | "mobile-landscape" | "desktop";

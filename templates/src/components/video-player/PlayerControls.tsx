@@ -15,6 +15,7 @@ import {
   Settings,
   Check,
   ArrowLeft,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,6 +66,8 @@ type PlayerControlsProps = {
   onToggleForcedLandscape: () => void;
   subtitleSize: "small" | "medium" | "large";
   onSubtitleSizeChange: (size: "small" | "medium" | "large") => void;
+  isEpisodesOpen?: boolean;
+  onToggleEpisodes?: () => void;
 };
 
 export function PlayerControls({
@@ -107,6 +110,8 @@ export function PlayerControls({
   onToggleForcedLandscape,
   subtitleSize,
   onSubtitleSizeChange,
+  isEpisodesOpen = false,
+  onToggleEpisodes,
 }: PlayerControlsProps) {
   const [settingsOpen, setSettingsOpen] = useState<"speed" | "subtitles" | "size" | null>(null);
   const miniProgressRef = useRef<HTMLDivElement>(null);
@@ -338,6 +343,21 @@ export function PlayerControls({
                       aria-label="Subtitles"
                     >
                       <Subtitles />
+                    </button>
+                  )}
+
+                  {/* Episodes list drawer button for series */}
+                  {activeMovie?.type === "series" && onToggleEpisodes && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onToggleEpisodes(); }}
+                      className={cn(
+                        "player-flat-btn",
+                        isEpisodesOpen && "player-accent-highlight filter drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]"
+                      )}
+                      aria-label="Episodes list"
+                    >
+                      <Layers className="h-5 w-5" />
                     </button>
                   )}
 

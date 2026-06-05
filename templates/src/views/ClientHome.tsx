@@ -1140,6 +1140,26 @@ function ClientHome() {
     );
   }, [handlePlayVideo, nextEpisodePlayback]);
 
+  const handlePlayEpisode = useCallback((episode: any) => {
+    const epUrl = episode.server2_url || episode.download_url;
+    if (!epUrl) return;
+    const seasonNumber = episode.season_number ?? 1;
+    const epTitle = `${activePlayerMovie?.title || videoTitle.replace(/\s*-\s*S\d+\s*:\s*E\d+\b/i, "")} - S${seasonNumber}:E${episode.episode_number}`;
+    
+    if (!selectedMovieRef.current && activePlayerMovie) {
+      selectedMovieRef.current = activePlayerMovie;
+    }
+
+    void handlePlayVideo(
+      epUrl,
+      epTitle,
+      0,
+      undefined,
+      episode.mobifliks_id,
+      episode.video_page_url
+    );
+  }, [handlePlayVideo, activePlayerMovie, videoTitle]);
+
   useEffect(() => {
     if (isModalOpen && !modalHistoryRef.current) {
       window.history.pushState({ modal: true }, "");
@@ -2610,6 +2630,7 @@ function ClientHome() {
               skipSegments={activePlayerSkipSegments}
               hasNextEpisode={!!nextEpisodePlayback}
               onPlayNext={handlePlayNextEpisode}
+              onPlayEpisode={handlePlayEpisode}
             />
           )}
 
