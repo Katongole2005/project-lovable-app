@@ -940,5 +940,24 @@ video,
   line-height: 1.4 !important;
 }
 
+/* Performance/rendering optimization utility classes to prevent inline styles warnings */
+.content-visibility-auto {
+  content-visibility: auto !important;
+}
+
+.deferred-placeholder-intrinsic {
+  min-height: 220px !important;
+  contain-intrinsic-size: 0 220px !important;
+}
+
+.deferred-loaded-intrinsic {
+  contain-intrinsic-size: 0 220px !important;
+}
+
+.contain-layout {
+  contain: layout !important;
+}
+
+
 
 

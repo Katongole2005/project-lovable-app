@@ -497,10 +497,10 @@ export function HeroCarousel({
 
 	          <div className="absolute inset-0 pointer-events-none hero-vignette" />
 
-          <div className="relative z-10 h-full flex flex-col justify-end" style={{ contain: "layout" }}>
+          <div className="relative z-10 h-full flex flex-col justify-end contain-layout">
 
             {/* Reserve space for hero info before movie data arrives — prevents 0.485 CLS */}
-            <div className="px-6 pb-4 lg:px-10 xl:px-14 2xl:px-16" style={{ minHeight: "220px" }}>
+            <div className="px-6 pb-4 lg:px-10 xl:px-14 2xl:px-16 min-h-[220px]">
                 <>
                   <div 
                     key={`info-${activeIndex}`}
@@ -608,9 +608,11 @@ export function HeroCarousel({
                         "relative flex-shrink-0 w-[115px] sm:w-[130px] md:w-[145px] lg:w-[165px] xl:w-[185px] 2xl:w-[210px] aspect-video rounded-xl overflow-hidden border transition-all duration-300 snap-start hero-rail-card hero-rail-card-enter",
                         isActiveCard ? "active" : ""
                       )}
-                      style={{
-                        animationDelay: `${idx * 45}ms`
-                      }}
+                      {...({
+                        style: {
+                          animationDelay: `${idx * 45}ms`
+                        }
+                      })}
                     >
                       <div className="hero-glare-sweep absolute inset-0 pointer-events-none z-20 opacity-0 transition-opacity duration-300" />
                       <HeroMediaImage
@@ -639,7 +641,11 @@ export function HeroCarousel({
                       {isActiveCard && (
                         <div 
                           className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-red-500 origin-left animate-rail-progress z-20 shadow-[0_0_10px_#ef4444]"
-                          style={{ animationDuration: shouldAutoplay ? `${autoplayDelayMs}ms` : "0ms" }}
+                          {...({
+                            style: {
+                              animationDuration: shouldAutoplay ? `${autoplayDelayMs}ms` : "0ms"
+                            }
+                          })}
                         />
                       )}
                     </button>

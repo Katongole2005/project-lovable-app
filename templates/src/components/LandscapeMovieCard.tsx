@@ -158,7 +158,7 @@ const LandscapeMovieCardBase = forwardRef<HTMLDivElement, LandscapeMovieCardProp
   return (
     <div
       ref={cardRef}
-      style={style}
+      {...(style ? { style } : {})}
       className={cn(
         "group relative flex-shrink-0 cursor-pointer overflow-visible touch-manipulation will-change-transform hardware-accelerated-card",
         className
@@ -268,7 +268,7 @@ export const LandscapeMovieCard = memo(LandscapeMovieCardBase);
 
 export function LandscapeMovieCardSkeleton({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
-    <div className={cn("flex-shrink-0", className)} style={style}>
+    <div className={cn("flex-shrink-0", className)} {...(style ? { style } : {})}>
       <div className="aspect-video rounded-[18px] bg-card/95 border border-white/[0.06] overflow-hidden relative card-premium-shadow">
         <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40 animate-pulse" />
         <div className="absolute inset-0 shimmer opacity-50" />
