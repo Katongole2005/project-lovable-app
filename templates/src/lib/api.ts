@@ -1333,7 +1333,9 @@ function sortSmartSearchResults(movies: Movie[], normalizedQuery: string, queryT
         if (fuzzyHit) value += 16;
       }
 
-      if (movie.vj_name && queryTokens.some((token) => normalizeSearchText(movie.vj_name || "").includes(token))) value += 8;
+      if (movie.vj_name && queryTokens.some((token) => normalizeSearchText(movie.vj_name || "").includes(token))) value += 30;
+      if (movie.director && queryTokens.some((token) => normalizeSearchText(movie.director || "").includes(token))) value += 15;
+      if (movie.description && queryTokens.some((token) => normalizeSearchText(movie.description || "").includes(token))) value += 10;
       value += Math.min(movie.views ?? 0, 100000) / 100000;
       return value;
     };
@@ -1351,8 +1353,18 @@ export async function searchMovies(query: string, page: number = 1, limit: numbe
   const compactQuery = compactSearchText(query);
   const searchClauses = [
     `title.ilike.%${safeQuery}%`,
+    `vj_name.ilike.%${safeQuery}%`,
+    `director.ilike.%${safeQuery}%`,
+    `description.ilike.%${safeQuery}%`,
     ...(compactQuery && compactQuery !== normalizedQuery ? [`title.ilike.%${compactQuery.replace(/[%_\\]/g, (c) => `\\${c}`)}%`] : []),
-    ...tokens.slice(0, 4).map((token) => `title.ilike.%${token.replace(/[%_\\]/g, (c) => `\\${c}`)}%`),
+    ...tokens.slice(0, 4).flatMap((token) => {
+      const safeToken = token.replace(/[%_\\]/g, (c) => `\\${c}`);
+      return [
+        `title.ilike.%${safeToken}%`,
+        `vj_name.ilike.%${safeToken}%`,
+        `director.ilike.%${safeToken}%`
+      ];
+    }),
   ];
   const { data, error, count } = await supabase
     .from("movies")
@@ -1519,15 +1531,64 @@ export function hasPendingSeriesDetailsRequest(id: string): boolean { return ser
 
 export async function fetchSuggestions(query: string): Promise<Movie[]> {
   const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
-  const { data, error } = await supabase.from("movies").select("*").in("type", ["movie", "series"]).ilike("title", `%${safeQuery}%`).order("views", { ascending: false }).limit(20);
+  const tokens = getSearchTokens(query);
+  const compactQuery = compactSearchText(query);
+  const searchClauses = [
+    `title.ilike.%${safeQuery}%`,
+    `vj_name.ilike.%${safeQuery}%`,
+    `director.ilike.%${safeQuery}%`,
+    ...(compactQuery && compactQuery !== normalizeSearchText(query) ? [`title.ilike.%${compactQuery.replace(/[%_\\]/g, (c) => `\\${c}`)}%`] : []),
+    ...tokens.slice(0, 3).flatMap((token) => {
+      const safeToken = token.replace(/[%_\\]/g, (c) => `\\${c}`);
+      return [
+        `title.ilike.%${safeToken}%`,
+        `vj_name.ilike.%${safeToken}%`
+      ];
+    }),
+  ];
+  const { data, error } = await supabase
+    .from("movies")
+    .select("*")
+    .in("type", ["movie", "series"])
+    .or(searchClauses.join(","))
+    .order("views", { ascending: false })
+    .limit(20);
   if (error) { console.error("fetchSuggestions error:", error.message || error, error.details || "", error.hint || ""); return []; }
-  return finalizeBrowseResults(normalize(data ?? []), 10);
+  const sorted = sortSmartSearchResults(normalize(data ?? []), normalizeSearchText(query), tokens);
+  return finalizeBrowseResults(sorted, 10);
+}
+
+export async function logSearchQuery(query: string, resultsCount: number): Promise<void> {
+  const trimmed = query.trim();
+  if (!trimmed || trimmed.length < 2) return;
+  const { error } = await supabase.from("search_history").insert({
+    query: trimmed,
+    results_count: resultsCount
+  });
+  if (error) {
+    console.error("logSearchQuery error:", error.message || error);
+  }
 }
 
 export async function fetchStats(): Promise<{ popular_searches: string[] }> {
-  const { data, error } = await supabase.from("search_history").select("query").order("search_time", { ascending: false }).limit(10);
-  if (error) return { popular_searches: [] };
-  return { popular_searches: (data ?? []).map((r: { query: string }) => r.query) };
+  const { data, error } = await supabase.from("search_history").select("query").order("search_time", { ascending: false }).limit(200);
+  if (error || !data) return { popular_searches: [] };
+  
+  const counts: Record<string, number> = {};
+  data.forEach((r: { query: string }) => {
+    const q = r.query.trim();
+    if (q && q.length >= 2) {
+      const displayVal = q;
+      counts[displayVal] = (counts[displayVal] || 0) + 1;
+    }
+  });
+
+  const sorted = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([q]) => q)
+    .slice(0, 8);
+
+  return { popular_searches: sorted };
 }
 
 export async function fetchOriginals(limit: number = 50, page: number = 1, offsetOverride?: number): Promise<Movie[]> {

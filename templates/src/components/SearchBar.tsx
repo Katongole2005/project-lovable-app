@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 interface SearchBarProps {
   onSearch: (query: string) => void;
   onMovieSelect: (movie: Movie) => void;
+  onChange?: (value: string) => void;
   popularSearches?: string[];
   recentSearches?: string[];
   onRemoveRecentSearch?: (term: string) => void;
@@ -22,6 +23,7 @@ interface SearchBarProps {
 export function SearchBar({ 
   onSearch, 
   onMovieSelect, 
+  onChange,
   className, 
   initialQuery = "",
   isLoadingResults = false
@@ -129,8 +131,10 @@ export function SearchBar({
             type="text"
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value);
+              const val = e.target.value;
+              setQuery(val);
               setSelectedIndex(-1);
+              if (onChange) onChange(val);
             }}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
@@ -200,15 +204,7 @@ export function SearchBar({
                   />
                 </div>
                 <div className="flex-1 min-w-0 py-0.5">
-                  {movie.logo_url ? (
-                    <img
-                      src={movie.logo_url}
-                      alt={movie.title}
-                      className="h-4.5 w-auto max-w-[85%] object-contain object-left mb-0.5 filter brightness-100 group-hover/item:scale-102 transition-transform"
-                    />
-                  ) : (
-                    <p className="font-semibold text-sm text-white truncate leading-tight group-hover/item:text-primary transition-colors">{movie.title}</p>
-                  )}
+                  <p className="font-semibold text-sm text-white truncate leading-tight group-hover/item:text-primary transition-colors">{movie.title}</p>
                   <p className="text-[11px] text-muted-foreground/80 mt-0.5">
                     {[
                       movie.year,

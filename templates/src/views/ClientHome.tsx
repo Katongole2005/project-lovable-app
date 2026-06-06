@@ -74,6 +74,7 @@ import {
   fetchRecent,
   fetchSeries,
   searchMovies,
+  logSearchQuery,
   fetchMovieDetails,
   fetchSeriesDetails,
   getCachedSeriesDetails,
@@ -746,6 +747,9 @@ function ClientHome() {
       }
     })();
 
+    return () => {
+      cancelled = true;
+    };
   }, [showDeferredHomeSections]);
 
 
@@ -782,6 +786,7 @@ function ClientHome() {
         }
       })();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
 
@@ -804,7 +809,7 @@ function ClientHome() {
       (viewMode === "originals" && isOriginalsLoading)) {
       setIsLoading(true);
     }
-  }, [viewMode, moviesQueryData, seriesQueryData, originalsQueryData, isMoviesLoading, isSeriesLoading, isOriginalsLoading, browseBatchLimit, originalsInitialLimit, seriesFetchBatchLimit]);
+  }, [viewMode, moviesQueryData, seriesQueryData, originalsQueryData, isMoviesLoading, isSeriesLoading, isOriginalsLoading, browseBatchLimit, originalsInitialLimit, seriesFetchBatchLimit, sortByYearDesc]);
 
 
   const handleSearch = useCallback(async (query: string, skipNavigate = false) => {
@@ -825,6 +830,7 @@ function ClientHome() {
       const results = await searchMovies(query, 1, 50);
       setSearchResults(results.results);
       setTotalResults(results.total_results);
+      void logSearchQuery(query, results.total_results);
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -851,6 +857,7 @@ function ClientHome() {
         setSearchResults(results.results);
         setTotalResults(results.total_results);
         setSearchQuery(val);
+        void logSearchQuery(val, results.total_results);
       } catch (error) {
         console.error("Dynamic search error:", error);
       } finally {
@@ -1018,7 +1025,7 @@ function ClientHome() {
     });
     
     // Always enforce proxy if available to avoid direct link issues on certain devices.
-    let playbackUrl = proxiedUrl;
+    const playbackUrl = proxiedUrl;
 
     const movie = selectedMovieRef.current;
     const parsedEpisode = parseEpisodeInfoFromTitle(title);
@@ -1240,7 +1247,7 @@ function ClientHome() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [isModalOpen, isVideoOpen, viewMode, handleCloseVideo]);
+  }, [isModalOpen, isVideoOpen, viewMode, handleCloseVideo, navigateTo]);
 
   const handleResumeContinueWatching = useCallback(async (item: ContinueWatching) => {
     if (!user) {
@@ -2162,9 +2169,10 @@ function ClientHome() {
                   <Suspense fallback={<div className="h-12 rounded-full bg-card/60 border border-border/30 animate-pulse" />}>
                     <SearchBar
                       onSearch={handleSearch}
+                      onChange={handleSearchInputChange}
                       onMovieSelect={handleMovieClick}
                       popularSearches={popularSearches}
-                      initialQuery={searchQuery}
+                      initialQuery={searchInputValue}
                       isLoadingResults={isLoading}
                     />
                   </Suspense>

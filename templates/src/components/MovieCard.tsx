@@ -251,17 +251,9 @@ const MovieCardBase = forwardRef<HTMLDivElement, MovieCardProps>(function MovieC
 
       <div className="relative z-10 mt-3 space-y-1.5">
         <div className="h-5 flex items-center">
-          {movie.logo_url ? (
-            <img
-              src={movie.logo_url}
-              alt={movie.title}
-              className="h-full w-auto max-w-full object-contain object-left opacity-90 group-hover:opacity-100 transition-opacity duration-200"
-            />
-          ) : (
-            <h3 className="font-display font-bold text-sm leading-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200 tracking-tight" data-testid={`text-title-${movie.mobifliks_id}`}>
-              {movie.title}
-            </h3>
-          )}
+          <h3 className="font-display font-bold text-sm leading-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200 tracking-tight" data-testid={`text-title-${movie.mobifliks_id}`}>
+            {movie.title}
+          </h3>
         </div>
         <div className="flex min-h-[22px] flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
           {movie.year && (

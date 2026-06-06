@@ -482,6 +482,7 @@ export function CinematicVideoPlayer({
                     <button
                       type="button"
                       onClick={() => setIsEpisodesOpen(false)}
+                      aria-label="Close episodes list"
                       className="rounded-full p-2 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all border border-zinc-800 hover:border-zinc-700"
                     >
                       <X className="h-4 w-4" />
@@ -587,6 +588,7 @@ export function CinematicVideoPlayer({
                   <button
                     type="button"
                     onClick={() => setUpNextDismissed(true)}
+                    aria-label="Dismiss up next countdown"
                     className="rounded-full p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                   >
                     <X className="h-3.5 w-3.5" />
