@@ -912,10 +912,13 @@ function ClientHome() {
   }, []);
 
   // Synchronize URL query parameter 'q' with search state
+  const lastUrlQueryRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (viewMode === "search") {
       const q = searchParams.get("q") || "";
-      if (q !== searchQuery) {
+      if (q !== lastUrlQueryRef.current) {
+        lastUrlQueryRef.current = q;
         if (q) {
           void handleSearch(q, true);
         } else {
@@ -924,8 +927,10 @@ function ClientHome() {
           setSearchResults([]);
         }
       }
+    } else {
+      lastUrlQueryRef.current = null;
     }
-  }, [viewMode, searchParams, searchQuery, handleSearch]);
+  }, [viewMode, searchParams, handleSearch]);
 
   const handleMovieClick = useCallback(async (movie: Movie) => {
     let resolvedMovie: Movie | Series = movie;
