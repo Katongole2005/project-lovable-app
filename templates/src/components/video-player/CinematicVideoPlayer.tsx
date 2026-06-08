@@ -364,6 +364,7 @@ export function CinematicVideoPlayer({
                       visible={controlsVisible}
                       activeTitle={activeTitle}
                       activeMovie={activeMovie}
+                      videoUrl={activeVideoUrl}
                       isPaused={isPaused}
                       isBuffering={isBuffering}
                       isFullscreen={isFullscreen}

@@ -31,6 +31,7 @@ type PlayerControlsProps = {
   visible: boolean;
   activeTitle: string;
   activeMovie: Movie | Series | null;
+  videoUrl?: string;
   isPaused: boolean;
   isBuffering: boolean;
   isFullscreen: boolean;
@@ -75,6 +76,7 @@ export function PlayerControls({
   visible,
   activeTitle,
   activeMovie,
+  videoUrl,
   isPaused,
   isBuffering,
   isFullscreen,
@@ -265,6 +267,7 @@ export function PlayerControls({
                   onSeek={onSeek}
                   onSeekEnd={onSeekEnd}
                   skipSegments={skipSegments}
+                  videoUrl={videoUrl}
                 />
               </div>
 

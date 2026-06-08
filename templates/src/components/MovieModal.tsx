@@ -1483,7 +1483,13 @@ function MobileMovieLayout({
               </button>
               <button
                 type="button"
-                onClick={() => toast.info("Trailer is not available yet.")}
+                onClick={() => {
+                  if (movie.trailer_url) {
+                    window.open(movie.trailer_url, "_blank");
+                  } else {
+                    toast.info("Trailer is not available yet.");
+                  }
+                }}
                 className="flex flex-col items-center gap-2 text-white active:scale-95 transition-transform"
               >
                 <Youtube className="h-6 w-6 stroke-[2.1]" />

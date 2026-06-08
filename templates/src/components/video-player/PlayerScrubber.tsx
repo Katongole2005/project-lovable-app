@@ -16,6 +16,7 @@ type PlayerScrubberProps = {
   onSeek: (time: number) => void;
   onSeekEnd: () => void;
   skipSegments?: SkipSegment[];
+  videoUrl?: string;
 };
 
 export function PlayerScrubber({
@@ -28,10 +29,19 @@ export function PlayerScrubber({
   onSeek,
   onSeekEnd,
   skipSegments = [],
+  videoUrl,
 }: PlayerScrubberProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [hoverRatio, setHoverRatio] = useState<number | null>(null);
+
+  const [isCorsBlocked, setIsCorsBlocked] = useState(false);
+  const [hasPreview, setHasPreview] = useState(false);
+
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
+  const displayCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastSeekTimeRef = useRef<number>(0);
+  const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Refs for elements that require dynamic inline styles
   const bufferedRef = useRef<HTMLDivElement>(null);
@@ -66,6 +76,107 @@ export function PlayerScrubber({
   // During scrubbing, track the scrub cursor. During idle hover, track the playback playedRatio.
   const activeRatio = isScrubbing ? (hoverRatio ?? playedRatio) : playedRatio;
   const previewTime = hoverRatio !== null && !isScrubbing ? hoverRatio * safeDuration : null;
+
+  // Create background video element for rendering previews
+  useEffect(() => {
+    if (typeof window === "undefined" || !videoUrl) return;
+
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.src = videoUrl;
+
+    previewVideoRef.current = video;
+    setIsCorsBlocked(false);
+    setHasPreview(false);
+
+    const handleSeeked = () => {
+      const displayCanvas = displayCanvasRef.current;
+      if (!displayCanvas) {
+        // Retry once in 50ms in case the canvas hasn't finished mounting
+        setTimeout(() => {
+          const retryCanvas = displayCanvasRef.current;
+          if (retryCanvas) {
+            const displayCtx = retryCanvas.getContext("2d");
+            if (displayCtx) {
+              try {
+                displayCtx.drawImage(video, 0, 0, retryCanvas.width, retryCanvas.height);
+                retryCanvas.getContext("2d")?.getImageData(0, 0, 1, 1);
+                setIsCorsBlocked(false);
+                setHasPreview(true);
+              } catch (err) {
+                setIsCorsBlocked(true);
+                setHasPreview(false);
+              }
+            }
+          }
+        }, 50);
+        return;
+      }
+
+      const displayCtx = displayCanvas.getContext("2d");
+      if (!displayCtx) return;
+
+      try {
+        displayCtx.drawImage(video, 0, 0, displayCanvas.width, displayCanvas.height);
+        displayCanvas.getContext("2d")?.getImageData(0, 0, 1, 1);
+        setIsCorsBlocked(false);
+        setHasPreview(true);
+      } catch (err) {
+        setIsCorsBlocked(true);
+        setHasPreview(false);
+      }
+    };
+
+    video.addEventListener("seeked", handleSeeked);
+
+    return () => {
+      video.removeEventListener("seeked", handleSeeked);
+      video.pause();
+      video.src = "";
+      video.load();
+      previewVideoRef.current = null;
+    };
+  }, [videoUrl]);
+
+  // Throttled background seeking trigger
+  useEffect(() => {
+    if (!previewVideoRef.current || previewTime === null) return;
+
+    const video = previewVideoRef.current;
+    const now = Date.now();
+    const timeSinceLastSeek = now - lastSeekTimeRef.current;
+
+    const performSeek = () => {
+      video.currentTime = previewTime;
+      lastSeekTimeRef.current = Date.now();
+    };
+
+    if (seekTimeoutRef.current) {
+      clearTimeout(seekTimeoutRef.current);
+    }
+
+    if (timeSinceLastSeek >= 100) {
+      performSeek();
+    } else {
+      seekTimeoutRef.current = setTimeout(performSeek, 100 - timeSinceLastSeek);
+    }
+
+    return () => {
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current);
+      }
+    };
+  }, [previewTime]);
+
+  // Reset preview state when closing hover
+  useEffect(() => {
+    if (previewTime === null) {
+      setHasPreview(false);
+    }
+  }, [previewTime]);
 
   // Sync dynamic styles to avoid inline styles in JSX
   useEffect(() => {
@@ -213,8 +324,47 @@ export function PlayerScrubber({
               className="pointer-events-none absolute bottom-full z-50 mb-3 -translate-x-1/2"
               style={{ left: `${(hoverRatio ?? 0) * 100}%` }}
             >
-              <div className="player-scrubber-tooltip">
-                {formatTime(previewTime)}
+              <div className="player-scrubber-tooltip !p-1 flex flex-col items-center">
+                {videoUrl && (
+                  <div className="relative w-40 aspect-video bg-zinc-950 rounded-md overflow-hidden flex items-center justify-center border border-white/5 mb-1">
+                    {isCorsBlocked ? (
+                      <div className="flex flex-col items-center justify-center p-2 text-center text-zinc-500 gap-1 select-none">
+                        <svg
+                          className="w-5 h-5 text-zinc-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                          />
+                        </svg>
+                        <span className="text-[10px] font-bold tracking-tight text-zinc-400">Preview unavailable</span>
+                      </div>
+                    ) : !hasPreview ? (
+                      <div className="flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                      </div>
+                    ) : null}
+                    
+                    <canvas
+                      ref={displayCanvasRef}
+                      width={160}
+                      height={90}
+                      className={cn(
+                        "w-full h-full object-cover rounded-md",
+                        (isCorsBlocked || !hasPreview) ? "hidden" : "block"
+                      )}
+                    />
+                  </div>
+                )}
+                
+                <div className="px-2 py-0.5 text-[11px] font-extrabold tabular-nums text-white/90">
+                  {formatTime(previewTime)}
+                </div>
               </div>
             </motion.div>
           )}
