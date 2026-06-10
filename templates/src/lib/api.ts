@@ -690,11 +690,8 @@ const inferYear = (movie: Movie): number | undefined => {
   const directYear = fixYear(movie.year);
   if (directYear) return directYear;
 
-  const rawData = (movie as any).raw_data;
-  const tmdbYear = Number(rawData?.tmdb?.year ?? rawData?.year);
-  if (Number.isInteger(tmdbYear) && tmdbYear > 0) return fixYear(tmdbYear);
-
-  const originalTitle = rawData?.original_title;
+  // original_title column may contain year in parens e.g. "Movie Title (2023 - VJ ...)"
+  const originalTitle = (movie as any).original_title;
   if (typeof originalTitle === "string") {
     const match = originalTitle.match(/\b(?:19|20)\d{2}\b/);
     if (match) return fixYear(Number(match[0]));
@@ -712,7 +709,8 @@ const normalize = (items: unknown[]): Movie[] =>
         title: cleanTitle(m.title ?? ""),
         year: inferYear(m),
         release_date: fixReleaseDate(m.release_date),
-        logo_url: (m as any).raw_data?.tmdb?.details?.logo_url || m.logo_url,
+        // logo_url is now a real column — raw_data fallback only for legacy rows
+        logo_url: m.logo_url || (m as any).raw_data?.tmdb?.logo_url || (m as any).raw_data?.logo_url,
       }))
     : [];
 
@@ -759,13 +757,15 @@ function getYearKey(movie: Movie): string | number {
 }
 
 function getArtworkGroupKey(movie: Movie): string | null {
+  // Prefer dedicated columns — no raw_data digging needed
+  if (movie.tmdb_id) return `tmdb:${movie.tmdb_id}`;
+
+  // Legacy fallback for any rows not yet backfilled
   const rawData = (movie as any).raw_data;
-  const tmdbId = rawData?.tmdb_id ?? rawData?.tmdb?.id;
-  if (tmdbId) return `tmdb:${tmdbId}`;
+  const legacyTmdbId = rawData?.tmdb_id ?? rawData?.tmdb?.id;
+  if (legacyTmdbId) return `tmdb:${legacyTmdbId}`;
 
-  const logoUrl = movie.logo_url ?? rawData?.logo_url ?? rawData?.tmdb?.details?.logo_url;
-  if (logoUrl) return `logo:${logoUrl}`;
-
+  if (movie.logo_url) return `logo:${movie.logo_url}`;
   if (movie.image_url) return `poster:${movie.image_url}`;
   return null;
 }
@@ -946,14 +946,10 @@ function extractSeasonNumber(title: string): number {
 }
 
 function inferSeasonNumber(ep: any, baseSeason: number): number {
-  const raw = ep.raw_data;
-  if (raw) {
-    const s = raw.season ?? raw.season_number;
-    if (typeof s === "number") return s;
-    if (typeof s === "string" && s.trim()) {
-      const parsed = parseInt(s, 10);
-      if (!isNaN(parsed)) return parsed;
-    }
+  // mobifliks_id encodes season as _S1E3 — this is the canonical source
+  if (ep.mobifliks_id) {
+    const m = ep.mobifliks_id.match(/_S(\d+)E/i);
+    if (m) return parseInt(m[1], 10);
   }
 
   const fields = [ep.mobifliks_id, ep.title, ep.full_title, ep.description];

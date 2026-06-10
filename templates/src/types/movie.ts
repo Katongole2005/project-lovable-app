@@ -20,6 +20,7 @@ export interface SkipSegment {
 export interface Movie {
   mobifliks_id: string;
   title: string;
+  original_title?: string;
   year?: number;
   created_at?: string | null;
   language?: string;
@@ -28,6 +29,9 @@ export interface Movie {
   backdrop_url?: string;
   trailer_url?: string;
   logo_url?: string;
+  tmdb_id?: number;
+  imdb_id?: string;
+  vote_average?: number;
   genres?: string[];
   description?: string;
   cast?: CastMember[];

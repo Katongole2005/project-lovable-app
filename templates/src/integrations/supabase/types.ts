@@ -106,25 +106,36 @@ export type Database = {
           id: number
           mobifliks_id: string | null
           title: string
+          original_title: string | null
           year: number | null
           vj_name: string | null
           language: string | null
           genres: Json | null
           stars: Json | null
+          cast: Json | null
           director: string | null
           price: string | null
           views: number | null
           file_size: string | null
           image_url: string | null
+          backdrop_url: string | null
+          logo_url: string | null
+          trailer_url: string | null
+          server2_url: string | null
           details_url: string | null
           download_url: string | null
           video_page_url: string | null
           description: string | null
+          certification: string | null
+          runtime_minutes: number | null
+          release_date: string | null
+          tmdb_id: number | null
+          imdb_id: string | null
+          vote_average: number | null
           type: string | null
           total_episodes: number | null
           series_id: string | null
           episode_number: number | null
-          raw_data: Json | null
           last_updated: string | null
           created_at: string | null
         }
@@ -132,25 +143,36 @@ export type Database = {
           id?: number
           mobifliks_id?: string | null
           title: string
+          original_title?: string | null
           year?: number | null
           vj_name?: string | null
           language?: string | null
           genres?: Json | null
           stars?: Json | null
+          cast?: Json | null
           director?: string | null
           price?: string | null
           views?: number | null
           file_size?: string | null
           image_url?: string | null
+          backdrop_url?: string | null
+          logo_url?: string | null
+          trailer_url?: string | null
+          server2_url?: string | null
           details_url?: string | null
           download_url?: string | null
           video_page_url?: string | null
           description?: string | null
+          certification?: string | null
+          runtime_minutes?: number | null
+          release_date?: string | null
+          tmdb_id?: number | null
+          imdb_id?: string | null
+          vote_average?: number | null
           type?: string | null
           total_episodes?: number | null
           series_id?: string | null
           episode_number?: number | null
-          raw_data?: Json | null
           last_updated?: string | null
           created_at?: string | null
         }
@@ -158,30 +180,42 @@ export type Database = {
           id?: number
           mobifliks_id?: string | null
           title?: string
+          original_title?: string | null
           year?: number | null
           vj_name?: string | null
           language?: string | null
           genres?: Json | null
           stars?: Json | null
+          cast?: Json | null
           director?: string | null
           price?: string | null
           views?: number | null
           file_size?: string | null
           image_url?: string | null
+          backdrop_url?: string | null
+          logo_url?: string | null
+          trailer_url?: string | null
+          server2_url?: string | null
           details_url?: string | null
           download_url?: string | null
           video_page_url?: string | null
           description?: string | null
+          certification?: string | null
+          runtime_minutes?: number | null
+          release_date?: string | null
+          tmdb_id?: number | null
+          imdb_id?: string | null
+          vote_average?: number | null
           type?: string | null
           total_episodes?: number | null
           series_id?: string | null
           episode_number?: number | null
-          raw_data?: Json | null
           last_updated?: string | null
           created_at?: string | null
         }
         Relationships: []
       }
+
       search_history: {
         Row: {
           id: number
